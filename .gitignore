@@ -8,6 +8,7 @@
 
 # Build artifacts & CMake directories
 build/
+build*/
 bin/
 out/
 CMakeFiles/
@@ -22,6 +23,19 @@ Makefile
 *.exp
 *.idb
 *.ipch
+*.dir/
+*.vcxproj
+*.vcxproj.*
+*.sln
+*.slnx
+*.lib
+*.recipe
+*.nupkg
+
+# Compiled binaries
+*.exe
+!AIRPLAY-zion.exe
+!AIRPLAY-zion_unpacked.exe
 
 # Temporary and caches
 *.tmp

@@ -1,0 +1,4 @@
+#pragma once
+#include <mutex>
+#include "providers/interfaces/IMediaProvider.hpp"
+namespace airmuse { class MockProvider final:public IMediaProvider,public std::enable_shared_from_this<MockProvider>{ public: explicit MockProvider(ProviderId id="mock"); ProviderId Id()const override; ProviderStatus GetStatus()const override; ProviderCapabilities GetCapabilities()const override; std::vector<std::shared_ptr<IMediaSession>> GetSessions()const override; Result<void> Initialize()override; void Shutdown()override; Subscription Subscribe(EventBus::Callback)override; void AddSession(MediaSnapshot); void Disconnect(); private: class Session; void Emit(MediaEvent); ProviderId id_; ProviderStatus status_{ProviderStatus::Offline}; mutable std::mutex mutex_; EventBus events_; std::vector<std::shared_ptr<Session>> sessions_; }; }
