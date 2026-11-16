@@ -1,0 +1,31 @@
+# Visual Studio & IDEs
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+.vscode/
+
+# Build artifacts & CMake directories
+build/
+bin/
+out/
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+*.obj
+*.o
+*.tlog
+*.ilk
+*.pdb
+*.exp
+*.idb
+*.ipch
+
+# Temporary and caches
+*.tmp
+*.temp
+*.bak
+Thumbs.db
+Desktop.ini
