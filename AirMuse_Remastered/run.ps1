@@ -1,4 +1,4 @@
-﻿# run.ps1
+# run.ps1
 Set-Location $PSScriptRoot
 
 $vsRoot = "E:\Soft\Dependency\VS2022BuildTools"

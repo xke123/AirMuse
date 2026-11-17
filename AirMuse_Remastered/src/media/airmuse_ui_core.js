@@ -308,7 +308,7 @@
 
             /* 左侧分类专区 (Sidebar) */
             .am-sidebar {
-                width: 68px;
+                width: 72px;
                 background: #121214;
                 border-right: 1px solid rgba(255, 255, 255, 0.05);
                 display: flex;
@@ -322,7 +322,7 @@
             .am-sidebar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.12); border-radius: 1px; }
 
             .am-cat-item {
-                padding: 6px 4px;
+                padding: 6px 3px;
                 font-size: 9.5px;
                 color: #8e8e93;
                 text-align: center;
@@ -332,7 +332,7 @@
                 overflow: hidden;
                 text-overflow: ellipsis;
                 border-left: 2px solid transparent;
-                line-height: 1.2;
+                line-height: 1.25;
             }
             .am-cat-item:hover {
                 color: #e4e4e7;
@@ -383,6 +383,8 @@
                 position: relative;
                 overflow: hidden;
                 border: 1px solid rgba(255, 255, 255, 0.03);
+                min-height: 44px;
+                flex-shrink: 0;
             }
             .am-item-card:hover {
                 background: #2a2a2e;
@@ -466,6 +468,7 @@
             .am-cards-scroll.grid-2col {
                 display: grid !important;
                 grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+                grid-auto-rows: max-content !important;
                 gap: 6px !important;
                 align-content: start !important;
                 padding: 6px !important;
@@ -477,17 +480,27 @@
                 padding: 5px !important;
                 gap: 4px !important;
                 min-width: 0 !important;
+                height: auto !important;
+                min-height: max-content !important;
+                flex-shrink: 0 !important;
+                overflow: hidden !important;
             }
             .am-cards-scroll.grid-2col .am-thumb-wrap {
                 width: 100% !important;
                 height: auto !important;
                 aspect-ratio: 1 / 1 !important;
+                position: relative !important;
+                flex-shrink: 0 !important;
+                border-radius: 4px !important;
+                overflow: hidden !important;
             }
             .am-cards-scroll.grid-2col .am-item-thumb {
                 width: 100% !important;
                 height: 100% !important;
                 aspect-ratio: 1 / 1 !important;
                 border-radius: 4px !important;
+                display: block !important;
+                object-fit: cover !important;
             }
             .am-cards-scroll.grid-2col .am-cover-badge {
                 top: 3px !important;
@@ -498,15 +511,25 @@
             .am-cards-scroll.grid-2col .am-item-body {
                 width: 100% !important;
                 min-width: 0 !important;
+                display: flex !important;
+                flex-direction: column !important;
                 gap: 2px !important;
+                flex-shrink: 0 !important;
+                margin-top: 2px !important;
             }
             .am-cards-scroll.grid-2col .am-item-title {
                 font-size: 10px !important;
                 line-height: 1.25 !important;
+                white-space: nowrap !important;
+                overflow: hidden !important;
+                text-overflow: ellipsis !important;
             }
             .am-cards-scroll.grid-2col .am-item-sub {
                 font-size: 8.5px !important;
                 line-height: 1.2 !important;
+                white-space: nowrap !important;
+                overflow: hidden !important;
+                text-overflow: ellipsis !important;
             }
 
             /* 触底加载提示 */
