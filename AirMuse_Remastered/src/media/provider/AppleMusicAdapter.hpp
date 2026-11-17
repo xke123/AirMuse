@@ -33,10 +33,10 @@ inline const wchar_t* GetAppleEngineScript() {
             if (f.is_open()) {
                 std::string utf8((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());
                 if (!utf8.empty()) {
-                    int len = MultiByteToWideChar(CP_UTF8, 0, utf8.c_str(), -1, nullptr, 0);
-                    if (len > 1) {
-                        s_cached.resize(len - 1);
-                        MultiByteToWideChar(CP_UTF8, 0, utf8.c_str(), -1, &s_cached[0], len);
+                    int len = MultiByteToWideChar(CP_UTF8, 0, utf8.c_str(), static_cast<int>(utf8.size()), nullptr, 0);
+                    if (len > 0) {
+                        s_cached.resize(len);
+                        MultiByteToWideChar(CP_UTF8, 0, utf8.c_str(), static_cast<int>(utf8.size()), &s_cached[0], len);
                         break;
                     }
                 }

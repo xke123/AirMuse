@@ -11,15 +11,8 @@ cmd /c "`"$vcVars`" >nul && set" | ForEach-Object {
 $cmake = Join-Path $vsRoot "Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe"
 
 # 终止可能已在运行的实例，避免写入文件被占用
-$procs = Get-Process AirMuse -ErrorAction SilentlyContinue
-if ($procs) {
-    foreach ($p in $procs) {
-        try {
-            $p.Kill()
-            $p.WaitForExit(3000)
-        } catch {}
-    }
-}
+Stop-Process -Name AirMuse -Force -ErrorAction SilentlyContinue
+Start-Sleep -Milliseconds 600
 
 # 如果没有 build 目录或 CMake 未生成工程，先自动执行 configure
 if (-not (Test-Path "build\CMakeCache.txt")) {

@@ -182,38 +182,114 @@
                 box-shadow: 0 1px 4px rgba(250, 45, 72, 0.4);
             }
 
-            /* 快速搜索栏 */
+            /* 快速搜索栏 (完全替换顶部标签栏，共享 32px 高度) */
             .am-search-bar {
-                height: 28px;
-                background: #1c1c1f;
-                border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+                height: 32px;
+                background: #18181b;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.08);
                 display: flex;
                 align-items: center;
-                padding: 0 8px;
-                gap: 6px;
+                padding: 0 6px;
+                gap: 5px;
                 flex-shrink: 0;
+            }
+            .am-search-back-btn {
+                font-size: 18px !important;
+                font-weight: 700 !important;
+                width: 22px !important;
+                height: 22px !important;
+                padding: 0 !important;
+                color: #a1a1aa !important;
+                border-radius: 4px !important;
+                line-height: 1 !important;
+            }
+            .am-search-back-btn:hover {
+                color: #ffffff !important;
+                background: rgba(255, 255, 255, 0.08) !important;
+            }
+            .am-search-input-wrap {
+                flex: 1;
+                display: flex;
+                align-items: center;
+                background: #242428;
+                border: 1px solid rgba(255, 255, 255, 0.08);
+                border-radius: 6px;
+                padding: 0 6px;
+                height: 22px;
+                position: relative;
+                min-width: 0;
+                transition: border-color 0.15s, background 0.15s;
+            }
+            .am-search-input-wrap:focus-within {
+                border-color: rgba(250, 45, 72, 0.6);
+                background: #27272b;
+            }
+            .am-search-icon {
+                font-size: 10px;
+                color: #71717a;
+                margin-right: 4px;
+                flex-shrink: 0;
+                line-height: 1;
             }
             .am-search-input {
                 flex: 1;
                 border: none;
-                background: #27272a;
+                background: transparent;
                 color: #f4f4f5;
-                font-size: 10.5px;
-                padding: 3px 8px;
-                border-radius: 4px;
+                font-size: 10px;
                 outline: none;
+                padding: 0;
+                min-width: 0;
+                line-height: 1.2;
             }
             .am-search-input::placeholder { color: #71717a; }
             .am-search-clear {
                 border: none;
                 background: transparent;
                 color: #71717a;
-                font-size: 11px;
+                font-size: 10px;
                 cursor: pointer;
-                padding: 2px 4px;
-                border-radius: 3px;
+                padding: 0 2px;
+                border-radius: 2px;
+                line-height: 1;
+                flex-shrink: 0;
             }
             .am-search-clear:hover { color: #f4f4f5; }
+            .am-search-right {
+                display: flex;
+                align-items: center;
+                gap: 4px;
+                flex-shrink: 0;
+            }
+            .am-search-scope {
+                display: flex;
+                background: #242428;
+                border-radius: 12px;
+                padding: 2px;
+                gap: 2px;
+                border: 1px solid rgba(255, 255, 255, 0.08);
+                flex-shrink: 0;
+            }
+            .am-scope-btn {
+                border: none;
+                background: transparent;
+                color: #a1a1aa;
+                font-size: 9px;
+                font-weight: 500;
+                padding: 1.5px 6px;
+                border-radius: 9px;
+                cursor: pointer;
+                transition: all 0.15s ease;
+                white-space: nowrap;
+                line-height: 1.2;
+            }
+            .am-scope-btn:hover { color: #ffffff; }
+            .am-scope-btn.active {
+                background: #fa2d48;
+                color: #ffffff;
+                font-weight: 600;
+                box-shadow: 0 1px 3px rgba(250, 45, 72, 0.4);
+            }
 
             /* 主体双栏布局 */
             .am-main-layout {
@@ -500,7 +576,7 @@
             appRoot = document.createElement('div');
             appRoot.id = 'airmuse-app';
             appRoot.innerHTML = `
-                <div class="am-top-bar">
+                <div class="am-top-bar" id="amTopBar">
                     <div class="am-top-left">
                         <button class="am-icon-btn" id="amRefreshBtn" title="刷新数据">⟳</button>
                     </div>
@@ -515,12 +591,23 @@
                     </div>
                     <div class="am-top-right">
                         <button class="am-icon-btn" id="amLayoutBtn" title="切换单栏/双栏">⚏</button>
-                        <button class="am-icon-btn" id="amSearchBtn" title="搜索">🔍</button>
+                        <button class="am-icon-btn" id="amSearchBtn" title="搜索 (替换顶部栏)">🔍</button>
                     </div>
                 </div>
                 <div class="am-search-bar" id="amSearchBar" style="display: none;">
-                    <input type="text" class="am-search-input" id="amSearchInput" placeholder="搜索单曲、专辑、艺人..." autocomplete="off" />
-                    <button class="am-search-clear" id="amSearchClear">✕</button>
+                    <button class="am-icon-btn am-search-back-btn" id="amSearchBackBtn" title="返回标签栏 (Esc)">‹</button>
+                    <div class="am-search-input-wrap">
+                        <span class="am-search-icon">🔍</span>
+                        <input type="text" class="am-search-input" id="amSearchInput" placeholder="在 Apple Music 中搜索..." autocomplete="off" />
+                        <button class="am-search-clear" id="amSearchClear" style="display: none;" title="清空">✕</button>
+                    </div>
+                    <div class="am-search-right">
+                        <button class="am-icon-btn" id="amSearchLayoutBtn" title="切换单栏/双栏">⚏</button>
+                        <div class="am-search-scope" id="amSearchScope">
+                            <button class="am-scope-btn active" id="amScopeCatalog" data-scope="catalog" title="搜索 Apple Music 全球曲库">Apple Music</button>
+                            <button class="am-scope-btn" id="amScopeLibrary" data-scope="library" title="搜索你的个人资料库">资料库</button>
+                        </div>
+                    </div>
                 </div>
                 <div class="am-main-layout">
                     <div class="am-sidebar" id="amSidebar"></div>
@@ -558,8 +645,10 @@
         let activeCategoryIdx = 0;
         let is2Col = false;
         let isSearching = false;
+        let currentSearchScope = 'catalog'; // 'catalog' | 'library'
+        let currentSearchCategories = [];
+        let activeSearchCategoryIdx = 0;
         let isLoadingMore = false;
-        let searchResultsCategory = null;
 
         let datasets = {
             home: { categories: [] },
@@ -569,6 +658,7 @@
             playlists: { categories: [] }
         };
 
+        const topBar = document.getElementById('amTopBar');
         const sidebar = document.getElementById('amSidebar');
         const cardsScroll = document.getElementById('amCardsScroll');
         const detailView = document.getElementById('amDetailView');
@@ -579,8 +669,11 @@
         const layoutBtn = document.getElementById('amLayoutBtn');
         const searchBtn = document.getElementById('amSearchBtn');
         const searchBar = document.getElementById('amSearchBar');
+        const searchBackBtn = document.getElementById('amSearchBackBtn');
         const searchInput = document.getElementById('amSearchInput');
         const searchClear = document.getElementById('amSearchClear');
+        const searchLayoutBtn = document.getElementById('amSearchLayoutBtn');
+        const scopeBtns = searchBar.querySelectorAll('.am-scope-btn');
         let currentDetailItem = null;
 
         // 绑定 Tab 点击
@@ -591,10 +684,7 @@
                 if (currentTab === tabKey && detailView.style.display !== 'flex' && !isSearching) return;
                 currentTab = tabKey;
                 activeCategoryIdx = 0;
-                isSearching = false;
-                searchBar.style.display = 'none';
-                searchBtn.classList.remove('active');
-                detailView.style.display = 'none';
+                exitSearchMode();
                 tabBtns.forEach(b => b.classList.toggle('active', b === btn));
                 render();
             };
@@ -611,16 +701,26 @@
         // 绑定单栏/双栏切换
         function applyLayout() {
             cardsScroll.classList.toggle('grid-2col', is2Col);
-            layoutBtn.innerText = is2Col ? '☰' : '⚏';
-            layoutBtn.title = is2Col ? '切换至单栏列表' : '切换至双栏网格';
+            const icon = is2Col ? '☰' : '⚏';
+            const tip = is2Col ? '切换至单栏列表' : '切换至双栏网格';
+            layoutBtn.innerText = icon;
+            layoutBtn.title = tip;
             layoutBtn.classList.toggle('active', is2Col);
+            if (searchLayoutBtn) {
+                searchLayoutBtn.innerText = icon;
+                searchLayoutBtn.title = tip;
+                searchLayoutBtn.classList.toggle('active', is2Col);
+            }
         }
 
-        layoutBtn.onclick = () => {
+        function toggleLayout() {
             is2Col = !is2Col;
             applyLayout();
             idbSet('airmuse_layout_2col', is2Col);
-        };
+        }
+
+        layoutBtn.onclick = toggleLayout;
+        if (searchLayoutBtn) searchLayoutBtn.onclick = toggleLayout;
 
         idbGet('airmuse_layout_2col').then(val => {
             if (val !== null && val !== undefined) {
@@ -629,82 +729,284 @@
             }
         });
 
-        // 绑定搜索按钮
-        searchBtn.onclick = () => {
-            if (searchBar.style.display === 'none') {
-                searchBar.style.display = 'flex';
-                searchBtn.classList.add('active');
-                searchInput.focus();
+        // ── 搜索控制逻辑 (完全替换顶部标签栏 + 范围开关 + 双栏呈现) ───────────────────
+        function enterSearchMode() {
+            isSearching = true;
+            topBar.style.display = 'none';
+            searchBar.style.display = 'flex';
+            detailView.style.display = 'none';
+            searchInput.focus();
+
+            const query = searchInput.value.trim();
+            if (query) {
+                performSearch(query, currentSearchScope);
             } else {
-                searchBar.style.display = 'none';
-                searchBtn.classList.remove('active');
-                if (isSearching) {
-                    isSearching = false;
-                    render();
-                }
+                renderSearchPrompt();
             }
-        };
+        }
+
+        function exitSearchMode() {
+            isSearching = false;
+            currentSearchCategories = [];
+            activeSearchCategoryIdx = 0;
+            searchBar.style.display = 'none';
+            topBar.style.display = 'flex';
+            detailView.style.display = 'none';
+            searchInput.value = '';
+            searchClear.style.display = 'none';
+            render();
+        }
+
+        searchBtn.onclick = enterSearchMode;
+        searchBackBtn.onclick = exitSearchMode;
 
         searchClear.onclick = () => {
             searchInput.value = '';
-            searchBar.style.display = 'none';
-            searchBtn.classList.remove('active');
-            if (isSearching) {
-                isSearching = false;
-                render();
-            }
+            searchClear.style.display = 'none';
+            searchInput.focus();
+            renderSearchPrompt();
         };
+
+        scopeBtns.forEach(btn => {
+            btn.onclick = () => {
+                const scope = btn.dataset.scope;
+                if (scope === currentSearchScope) return;
+                currentSearchScope = scope;
+                scopeBtns.forEach(b => b.classList.toggle('active', b === btn));
+                searchInput.placeholder = scope === 'catalog' ? '在 Apple Music 中搜索...' : '在资料库中搜索...';
+                const query = searchInput.value.trim();
+                if (query) {
+                    performSearch(query, currentSearchScope);
+                } else {
+                    renderSearchPrompt();
+                }
+            };
+        });
 
         let searchDebounceTimer = null;
         searchInput.oninput = () => {
             clearTimeout(searchDebounceTimer);
             const query = searchInput.value.trim();
+            searchClear.style.display = searchInput.value ? 'block' : 'none';
             if (!query) {
-                if (isSearching) {
-                    isSearching = false;
-                    render();
-                }
+                renderSearchPrompt();
                 return;
             }
             searchDebounceTimer = setTimeout(() => {
-                performSearch(query);
-            }, 300);
+                performSearch(query, currentSearchScope);
+            }, 280);
         };
 
-        async function performSearch(query) {
+        searchInput.onkeydown = (e) => {
+            if (e.key === 'Escape') {
+                exitSearchMode();
+            } else if (e.key === 'Enter') {
+                clearTimeout(searchDebounceTimer);
+                const q = searchInput.value.trim();
+                if (q) performSearch(q, currentSearchScope);
+            }
+        };
+
+        function renderSearchPrompt() {
+            sidebar.innerHTML = '<div class="am-empty-tip" style="padding: 10px 4px; font-size: 10px;">输入搜索</div>';
+            const scopeLabel = currentSearchScope === 'catalog' ? 'Apple Music 全球曲库' : '个人资料库';
+            cardsScroll.innerHTML = `
+                <div class="am-empty-tip" style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; gap: 6px;">
+                    <div style="font-size: 24px; opacity: 0.8;">🔍</div>
+                    <div style="font-size: 11px; color: #d4d4d8; font-weight: 500;">搜索 ${scopeLabel}</div>
+                    <div style="font-size: 9.5px; color: #71717a;">在上方搜索框输入关键词</div>
+                </div>
+            `;
+        }
+
+        async function performSearch(query, scope = currentSearchScope) {
+            if (!query) {
+                renderSearchPrompt();
+                return;
+            }
             isSearching = true;
             detailView.style.display = 'none';
-            cardsScroll.innerHTML = '<div class="am-empty-tip">正在搜索 Apple Music...</div>';
+            sidebar.innerHTML = '<div class="am-empty-tip" style="padding: 10px 4px; font-size: 10px;">搜索中...</div>';
+            cardsScroll.innerHTML = '<div class="am-empty-tip">正在搜索...</div>';
 
             try {
                 const sf = 'cn';
-                const res = await fetchAmp(`/v1/catalog/${sf}/search?term=${encodeURIComponent(query)}&types=songs,albums,playlists,stations&limit=25`, false);
-                const results = res?.results || {};
-                const items = [];
+                if (scope === 'catalog') {
+                    const url = `/v1/catalog/${sf}/search?term=${encodeURIComponent(query)}&types=songs,albums,artists,playlists&limit=25&relate[songs]=artists&include[songs]=artists&include[albums]=artists&art[url]=f&l=zh-Hans-CN&platform=web`;
+                    const res = await fetchAmp(url, false);
+                    const results = res?.results || {};
 
-                if (results.songs?.data) {
-                    results.songs.data.forEach(t => items.push(mapSongItem(t)));
-                }
-                if (results.albums?.data) {
-                    results.albums.data.forEach(a => items.push(resolveResourceItem({ id: a.id, type: 'albums' }, { albums: { [a.id]: a } })));
-                }
-                if (results.playlists?.data) {
-                    results.playlists.data.forEach(p => items.push(mapPlaylistItem(p)));
-                }
-                if (results.stations?.data) {
-                    results.stations.data.forEach(s => items.push(resolveResourceItem({ id: s.id, type: 'stations' }, { stations: { [s.id]: s } })));
-                }
+                    const songs = (results.songs?.data || []).map(t => mapSongItem(t)).filter(Boolean);
+                    const artists = (results.artists?.data || []).map(a => mapCatalogArtist(a)).filter(Boolean);
+                    const albums = (results.albums?.data || []).map(a => mapCatalogAlbum(a)).filter(Boolean);
+                    const playlists = (results.playlists?.data || []).map(p => mapPlaylistItem(p)).filter(Boolean);
 
-                searchResultsCategory = {
-                    id: 'search-results',
-                    title: `搜索结果`,
-                    items: items.filter(Boolean),
-                    nextUrl: null
-                };
+                    const searchCategories = [];
 
-                renderCardsForCategory(searchResultsCategory);
+                    // 1. 最佳结果 (组合高相关度条目：首位艺人 + 4首歌曲 + 2张专辑 + 2个歌单)
+                    const topItems = [];
+                    if (artists.length) topItems.push(artists[0]);
+                    if (songs.length) topItems.push(...songs.slice(0, 4));
+                    if (albums.length) topItems.push(...albums.slice(0, 2));
+                    if (playlists.length) topItems.push(...playlists.slice(0, 2));
+
+                    if (topItems.length) {
+                        searchCategories.push({
+                            id: 'cat-top',
+                            title: '最佳结果',
+                            items: topItems
+                        });
+                    }
+                    if (songs.length) {
+                        searchCategories.push({
+                            id: 'cat-songs',
+                            title: '歌曲',
+                            items: songs,
+                            nextUrl: results.songs?.next || null
+                        });
+                    }
+                    if (artists.length) {
+                        searchCategories.push({
+                            id: 'cat-artists',
+                            title: '艺人',
+                            items: artists,
+                            nextUrl: results.artists?.next || null
+                        });
+                    }
+                    if (albums.length) {
+                        searchCategories.push({
+                            id: 'cat-albums',
+                            title: '专辑',
+                            items: albums,
+                            nextUrl: results.albums?.next || null
+                        });
+                    }
+                    if (playlists.length) {
+                        searchCategories.push({
+                            id: 'cat-playlists',
+                            title: '歌单',
+                            items: playlists,
+                            nextUrl: results.playlists?.next || null
+                        });
+                    }
+
+                    renderSearchResults(searchCategories, query, scope);
+                } else {
+                    // scope === 'library'
+                    const url = `/v1/me/library/search?term=${encodeURIComponent(query)}&types=library-songs,library-albums,library-artists,library-playlists&limit=25&art[url]=f&include=catalog&l=zh-Hans-CN&platform=web`;
+                    const res = await fetchAmp(url, true);
+                    const results = res?.results || {};
+
+                    const libSongs = (results['library-songs']?.data || []).map(t => mapSongItem(t)).filter(Boolean);
+                    const libArtists = (results['library-artists']?.data || []).map(a => mapLibraryItem(a, 'artist')).filter(Boolean);
+                    const libAlbums = (results['library-albums']?.data || []).map(a => mapLibraryItem(a, 'album')).filter(Boolean);
+                    const libPlaylists = (results['library-playlists']?.data || []).map(p => mapPlaylistItem(p)).filter(Boolean);
+
+                    const searchCategories = [];
+
+                    // 1. 最佳结果 (组合资料库命中项)
+                    const topItems = [];
+                    if (libArtists.length) topItems.push(libArtists[0]);
+                    if (libSongs.length) topItems.push(...libSongs.slice(0, 4));
+                    if (libAlbums.length) topItems.push(...libAlbums.slice(0, 2));
+                    if (libPlaylists.length) topItems.push(...libPlaylists.slice(0, 2));
+
+                    if (topItems.length) {
+                        searchCategories.push({
+                            id: 'lib-top',
+                            title: '最佳结果',
+                            items: topItems
+                        });
+                    }
+                    if (libSongs.length) {
+                        searchCategories.push({
+                            id: 'lib-songs',
+                            title: '歌曲',
+                            items: libSongs,
+                            nextUrl: results['library-songs']?.next || null
+                        });
+                    }
+                    if (libArtists.length) {
+                        searchCategories.push({
+                            id: 'lib-artists',
+                            title: '艺人',
+                            items: libArtists,
+                            nextUrl: results['library-artists']?.next || null
+                        });
+                    }
+                    if (libAlbums.length) {
+                        searchCategories.push({
+                            id: 'lib-albums',
+                            title: '专辑',
+                            items: libAlbums,
+                            nextUrl: results['library-albums']?.next || null
+                        });
+                    }
+                    if (libPlaylists.length) {
+                        searchCategories.push({
+                            id: 'lib-playlists',
+                            title: '歌单',
+                            items: libPlaylists,
+                            nextUrl: results['library-playlists']?.next || null
+                        });
+                    }
+
+                    renderSearchResults(searchCategories, query, scope);
+                }
             } catch (_) {
-                cardsScroll.innerHTML = '<div class="am-empty-tip">搜索遇到错误，请重试</div>';
+                sidebar.innerHTML = '<div class="am-empty-tip" style="padding: 10px 4px; font-size: 10px;">错误</div>';
+                cardsScroll.innerHTML = '<div class="am-empty-tip">搜索遇到网络问题，请重试</div>';
+            }
+        }
+
+        function renderSearchResults(categories, query, scope) {
+            currentSearchCategories = categories;
+            activeSearchCategoryIdx = 0;
+
+            if (!categories.length) {
+                sidebar.innerHTML = '<div class="am-empty-tip" style="padding: 10px 4px; font-size: 10px;">无结果</div>';
+                const scopeName = scope === 'catalog' ? 'Apple Music' : '资料库';
+                cardsScroll.innerHTML = `
+                    <div class="am-empty-tip" style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; gap: 6px;">
+                        <div style="font-size: 24px; opacity: 0.8;">∅</div>
+                        <div style="font-size: 11px; color: #d4d4d8; font-weight: 500;">未找到相关内容</div>
+                        <div style="font-size: 9.5px; color: #71717a;">在 ${scopeName} 中未找到与 "${escapeHtml(query)}" 匹配的结果</div>
+                    </div>
+                `;
+                return;
+            }
+
+            renderSearchSidebarAndCards();
+        }
+
+        function renderSearchSidebarAndCards() {
+            sidebar.innerHTML = '';
+            if (!currentSearchCategories || !currentSearchCategories.length) {
+                sidebar.innerHTML = '<div class="am-empty-tip" style="padding: 10px 4px; font-size: 10px;">无结果</div>';
+                return;
+            }
+
+            if (activeSearchCategoryIdx >= currentSearchCategories.length) {
+                activeSearchCategoryIdx = 0;
+            }
+
+            currentSearchCategories.forEach((cat, idx) => {
+                const item = document.createElement('div');
+                item.className = 'am-cat-item' + (idx === activeSearchCategoryIdx ? ' active' : '');
+                item.innerText = cat.title;
+                item.title = cat.title;
+                item.onclick = () => {
+                    activeSearchCategoryIdx = idx;
+                    sidebar.querySelectorAll('.am-cat-item').forEach((b, i) => b.classList.toggle('active', i === idx));
+                    detailView.style.display = 'none';
+                    renderCardsForCategory(cat);
+                };
+                sidebar.appendChild(item);
+            });
+
+            const cat = currentSearchCategories[activeSearchCategoryIdx];
+            if (cat) {
+                renderCardsForCategory(cat);
             }
         }
 
@@ -731,8 +1033,12 @@
 
         // ── 3. 渲染视图 ───────────────────────────────────────────────────────
         function render() {
-            if (isSearching && searchResultsCategory) {
-                renderCardsForCategory(searchResultsCategory);
+            if (isSearching) {
+                if (!currentSearchCategories || !currentSearchCategories.length) {
+                    renderSearchPrompt();
+                    return;
+                }
+                renderSearchSidebarAndCards();
                 return;
             }
 
@@ -858,7 +1164,9 @@
         cardsScroll.onscroll = async () => {
             if (isLoadingMore) return;
             const curData = datasets[currentTab] || { categories: [] };
-            const cat = isSearching ? searchResultsCategory : curData.categories[activeCategoryIdx];
+            const cat = isSearching 
+                ? (currentSearchCategories ? currentSearchCategories[activeSearchCategoryIdx] : null) 
+                : curData.categories[activeCategoryIdx];
             if (!cat || !cat.nextUrl) return;
 
             const threshold = 50;
@@ -872,13 +1180,14 @@
                 cardsScroll.appendChild(spinner);
 
                 try {
-                    const res = await fetchAmp(cat.nextUrl, true);
+                    const isLib = isSearching ? (currentSearchScope === 'library') : (currentTab === 'library' || currentTab === 'playlists');
+                    const res = await fetchAmp(cat.nextUrl, isLib);
                     if (res && res.data && res.data.length) {
                         const startIdx = cat.items.length;
                         const newItems = res.data.map(d => {
                             if (d.type === 'library-songs' || d.type === 'songs') return mapSongItem(d);
-                            if (d.type === 'library-albums' || d.type === 'albums') return mapLibraryItem(d, 'album');
-                            if (d.type === 'library-artists' || d.type === 'artists') return mapLibraryItem(d, 'artist');
+                            if (d.type === 'library-albums' || d.type === 'albums') return isLib ? mapLibraryItem(d, 'album') : mapCatalogAlbum(d);
+                            if (d.type === 'library-artists' || d.type === 'artists') return isLib ? mapLibraryItem(d, 'artist') : mapCatalogArtist(d);
                             if (d.type === 'library-playlists' || d.type === 'playlists') return mapPlaylistItem(d);
                             return resolveResourceItem(d, res.resources);
                         }).filter(Boolean);
@@ -891,7 +1200,9 @@
                             cardsScroll.insertBefore(card, spinner);
                         });
 
-                        idbSet(CACHE_KEY, datasets);
+                        if (!isSearching) {
+                            idbSet(CACHE_KEY, datasets);
+                        }
                     } else {
                         cat.nextUrl = null;
                     }
@@ -1074,19 +1385,51 @@
             };
         }
 
+        function mapCatalogArtist(a) {
+            const attr = a.attributes || {};
+            return {
+                id: a.id,
+                title: attr.name || '未知艺人',
+                subtitle: attr.genreNames?.[0] || '艺人',
+                eyebrow: null,
+                type: 'artist',
+                artworkUrl: formatArtworkUrl(attr.artwork, 160),
+                linkUrl: attr.url || `https://music.apple.com/cn/artist/${a.id}`,
+                isLibrary: false
+            };
+        }
+
+        function mapCatalogAlbum(a) {
+            const attr = a.attributes || {};
+            return {
+                id: a.id,
+                title: attr.name || '未知专辑',
+                subtitle: attr.artistName || 'Apple Music',
+                eyebrow: null,
+                type: 'album',
+                artworkUrl: formatArtworkUrl(attr.artwork, 160),
+                linkUrl: attr.url || `https://music.apple.com/cn/album/${a.id}`,
+                isLibrary: false
+            };
+        }
+
         // 映射单曲条目 (彻底去除红色文字眉标)
         function mapSongItem(track, isFav = false) {
             const attr = track.attributes || {};
+            const catAttr = track.relationships?.catalog?.data?.[0]?.attributes;
             const sub = [attr.artistName, attr.albumName].filter(Boolean).join(' · ');
+            const rawArtwork = attr.artwork || catAttr?.artwork;
+            const isLib = track.type?.includes('library') || (typeof track.id === 'string' && track.id.startsWith('i.'));
             return {
                 id: track.id,
                 title: attr.name || '未知单曲',
                 subtitle: sub || 'Apple Music',
                 eyebrow: null,
                 type: isFav ? 'fav-song' : 'song',
-                artworkUrl: formatArtworkUrl(attr.artwork, 160),
+                artworkUrl: formatArtworkUrl(rawArtwork, 160),
                 linkUrl: attr.url || `https://music.apple.com/cn/song/${attr.playParams?.catalogId || track.id}`,
                 durationMs: attr.durationInMillis || null,
+                isLibrary: isLib
             };
         }
 
@@ -1117,12 +1460,14 @@
                 type,
                 artworkUrl: formatArtworkUrl(rawArtwork, 160),
                 linkUrl: `https://music.apple.com/cn/${type}/${item.id}`,
+                isLibrary: true
             };
         }
 
         // 映射歌单条目 (角标区分自建/收藏，去除封面下方自建和已收藏文字)
         function mapPlaylistItem(pl) {
             const attr = pl.attributes || {};
+            const catAttr = pl.relationships?.catalog?.data?.[0]?.attributes;
             const canEdit = !!attr.canEdit;
             const type = canEdit ? 'user-playlist' : 'fav-playlist';
 
@@ -1137,15 +1482,19 @@
                 sub = 'Apple Music';
             }
 
+            const rawArtwork = attr.artwork || catAttr?.artwork;
+            const isLib = pl.type?.includes('library') || (typeof pl.id === 'string' && pl.id.startsWith('p.'));
+
             return {
                 id: pl.id,
                 title: attr.name || '未命名歌单',
                 subtitle: sub,
                 eyebrow: null,
                 type,          // 角标显示：自建 或 收藏
-                artworkUrl: formatArtworkUrl(attr.artwork, 160),
+                artworkUrl: formatArtworkUrl(rawArtwork, 160),
                 linkUrl: attr.url || `https://music.apple.com/cn/playlist/${pl.id}`,
                 canEdit,
+                isLibrary: isLib
             };
         }
 
