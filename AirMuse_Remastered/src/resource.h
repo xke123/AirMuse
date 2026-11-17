@@ -9,3 +9,5 @@
 #define IDR_PNG_ICONBUTTON      206
 #define IDR_PNG_TIMEFONT        207
 #define IDR_PNG_RATING          208
+
+#define IDR_JS_APPLE_ENGINE     301

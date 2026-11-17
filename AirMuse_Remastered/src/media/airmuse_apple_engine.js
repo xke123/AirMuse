@@ -1,63 +1,16 @@
 // airmuse_apple_engine.js
-// Modern Web Engine for AirMuse (Amp-API Direct Fetch + IndexedDB + Responsive Dual-Column Layout)
+// Auto-generated bundle: AirMuse UI Core + AppleMusicProvider
+// DO NOT EDIT DIRECTLY: Modify src/media/airmuse_ui_core.js or src/media/provider/apple_music_provider.js instead.
 
 (function () {
     if (window.__airmuseEngineInited) return;
 
-    // ── 0. IndexedDB 异步本地缓存引擎 (替代 localStorage) ───────────────────
-    const DB_NAME = 'airmuse_music_db';
-    const DB_VERSION = 2;
-    const STORE_NAME = 'catalog_cache';
-    const CACHE_KEY = 'airmuse_catalog_v3';
-
-    function getDB() {
-        return new Promise((resolve, reject) => {
-            const req = indexedDB.open(DB_NAME, DB_VERSION);
-            req.onupgradeneeded = (e) => {
-                const db = e.target.result;
-                if (!db.objectStoreNames.contains(STORE_NAME)) {
-                    db.createObjectStore(STORE_NAME);
-                }
-            };
-            req.onsuccess = () => resolve(req.result);
-            req.onerror = () => reject(req.error);
-        });
-    }
-
-    async function idbGet(key) {
-        try {
-            const db = await getDB();
-            return new Promise((resolve) => {
-                const tx = db.transaction(STORE_NAME, 'readonly');
-                const req = tx.objectStore(STORE_NAME).get(key);
-                req.onsuccess = () => resolve(req.result);
-                req.onerror = () => resolve(null);
-            });
-        } catch (_) {
-            return null;
-        }
-    }
-
-    async function idbSet(key, val) {
-        try {
-            const db = await getDB();
-            return new Promise((resolve) => {
-                const tx = db.transaction(STORE_NAME, 'readwrite');
-                const req = tx.objectStore(STORE_NAME).put(val, key);
-                req.onsuccess = () => resolve(true);
-                req.onerror = () => resolve(false);
-            });
-        } catch (_) {
-            return false;
-        }
-    }
-
-    function init() {
+    function bootstrap() {
         if (!document.body) {
             if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', init, { once: true });
+                document.addEventListener('DOMContentLoaded', bootstrap, { once: true });
             } else {
-                setTimeout(init, 50);
+                setTimeout(bootstrap, 50);
             }
             return;
         }
@@ -65,8 +18,77 @@
         if (window.__airmuseEngineInited) return;
         window.__airmuseEngineInited = true;
 
-        // ── 1. 样式表：深色居中导航、封面角标、右侧专区详情 ───────────────────
-        const CSS = `
+        // ── 1. 通用 UI 核心组件框架 (Universal UI Core) ──
+        /**
+ * airmuse_ui_core.js
+ * AirMuse 通用前端页面渲染与组件化核心框架 (Universal UI Core & Component Library)
+ *
+ * 职责：
+ * 1. 负责窗口内全部 DOM 结构构建、深色玻璃拟物与响应式 CSS 主题管理
+ * 2. 提供顶部微型导航条 (MicroNav)、替换式搜索栏 (SearchBar)、左侧专区栏 (Sidebar)、
+ *    右侧卡片网格 (CardGrid)、专区曲目详情抽屉 (DetailView) 等全套组件
+ * 3. 彻底与特定音源 (Apple Music / QQ 音乐 / Spotify) 解耦，通过标准 IDataProvider 接口进行数据驱动与交互
+ */
+
+(function (global) {
+    if (global.AirMuseUI) return;
+
+    // ── 0. 工具函数 ────────────────────────────────────────────────────────
+    function escapeHtml(str) {
+        if (!str) return '';
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+
+    function formatDuration(ms) {
+        if (!ms || isNaN(ms)) return '';
+        const sec = Math.floor(ms / 1000);
+        const m = Math.floor(sec / 60);
+        const s = sec % 60;
+        return `${m}:${s < 10 ? '0' : ''}${s}`;
+    }
+
+    // 角标文字映射
+    const DEFAULT_TYPE_NAMES = {
+        song: '单曲',
+        'fav-song': '喜爱',
+        album: '专辑',
+        playlist: '歌单',
+        'user-playlist': '自建',
+        'fav-playlist': '收藏',
+        station: '电台',
+        editorial: '精选',
+        artist: '艺人',
+        item: '推荐',
+        default: '条目'
+    };
+
+    // ── 1. 标准音源数据提供者接口 (IDataProvider Contract) ──────────────────
+    class IDataProvider {
+        get id() { return 'abstract-provider'; }
+        get name() { return '未知音源'; }
+        get tabs() { return [{ id: 'home', label: '主页' }]; }
+        get searchScopes() { return [{ id: 'default', label: '全部', placeholder: '搜索音乐...' }]; }
+
+        async loadInitialData() { return {}; }
+        async fetchTabData(tabId, forceRefresh = false) { return []; }
+        async loadMore(category, tabId, isSearching, scopeId) { return []; }
+        async search(query, scopeId) { return []; }
+        async loadDetail(item) { return []; }
+        async playItem(item, category, index) {}
+        async playCollection(item, tracks, startIndex = 0) {}
+        onNowPlayingChange(callback) {}
+        onUserChange(callback) {}
+    }
+
+    // ── 2. 主题与样式管理 (AirMuseUI.Theme) ─────────────────────────────────
+    const Theme = {
+        STYLE_ID: 'airmuse-modern-css',
+        CSS: `
             body > *:not(#airmuse-app) { display: none !important; }
             amp-chrome-player, amp-lcd, .web-chrome, .chrome-player,
             .web-chrome-playback-controls, .playback-controls,
@@ -128,51 +150,57 @@
             .am-top-right {
                 display: flex;
                 align-items: center;
-                gap: 2px;
                 width: 48px;
                 justify-content: flex-end;
+                gap: 2px;
             }
 
+            /* 图标小按钮 */
             .am-icon-btn {
-                border: none;
                 background: transparent;
-                color: #8e8e93;
-                font-size: 12px;
+                border: none;
+                color: #a1a1aa;
                 cursor: pointer;
                 padding: 3px 5px;
+                font-size: 11px;
                 border-radius: 4px;
-                transition: color 0.15s, background 0.15s;
-                display: flex;
+                transition: all 0.15s ease;
+                display: inline-flex;
                 align-items: center;
                 justify-content: center;
                 line-height: 1;
             }
             .am-icon-btn:hover {
-                color: #f4f4f5;
-                background: rgba(255, 255, 255, 0.08);
+                background: rgba(255, 255, 255, 0.09);
+                color: #ffffff;
             }
             .am-icon-btn.active {
                 color: #fa2d48;
-                background: rgba(250, 45, 72, 0.15);
+                background: rgba(250, 45, 72, 0.12);
             }
 
+            /* 居中标签组 */
             .am-tab-group {
-                display: flex;
-                background: #242428;
-                border-radius: 5px;
+                display: inline-flex;
+                align-items: center;
+                background: #1e1e22;
+                border-radius: 6px;
                 padding: 2px;
-                gap: 2px;
+                gap: 1px;
+                border: 1px solid rgba(255, 255, 255, 0.05);
             }
             .am-tab-btn {
                 border: none;
                 background: transparent;
                 color: #a1a1aa;
-                font-size: 11px;
+                font-size: 10px;
                 font-weight: 500;
                 padding: 2px 7px;
                 border-radius: 4px;
                 cursor: pointer;
                 transition: all 0.15s ease;
+                white-space: nowrap;
+                line-height: 1.2;
             }
             .am-tab-btn:hover { color: #f4f4f5; }
             .am-tab-btn.active {
@@ -288,112 +316,121 @@
                 background: #fa2d48;
                 color: #ffffff;
                 font-weight: 600;
-                box-shadow: 0 1px 3px rgba(250, 45, 72, 0.4);
+                box-shadow: 0 1px 3px rgba(250, 45, 72, 0.35);
             }
 
-            /* 主体双栏布局 */
+            /* 主内容区域：左侧分类列表 + 右侧卡片瀑布流 */
             .am-main-layout {
-                display: flex;
                 flex: 1;
+                display: flex;
                 min-height: 0;
-                position: relative;
+                overflow: hidden;
             }
 
-            /* 左侧分类侧边栏 (无任何数字计数) */
+            /* 左侧分类专区 (Sidebar) */
             .am-sidebar {
-                width: 94px;
-                background: #141416;
-                border-right: 1px solid rgba(255, 255, 255, 0.06);
+                width: 68px;
+                background: #121214;
+                border-right: 1px solid rgba(255, 255, 255, 0.05);
+                display: flex;
+                flex-direction: column;
                 overflow-y: auto;
                 overflow-x: hidden;
-                padding: 4px;
                 flex-shrink: 0;
+                padding: 4px 0;
             }
-            .am-sidebar::-webkit-scrollbar { width: 3px; }
-            .am-sidebar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.15); border-radius: 2px; }
+            .am-sidebar::-webkit-scrollbar { width: 2px; }
+            .am-sidebar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.12); border-radius: 1px; }
 
             .am-cat-item {
-                font-size: 10.5px;
-                color: #a1a1aa;
-                padding: 6px 7px;
-                border-radius: 4px;
-                margin-bottom: 2px;
+                padding: 6px 4px;
+                font-size: 9.5px;
+                color: #8e8e93;
+                text-align: center;
                 cursor: pointer;
+                transition: all 0.12s ease;
                 white-space: nowrap;
                 overflow: hidden;
                 text-overflow: ellipsis;
-                transition: all 0.12s ease;
+                border-left: 2px solid transparent;
+                line-height: 1.2;
             }
             .am-cat-item:hover {
-                background: rgba(255, 255, 255, 0.05);
-                color: #ffffff;
+                color: #e4e4e7;
+                background: rgba(255, 255, 255, 0.03);
             }
             .am-cat-item.active {
-                background: rgba(250, 45, 72, 0.15);
                 color: #fa2d48;
                 font-weight: 600;
+                border-left-color: #fa2d48;
+                background: rgba(250, 45, 72, 0.08);
             }
 
-            /* 右侧内容面板 */
+            /* 右侧内容面板 (Content Panel) */
             .am-content-panel {
                 flex: 1;
-                background: #18181b;
+                min-width: 0;
                 display: flex;
                 flex-direction: column;
-                min-width: 0;
-                position: relative; /* 限制详情页仅在右边栏展开 */
+                position: relative;
+                overflow: hidden;
+                background: #18181b;
             }
 
-            /* 滚动卡片容器 */
+            /* 卡片滚动区域 (Cards Scroll) */
             .am-cards-scroll {
                 flex: 1;
+                min-height: 0;
                 overflow-y: auto;
+                overflow-x: hidden;
                 padding: 6px;
                 display: flex;
                 flex-direction: column;
                 gap: 5px;
             }
             .am-cards-scroll::-webkit-scrollbar { width: 3px; }
-            .am-cards-scroll::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.18); border-radius: 2px; }
+            .am-cards-scroll::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.15); border-radius: 2px; }
 
-            /* 卡片条目规范 (单栏模式) */
+            /* 单栏卡片 (默认模式) */
             .am-item-card {
                 display: flex;
-                gap: 7px;
-                padding: 5px 6px;
-                background: #202024;
-                border: 1px solid rgba(255, 255, 255, 0.04);
-                border-radius: 5px;
-                cursor: pointer;
                 align-items: center;
-                text-decoration: none;
-                color: inherit;
-                transition: background 0.12s, transform 0.1s;
-                min-width: 0;
+                background: #202024;
+                border-radius: 5px;
+                padding: 4px 6px;
+                gap: 7px;
+                cursor: pointer;
+                transition: background 0.12s ease, transform 0.08s ease;
+                position: relative;
+                overflow: hidden;
+                border: 1px solid rgba(255, 255, 255, 0.03);
             }
             .am-item-card:hover {
-                background: #27272a;
-                transform: translateY(-1px);
-                border-color: rgba(255, 255, 255, 0.09);
+                background: #2a2a2e;
+                transform: translateX(1px);
+            }
+            .am-item-card:active {
+                transform: scale(0.99);
             }
 
-            /* 封面包装层与右上角角标 */
+            /* 封面容器与封面图片 */
             .am-thumb-wrap {
                 position: relative;
-                flex-shrink: 0;
-                line-height: 0;
-                display: inline-block;
-                border-radius: 4px;
-                overflow: hidden;
-            }
-            .am-item-thumb {
                 width: 38px;
                 height: 38px;
+                flex-shrink: 0;
                 border-radius: 4px;
-                object-fit: cover;
+                overflow: hidden;
                 background: #27272a;
+            }
+            .am-item-thumb {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
                 display: block;
             }
+
+            /* 封面角标 */
             .am-cover-badge {
                 position: absolute;
                 top: 2px;
@@ -413,8 +450,8 @@
             .type-fav-song { background: rgba(225, 29, 72, 0.95); color: #ffffff; }
             .type-album { background: rgba(147, 51, 234, 0.9); color: #ffffff; }
             .type-playlist { background: rgba(219, 39, 119, 0.9); color: #ffffff; }
-            .type-user-playlist { background: rgba(14, 165, 233, 0.95); color: #ffffff; } /* 自建：鲜明亮蓝 */
-            .type-fav-playlist { background: rgba(219, 39, 119, 0.95); color: #ffffff; }  /* 收藏：玫瑰粉 */
+            .type-user-playlist { background: rgba(14, 165, 233, 0.95); color: #ffffff; }
+            .type-fav-playlist { background: rgba(219, 39, 119, 0.95); color: #ffffff; }
             .type-station { background: rgba(217, 119, 6, 0.95); color: #ffffff; }
             .type-editorial { background: rgba(22, 163, 74, 0.9); color: #ffffff; }
             .type-artist { background: rgba(13, 148, 136, 0.9); color: #ffffff; }
@@ -464,10 +501,12 @@
             }
             .am-cards-scroll.grid-2col .am-thumb-wrap {
                 width: 100% !important;
+                height: auto !important;
+                aspect-ratio: 1 / 1 !important;
             }
             .am-cards-scroll.grid-2col .am-item-thumb {
                 width: 100% !important;
-                height: auto !important;
+                height: 100% !important;
                 aspect-ratio: 1 / 1 !important;
                 border-radius: 4px !important;
             }
@@ -563,31 +602,84 @@
                 text-align: center;
                 margin-top: 40px;
             }
-        `;
+        `,
+        apply() {
+            let el = document.getElementById(this.STYLE_ID);
+            if (!el) {
+                el = document.createElement('style');
+                el.id = this.STYLE_ID;
+                (document.head || document.documentElement).appendChild(el);
+            }
+            el.textContent = this.CSS;
+        }
+    };
 
-        const styleEl = document.createElement('style');
-        styleEl.id = 'airmuse-modern-css';
-        styleEl.textContent = CSS;
-        (document.head || document.documentElement).appendChild(styleEl);
+    // ── 3. 核心应用骨架与组件 (AirMuseUI) ──────────────────────────────────
+    const AirMuseUI = {
+        IDataProvider,
+        Theme,
+        provider: null,
 
-        // ── 2. 创建核心 DOM 结构 ──────────────────────────────────────────────
-        let appRoot = document.getElementById('airmuse-app');
-        if (!appRoot) {
-            appRoot = document.createElement('div');
-            appRoot.id = 'airmuse-app';
-            appRoot.innerHTML = `
+        // 状态
+        currentTab: '',
+        activeCategoryIdx: 0,
+        is2Col: false,
+        isSearching: false,
+        currentSearchScope: '',
+        currentSearchCategories: [],
+        activeSearchCategoryIdx: 0,
+        isLoadingMore: false,
+        currentDetailItem: null,
+        datasets: {},
+
+        // DOM 元素引用
+        dom: {
+            appRoot: null,
+            topBar: null,
+            tabGroup: null,
+            refreshBtn: null,
+            layoutBtn: null,
+            searchBtn: null,
+            searchBar: null,
+            searchBackBtn: null,
+            searchInput: null,
+            searchClear: null,
+            searchLayoutBtn: null,
+            searchScope: null,
+            sidebar: null,
+            cardsScroll: null,
+            detailView: null,
+            detailBack: null,
+            detailPlayAll: null,
+            detailTitle: null,
+            detailScroll: null
+        },
+
+        // 初始化
+        init(provider) {
+            this.provider = provider;
+            this.Theme.apply();
+            this.mountScaffold();
+            this.bindEvents();
+            this.bindBridge();
+            this.loadInitialData();
+            this.startSPAKeeper();
+        },
+
+        // 构建脚手架
+        mountScaffold() {
+            let app = document.getElementById('airmuse-app');
+            if (app) app.remove();
+
+            app = document.createElement('div');
+            app.id = 'airmuse-app';
+            app.innerHTML = `
                 <div class="am-top-bar" id="amTopBar">
                     <div class="am-top-left">
                         <button class="am-icon-btn" id="amRefreshBtn" title="刷新数据">⟳</button>
                     </div>
                     <div class="am-top-center">
-                        <div class="am-tab-group">
-                            <button class="am-tab-btn active" data-tab="home">主页</button>
-                            <button class="am-tab-btn" data-tab="browse">新发现</button>
-                            <button class="am-tab-btn" data-tab="radio">广播</button>
-                            <button class="am-tab-btn" data-tab="library">资料库</button>
-                            <button class="am-tab-btn" data-tab="playlists">歌单</button>
-                        </div>
+                        <div class="am-tab-group" id="amTabGroup"></div>
                     </div>
                     <div class="am-top-right">
                         <button class="am-icon-btn" id="amLayoutBtn" title="切换单栏/双栏">⚏</button>
@@ -598,15 +690,12 @@
                     <button class="am-icon-btn am-search-back-btn" id="amSearchBackBtn" title="返回标签栏 (Esc)">‹</button>
                     <div class="am-search-input-wrap">
                         <span class="am-search-icon">🔍</span>
-                        <input type="text" class="am-search-input" id="amSearchInput" placeholder="在 Apple Music 中搜索..." autocomplete="off" />
+                        <input type="text" class="am-search-input" id="amSearchInput" placeholder="搜索..." autocomplete="off" />
                         <button class="am-search-clear" id="amSearchClear" style="display: none;" title="清空">✕</button>
                     </div>
                     <div class="am-search-right">
                         <button class="am-icon-btn" id="amSearchLayoutBtn" title="切换单栏/双栏">⚏</button>
-                        <div class="am-search-scope" id="amSearchScope">
-                            <button class="am-scope-btn active" id="amScopeCatalog" data-scope="catalog" title="搜索 Apple Music 全球曲库">Apple Music</button>
-                            <button class="am-scope-btn" id="amScopeLibrary" data-scope="library" title="搜索你的个人资料库">资料库</button>
-                        </div>
+                        <div class="am-search-scope" id="amSearchScope"></div>
                     </div>
                 </div>
                 <div class="am-main-layout">
@@ -624,439 +713,378 @@
                     </div>
                 </div>
             `;
-            document.body.appendChild(appRoot);
-        }
+            document.body.appendChild(app);
 
-        const TYPE_NAMES = {
-            song: '单曲',
-            'fav-song': '喜爱',
-            album: '专辑',
-            playlist: '歌单',
-            'user-playlist': '自建',
-            'fav-playlist': '收藏',
-            station: '电台',
-            editorial: '精选',
-            artist: '艺人',
-            item: '推荐',
-            default: '条目'
-        };
+            // 绑定 DOM 引用
+            this.dom.appRoot = app;
+            this.dom.topBar = app.querySelector('#amTopBar');
+            this.dom.tabGroup = app.querySelector('#amTabGroup');
+            this.dom.refreshBtn = app.querySelector('#amRefreshBtn');
+            this.dom.layoutBtn = app.querySelector('#amLayoutBtn');
+            this.dom.searchBtn = app.querySelector('#amSearchBtn');
+            this.dom.searchBar = app.querySelector('#amSearchBar');
+            this.dom.searchBackBtn = app.querySelector('#amSearchBackBtn');
+            this.dom.searchInput = app.querySelector('#amSearchInput');
+            this.dom.searchClear = app.querySelector('#amSearchClear');
+            this.dom.searchLayoutBtn = app.querySelector('#amSearchLayoutBtn');
+            this.dom.searchScope = app.querySelector('#amSearchScope');
+            this.dom.sidebar = app.querySelector('#amSidebar');
+            this.dom.cardsScroll = app.querySelector('#amCardsScroll');
+            this.dom.detailView = app.querySelector('#amDetailView');
+            this.dom.detailBack = app.querySelector('#amDetailBack');
+            this.dom.detailPlayAll = app.querySelector('#amDetailPlayAll');
+            this.dom.detailTitle = app.querySelector('#amDetailTitle');
+            this.dom.detailScroll = app.querySelector('#amDetailScroll');
 
-        let currentTab = 'home';
-        let activeCategoryIdx = 0;
-        let is2Col = false;
-        let isSearching = false;
-        let currentSearchScope = 'catalog'; // 'catalog' | 'library'
-        let currentSearchCategories = [];
-        let activeSearchCategoryIdx = 0;
-        let isLoadingMore = false;
+            this.renderTabs();
+            this.renderSearchScopes();
+        },
 
-        let datasets = {
-            home: { categories: [] },
-            browse: { categories: [] },
-            radio: { categories: [] },
-            library: { categories: [] },
-            playlists: { categories: [] }
-        };
+        // 渲染顶部标签
+        renderTabs() {
+            const tabs = (this.provider && this.provider.tabs) || [{ id: 'home', label: '主页' }];
+            this.dom.tabGroup.innerHTML = '';
+            if (!this.currentTab && tabs.length > 0) {
+                this.currentTab = tabs[0].id;
+            }
 
-        const topBar = document.getElementById('amTopBar');
-        const sidebar = document.getElementById('amSidebar');
-        const cardsScroll = document.getElementById('amCardsScroll');
-        const detailView = document.getElementById('amDetailView');
-        const detailBack = document.getElementById('amDetailBack');
-        const detailPlayAll = document.getElementById('amDetailPlayAll');
-        const detailTitle = document.getElementById('amDetailTitle');
-        const detailScroll = document.getElementById('amDetailScroll');
-        const layoutBtn = document.getElementById('amLayoutBtn');
-        const searchBtn = document.getElementById('amSearchBtn');
-        const searchBar = document.getElementById('amSearchBar');
-        const searchBackBtn = document.getElementById('amSearchBackBtn');
-        const searchInput = document.getElementById('amSearchInput');
-        const searchClear = document.getElementById('amSearchClear');
-        const searchLayoutBtn = document.getElementById('amSearchLayoutBtn');
-        const scopeBtns = searchBar.querySelectorAll('.am-scope-btn');
-        let currentDetailItem = null;
+            tabs.forEach(tab => {
+                const btn = document.createElement('button');
+                btn.className = 'am-tab-btn' + (tab.id === this.currentTab ? ' active' : '');
+                btn.dataset.tab = tab.id;
+                btn.innerText = tab.label;
+                btn.onclick = () => {
+                    if (this.currentTab === tab.id && this.dom.detailView.style.display !== 'flex' && !this.isSearching) return;
+                    this.currentTab = tab.id;
+                    this.activeCategoryIdx = 0;
+                    this.exitSearchMode();
+                    this.dom.tabGroup.querySelectorAll('.am-tab-btn').forEach(b => {
+                        b.classList.toggle('active', b.dataset.tab === tab.id);
+                    });
+                    this.render();
+                    // 若无数据，自动从音源请求
+                    const curData = this.datasets[this.currentTab];
+                    if (!curData || !curData.categories || !curData.categories.length) {
+                        this.fetchTabData(this.currentTab, false);
+                    }
+                };
+                this.dom.tabGroup.appendChild(btn);
+            });
+        },
 
-        // 绑定 Tab 点击
-        const tabBtns = appRoot.querySelectorAll('.am-tab-btn');
-        tabBtns.forEach(btn => {
-            btn.onclick = () => {
-                const tabKey = btn.getAttribute('data-tab');
-                if (currentTab === tabKey && detailView.style.display !== 'flex' && !isSearching) return;
-                currentTab = tabKey;
-                activeCategoryIdx = 0;
-                exitSearchMode();
-                tabBtns.forEach(b => b.classList.toggle('active', b === btn));
-                render();
+        // 渲染搜索范围胶囊按钮
+        renderSearchScopes() {
+            const scopes = (this.provider && this.provider.searchScopes) || [{ id: 'catalog', label: '全部', placeholder: '搜索音乐...' }];
+            this.dom.searchScope.innerHTML = '';
+            if (!this.currentSearchScope && scopes.length > 0) {
+                this.currentSearchScope = scopes[0].id;
+                this.dom.searchInput.placeholder = scopes[0].placeholder || '搜索音乐...';
+            }
+
+            scopes.forEach(scope => {
+                const btn = document.createElement('button');
+                btn.className = 'am-scope-btn' + (scope.id === this.currentSearchScope ? ' active' : '');
+                btn.dataset.scope = scope.id;
+                btn.innerText = scope.label;
+                btn.title = `搜索 ${scope.label}`;
+                btn.onclick = () => {
+                    if (this.currentSearchScope === scope.id) return;
+                    this.currentSearchScope = scope.id;
+                    this.dom.searchScope.querySelectorAll('.am-scope-btn').forEach(b => {
+                        b.classList.toggle('active', b.dataset.scope === scope.id);
+                    });
+                    this.dom.searchInput.placeholder = scope.placeholder || `搜索 ${scope.label}...`;
+                    const q = this.dom.searchInput.value.trim();
+                    if (q) {
+                        this.performSearch(q, this.currentSearchScope);
+                    } else {
+                        this.renderSearchPrompt();
+                    }
+                };
+                this.dom.searchScope.appendChild(btn);
+            });
+        },
+
+        // 绑定交互事件
+        bindEvents() {
+            // 刷新按钮
+            if (this.dom.refreshBtn) {
+                this.dom.refreshBtn.onclick = () => {
+                    this.fetchTabData(this.currentTab, true);
+                };
+            }
+
+            // 单双栏布局切换
+            const toggleLayout = () => {
+                this.is2Col = !this.is2Col;
+                this.applyLayout();
+                try {
+                    localStorage.setItem('airmuse_layout_2col', this.is2Col ? '1' : '0');
+                } catch (_) {}
             };
-        });
+            if (this.dom.layoutBtn) this.dom.layoutBtn.onclick = toggleLayout;
+            if (this.dom.searchLayoutBtn) this.dom.searchLayoutBtn.onclick = toggleLayout;
 
-        // 绑定刷新按钮
-        const refreshBtn = document.getElementById('amRefreshBtn');
-        if (refreshBtn) {
-            refreshBtn.onclick = () => {
-                fetchAllAmpData(true);
-            };
-        }
-
-        // 绑定单栏/双栏切换
-        function applyLayout() {
-            cardsScroll.classList.toggle('grid-2col', is2Col);
-            const icon = is2Col ? '☰' : '⚏';
-            const tip = is2Col ? '切换至单栏列表' : '切换至双栏网格';
-            layoutBtn.innerText = icon;
-            layoutBtn.title = tip;
-            layoutBtn.classList.toggle('active', is2Col);
-            if (searchLayoutBtn) {
-                searchLayoutBtn.innerText = icon;
-                searchLayoutBtn.title = tip;
-                searchLayoutBtn.classList.toggle('active', is2Col);
-            }
-        }
-
-        function toggleLayout() {
-            is2Col = !is2Col;
-            applyLayout();
-            idbSet('airmuse_layout_2col', is2Col);
-        }
-
-        layoutBtn.onclick = toggleLayout;
-        if (searchLayoutBtn) searchLayoutBtn.onclick = toggleLayout;
-
-        idbGet('airmuse_layout_2col').then(val => {
-            if (val !== null && val !== undefined) {
-                is2Col = !!val;
-                applyLayout();
-            }
-        });
-
-        // ── 搜索控制逻辑 (完全替换顶部标签栏 + 范围开关 + 双栏呈现) ───────────────────
-        function enterSearchMode() {
-            isSearching = true;
-            topBar.style.display = 'none';
-            searchBar.style.display = 'flex';
-            detailView.style.display = 'none';
-            searchInput.focus();
-
-            const query = searchInput.value.trim();
-            if (query) {
-                performSearch(query, currentSearchScope);
-            } else {
-                renderSearchPrompt();
-            }
-        }
-
-        function exitSearchMode() {
-            isSearching = false;
-            currentSearchCategories = [];
-            activeSearchCategoryIdx = 0;
-            searchBar.style.display = 'none';
-            topBar.style.display = 'flex';
-            detailView.style.display = 'none';
-            searchInput.value = '';
-            searchClear.style.display = 'none';
-            render();
-        }
-
-        searchBtn.onclick = enterSearchMode;
-        searchBackBtn.onclick = exitSearchMode;
-
-        searchClear.onclick = () => {
-            searchInput.value = '';
-            searchClear.style.display = 'none';
-            searchInput.focus();
-            renderSearchPrompt();
-        };
-
-        scopeBtns.forEach(btn => {
-            btn.onclick = () => {
-                const scope = btn.dataset.scope;
-                if (scope === currentSearchScope) return;
-                currentSearchScope = scope;
-                scopeBtns.forEach(b => b.classList.toggle('active', b === btn));
-                searchInput.placeholder = scope === 'catalog' ? '在 Apple Music 中搜索...' : '在资料库中搜索...';
-                const query = searchInput.value.trim();
-                if (query) {
-                    performSearch(query, currentSearchScope);
-                } else {
-                    renderSearchPrompt();
+            // 还原历史布局设定
+            try {
+                const saved = localStorage.getItem('airmuse_layout_2col');
+                if (saved !== null) {
+                    this.is2Col = (saved === '1');
+                    this.applyLayout();
                 }
-            };
-        });
+            } catch (_) {}
 
-        let searchDebounceTimer = null;
-        searchInput.oninput = () => {
-            clearTimeout(searchDebounceTimer);
-            const query = searchInput.value.trim();
-            searchClear.style.display = searchInput.value ? 'block' : 'none';
-            if (!query) {
-                renderSearchPrompt();
-                return;
+            // 搜索交互
+            if (this.dom.searchBtn) this.dom.searchBtn.onclick = () => this.enterSearchMode();
+            if (this.dom.searchBackBtn) this.dom.searchBackBtn.onclick = () => this.exitSearchMode();
+
+            if (this.dom.searchClear) {
+                this.dom.searchClear.onclick = () => {
+                    this.dom.searchInput.value = '';
+                    this.dom.searchClear.style.display = 'none';
+                    this.dom.searchInput.focus();
+                    this.renderSearchPrompt();
+                };
             }
-            searchDebounceTimer = setTimeout(() => {
-                performSearch(query, currentSearchScope);
-            }, 280);
-        };
 
-        searchInput.onkeydown = (e) => {
-            if (e.key === 'Escape') {
-                exitSearchMode();
-            } else if (e.key === 'Enter') {
-                clearTimeout(searchDebounceTimer);
-                const q = searchInput.value.trim();
-                if (q) performSearch(q, currentSearchScope);
+            let searchTimer = null;
+            if (this.dom.searchInput) {
+                this.dom.searchInput.oninput = () => {
+                    clearTimeout(searchTimer);
+                    const q = this.dom.searchInput.value.trim();
+                    this.dom.searchClear.style.display = this.dom.searchInput.value ? 'block' : 'none';
+                    if (!q) {
+                        this.renderSearchPrompt();
+                        return;
+                    }
+                    searchTimer = setTimeout(() => {
+                        this.performSearch(q, this.currentSearchScope);
+                    }, 280);
+                };
+
+                this.dom.searchInput.onkeydown = (e) => {
+                    if (e.key === 'Escape') {
+                        this.exitSearchMode();
+                    } else if (e.key === 'Enter') {
+                        clearTimeout(searchTimer);
+                        const q = this.dom.searchInput.value.trim();
+                        if (q) this.performSearch(q, this.currentSearchScope);
+                    }
+                };
             }
-        };
 
-        function renderSearchPrompt() {
-            sidebar.innerHTML = '<div class="am-empty-tip" style="padding: 10px 4px; font-size: 10px;">输入搜索</div>';
-            const scopeLabel = currentSearchScope === 'catalog' ? 'Apple Music 全球曲库' : '个人资料库';
-            cardsScroll.innerHTML = `
+            // 详情页返回与整张播放
+            if (this.dom.detailBack) {
+                this.dom.detailBack.onclick = () => {
+                    this.dom.detailView.style.display = 'none';
+                };
+            }
+
+            if (this.dom.detailPlayAll) {
+                this.dom.detailPlayAll.onclick = async () => {
+                    if (!this.currentDetailItem || !this.provider) return;
+                    await this.provider.playCollection(this.currentDetailItem);
+                };
+            }
+
+            // 触底无限滚动加载
+            if (this.dom.cardsScroll) {
+                this.dom.cardsScroll.onscroll = () => this.handleScroll();
+            }
+        },
+
+        // 应用单双栏样式
+        applyLayout() {
+            this.dom.cardsScroll.classList.toggle('grid-2col', this.is2Col);
+            const icon = this.is2Col ? '☰' : '⚏';
+            const tip = this.is2Col ? '切换至单栏列表' : '切换至双栏网格';
+            if (this.dom.layoutBtn) {
+                this.dom.layoutBtn.innerText = icon;
+                this.dom.layoutBtn.title = tip;
+                this.dom.layoutBtn.classList.toggle('active', this.is2Col);
+            }
+            if (this.dom.searchLayoutBtn) {
+                this.dom.searchLayoutBtn.innerText = icon;
+                this.dom.searchLayoutBtn.title = tip;
+                this.dom.searchLayoutBtn.classList.toggle('active', this.is2Col);
+            }
+        },
+
+        // 进入搜索模式
+        enterSearchMode() {
+            this.isSearching = true;
+            this.dom.topBar.style.display = 'none';
+            this.dom.searchBar.style.display = 'flex';
+            this.dom.detailView.style.display = 'none';
+            this.dom.searchInput.focus();
+
+            const query = this.dom.searchInput.value.trim();
+            if (query) {
+                this.performSearch(query, this.currentSearchScope);
+            } else {
+                this.renderSearchPrompt();
+            }
+        },
+
+        // 退出搜索模式
+        exitSearchMode() {
+            this.isSearching = false;
+            this.currentSearchCategories = [];
+            this.activeSearchCategoryIdx = 0;
+            this.dom.searchBar.style.display = 'none';
+            this.dom.topBar.style.display = 'flex';
+            this.dom.detailView.style.display = 'none';
+            this.dom.searchInput.value = '';
+            this.dom.searchClear.style.display = 'none';
+            this.render();
+        },
+
+        // 搜索初始空提示
+        renderSearchPrompt() {
+            this.dom.sidebar.innerHTML = '<div class="am-empty-tip" style="padding: 10px 4px; font-size: 10px;">输入搜索</div>';
+            const scopeObj = this.provider?.searchScopes?.find(s => s.id === this.currentSearchScope);
+            const scopeLabel = scopeObj ? scopeObj.label : '曲库';
+            this.dom.cardsScroll.innerHTML = `
                 <div class="am-empty-tip" style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; gap: 6px;">
                     <div style="font-size: 24px; opacity: 0.8;">🔍</div>
-                    <div style="font-size: 11px; color: #d4d4d8; font-weight: 500;">搜索 ${scopeLabel}</div>
+                    <div style="font-size: 11px; color: #d4d4d8; font-weight: 500;">搜索 ${escapeHtml(scopeLabel)}</div>
                     <div style="font-size: 9.5px; color: #71717a;">在上方搜索框输入关键词</div>
                 </div>
             `;
-        }
+        },
 
-        async function performSearch(query, scope = currentSearchScope) {
+        // 执行搜索
+        async performSearch(query, scope) {
             if (!query) {
-                renderSearchPrompt();
+                this.renderSearchPrompt();
                 return;
             }
-            isSearching = true;
-            detailView.style.display = 'none';
-            sidebar.innerHTML = '<div class="am-empty-tip" style="padding: 10px 4px; font-size: 10px;">搜索中...</div>';
-            cardsScroll.innerHTML = '<div class="am-empty-tip">正在搜索...</div>';
+            this.isSearching = true;
+            this.dom.detailView.style.display = 'none';
+            this.dom.sidebar.innerHTML = '<div class="am-empty-tip" style="padding: 10px 4px; font-size: 10px;">搜索中...</div>';
+            this.dom.cardsScroll.innerHTML = '<div class="am-empty-tip">正在搜索...</div>';
 
             try {
-                const sf = 'cn';
-                if (scope === 'catalog') {
-                    const url = `/v1/catalog/${sf}/search?term=${encodeURIComponent(query)}&types=songs,albums,artists,playlists&limit=25&relate[songs]=artists&include[songs]=artists&include[albums]=artists&art[url]=f&l=zh-Hans-CN&platform=web`;
-                    const res = await fetchAmp(url, false);
-                    const results = res?.results || {};
-
-                    const songs = (results.songs?.data || []).map(t => mapSongItem(t)).filter(Boolean);
-                    const artists = (results.artists?.data || []).map(a => mapCatalogArtist(a)).filter(Boolean);
-                    const albums = (results.albums?.data || []).map(a => mapCatalogAlbum(a)).filter(Boolean);
-                    const playlists = (results.playlists?.data || []).map(p => mapPlaylistItem(p)).filter(Boolean);
-
-                    const searchCategories = [];
-
-                    // 1. 最佳结果 (组合高相关度条目：首位艺人 + 4首歌曲 + 2张专辑 + 2个歌单)
-                    const topItems = [];
-                    if (artists.length) topItems.push(artists[0]);
-                    if (songs.length) topItems.push(...songs.slice(0, 4));
-                    if (albums.length) topItems.push(...albums.slice(0, 2));
-                    if (playlists.length) topItems.push(...playlists.slice(0, 2));
-
-                    if (topItems.length) {
-                        searchCategories.push({
-                            id: 'cat-top',
-                            title: '最佳结果',
-                            items: topItems
-                        });
-                    }
-                    if (songs.length) {
-                        searchCategories.push({
-                            id: 'cat-songs',
-                            title: '歌曲',
-                            items: songs,
-                            nextUrl: results.songs?.next || null
-                        });
-                    }
-                    if (artists.length) {
-                        searchCategories.push({
-                            id: 'cat-artists',
-                            title: '艺人',
-                            items: artists,
-                            nextUrl: results.artists?.next || null
-                        });
-                    }
-                    if (albums.length) {
-                        searchCategories.push({
-                            id: 'cat-albums',
-                            title: '专辑',
-                            items: albums,
-                            nextUrl: results.albums?.next || null
-                        });
-                    }
-                    if (playlists.length) {
-                        searchCategories.push({
-                            id: 'cat-playlists',
-                            title: '歌单',
-                            items: playlists,
-                            nextUrl: results.playlists?.next || null
-                        });
-                    }
-
-                    renderSearchResults(searchCategories, query, scope);
-                } else {
-                    // scope === 'library'
-                    const url = `/v1/me/library/search?term=${encodeURIComponent(query)}&types=library-songs,library-albums,library-artists,library-playlists&limit=25&art[url]=f&include=catalog&l=zh-Hans-CN&platform=web`;
-                    const res = await fetchAmp(url, true);
-                    const results = res?.results || {};
-
-                    const libSongs = (results['library-songs']?.data || []).map(t => mapSongItem(t)).filter(Boolean);
-                    const libArtists = (results['library-artists']?.data || []).map(a => mapLibraryItem(a, 'artist')).filter(Boolean);
-                    const libAlbums = (results['library-albums']?.data || []).map(a => mapLibraryItem(a, 'album')).filter(Boolean);
-                    const libPlaylists = (results['library-playlists']?.data || []).map(p => mapPlaylistItem(p)).filter(Boolean);
-
-                    const searchCategories = [];
-
-                    // 1. 最佳结果 (组合资料库命中项)
-                    const topItems = [];
-                    if (libArtists.length) topItems.push(libArtists[0]);
-                    if (libSongs.length) topItems.push(...libSongs.slice(0, 4));
-                    if (libAlbums.length) topItems.push(...libAlbums.slice(0, 2));
-                    if (libPlaylists.length) topItems.push(...libPlaylists.slice(0, 2));
-
-                    if (topItems.length) {
-                        searchCategories.push({
-                            id: 'lib-top',
-                            title: '最佳结果',
-                            items: topItems
-                        });
-                    }
-                    if (libSongs.length) {
-                        searchCategories.push({
-                            id: 'lib-songs',
-                            title: '歌曲',
-                            items: libSongs,
-                            nextUrl: results['library-songs']?.next || null
-                        });
-                    }
-                    if (libArtists.length) {
-                        searchCategories.push({
-                            id: 'lib-artists',
-                            title: '艺人',
-                            items: libArtists,
-                            nextUrl: results['library-artists']?.next || null
-                        });
-                    }
-                    if (libAlbums.length) {
-                        searchCategories.push({
-                            id: 'lib-albums',
-                            title: '专辑',
-                            items: libAlbums,
-                            nextUrl: results['library-albums']?.next || null
-                        });
-                    }
-                    if (libPlaylists.length) {
-                        searchCategories.push({
-                            id: 'lib-playlists',
-                            title: '歌单',
-                            items: libPlaylists,
-                            nextUrl: results['library-playlists']?.next || null
-                        });
-                    }
-
-                    renderSearchResults(searchCategories, query, scope);
-                }
+                const categories = await this.provider.search(query, scope);
+                this.renderSearchResults(categories || [], query, scope);
             } catch (_) {
-                sidebar.innerHTML = '<div class="am-empty-tip" style="padding: 10px 4px; font-size: 10px;">错误</div>';
-                cardsScroll.innerHTML = '<div class="am-empty-tip">搜索遇到网络问题，请重试</div>';
+                this.dom.sidebar.innerHTML = '<div class="am-empty-tip" style="padding: 10px 4px; font-size: 10px;">错误</div>';
+                this.dom.cardsScroll.innerHTML = '<div class="am-empty-tip">搜索遇到网络问题，请重试</div>';
             }
-        }
+        },
 
-        function renderSearchResults(categories, query, scope) {
-            currentSearchCategories = categories;
-            activeSearchCategoryIdx = 0;
+        // 渲染搜索结果
+        renderSearchResults(categories, query, scope) {
+            this.currentSearchCategories = categories;
+            this.activeSearchCategoryIdx = 0;
 
             if (!categories.length) {
-                sidebar.innerHTML = '<div class="am-empty-tip" style="padding: 10px 4px; font-size: 10px;">无结果</div>';
-                const scopeName = scope === 'catalog' ? 'Apple Music' : '资料库';
-                cardsScroll.innerHTML = `
+                this.dom.sidebar.innerHTML = '<div class="am-empty-tip" style="padding: 10px 4px; font-size: 10px;">无结果</div>';
+                const scopeObj = this.provider?.searchScopes?.find(s => s.id === scope);
+                const scopeName = scopeObj ? scopeObj.label : '曲库';
+                this.dom.cardsScroll.innerHTML = `
                     <div class="am-empty-tip" style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; gap: 6px;">
                         <div style="font-size: 24px; opacity: 0.8;">∅</div>
                         <div style="font-size: 11px; color: #d4d4d8; font-weight: 500;">未找到相关内容</div>
-                        <div style="font-size: 9.5px; color: #71717a;">在 ${scopeName} 中未找到与 "${escapeHtml(query)}" 匹配的结果</div>
+                        <div style="font-size: 9.5px; color: #71717a;">在 ${escapeHtml(scopeName)} 中未找到与 "${escapeHtml(query)}" 匹配的结果</div>
                     </div>
                 `;
                 return;
             }
 
-            renderSearchSidebarAndCards();
-        }
+            this.renderSearchSidebarAndCards();
+        },
 
-        function renderSearchSidebarAndCards() {
-            sidebar.innerHTML = '';
-            if (!currentSearchCategories || !currentSearchCategories.length) {
-                sidebar.innerHTML = '<div class="am-empty-tip" style="padding: 10px 4px; font-size: 10px;">无结果</div>';
+        renderSearchSidebarAndCards() {
+            this.dom.sidebar.innerHTML = '';
+            if (!this.currentSearchCategories || !this.currentSearchCategories.length) {
+                this.dom.sidebar.innerHTML = '<div class="am-empty-tip" style="padding: 10px 4px; font-size: 10px;">无结果</div>';
                 return;
             }
 
-            if (activeSearchCategoryIdx >= currentSearchCategories.length) {
-                activeSearchCategoryIdx = 0;
+            if (this.activeSearchCategoryIdx >= this.currentSearchCategories.length) {
+                this.activeSearchCategoryIdx = 0;
             }
 
-            currentSearchCategories.forEach((cat, idx) => {
+            this.currentSearchCategories.forEach((cat, idx) => {
                 const item = document.createElement('div');
-                item.className = 'am-cat-item' + (idx === activeSearchCategoryIdx ? ' active' : '');
+                item.className = 'am-cat-item' + (idx === this.activeSearchCategoryIdx ? ' active' : '');
                 item.innerText = cat.title;
                 item.title = cat.title;
                 item.onclick = () => {
-                    activeSearchCategoryIdx = idx;
-                    sidebar.querySelectorAll('.am-cat-item').forEach((b, i) => b.classList.toggle('active', i === idx));
-                    detailView.style.display = 'none';
-                    renderCardsForCategory(cat);
+                    this.activeSearchCategoryIdx = idx;
+                    this.dom.sidebar.querySelectorAll('.am-cat-item').forEach((b, i) => b.classList.toggle('active', i === idx));
+                    this.dom.detailView.style.display = 'none';
+                    this.renderCardsForCategory(cat);
                 };
-                sidebar.appendChild(item);
+                this.dom.sidebar.appendChild(item);
             });
 
-            const cat = currentSearchCategories[activeSearchCategoryIdx];
+            const cat = this.currentSearchCategories[this.activeSearchCategoryIdx];
             if (cat) {
-                renderCardsForCategory(cat);
+                this.renderCardsForCategory(cat);
             }
-        }
+        },
 
-        // 绑定详情页返回与整张播放 (仅在右侧面板内操作)
-        detailBack.onclick = () => {
-            detailView.style.display = 'none';
-        };
+        // 加载初始缓存数据
+        async loadInitialData() {
+            if (!this.provider) return;
+            try {
+                const cached = await this.provider.loadInitialData();
+                if (cached && typeof cached === 'object') {
+                    this.datasets = cached;
+                    this.render();
+                }
+            } catch (_) {}
 
-        detailPlayAll.onclick = async () => {
-            if (!currentDetailItem) return;
-            const mk = window.MusicKit && window.MusicKit.getInstance ? window.MusicKit.getInstance() : null;
-            if (mk) {
-                try {
-                    if (currentDetailItem.type.includes('playlist')) {
-                        await mk.setQueue({ playlist: currentDetailItem.id });
-                    } else if (currentDetailItem.type === 'album') {
-                        await mk.setQueue({ album: currentDetailItem.id });
+            // 无论是否有缓存，后台发起一次保鲜抓取
+            if (this.currentTab) {
+                this.fetchTabData(this.currentTab, false);
+            }
+        },
+
+        // 请求 Tab 数据
+        async fetchTabData(tabId, forceRefresh = false) {
+            if (!this.provider) return;
+            try {
+                const categories = await this.provider.fetchTabData(tabId, forceRefresh);
+                if (categories && Array.isArray(categories)) {
+                    this.datasets[tabId] = { categories };
+                    if (this.currentTab === tabId && !this.isSearching) {
+                        this.render();
                     }
-                    await mk.play();
-                    setTimeout(pushNowPlaying, 400);
-                } catch (_) {}
+                }
+            } catch (err) {
+                console.warn('[AirMuseUI] fetchTabData error:', err);
             }
-        };
+        },
 
-        // ── 3. 渲染视图 ───────────────────────────────────────────────────────
-        function render() {
-            if (isSearching) {
-                if (!currentSearchCategories || !currentSearchCategories.length) {
-                    renderSearchPrompt();
+        // 全局主视图渲染
+        render() {
+            if (this.isSearching) {
+                if (!this.currentSearchCategories || !this.currentSearchCategories.length) {
+                    this.renderSearchPrompt();
                     return;
                 }
-                renderSearchSidebarAndCards();
+                this.renderSearchSidebarAndCards();
                 return;
             }
 
-            const curData = datasets[currentTab] || { categories: [] };
-            sidebar.innerHTML = '';
+            const curData = this.datasets[this.currentTab] || { categories: [] };
+            this.dom.sidebar.innerHTML = '';
 
             if (!curData.categories || !curData.categories.length) {
-                cardsScroll.innerHTML = '<div class="am-empty-tip">正在载入 Apple Music 数据...</div>';
+                this.dom.cardsScroll.innerHTML = `<div class="am-empty-tip">正在载入 ${escapeHtml(this.provider?.name || '音乐')} 数据...</div>`;
                 return;
             }
 
-            if (activeCategoryIdx >= curData.categories.length) {
-                activeCategoryIdx = 0;
+            if (this.activeCategoryIdx >= curData.categories.length) {
+                this.activeCategoryIdx = 0;
             }
 
             curData.categories.forEach((cat, idx) => {
                 const el = document.createElement('div');
-                el.className = 'am-cat-item' + (idx === activeCategoryIdx ? ' active' : '');
+                el.className = 'am-cat-item' + (idx === this.activeCategoryIdx ? ' active' : '');
                 el.title = cat.title;
 
                 const span = document.createElement('span');
@@ -1066,33 +1094,32 @@
                 el.appendChild(span);
 
                 el.onclick = () => {
-                    activeCategoryIdx = idx;
-                    isSearching = false;
-                    detailView.style.display = 'none'; // 点击左侧分类即切回右侧卡片浏览
-                    Array.from(sidebar.children).forEach((child, i) => {
-                        child.className = 'am-cat-item' + (i === activeCategoryIdx ? ' active' : '');
+                    this.activeCategoryIdx = idx;
+                    this.isSearching = false;
+                    this.dom.detailView.style.display = 'none';
+                    Array.from(this.dom.sidebar.children).forEach((child, i) => {
+                        child.className = 'am-cat-item' + (i === this.activeCategoryIdx ? ' active' : '');
                     });
-                    renderContent();
+                    this.renderContent();
                 };
-                sidebar.appendChild(el);
+                this.dom.sidebar.appendChild(el);
             });
 
-            renderContent();
-        }
+            this.renderContent();
+        },
 
-        function renderContent() {
-            const curData = datasets[currentTab] || { categories: [] };
-            const cat = curData.categories[activeCategoryIdx];
+        renderContent() {
+            const curData = this.datasets[this.currentTab] || { categories: [] };
+            const cat = curData.categories[this.activeCategoryIdx];
             if (!cat) return;
+            this.renderCardsForCategory(cat);
+        },
 
-            renderCardsForCategory(cat);
-        }
-
-        // 创建条目卡片 (右上角封面角标，彻底去除红色眉标)
-        function createCardElement(item, cat, itemIdx) {
+        // 创建单条目卡片
+        createCardElement(item, cat, itemIdx) {
             const typeKey = (item.type || 'default').toLowerCase();
-            const typeLabel = TYPE_NAMES[typeKey] || item.type || '条目';
-            const tagClass = 'type-' + (TYPE_NAMES[typeKey] ? typeKey : 'default');
+            const typeLabel = DEFAULT_TYPE_NAMES[typeKey] || item.type || '条目';
+            const tagClass = 'type-' + (DEFAULT_TYPE_NAMES[typeKey] ? typeKey : 'default');
 
             const fallbackImg = (typeKey === 'artist')
                 ? "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='38' height='38' viewBox='0 0 38 38'%3E%3Crect width='38' height='38' fill='%2327272a'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='16' fill='%2371717a'%3E👤%3C/text%3E%3C/svg%3E"
@@ -1101,7 +1128,6 @@
             const card = document.createElement('div');
             card.className = 'am-item-card';
 
-            // 封面容器：图片 + 右上角角标
             const thumbWrap = document.createElement('div');
             thumbWrap.className = 'am-thumb-wrap';
 
@@ -1119,7 +1145,6 @@
 
             card.appendChild(thumbWrap);
 
-            // 卡片内容 (彻底去除任何红色眉标显示)
             const body = document.createElement('div');
             body.className = 'am-item-body';
 
@@ -1138,145 +1163,56 @@
             card.appendChild(body);
 
             card.onclick = () => {
-                handleItemClick(item, cat, itemIdx);
+                this.handleItemClick(item, cat, itemIdx);
             };
 
             return card;
-        }
+        },
 
-        function renderCardsForCategory(cat) {
-            cardsScroll.innerHTML = '';
-
+        renderCardsForCategory(cat) {
+            this.dom.cardsScroll.innerHTML = '';
             if (!cat.items || !cat.items.length) {
-                cardsScroll.innerHTML = '<div class="am-empty-tip">该分类暂无条目</div>';
+                this.dom.cardsScroll.innerHTML = '<div class="am-empty-tip">该分类暂无条目</div>';
                 return;
             }
 
             cat.items.forEach((item, itemIdx) => {
-                const card = createCardElement(item, cat, itemIdx);
-                cardsScroll.appendChild(card);
+                const card = this.createCardElement(item, cat, itemIdx);
+                this.dom.cardsScroll.appendChild(card);
             });
 
-            cardsScroll.scrollTop = 0;
-        }
+            this.dom.cardsScroll.scrollTop = 0;
+        },
 
-        // ── 4. 触底滚动加载引擎 (Infinite Scroll on Bottom) ────────────────────
-        cardsScroll.onscroll = async () => {
-            if (isLoadingMore) return;
-            const curData = datasets[currentTab] || { categories: [] };
-            const cat = isSearching 
-                ? (currentSearchCategories ? currentSearchCategories[activeSearchCategoryIdx] : null) 
-                : curData.categories[activeCategoryIdx];
-            if (!cat || !cat.nextUrl) return;
+        // 点击条目处理：单曲/电台直接播放，歌单/专辑/艺人展开详情抽屉
+        async handleItemClick(item, cat, itemIdx) {
+            if (!this.provider) return;
 
-            const threshold = 50;
-            if (cardsScroll.scrollTop + cardsScroll.clientHeight >= cardsScroll.scrollHeight - threshold) {
-                isLoadingMore = true;
-
-                let spinner = document.createElement('div');
-                spinner.className = 'am-loading-more';
-                spinner.id = 'amLoadingMoreIndicator';
-                spinner.innerText = '正在加载更多...';
-                cardsScroll.appendChild(spinner);
-
-                try {
-                    const isLib = isSearching ? (currentSearchScope === 'library') : (currentTab === 'library' || currentTab === 'playlists');
-                    const res = await fetchAmp(cat.nextUrl, isLib);
-                    if (res && res.data && res.data.length) {
-                        const startIdx = cat.items.length;
-                        const newItems = res.data.map(d => {
-                            if (d.type === 'library-songs' || d.type === 'songs') return mapSongItem(d);
-                            if (d.type === 'library-albums' || d.type === 'albums') return isLib ? mapLibraryItem(d, 'album') : mapCatalogAlbum(d);
-                            if (d.type === 'library-artists' || d.type === 'artists') return isLib ? mapLibraryItem(d, 'artist') : mapCatalogArtist(d);
-                            if (d.type === 'library-playlists' || d.type === 'playlists') return mapPlaylistItem(d);
-                            return resolveResourceItem(d, res.resources);
-                        }).filter(Boolean);
-
-                        cat.items.push(...newItems);
-                        cat.nextUrl = res.next || null;
-
-                        newItems.forEach((item, idx) => {
-                            const card = createCardElement(item, cat, startIdx + idx);
-                            cardsScroll.insertBefore(card, spinner);
-                        });
-
-                        if (!isSearching) {
-                            idbSet(CACHE_KEY, datasets);
-                        }
-                    } else {
-                        cat.nextUrl = null;
-                    }
-                } catch (_) {
-                    cat.nextUrl = null;
-                } finally {
-                    const el = document.getElementById('amLoadingMoreIndicator');
-                    if (el) el.remove();
-                    isLoadingMore = false;
-                }
-            }
-        };
-
-        // ── 5. 详情页与播放控制 (仅在右侧栏内展现) ───────────────────────────
-        async function handleItemClick(item, cat, itemIdx) {
-            const mk = window.MusicKit && window.MusicKit.getInstance ? window.MusicKit.getInstance() : null;
-
-            if (item.type === 'station') {
-                if (mk) {
-                    try {
-                        await mk.setQueue({ station: item.id });
-                        await mk.play();
-                        setTimeout(pushNowPlaying, 400);
-                    } catch (_) {}
-                }
+            if (item.type === 'station' || item.type === 'song' || item.type === 'fav-song') {
+                await this.provider.playItem(item, cat, itemIdx);
                 return;
             }
 
-            if (item.type === 'song' || item.type === 'fav-song') {
-                if (mk) {
-                    try {
-                        await mk.setQueue({ song: item.id });
-                        await mk.play();
-                        setTimeout(pushNowPlaying, 400);
-                    } catch (_) {}
-                }
-                return;
-            }
+            this.openDetailView(item);
+        },
 
-            openDetailView(item);
-        }
+        // 展开详情页
+        async openDetailView(item) {
+            this.currentDetailItem = item;
+            this.dom.detailTitle.innerText = item.title;
+            this.dom.detailScroll.innerHTML = '<div class="am-empty-tip">正在载入曲目列表...</div>';
+            this.dom.detailView.style.display = 'flex';
 
-        async function openDetailView(item) {
-            currentDetailItem = item;
-            detailTitle.innerText = item.title;
-            detailScroll.innerHTML = '<div class="am-empty-tip">正在载入曲目列表...</div>';
-            detailView.style.display = 'flex'; // 仅覆盖右侧 am-content-panel，左侧栏不受影响
-
-            const mk = window.MusicKit && window.MusicKit.getInstance ? window.MusicKit.getInstance() : null;
-            const sf = 'cn';
-            const isLib = (item.id.indexOf('p.') === 0 || item.id.indexOf('l.') === 0 || item.isLibrary);
-
-            let endpoint = '';
-            if (item.type.includes('playlist')) {
-                endpoint = isLib ? `/v1/me/library/playlists/${item.id}/tracks` : `/v1/catalog/${sf}/playlists/${item.id}/tracks`;
-            } else if (item.type === 'album') {
-                endpoint = isLib ? `/v1/me/library/albums/${item.id}/tracks` : `/v1/catalog/${sf}/albums/${item.id}/tracks`;
-            } else if (item.type === 'artist') {
-                endpoint = isLib ? `/v1/me/library/artists/${item.id}/tracks` : `/v1/catalog/${sf}/artists/${item.id}/view/top-songs`;
-            }
-
-            if (!endpoint) return;
-
+            if (!this.provider) return;
             try {
-                const res = await fetchAmp(endpoint + '?limit=100', isLib);
-                const rawTracks = res?.data || [];
-                detailScroll.innerHTML = '';
-                if (!rawTracks.length) {
-                    detailScroll.innerHTML = '<div class="am-empty-tip">暂无可播放曲目</div>';
+                const tracks = await this.provider.loadDetail(item);
+                this.dom.detailScroll.innerHTML = '';
+                if (!tracks || !tracks.length) {
+                    this.dom.detailScroll.innerHTML = '<div class="am-empty-tip">暂无可播放曲目</div>';
                     return;
                 }
 
-                rawTracks.forEach((t, idx) => {
-                    const attr = t.attributes || {};
+                tracks.forEach((t, idx) => {
                     const row = document.createElement('div');
                     row.className = 'am-track-row';
 
@@ -1290,215 +1226,394 @@
 
                     const nameEl = document.createElement('div');
                     nameEl.className = 'am-track-name';
-                    nameEl.innerText = attr.name || '未知单曲';
+                    nameEl.innerText = t.name || t.title || '未知单曲';
                     body.appendChild(nameEl);
 
                     const artistEl = document.createElement('div');
                     artistEl.className = 'am-track-artist';
-                    artistEl.innerText = attr.artistName || attr.albumName || '';
+                    artistEl.innerText = t.artistName || t.subtitle || '';
                     body.appendChild(artistEl);
 
                     row.appendChild(body);
 
-                    if (attr.durationInMillis) {
+                    if (t.durationMs) {
                         const durEl = document.createElement('div');
                         durEl.className = 'am-track-dur';
-                        durEl.innerText = formatDuration(attr.durationInMillis);
+                        durEl.innerText = formatDuration(t.durationMs);
                         row.appendChild(durEl);
                     }
 
                     row.onclick = async () => {
-                        if (mk) {
-                            try {
-                                if (item.type.includes('playlist')) {
-                                    await mk.setQueue({ playlist: item.id, startWith: idx });
-                                } else if (item.type === 'album') {
-                                    await mk.setQueue({ album: item.id, startWith: idx });
-                                } else {
-                                    await mk.setQueue({ song: t.id });
-                                }
-                                await mk.play();
-                                setTimeout(pushNowPlaying, 400);
-                            } catch (_) {}
-                        }
+                        await this.provider.playItem(t, item, idx);
                     };
 
-                    detailScroll.appendChild(row);
+                    this.dom.detailScroll.appendChild(row);
                 });
-            } catch (e) {
-                detailScroll.innerHTML = '<div class="am-empty-tip">曲目拉取失败</div>';
+            } catch (_) {
+                this.dom.detailScroll.innerHTML = '<div class="am-empty-tip">曲目拉取失败</div>';
             }
-        }
+        },
 
-        // ── 6. Amp-API 并发抓取与解析引擎 ─────────────────────────────────────
-        const FALLBACK_DEV_TOKEN = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJFUzI1NiIsImtpZCI6IldlYlBsYXlLaWQifQ.eyJpc3MiOiJBTVBXZWJQbGF5IiwiaWF0IjoxNzkzOTAwNzA4LCJleHAiOjE3OTk5NDg3MDgsInJvb3RfaHR0cHNfb3JpZ2luIjpbImFwcGxlLmNvbSJdfQ.7L-PYJHjO8PpFdhKS-OSkf_snyFvg5cq-JDERUs_N_UcUX9Vk0kf1WLatgDeEvhB_Arg1b5Tl-99G1v6hUwH0A';
-        const FALLBACK_USER_TOKEN = '0.AhLguOql2yDcoV5g/aTy/eSDkhhH62HGfnutGQVywp2Sl7wUjfwH+robO39OcpfAC+MmQfsjqUytTfT9WoY8ueQYrYCU1bscJNMOHwErJDvbhYd1RlZQH8xHF/ArXIG5Gq3hX48An4eyLx01IwI+RLsbCG7QTR7dnAmPoEJYQSuYfzW057zsIvwXlt/XrviGeunNQ4BDXL0Fy5YRmb/ufLjQOHxu96gA/SjjMbNhw67Eri3B2g==';
+        // 触底无限滚动
+        async handleScroll() {
+            if (this.isLoadingMore || !this.provider) return;
+            const curData = this.datasets[this.currentTab] || { categories: [] };
+            const cat = this.isSearching
+                ? (this.currentSearchCategories ? this.currentSearchCategories[this.activeSearchCategoryIdx] : null)
+                : curData.categories[this.activeCategoryIdx];
 
-        function formatArtworkUrl(artworkObj, size = 160) {
-            if (!artworkObj?.url) return null;
-            return artworkObj.url
-                .replace('{w}x{h}', `${size}x${size}`)
-                .replace('{c}', 'bb')
-                .replace('cc.{f}', 'bb.webp')
-                .replace('{f}', 'webp');
-        }
+            if (!cat || !cat.nextUrl) return;
 
-        function formatDuration(ms) {
-            if (!ms || isNaN(ms)) return '';
-            const sec = Math.floor(ms / 1000);
-            const m = Math.floor(sec / 60);
-            const s = sec % 60;
-            return `${m}:${s < 10 ? '0' : ''}${s}`;
-        }
+            const threshold = 50;
+            if (this.dom.cardsScroll.scrollTop + this.dom.cardsScroll.clientHeight >= this.dom.cardsScroll.scrollHeight - threshold) {
+                this.isLoadingMore = true;
 
-        function makeCategory(id, title, items, nextUrl = null) {
-            return { id, title, items, nextUrl };
-        }
+                const spinner = document.createElement('div');
+                spinner.className = 'am-loading-more';
+                spinner.id = 'amLoadingMoreIndicator';
+                spinner.innerText = '正在加载更多...';
+                this.dom.cardsScroll.appendChild(spinner);
 
-        function resolveResourceItem(ref, resources) {
-            const item = resources?.[ref.type]?.[ref.id];
-            if (!item) return null;
-            let target = item;
-            if (item.relationships?.contents?.data?.[0]) {
-                const tRef = item.relationships.contents.data[0];
-                target = resources?.[tRef.type]?.[tRef.id] || item;
+                try {
+                    const newItems = await this.provider.loadMore(cat, this.currentTab, this.isSearching, this.currentSearchScope);
+                    if (newItems && newItems.length) {
+                        const startIdx = cat.items.length;
+                        cat.items.push(...newItems);
+                        newItems.forEach((item, idx) => {
+                            const card = this.createCardElement(item, cat, startIdx + idx);
+                            this.dom.cardsScroll.insertBefore(card, spinner);
+                        });
+                    }
+                } catch (_) {
+                } finally {
+                    spinner.remove();
+                    this.isLoadingMore = false;
+                }
             }
-            const attr = target.attributes || item.attributes || {};
-            const typeMap = {
-                songs: 'song',
-                playlists: 'playlist',
-                'library-playlists': 'playlist',
-                stations: 'station',
-                albums: 'album',
-                'library-albums': 'album'
-            };
-            const type = typeMap[target.type || ref.type] || (ref.type?.includes('editorial') ? 'editorial' : 'item');
-            return {
-                id: target.id || item.id,
-                title: attr.name || attr.title || item.attributes?.designBadge || '推荐精选',
-                subtitle: attr.artistName || attr.curatorName || (attr.description?.standard ? attr.description.standard.slice(0, 36) : 'Apple Music'),
-                eyebrow: null,
-                type,
-                artworkUrl: formatArtworkUrl(attr.artwork || attr.editorialArtwork, 160),
-                linkUrl: attr.url || `https://music.apple.com/cn/${type}/${target.id || item.id}`,
-                durationMs: attr.durationInMillis || null,
-            };
-        }
+        },
 
-        function mapCatalogArtist(a) {
-            const attr = a.attributes || {};
-            return {
-                id: a.id,
-                title: attr.name || '未知艺人',
-                subtitle: attr.genreNames?.[0] || '艺人',
-                eyebrow: null,
-                type: 'artist',
-                artworkUrl: formatArtworkUrl(attr.artwork, 160),
-                linkUrl: attr.url || `https://music.apple.com/cn/artist/${a.id}`,
-                isLibrary: false
-            };
-        }
+        // 桥接原生与音源事件
+        bindBridge() {
+            if (this.provider) {
+                this.provider.onNowPlayingChange((np) => {
+                    if (window.chrome && window.chrome.webview && np) {
+                        window.chrome.webview.postMessage(JSON.stringify({
+                            type: 'nowPlaying',
+                            ...np
+                        }));
+                    }
+                });
 
-        function mapCatalogAlbum(a) {
-            const attr = a.attributes || {};
-            return {
-                id: a.id,
-                title: attr.name || '未知专辑',
-                subtitle: attr.artistName || 'Apple Music',
-                eyebrow: null,
-                type: 'album',
-                artworkUrl: formatArtworkUrl(attr.artwork, 160),
-                linkUrl: attr.url || `https://music.apple.com/cn/album/${a.id}`,
-                isLibrary: false
-            };
-        }
-
-        // 映射单曲条目 (彻底去除红色文字眉标)
-        function mapSongItem(track, isFav = false) {
-            const attr = track.attributes || {};
-            const catAttr = track.relationships?.catalog?.data?.[0]?.attributes;
-            const sub = [attr.artistName, attr.albumName].filter(Boolean).join(' · ');
-            const rawArtwork = attr.artwork || catAttr?.artwork;
-            const isLib = track.type?.includes('library') || (typeof track.id === 'string' && track.id.startsWith('i.'));
-            return {
-                id: track.id,
-                title: attr.name || '未知单曲',
-                subtitle: sub || 'Apple Music',
-                eyebrow: null,
-                type: isFav ? 'fav-song' : 'song',
-                artworkUrl: formatArtworkUrl(rawArtwork, 160),
-                linkUrl: attr.url || `https://music.apple.com/cn/song/${attr.playParams?.catalogId || track.id}`,
-                durationMs: attr.durationInMillis || null,
-                isLibrary: isLib
-            };
-        }
-
-        // 映射资料库条目 (解决艺人封面缺失问题：提取 catalog 官方艺人头像)
-        function mapLibraryItem(item, defaultType = 'item') {
-            const attr = item.attributes || {};
-            const catItem = item.relationships?.catalog?.data?.[0];
-            const catAttr = catItem?.attributes;
-            const type = item.type === 'library-albums' ? 'album' : (item.type === 'library-playlists' ? 'playlist' : (item.type === 'library-artists' ? 'artist' : defaultType));
-
-            let sub = '';
-            if (attr.artistName) {
-                sub = attr.trackCount ? `${attr.artistName} (${attr.trackCount} 首)` : attr.artistName;
-            } else if (type === 'artist') {
-                sub = catAttr?.genreNames?.[0] || '艺人';
-            } else {
-                sub = '资料库';
+                this.provider.onUserChange((u) => {
+                    if (window.chrome && window.chrome.webview && u) {
+                        window.chrome.webview.postMessage(JSON.stringify({
+                            type: 'userStatus',
+                            userName: u
+                        }));
+                    }
+                });
             }
 
-            // 核心修复：艺人官方高清头像位于 relationships.catalog.data[0].attributes.artwork
-            const rawArtwork = attr.artwork || catAttr?.artwork;
-
-            return {
-                id: item.id,
-                title: attr.name || catAttr?.name || '未知名称',
-                subtitle: sub,
-                eyebrow: null,
-                type,
-                artworkUrl: formatArtworkUrl(rawArtwork, 160),
-                linkUrl: `https://music.apple.com/cn/${type}/${item.id}`,
-                isLibrary: true
+            // 原生宿主反射接口
+            window.__airmusePlayTrack = (kind, collectionId, trackIdx, trackId) => {
+                if (this.provider && typeof this.provider.playByNative === 'function') {
+                    this.provider.playByNative(kind, collectionId, trackIdx, trackId);
+                }
             };
+
+            window.__airmusePlayStation = (stationId) => {
+                if (this.provider && typeof this.provider.playStationByNative === 'function') {
+                    this.provider.playStationByNative(stationId);
+                }
+            };
+
+            window.__airmuseJumpToPlaying = () => {
+                if (this.provider && typeof this.provider.jumpToPlaying === 'function') {
+                    this.provider.jumpToPlaying();
+                }
+            };
+        },
+
+        // SPA 保活：若宿主页面发生内联 DOM 变动导致 `#airmuse-app` 意外丢失，自动恢复
+        startSPAKeeper() {
+            if (this._spaKeeperTimer) clearInterval(this._spaKeeperTimer);
+            this._spaKeeperTimer = setInterval(() => {
+                const app = document.getElementById('airmuse-app');
+                if (!app && document.body) {
+                    this.mountScaffold();
+                    this.render();
+                }
+            }, 1000);
+        }
+    };
+
+    global.AirMuseUI = AirMuseUI;
+
+})(typeof window !== 'undefined' ? window : this);
+
+
+        // ── 2. Apple Music 音源适配器 (AppleMusicProvider) ──
+        /**
+ * apple_music_provider.js
+ * AirMuse Apple Music 专属数据适配器 (AppleMusicProvider)
+ *
+ * 职责：
+ * 1. 实现 IDataProvider 规范，提供 Apple Music 的 Tab 配置、搜索范围配置
+ * 2. 直连 Apple Music Amp-API (Amp-API Direct Fetch)，支持官方 Token 嗅探与降级
+ * 3. 实现双域检索 (Catalog 全球曲库 + Library 个人资料库)、高清封面写真解析、触底分页
+ * 4. 驱动 MusicKit.getInstance() 实现单曲、电台、整张歌单/专辑播放
+ * 5. 封装 IndexedDB 极速缓存引擎 (替代 localStorage)
+ */
+
+(function (global) {
+    const BaseClass = (global.AirMuseUI && global.AirMuseUI.IDataProvider) ? global.AirMuseUI.IDataProvider : class {};
+
+    // ── 0. IndexedDB 异步本地缓存 ──────────────────────────────────────────
+    const DB_NAME = 'airmuse_music_db';
+    const DB_VERSION = 2;
+    const STORE_NAME = 'catalog_cache';
+    const CACHE_KEY = 'airmuse_catalog_v3';
+
+    function getDB() {
+        return new Promise((resolve, reject) => {
+            const req = indexedDB.open(DB_NAME, DB_VERSION);
+            req.onupgradeneeded = (e) => {
+                const db = e.target.result;
+                if (!db.objectStoreNames.contains(STORE_NAME)) {
+                    db.createObjectStore(STORE_NAME);
+                }
+            };
+            req.onsuccess = () => resolve(req.result);
+            req.onerror = () => reject(req.error);
+        });
+    }
+
+    async function idbGet(key) {
+        try {
+            const db = await getDB();
+            return new Promise((resolve) => {
+                const tx = db.transaction(STORE_NAME, 'readonly');
+                const req = tx.objectStore(STORE_NAME).get(key);
+                req.onsuccess = () => resolve(req.result);
+                req.onerror = () => resolve(null);
+            });
+        } catch (_) {
+            return null;
+        }
+    }
+
+    async function idbSet(key, val) {
+        try {
+            const db = await getDB();
+            return new Promise((resolve) => {
+                const tx = db.transaction(STORE_NAME, 'readwrite');
+                const req = tx.objectStore(STORE_NAME).put(val, key);
+                req.onsuccess = () => resolve(true);
+                req.onerror = () => resolve(false);
+            });
+        } catch (_) {
+            return false;
+        }
+    }
+
+    // ── 1. 令牌与 API 基础配置 ─────────────────────────────────────────────
+    const FALLBACK_DEV_TOKEN = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJFUzI1NiIsImtpZCI6IldlYlBsYXlLaWQifQ.eyJpc3MiOiJBTVBXZWJQbGF5IiwiaWF0IjoxNzkzOTAwNzA4LCJleHAiOjE3OTk5NDg3MDgsInJvb3RfaHR0cHNfb3JpZ2luIjpbImFwcGxlLmNvbSJdfQ.7L-PYJHjO8PpFdhKS-OSkf_snyFvg5cq-JDERUs_N_UcUX9Vk0kf1WLatgDeEvhB_Arg1b5Tl-99G1v6hUwH0A';
+    const FALLBACK_USER_TOKEN = '0.AhLguOql2yDcoV5g/aTy/eSDkhhH62HGfnutGQVywp2Sl7wUjfwH+robO39OcpfAC+MmQfsjqUytTfT9WoY8ueQYrYCU1bscJNMOHwErJDvbhYd1RlZQH8xHF/ArXIG5Gq3hX48An4eyLx01IwI+RLsbCG7QTR7dnAmPoEJYQSuYfzW057zsIvwXlt/XrviGeunNQ4BDXL0Fy5YRmb/ufLjQOHxu96gA/SjjMbNhw67Eri3B2g==';
+
+    function formatArtworkUrl(artworkObj, size = 160) {
+        if (!artworkObj?.url) return null;
+        return artworkObj.url
+            .replace('{w}x{h}', `${size}x${size}`)
+            .replace('{c}', 'bb')
+            .replace('cc.{f}', 'bb.webp')
+            .replace('{f}', 'webp');
+    }
+
+    function makeCategory(id, title, items, nextUrl = null) {
+        return { id, title, items, nextUrl };
+    }
+
+    // ── 2. 数据模型映射器 (Mappers) ────────────────────────────────────────
+    function resolveResourceItem(ref, resources) {
+        const item = resources?.[ref.type]?.[ref.id];
+        if (!item) return null;
+        let target = item;
+        if (item.relationships?.contents?.data?.[0]) {
+            const tRef = item.relationships.contents.data[0];
+            target = resources?.[tRef.type]?.[tRef.id] || item;
+        }
+        const attr = target.attributes || item.attributes || {};
+        const typeMap = {
+            songs: 'song',
+            playlists: 'playlist',
+            'library-playlists': 'playlist',
+            stations: 'station',
+            albums: 'album',
+            'library-albums': 'album'
+        };
+        const type = typeMap[target.type || ref.type] || (ref.type?.includes('editorial') ? 'editorial' : 'item');
+        return {
+            id: target.id || item.id,
+            title: attr.name || attr.title || item.attributes?.designBadge || '推荐精选',
+            subtitle: attr.artistName || attr.curatorName || (attr.description?.standard ? attr.description.standard.slice(0, 36) : 'Apple Music'),
+            eyebrow: null,
+            type,
+            artworkUrl: formatArtworkUrl(attr.artwork || attr.editorialArtwork, 160),
+            linkUrl: attr.url || `https://music.apple.com/cn/${type}/${target.id || item.id}`,
+            durationMs: attr.durationInMillis || null,
+        };
+    }
+
+    function mapCatalogArtist(a) {
+        const attr = a.attributes || {};
+        return {
+            id: a.id,
+            title: attr.name || '未知艺人',
+            subtitle: attr.genreNames?.[0] || '艺人',
+            eyebrow: null,
+            type: 'artist',
+            artworkUrl: formatArtworkUrl(attr.artwork, 160),
+            linkUrl: attr.url || `https://music.apple.com/cn/artist/${a.id}`,
+            isLibrary: false
+        };
+    }
+
+    function mapCatalogAlbum(a) {
+        const attr = a.attributes || {};
+        return {
+            id: a.id,
+            title: attr.name || '未知专辑',
+            subtitle: attr.artistName || 'Apple Music',
+            eyebrow: null,
+            type: 'album',
+            artworkUrl: formatArtworkUrl(attr.artwork, 160),
+            linkUrl: attr.url || `https://music.apple.com/cn/album/${a.id}`,
+            isLibrary: false
+        };
+    }
+
+    function mapSongItem(track, isFav = false) {
+        const attr = track.attributes || {};
+        const catAttr = track.relationships?.catalog?.data?.[0]?.attributes;
+        const sub = [attr.artistName, attr.albumName].filter(Boolean).join(' · ');
+        const rawArtwork = attr.artwork || catAttr?.artwork;
+        const isLib = track.type?.includes('library') || (typeof track.id === 'string' && track.id.startsWith('i.'));
+        return {
+            id: track.id,
+            title: attr.name || '未知单曲',
+            subtitle: sub || 'Apple Music',
+            eyebrow: null,
+            type: isFav ? 'fav-song' : 'song',
+            artworkUrl: formatArtworkUrl(rawArtwork, 160),
+            linkUrl: attr.url || `https://music.apple.com/cn/song/${attr.playParams?.catalogId || track.id}`,
+            durationMs: attr.durationInMillis || null,
+            isLibrary: isLib
+        };
+    }
+
+    function mapLibraryItem(item, defaultType = 'item') {
+        const attr = item.attributes || {};
+        const catItem = item.relationships?.catalog?.data?.[0];
+        const catAttr = catItem?.attributes;
+        const type = item.type === 'library-albums' ? 'album' : (item.type === 'library-playlists' ? 'playlist' : (item.type === 'library-artists' ? 'artist' : defaultType));
+
+        let sub = '';
+        if (attr.artistName) {
+            sub = attr.trackCount ? `${attr.artistName} (${attr.trackCount} 首)` : attr.artistName;
+        } else if (type === 'artist') {
+            sub = catAttr?.genreNames?.[0] || '艺人';
+        } else {
+            sub = '资料库';
         }
 
-        // 映射歌单条目 (角标区分自建/收藏，去除封面下方自建和已收藏文字)
-        function mapPlaylistItem(pl) {
-            const attr = pl.attributes || {};
-            const catAttr = pl.relationships?.catalog?.data?.[0]?.attributes;
-            const canEdit = !!attr.canEdit;
-            const type = canEdit ? 'user-playlist' : 'fav-playlist';
+        const rawArtwork = attr.artwork || catAttr?.artwork;
 
-            let sub = '';
-            if (attr.curatorName && attr.curatorName !== 'Apple Music') {
-                sub = attr.curatorName;
-            } else if (attr.description?.standard) {
-                sub = attr.description.standard.slice(0, 36);
-            } else if (attr.trackCount) {
-                sub = `${attr.trackCount} 首单曲`;
-            } else {
-                sub = 'Apple Music';
-            }
+        return {
+            id: item.id,
+            title: attr.name || catAttr?.name || '未知名称',
+            subtitle: sub,
+            eyebrow: null,
+            type,
+            artworkUrl: formatArtworkUrl(rawArtwork, 160),
+            linkUrl: `https://music.apple.com/cn/${type}/${item.id}`,
+            isLibrary: true
+        };
+    }
 
-            const rawArtwork = attr.artwork || catAttr?.artwork;
-            const isLib = pl.type?.includes('library') || (typeof pl.id === 'string' && pl.id.startsWith('p.'));
+    function mapPlaylistItem(pl) {
+        const attr = pl.attributes || {};
+        const catAttr = pl.relationships?.catalog?.data?.[0]?.attributes;
+        const canEdit = !!attr.canEdit;
+        const type = canEdit ? 'user-playlist' : 'fav-playlist';
 
-            return {
-                id: pl.id,
-                title: attr.name || '未命名歌单',
-                subtitle: sub,
-                eyebrow: null,
-                type,          // 角标显示：自建 或 收藏
-                artworkUrl: formatArtworkUrl(rawArtwork, 160),
-                linkUrl: attr.url || `https://music.apple.com/cn/playlist/${pl.id}`,
-                canEdit,
-                isLibrary: isLib
-            };
+        let sub = '';
+        if (attr.curatorName && attr.curatorName !== 'Apple Music') {
+            sub = attr.curatorName;
+        } else if (attr.description?.standard) {
+            sub = attr.description.standard.slice(0, 36);
+        } else if (attr.trackCount) {
+            sub = `${attr.trackCount} 首单曲`;
+        } else {
+            sub = 'Apple Music';
         }
 
-        function getDeveloperToken() {
+        const rawArtwork = attr.artwork || catAttr?.artwork;
+        const isLib = pl.type?.includes('library') || (typeof pl.id === 'string' && pl.id.startsWith('p.'));
+
+        return {
+            id: pl.id,
+            title: attr.name || '未命名歌单',
+            subtitle: sub,
+            eyebrow: null,
+            type,
+            artworkUrl: formatArtworkUrl(rawArtwork, 160),
+            linkUrl: attr.url || `https://music.apple.com/cn/playlist/${pl.id}`,
+            canEdit,
+            isLibrary: isLib
+        };
+    }
+
+    // ── 3. AppleMusicProvider 类实现 ──────────────────────────────────────
+    class AppleMusicProvider extends BaseClass {
+        constructor() {
+            super();
+            this._cachedDatasets = null;
+            this._nowPlayingCallback = null;
+            this._userCallback = null;
+            this._initCookie();
+            this._startMonitor();
+        }
+
+        get id() { return 'apple-music'; }
+        get name() { return 'Apple Music'; }
+
+        get tabs() {
+            return [
+                { id: 'home', label: '主页' },
+                { id: 'browse', label: '新发现' },
+                { id: 'radio', label: '广播' },
+                { id: 'library', label: '资料库' },
+                { id: 'playlists', label: '歌单' }
+            ];
+        }
+
+        get searchScopes() {
+            return [
+                { id: 'catalog', label: 'Apple Music', placeholder: '在 Apple Music 中搜索...' },
+                { id: 'library', label: '资料库', placeholder: '在资料库中搜索...' }
+            ];
+        }
+
+        _initCookie() {
+            try {
+                const uToken = this.getUserToken();
+                if (uToken && !document.cookie.includes('media-user-token')) {
+                    document.cookie = `media-user-token=${uToken}; domain=.music.apple.com; path=/; max-age=31536000; SameSite=Lax`;
+                }
+            } catch (_) {}
+        }
+
+        getDeveloperToken() {
             try {
                 const mk = window.MusicKit && window.MusicKit.getInstance ? window.MusicKit.getInstance() : null;
                 if (mk && mk.developerToken) return mk.developerToken;
@@ -1508,7 +1623,7 @@
             return FALLBACK_DEV_TOKEN;
         }
 
-        function getUserToken() {
+        getUserToken() {
             try {
                 const mk = window.MusicKit && window.MusicKit.getInstance ? window.MusicKit.getInstance() : null;
                 if (mk && mk.musicUserToken) return mk.musicUserToken;
@@ -1518,16 +1633,9 @@
             return FALLBACK_USER_TOKEN;
         }
 
-        try {
-            const uToken = getUserToken();
-            if (uToken && !document.cookie.includes('media-user-token')) {
-                document.cookie = `media-user-token=${uToken}; domain=.music.apple.com; path=/; max-age=31536000; SameSite=Lax`;
-            }
-        } catch (_) {}
-
-        async function fetchAmp(url, needAuth = false) {
-            const devToken = getDeveloperToken();
-            const userToken = getUserToken();
+        async fetchAmp(url, needAuth = false) {
+            const devToken = this.getDeveloperToken();
+            const userToken = this.getUserToken();
             const fullUrl = url.indexOf('http') === 0 ? url : ('https://amp-api.music.apple.com' + url);
 
             const headers = {
@@ -1546,10 +1654,19 @@
             return null;
         }
 
-        async function fetchAllAmpData(forceRefresh = false) {
-            const devToken = getDeveloperToken();
-            const userToken = getUserToken();
-            if (!devToken) return;
+        async loadInitialData() {
+            const cached = await idbGet(CACHE_KEY);
+            if (cached && cached.home && cached.home.categories && cached.home.categories.length) {
+                this._cachedDatasets = cached;
+                return cached;
+            }
+            return null;
+        }
+
+        async fetchTabData(tabId, forceRefresh = false) {
+            const devToken = this.getDeveloperToken();
+            const userToken = this.getUserToken();
+            if (!devToken) return [];
 
             const defaultHeaders = {
                 'authorization': `Bearer ${devToken}`,
@@ -1564,7 +1681,6 @@
                 { key: 'radio', url: 'https://amp-api-edge.music.apple.com/v1/editorial/cn/groupings?art[url]=c,f&format[resources]=map&include[albums]=artists&include[music-videos]=artists&include[songs]=artists&include[stations]=events,radio-show&l=zh-Hans-CN&name=radio&platform=web&tabs=subscriber', headers: defaultHeaders },
                 { key: 'libRecent', url: 'https://amp-api.music.apple.com/v1/me/library/recently-added?art[url]=f&limit=25&l=zh-Hans-CN&platform=web', headers: userHeaders },
                 { key: 'libAlbums', url: 'https://amp-api.music.apple.com/v1/me/library/albums?art[url]=f&limit=50&l=zh-Hans-CN&platform=web', headers: userHeaders },
-                // 重点：加入 include=catalog&art[url]=f 关联官方 Catalog 艺人高清写真封面
                 { key: 'libArtists', url: 'https://amp-api.music.apple.com/v1/me/library/artists?include=catalog&art[url]=f&limit=50&l=zh-Hans-CN&platform=web', headers: userHeaders },
                 { key: 'libFav', url: 'https://amp-api.music.apple.com/v1/me/library/playlists/p.MLUk3bdrQ?art[url]=f&include=tracks&l=zh-Hans-CN&platform=web', headers: userHeaders },
                 { key: 'libSongs', url: 'https://amp-api.music.apple.com/v1/me/library/songs?art[url]=f&limit=100&l=zh-Hans-CN&platform=web', headers: userHeaders },
@@ -1578,7 +1694,7 @@
                 );
                 const resMap = Object.fromEntries(ENDPOINTS.map((ep, idx) => [ep.key, responses[idx]]));
 
-                // 1. 解析主页
+                // 1. 主页
                 const homeCats = (resMap.home.data || []).reduce((acc, d, idx) => {
                     const rec = resMap.home.resources?.['personal-recommendation']?.[d.id];
                     if (!rec) return acc;
@@ -1588,7 +1704,7 @@
                     return acc;
                 }, []);
 
-                // 2. 解析新发现 & 广播
+                // 2. 新发现 & 广播
                 function parseEditorial(json) {
                     const grp = json.resources?.groupings?.[json.data?.[0]?.id];
                     const tab = json.resources?.['editorial-elements']?.[grp?.relationships?.tabs?.data?.[0]?.id];
@@ -1606,29 +1722,24 @@
                 const browseCats = parseEditorial(resMap.browse);
                 const radioCats = parseEditorial(resMap.radio);
 
-                // 3. 解析资料库 (排列：最近添加，喜爱歌曲，专辑，艺人，已存单曲)
+                // 3. 资料库
                 const libCats = [];
-                // ① 最近添加
                 const recentItems = (resMap.libRecent.data || []).map(item => mapLibraryItem(item, 'item'));
                 if (recentItems.length) libCats.push(makeCategory('lib-recent', '最近添加', recentItems, resMap.libRecent.next || null));
 
-                // ② 喜爱歌曲
                 const favTracks = resMap.libFav.data?.[0]?.relationships?.tracks?.data || [];
                 if (favTracks.length) libCats.push(makeCategory('lib-fav', '喜爱歌曲', favTracks.map(t => mapSongItem(t, true))));
 
-                // ③ 专辑
                 const albumItems = (resMap.libAlbums.data || []).map(item => mapLibraryItem(item, 'album'));
                 if (albumItems.length) libCats.push(makeCategory('lib-albums', '专辑', albumItems, resMap.libAlbums.next || null));
 
-                // ④ 艺人 (带 catalog 官方高清头像)
                 const artistItems = (resMap.libArtists.data || []).map(item => mapLibraryItem(item, 'artist'));
                 if (artistItems.length) libCats.push(makeCategory('lib-artists', '艺人', artistItems, resMap.libArtists.next || null));
 
-                // ⑤ 已存单曲
                 const songItems = (resMap.libSongs.data || []).map(t => mapSongItem(t, false));
                 if (songItems.length) libCats.push(makeCategory('lib-songs', '已存单曲', songItems, resMap.libSongs.next || null));
 
-                // 4. 解析歌单 (排列：所有歌单，收藏歌单，为你推荐，自建歌单)
+                // 4. 歌单
                 const plCats = [];
                 const rawPlaylists = resMap.playlists.data || [];
                 const userPlaylists = [];
@@ -1636,36 +1747,18 @@
 
                 rawPlaylists.forEach(p => {
                     const item = mapPlaylistItem(p);
-                    if (p.attributes?.canEdit) {
-                        userPlaylists.push(item);
-                    } else {
-                        favPlaylists.push(item);
-                    }
+                    if (p.attributes?.canEdit) userPlaylists.push(item);
+                    else favPlaylists.push(item);
                 });
 
-                // ① 所有歌单
                 const plAll = rawPlaylists.map(p => mapPlaylistItem(p));
-                if (plAll.length) {
-                    plCats.push(makeCategory('pl-all', '所有歌单', plAll, resMap.playlists.next || null));
-                }
-
-                // ② 收藏歌单
-                if (favPlaylists.length) {
-                    plCats.push(makeCategory('pl-fav', '收藏歌单', favPlaylists));
-                }
-
-                // ③ 为你推荐
+                if (plAll.length) plCats.push(makeCategory('pl-all', '所有歌单', plAll, resMap.playlists.next || null));
+                if (favPlaylists.length) plCats.push(makeCategory('pl-fav', '收藏歌单', favPlaylists));
                 const madeForYouItems = (resMap.madeForYou.data || []).map(p => mapPlaylistItem(p));
-                if (madeForYouItems.length) {
-                    plCats.push(makeCategory('pl-mfy', '为你推荐', madeForYouItems));
-                }
+                if (madeForYouItems.length) plCats.push(makeCategory('pl-mfy', '为你推荐', madeForYouItems));
+                if (userPlaylists.length) plCats.push(makeCategory('pl-user', '自建歌单', userPlaylists));
 
-                // ④ 自建歌单
-                if (userPlaylists.length) {
-                    plCats.push(makeCategory('pl-user', '自建歌单', userPlaylists));
-                }
-
-                datasets = {
+                const allDatasets = {
                     home: { categories: homeCats },
                     browse: { categories: browseCats },
                     radio: { categories: radioCats },
@@ -1673,25 +1766,194 @@
                     playlists: { categories: plCats },
                 };
 
-                idbSet(CACHE_KEY, datasets);
-                render();
-            } catch (_) {}
+                this._cachedDatasets = allDatasets;
+                idbSet(CACHE_KEY, allDatasets);
+
+                return allDatasets[tabId]?.categories || [];
+            } catch (_) {
+                return [];
+            }
         }
 
-        // ── 7. 读取 IndexedDB 缓存极速直出 ─────────────────────────────────────
-        idbGet(CACHE_KEY).then(cachedData => {
-            if (cachedData && cachedData.home && cachedData.home.categories && cachedData.home.categories.length) {
-                datasets = cachedData;
-                render();
+        async loadMore(cat, tabId, isSearching, scopeId) {
+            if (!cat || !cat.nextUrl) return [];
+            try {
+                const isLib = isSearching ? (scopeId === 'library') : (tabId === 'library' || tabId === 'playlists');
+                const res = await this.fetchAmp(cat.nextUrl, isLib);
+                if (res && res.data && res.data.length) {
+                    const newItems = res.data.map(d => {
+                        if (d.type === 'library-songs' || d.type === 'songs') return mapSongItem(d);
+                        if (d.type === 'library-albums' || d.type === 'albums') return isLib ? mapLibraryItem(d, 'album') : mapCatalogAlbum(d);
+                        if (d.type === 'library-artists' || d.type === 'artists') return isLib ? mapLibraryItem(d, 'artist') : mapCatalogArtist(d);
+                        if (d.type === 'library-playlists' || d.type === 'playlists') return mapPlaylistItem(d);
+                        return resolveResourceItem(d, res.resources);
+                    }).filter(Boolean);
+
+                    cat.nextUrl = res.next || null;
+                    if (!isSearching && this._cachedDatasets) {
+                        idbSet(CACHE_KEY, this._cachedDatasets);
+                    }
+                    return newItems;
+                }
+            } catch (_) {
+                cat.nextUrl = null;
             }
-        });
+            return [];
+        }
 
-        setTimeout(() => {
-            fetchAllAmpData();
-        }, 80);
+        async search(query, scope = 'catalog') {
+            const sf = 'cn';
+            if (scope === 'catalog') {
+                const url = `/v1/catalog/${sf}/search?term=${encodeURIComponent(query)}&types=songs,albums,artists,playlists&limit=25&relate[songs]=artists&include[songs]=artists&include[albums]=artists&art[url]=f&l=zh-Hans-CN&platform=web`;
+                const res = await this.fetchAmp(url, false);
+                const results = res?.results || {};
 
-        // ── 8. 实时同步与用户检测 ───────────────────────────────────────────────
-        function pushNowPlaying() {
+                const songs = (results.songs?.data || []).map(t => mapSongItem(t)).filter(Boolean);
+                const artists = (results.artists?.data || []).map(a => mapCatalogArtist(a)).filter(Boolean);
+                const albums = (results.albums?.data || []).map(a => mapCatalogAlbum(a)).filter(Boolean);
+                const playlists = (results.playlists?.data || []).map(p => mapPlaylistItem(p)).filter(Boolean);
+
+                const searchCategories = [];
+                const topItems = [];
+                if (artists.length) topItems.push(artists[0]);
+                if (songs.length) topItems.push(...songs.slice(0, 4));
+                if (albums.length) topItems.push(...albums.slice(0, 2));
+                if (playlists.length) topItems.push(...playlists.slice(0, 2));
+
+                if (topItems.length) searchCategories.push(makeCategory('cat-top', '最佳结果', topItems));
+                if (songs.length) searchCategories.push(makeCategory('cat-songs', '歌曲', songs, results.songs?.next || null));
+                if (artists.length) searchCategories.push(makeCategory('cat-artists', '艺人', artists, results.artists?.next || null));
+                if (albums.length) searchCategories.push(makeCategory('cat-albums', '专辑', albums, results.albums?.next || null));
+                if (playlists.length) searchCategories.push(makeCategory('cat-playlists', '歌单', playlists, results.playlists?.next || null));
+
+                return searchCategories;
+            } else {
+                const url = `/v1/me/library/search?term=${encodeURIComponent(query)}&types=library-songs,library-albums,library-artists,library-playlists&limit=25&include=catalog&art[url]=f&l=zh-Hans-CN&platform=web`;
+                const res = await this.fetchAmp(url, true);
+                const results = res?.results || {};
+
+                const libSongs = (results['library-songs']?.data || []).map(t => mapSongItem(t)).filter(Boolean);
+                const libArtists = (results['library-artists']?.data || []).map(a => mapLibraryItem(a, 'artist')).filter(Boolean);
+                const libAlbums = (results['library-albums']?.data || []).map(a => mapLibraryItem(a, 'album')).filter(Boolean);
+                const libPlaylists = (results['library-playlists']?.data || []).map(p => mapPlaylistItem(p)).filter(Boolean);
+
+                const searchCategories = [];
+                if (libSongs.length) searchCategories.push(makeCategory('lib-songs', '歌曲', libSongs, results['library-songs']?.next || null));
+                if (libArtists.length) searchCategories.push(makeCategory('lib-artists', '艺人', libArtists, results['library-artists']?.next || null));
+                if (libAlbums.length) searchCategories.push(makeCategory('lib-albums', '专辑', libAlbums, results['library-albums']?.next || null));
+                if (libPlaylists.length) searchCategories.push(makeCategory('lib-playlists', '歌单', libPlaylists, results['library-playlists']?.next || null));
+
+                return searchCategories;
+            }
+        }
+
+        async loadDetail(item) {
+            const sf = 'cn';
+            const isLib = (item.id.indexOf('p.') === 0 || item.id.indexOf('l.') === 0 || item.isLibrary);
+
+            let endpoint = '';
+            if (item.type.includes('playlist')) {
+                endpoint = isLib ? `/v1/me/library/playlists/${item.id}/tracks` : `/v1/catalog/${sf}/playlists/${item.id}/tracks`;
+            } else if (item.type === 'album') {
+                endpoint = isLib ? `/v1/me/library/albums/${item.id}/tracks` : `/v1/catalog/${sf}/albums/${item.id}/tracks`;
+            } else if (item.type === 'artist') {
+                endpoint = isLib ? `/v1/me/library/artists/${item.id}/tracks` : `/v1/catalog/${sf}/artists/${item.id}/view/top-songs`;
+            }
+
+            if (!endpoint) return [];
+
+            const res = await this.fetchAmp(endpoint + '?limit=100', isLib);
+            const rawTracks = res?.data || [];
+            return rawTracks.map(t => {
+                const attr = t.attributes || {};
+                return {
+                    id: t.id,
+                    name: attr.name || '未知单曲',
+                    artistName: attr.artistName || attr.albumName || '',
+                    durationMs: attr.durationInMillis || null,
+                    raw: t
+                };
+            });
+        }
+
+        async playItem(item, category, index = 0) {
+            const mk = window.MusicKit && window.MusicKit.getInstance ? window.MusicKit.getInstance() : null;
+            if (!mk) return;
+
+            try {
+                if (item.type === 'station') {
+                    await mk.setQueue({ station: item.id });
+                    await mk.play();
+                } else if (item.type === 'song' || item.type === 'fav-song') {
+                    await mk.setQueue({ song: item.id });
+                    await mk.play();
+                } else if (category && category.type && category.type.includes('playlist')) {
+                    await mk.setQueue({ playlist: category.id, startWith: index });
+                    await mk.play();
+                } else if (category && category.type === 'album') {
+                    await mk.setQueue({ album: category.id, startWith: index });
+                    await mk.play();
+                } else {
+                    await mk.setQueue({ song: item.id });
+                    await mk.play();
+                }
+            } catch (_) {}
+            this._notifyNowPlaying();
+        }
+
+        async playCollection(item, tracks = null, startIndex = 0) {
+            const mk = window.MusicKit && window.MusicKit.getInstance ? window.MusicKit.getInstance() : null;
+            if (!mk) return;
+
+            try {
+                if (item.type.includes('playlist')) {
+                    await mk.setQueue({ playlist: item.id, startWith: startIndex });
+                } else if (item.type === 'album') {
+                    await mk.setQueue({ album: item.id, startWith: startIndex });
+                }
+                await mk.play();
+            } catch (_) {}
+            this._notifyNowPlaying();
+        }
+
+        playByNative(kind, collectionId, trackIdx, trackId) {
+            const mk = window.MusicKit && window.MusicKit.getInstance ? window.MusicKit.getInstance() : null;
+            if (!mk) return;
+            try {
+                if (kind === 'playlist' && collectionId) {
+                    mk.setQueue({ playlist: collectionId, startWith: trackIdx }).then(() => mk.play());
+                } else if (kind === 'album' && collectionId) {
+                    mk.setQueue({ album: collectionId, startWith: trackIdx }).then(() => mk.play());
+                } else if (trackId) {
+                    mk.setQueue({ song: trackId }).then(() => mk.play());
+                }
+            } catch (_) {}
+            this._notifyNowPlaying();
+        }
+
+        playStationByNative(stationId) {
+            const mk = window.MusicKit && window.MusicKit.getInstance ? window.MusicKit.getInstance() : null;
+            if (!mk || !stationId) return;
+            try {
+                mk.setQueue({ station: stationId }).then(() => mk.play());
+            } catch (_) {}
+            this._notifyNowPlaying();
+        }
+
+        jumpToPlaying() {
+            // 保留未来扩展：若用户在底部栏双击，可跳转到正在播放上下文
+        }
+
+        onNowPlayingChange(callback) {
+            this._nowPlayingCallback = callback;
+        }
+
+        onUserChange(callback) {
+            this._userCallback = callback;
+        }
+
+        _notifyNowPlaying() {
+            if (!this._nowPlayingCallback) return;
             try {
                 const mk = window.MusicKit && window.MusicKit.getInstance ? window.MusicKit.getInstance() : null;
                 const item = mk ? mk.nowPlayingItem : null;
@@ -1719,22 +1981,20 @@
                     }
                 }
 
-                if (window.chrome && window.chrome.webview) {
-                    window.chrome.webview.postMessage(JSON.stringify({
-                        type: 'nowPlaying',
-                        source: 'Apple Music',
-                        title: title,
-                        artist: artist,
-                        album: album,
-                        isPlaying: isPlaying,
-                        positionMs: posMs,
-                        durationMs: durMs
-                    }));
-                }
+                this._nowPlayingCallback({
+                    source: 'Apple Music',
+                    title,
+                    artist,
+                    album,
+                    isPlaying,
+                    positionMs: posMs,
+                    durationMs: durMs
+                });
             } catch (_) {}
         }
 
-        function detectUser() {
+        _detectUser() {
+            if (!this._userCallback) return;
             try {
                 let uname = '';
                 const subEls = document.querySelectorAll('.product-lockup__subtitle, [data-testid="product-lockup-subtitle"], [aria-label*="账号"], [aria-label*="Account"]');
@@ -1744,19 +2004,27 @@
                     if (m && m[1] && m[1] !== '你') { uname = m[1].trim(); break; }
                 }
                 if (!uname) uname = '小可';
-                if (window.chrome && window.chrome.webview) {
-                    window.chrome.webview.postMessage(JSON.stringify({ type: 'userStatus', userName: uname }));
-                }
+                this._userCallback(uname);
             } catch (_) {}
         }
 
-        setInterval(() => {
-            pushNowPlaying();
-            detectUser();
-        }, 350);
-
-        window.__airmuseJumpToPlaying = function () {};
+        _startMonitor() {
+            setInterval(() => {
+                this._notifyNowPlaying();
+                this._detectUser();
+            }, 350);
+        }
     }
 
-    init();
+    global.AppleMusicProvider = AppleMusicProvider;
+
+})(typeof window !== 'undefined' ? window : this);
+
+
+        // ── 3. 实例化并启动应用 ──
+        const provider = new window.AppleMusicProvider();
+        window.AirMuseUI.init(provider);
+    }
+
+    bootstrap();
 })();
