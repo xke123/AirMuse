@@ -1,0 +1,12 @@
+{
+  "name": "apple-music-web-extractor",
+  "version": "2.0.0",
+  "description": "Apple Music Storefront Amp-API Fast Structured Data Extractor & 400x400 Viewer",
+  "main": "fetch_data.js",
+  "type": "module",
+  "scripts": {
+    "start": "node fetch_data.js",
+    "fetch": "node fetch_data.js",
+    "render": "node render.js"
+  }
+}

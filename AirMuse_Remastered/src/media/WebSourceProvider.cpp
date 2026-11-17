@@ -1,4 +1,4 @@
-﻿#include <unknwn.h>
+#include <unknwn.h>
 #include <objidl.h>
 #include "WebSourceProvider.hpp"
 #include <WebView2.h>
@@ -201,6 +201,26 @@ std::wstring WebSourceProvider::GetLoggedInUser() const {
 void WebSourceProvider::NavigateToPlayingContext() {
     if (!m_impl || !m_impl->webview) return;
     m_impl->webview->ExecuteScript(L"if(window.__airmuseJumpToPlaying) window.__airmuseJumpToPlaying();", nullptr);
+}
+
+void WebSourceProvider::PlayAppleMusicTrack(const std::wstring& kind, const std::wstring& collectionId, int trackIdx, const std::wstring& trackId) {
+    if (!m_impl || !m_impl->webview) return;
+    wchar_t js[512];
+    if (!kind.empty() && !collectionId.empty()) {
+        swprintf_s(js, L"if(window.__airmusePlayTrack) window.__airmusePlayTrack('%ls', '%ls', %d, '%ls');",
+            kind.c_str(), collectionId.c_str(), trackIdx, trackId.c_str());
+    } else {
+        swprintf_s(js, L"if(window.__airmusePlayTrack) window.__airmusePlayTrack('', '', %d, '%ls');",
+            trackIdx, trackId.c_str());
+    }
+    m_impl->webview->ExecuteScript(js, nullptr);
+}
+
+void WebSourceProvider::PlayAppleMusicStation(const std::wstring& stationId) {
+    if (!m_impl || !m_impl->webview) return;
+    wchar_t js[256];
+    swprintf_s(js, L"if(window.__airmusePlayStation) window.__airmusePlayStation('%ls');", stationId.c_str());
+    m_impl->webview->ExecuteScript(js, nullptr);
 }
 
 void WebSourceProvider::Shutdown() {

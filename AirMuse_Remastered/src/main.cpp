@@ -1,4 +1,4 @@
-﻿#include <shobjidl.h>
+#include <shobjidl.h>
 #include "core/WinCommon.hpp"
 #include <winrt/Windows.Foundation.h>
 #include "core/AppController.hpp"
@@ -33,6 +33,7 @@ int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE, PWSTR, int) {
 
     controller.Initialize(hwndMain, libraryWnd.WebHostHwnd());
     ShowWindow(hwndMain, SW_SHOW);
+    mainWnd.StartIntroSequence();
 
     MSG msg{};
     while (GetMessageW(&msg, nullptr, 0, 0)) {
@@ -43,4 +44,3 @@ int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE, PWSTR, int) {
     Gdiplus::GdiplusShutdown(gdiToken);
     return static_cast<int>(msg.wParam);
 }
-

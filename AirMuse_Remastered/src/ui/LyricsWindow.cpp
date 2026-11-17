@@ -9,6 +9,11 @@ using namespace Gdiplus;
 
 namespace airmuse {
 
+namespace {
+constexpr UINT_PTR TIMER_LYRICS_FRAME = 1;
+constexpr float LINE_STEP = 28.0f;
+} // namespace
+
 LyricsWindow::LyricsWindow(HINSTANCE hInst, AppController& controller, DockManager& dockMgr)
     : m_hInst(hInst), m_controller(controller), m_dockMgr(dockMgr) {}
 
@@ -32,20 +37,126 @@ HWND LyricsWindow::Create(HWND parentMain) {
 }
 
 void LyricsWindow::SetVisible(bool visible) {
-    ShowWindow(m_hwnd, visible ? SW_SHOWNOACTIVATE : SW_HIDE);
-    if (visible) Render();
+    if (visible) {
+        if (!IsWindowVisible(m_hwnd)) {
+            m_revealAnim.SnapTo(0.0f);
+        }
+        m_hiding = false;
+        m_revealAnim.target = 1.0f;
+        ShowWindow(m_hwnd, SW_SHOWNOACTIVATE);
+        OnPlaybackOrLyricsChanged();
+        EnsureFrameTimer();
+    } else {
+        if (!IsWindowVisible(m_hwnd)) return;
+        m_hiding = true;
+        m_revealAnim.target = 0.0f;
+        EnsureFrameTimer();
+    }
 }
 
 void LyricsWindow::SetMiniMode(bool mini) {
     m_mini = mini;
     m_winHeight.target = mini ? 30.0f : 216.0f;
+    EnsureFrameTimer();
+}
+
+int LyricsWindow::ComputeStableActiveIndex(LyricsSnapshot const& lrc, int64_t livePosMs) {
+    if (lrc.lines.empty()) {
+        m_lastTrackKey = lrc.trackKey;
+        m_lastActiveIdx = 0;
+        return 0;
+    }
+
+    int rawIdx = 0;
+    for (int i = 0; i < static_cast<int>(lrc.lines.size()); ++i) {
+        if (lrc.lines[i].timeMs <= livePosMs + 150) rawIdx = i;
+        else break;
+    }
+
+    if (lrc.trackKey != m_lastTrackKey || m_lastActiveIdx < 0 || m_lastActiveIdx >= static_cast<int>(lrc.lines.size())) {
+        m_lastTrackKey = lrc.trackKey;
+        m_lastActiveIdx = rawIdx;
+        return rawIdx;
+    }
+
+    if (rawIdx < m_lastActiveIdx) {
+        int64_t curLineTime = lrc.lines[m_lastActiveIdx].timeMs;
+        if (livePosMs + 600 >= curLineTime) {
+            return m_lastActiveIdx;
+        }
+    }
+
+    m_lastActiveIdx = rawIdx;
+    return rawIdx;
+}
+
+void LyricsWindow::EnsureFrameTimer() {
+    if (!m_hwnd || !IsWindowVisible(m_hwnd)) return;
+    if (!m_animating) {
+        m_animating = true;
+        m_lastFrameTick = GetTickCount64();
+        SetTimer(m_hwnd, TIMER_LYRICS_FRAME, 15, nullptr);
+    }
+}
+
+void LyricsWindow::OnPlaybackTick() {
+    if (!m_hwnd || !IsWindowVisible(m_hwnd)) return;
+    auto info = m_controller.Store().GetPlayback();
+    auto lrc  = m_controller.Store().GetLyrics();
+    int64_t livePosMs = info.EstimatedPositionMs() + lrc.offsetMs;
+    int prevIdx = m_lastActiveIdx;
+    int activeIdx = ComputeStableActiveIndex(lrc, livePosMs);
+    std::wstring nextLine = !lrc.lines.empty() ? lrc.lines[activeIdx].text : lrc.statusText;
+    bool changed = false;
+    if (activeIdx != prevIdx) {
+        m_scrollY.target = static_cast<float>(activeIdx) * LINE_STEP;
+        changed = true;
+    }
+    if (nextLine != m_curMiniLine) {
+        m_prevMiniLine = m_curMiniLine;
+        m_curMiniLine = nextLine;
+        if (m_mini && !m_prevMiniLine.empty()) {
+            m_miniLyricSlide.SnapTo(0.0f);
+            m_miniLyricSlide.target = 1.0f;
+        }
+        changed = true;
+    }
+    if (changed) EnsureFrameTimer();
+}
+
+void LyricsWindow::OnPlaybackOrLyricsChanged() {
+    if (!m_hwnd || !IsWindowVisible(m_hwnd)) return;
+    auto info = m_controller.Store().GetPlayback();
+    auto lrc  = m_controller.Store().GetLyrics();
+    int64_t livePosMs = info.EstimatedPositionMs() + lrc.offsetMs;
+    int prevIdx = m_lastActiveIdx;
+    bool trackChanged = (lrc.trackKey != m_lastTrackKey);
+    int activeIdx = ComputeStableActiveIndex(lrc, livePosMs);
+    std::wstring nextLine = !lrc.lines.empty() ? lrc.lines[activeIdx].text : lrc.statusText;
+
+    if (trackChanged || activeIdx != prevIdx) {
+        m_scrollY.target = static_cast<float>(activeIdx) * LINE_STEP;
+        EnsureFrameTimer();
+    }
+    if (nextLine != m_curMiniLine) {
+        m_prevMiniLine = m_curMiniLine;
+        m_curMiniLine = nextLine;
+        if (m_mini && !m_prevMiniLine.empty()) {
+            m_miniLyricSlide.SnapTo(0.0f);
+            m_miniLyricSlide.target = 1.0f;
+        }
+        EnsureFrameTimer();
+    }
     Render();
 }
 
-void LyricsWindow::Render() {
-    if (!m_hwnd || !IsWindowVisible(m_hwnd)) return;
+void LyricsWindow::StepAnimations(float dt) {
+    bool active = false;
+    active |= m_winHeight.Step(dt);
+    active |= m_scrollY.Step(dt);
+    active |= m_miniLyricSlide.Step(dt);
+    active |= m_revealAnim.Step(dt);
 
-    m_winHeight.Step(0.016f);
     int w = 320;
     int h = static_cast<int>(std::round(m_winHeight.current));
     int wPx = GlassRenderer::ToPx(w, m_dpi);
@@ -55,30 +166,65 @@ void LyricsWindow::Render() {
     GetWindowRect(m_hwnd, &rc);
     if ((rc.bottom - rc.top) != hPx) {
         SetWindowPos(m_hwnd, nullptr, 0, 0, wPx, hPx, SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
-        GlassRenderer::EnableFrostedBlur(m_hwnd, wPx, hPx, m_dpi, m_mini);
-        m_dockMgr.SyncAllDocked();
     }
 
-    float scale = static_cast<float>(m_dpi) / 96.0f;
-    HDC hdcScreen = GetDC(nullptr);
-    HDC hdcMem = CreateCompatibleDC(hdcScreen);
-    BITMAPINFO bmi{};
-    bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
-    bmi.bmiHeader.biWidth = wPx;
-    bmi.bmiHeader.biHeight = -hPx;
-    bmi.bmiHeader.biPlanes = 1;
-    bmi.bmiHeader.biBitCount = 32;
-    bmi.bmiHeader.biCompression = BI_RGB;
+    if (!active) {
+        m_animating = false;
+        KillTimer(m_hwnd, TIMER_LYRICS_FRAME);
+        if (m_hiding) {
+            m_hiding = false;
+            ShowWindow(m_hwnd, SW_HIDE);
+            return;
+        }
+        GlassRenderer::EnableFrostedBlur(m_hwnd, wPx, hPx, m_dpi, m_mini);
+    }
+    Render();
+}
 
-    void* bits = nullptr;
-    HBITMAP hBmp = CreateDIBSection(hdcScreen, &bmi, DIB_RGB_COLORS, &bits, nullptr, 0);
-    HGDIOBJ oldBmp = SelectObject(hdcMem, hBmp);
+void LyricsWindow::Render() {
+    if (!m_hwnd || !IsWindowVisible(m_hwnd)) return;
+
+    int w = 320;
+    int h = static_cast<int>(std::round(m_winHeight.current));
+    int wPx = GlassRenderer::ToPx(w, m_dpi);
+    int hPx = GlassRenderer::ToPx(h, m_dpi);
+    if (wPx <= 0 || hPx <= 0) return;
+
+    float scale = static_cast<float>(m_dpi) / 96.0f;
+    if (!m_surface.Ensure(wPx, hPx)) return;
+
+    float rev = std::clamp(m_revealAnim.current, 0.0f, 1.0f);
+    BYTE masterAlpha = static_cast<BYTE>(std::round(255.0f * rev));
 
     {
-        Graphics g(hdcMem);
+        Graphics g(m_surface.hdcMem);
+        g.Clear(Color(0, 0, 0, 0));
+        if (rev <= 0.01f) {
+            m_surface.Present(m_hwnd, wPx, hPx, 0);
+            return;
+        }
         g.ScaleTransform(scale, scale);
         g.SetSmoothingMode(SmoothingModeHighQuality);
         g.SetTextRenderingHint(TextRenderingHintAntiAlias);
+
+        if (rev < 0.995f) {
+            DockSide side = m_dockMgr.LyricsDockSide();
+            float wf = static_cast<float>(w);
+            float hf = static_cast<float>(h);
+            if (side == DockSide::Top) {
+                g.SetClip(RectF(0.0f, hf * (1.0f - rev), wf, hf * rev));
+                g.TranslateTransform(0.0f, (1.0f - rev) * hf * 0.45f);
+            } else if (side == DockSide::Left) {
+                g.SetClip(RectF(wf * (1.0f - rev), 0.0f, wf * rev, hf));
+                g.TranslateTransform((1.0f - rev) * wf * 0.45f, 0.0f);
+            } else if (side == DockSide::Right) {
+                g.SetClip(RectF(0.0f, 0.0f, wf * rev, hf));
+                g.TranslateTransform(-(1.0f - rev) * wf * 0.45f, 0.0f);
+            } else {
+                g.SetClip(RectF(0.0f, 0.0f, wf, hf * rev));
+                g.TranslateTransform(0.0f, -(1.0f - rev) * hf * 0.45f);
+            }
+        }
 
         GlassRenderer::DrawAirPlayGlassFrame(g, w, h, m_mini && m_hovering ? 1.0f : 0.0f, true);
 
@@ -95,11 +241,7 @@ void LyricsWindow::Render() {
         centerSf.SetTrimming(StringTrimmingEllipsisCharacter);
         centerSf.SetFormatFlags(StringFormatFlagsNoWrap);
 
-        int activeIdx = 0;
-        for (int i = 0; i < static_cast<int>(lrc.lines.size()); ++i) {
-            if (lrc.lines[i].timeMs <= livePosMs + 150) activeIdx = i;
-            else break;
-        }
+        int activeIdx = ComputeStableActiveIndex(lrc, livePosMs);
 
         if (h > 50) {
             if (m_hovering) {
@@ -108,30 +250,26 @@ void LyricsWindow::Render() {
                 GlassRenderer::DrawBarSpillFog(g, topGlassClip, static_cast<float>(w - 45), 72.0f, 30.0f, true, 215);
 
                 wchar_t hdr[64];
-                if (lrc.offsetMs != 0) swprintf_s(hdr, L"Lyrics (偏移 %+.1fs)", lrc.offsetMs / 1000.0);
-                else wcscpy_s(hdr, L"Lyrics (滚轮微调延迟)");
+                if (lrc.offsetMs != 0) swprintf_s(hdr, L"Lyrics (\u504f\u79fb %+.1fs)", lrc.offsetMs / 1000.0);
+                else wcscpy_s(hdr, L"Lyrics (\u6eda\u8f6e\u5fae\u8c03\u5ef6\u8fdf)");
                 SolidBrush hdrBrush(Color(240, 240, 246, 255));
                 g.DrawString(hdr, -1, &transFont, RectF(32.0f, 3.0f, 165.0f, 14.0f), nullptr, &hdrBrush);
 
-                GlassRenderer::DrawImageAlpha(g, m_winBtnsBmp.get(), RectF(w - 63, 4, 13, 13), 7 * 52, 0, 52, 52, m_hoverBtn == 0 ? 1.0f : 0.85f, 1.15f);
-                GlassRenderer::DrawImageAlpha(g, m_winBtnsBmp.get(), RectF(w - 45, 4, 13, 13), 2 * 52, 0, 52, 52, m_hoverBtn == 1 ? 1.0f : 0.85f, 1.15f);
+                GlassRenderer::DrawImageAlpha(g, m_winBtnsBmp.get(), RectF(static_cast<REAL>(w - 63), 4.0f, 13.0f, 13.0f), 7 * 52, 0, 52, 52, m_hoverBtn == 0 ? 1.0f : 0.85f, 1.15f);
+                GlassRenderer::DrawImageAlpha(g, m_winBtnsBmp.get(), RectF(static_cast<REAL>(w - 45), 4.0f, 13.0f, 13.0f), 2 * 52, 0, 52, 52, m_hoverBtn == 1 ? 1.0f : 0.85f, 1.15f);
             }
 
             int bodyTop = 20, bodyBot = h - 20, bodyH = bodyBot - bodyTop;
             GraphicsState saved = g.Save();
-            g.SetClip(Rect(8, bodyTop + 4, w - 16, bodyH - 8));
+            g.SetClip(Rect(8, bodyTop + 4, w - 16, bodyH - 8), CombineModeIntersect);
 
             if (lrc.lines.empty()) {
                 SolidBrush mb(Color(165, 190, 200, 215));
                 g.DrawString(lrc.statusText.c_str(), -1, &normalFont, RectF(14.0f, static_cast<REAL>(bodyTop + bodyH / 2 - 9), static_cast<REAL>(w - 28), 18.0f), &centerSf, &mb);
             } else {
-                const float lineStep = 28.0f;
-                m_scrollY.target = static_cast<float>(activeIdx) * lineStep;
-                m_scrollY.Step(0.016f);
-
                 float centerY = static_cast<float>(bodyTop + bodyH / 2) - 10.0f;
                 for (int i = 0; i < static_cast<int>(lrc.lines.size()); ++i) {
-                    float y = centerY + (static_cast<float>(i) * lineStep - m_scrollY.current);
+                    float y = centerY + (static_cast<float>(i) * LINE_STEP - m_scrollY.current);
                     if (y < bodyTop - 26 || y > bodyBot + 4) continue;
 
                     float dist = std::abs(y - centerY) / (static_cast<float>(bodyH) * 0.5f);
@@ -152,23 +290,38 @@ void LyricsWindow::Render() {
             }
             g.Restore(saved);
         } else {
-            std::wstring curLine = lrc.lines.empty() ? lrc.statusText : lrc.lines[activeIdx].text;
-            GlassRenderer::DrawGlyphHaloText(g, curLine, ff, 11.5f, RectF(14.0f, 4.0f, static_cast<REAL>(w - 28), 18.0f),
-                                             centerSf, Color(245, 215, 238, 255), 1.0f);
+            RectF miniGlassClip(4.5f, 3.5f, static_cast<float>(w - 9), static_cast<float>(h - 7));
+            GraphicsState miniSaved = g.Save();
+            g.SetClip(miniGlassClip, CombineModeIntersect);
+
+            bool hasLyrics = !lrc.lines.empty();
+            std::wstring curLine = hasLyrics ? lrc.lines[activeIdx].text : lrc.statusText;
+            if (m_curMiniLine.empty()) m_curMiniLine = curLine;
+
+            StringFormat vCenterSf;
+            vCenterSf.SetAlignment(StringAlignmentCenter);
+            vCenterSf.SetLineAlignment(StringAlignmentCenter);
+            vCenterSf.SetTrimming(StringTrimmingEllipsisCharacter);
+            vCenterSf.SetFormatFlags(StringFormatFlagsNoWrap);
+
+            float baseAlpha = hasLyrics ? 1.0f : 0.85f;
+            float p = std::clamp(m_miniLyricSlide.current, 0.0f, 1.0f);
+            float slideDist = 18.0f;
+
+            if (p < 0.98f && !m_prevMiniLine.empty()) {
+                GlassRenderer::DrawGlyphHaloText(g, m_prevMiniLine, ff, 13.0f,
+                                                 RectF(12.0f, 5.0f - p * slideDist, static_cast<REAL>(w - 24), static_cast<REAL>(h - 6)),
+                                                 vCenterSf, Color(215, 212, 213, 215), baseAlpha * (1.0f - p));
+            }
+            if (p > 0.02f && !curLine.empty()) {
+                GlassRenderer::DrawGlyphHaloText(g, curLine, ff, 13.0f,
+                                                 RectF(12.0f, 5.0f + (1.0f - p) * slideDist, static_cast<REAL>(w - 24), static_cast<REAL>(h - 6)),
+                                                 vCenterSf, Color(215, 212, 213, 215), baseAlpha * p);
+            }
+            g.Restore(miniSaved);
         }
     }
-
-    RECT rcWin{};
-    GetWindowRect(m_hwnd, &rcWin);
-    POINT ptDst{ rcWin.left, rcWin.top }, ptSrc{ 0, 0 };
-    SIZE szWnd{ wPx, hPx };
-    BLENDFUNCTION bf{ AC_SRC_OVER, 0, 255, AC_SRC_ALPHA };
-    UpdateLayeredWindow(m_hwnd, hdcScreen, &ptDst, &szWnd, hdcMem, &ptSrc, 0, &bf, ULW_ALPHA);
-
-    SelectObject(hdcMem, oldBmp);
-    DeleteObject(hBmp);
-    DeleteDC(hdcMem);
-    ReleaseDC(nullptr, hdcScreen);
+    m_surface.Present(m_hwnd, wPx, hPx, masterAlpha);
 }
 
 LRESULT CALLBACK LyricsWindow::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
@@ -192,14 +345,24 @@ LRESULT LyricsWindow::HandleMessage(UINT msg, WPARAM wParam, LPARAM lParam) {
         m_winBtnsBmp = GlassRenderer::LoadPngResource(m_hInst, IDR_PNG_WINDOWBUTTON);
         GlassRenderer::EnableFrostedBlur(m_hwnd, GlassRenderer::ToPx(320, m_dpi), GlassRenderer::ToPx(216, m_dpi), m_dpi, false);
         return 0;
+    case WM_TIMER:
+        if (wParam == TIMER_LYRICS_FRAME) {
+            ULONGLONG now = GetTickCount64();
+            float dt = static_cast<float>(now - m_lastFrameTick) / 1000.0f;
+            m_lastFrameTick = now;
+            StepAnimations(dt);
+        }
+        return 0;
     case WM_MOUSEMOVE: {
+        bool wasHovering = m_hovering;
+        int prevBtn = m_hoverBtn;
         m_hovering = true;
         int x = GlassRenderer::ToDip(GET_X_LPARAM(lParam), m_dpi);
         int y = GlassRenderer::ToDip(GET_Y_LPARAM(lParam), m_dpi);
         m_hoverBtn = Rect(320 - 63, 4, 13, 13).Contains(x, y) ? 0 : (Rect(320 - 45, 4, 13, 13).Contains(x, y) ? 1 : -1);
         TRACKMOUSEEVENT tme{ sizeof(tme), TME_LEAVE, m_hwnd, 0 };
         TrackMouseEvent(&tme);
-        Render();
+        if (!wasHovering || prevBtn != m_hoverBtn) Render();
         return 0;
     }
     case WM_MOUSELEAVE:
@@ -209,25 +372,24 @@ LRESULT LyricsWindow::HandleMessage(UINT msg, WPARAM wParam, LPARAM lParam) {
         return 0;
     case WM_LBUTTONDOWN:
         if (m_hoverBtn == 0) { SetMiniMode(!m_mini); return 0; }
-        if (m_hoverBtn == 1) { ShowWindow(m_hwnd, SW_HIDE); return 0; }
+        if (m_hoverBtn == 1) { SetVisible(false); return 0; }
         ReleaseCapture();
         SendMessageW(m_hwnd, WM_NCLBUTTONDOWN, HTCAPTION, 0);
         return 0;
     case WM_MOUSEWHEEL: {
         int delta = GET_WHEEL_DELTA_WPARAM(wParam);
         m_controller.AdjustLyricsOffset(delta > 0 ? 250 : -250);
-        Render();
+        OnPlaybackOrLyricsChanged();
         return 0;
     }
     case WM_WINDOWPOSCHANGING:
         m_dockMgr.OnLyricsMoving(reinterpret_cast<WINDOWPOS*>(lParam));
+        return 0;
+    case WM_DESTROY:
+        KillTimer(m_hwnd, TIMER_LYRICS_FRAME);
         return 0;
     }
     return DefWindowProcW(m_hwnd, msg, wParam, lParam);
 }
 
 } // namespace airmuse
-
-
-
-

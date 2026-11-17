@@ -19,7 +19,7 @@ enum BtnId {
     BTN_STOP = 0, BTN_PREV, BTN_PLAYPAUSE, BTN_NEXT, BTN_EJECT,
     BTN_MINIMIZE, BTN_MINI_TOGGLE, BTN_TOPMOST, BTN_CLOSE,
     BTN_PROGRESS, BTN_VOL_BAR, BTN_LYRICS, BTN_LIBRARY,
-    BTN_SRC_APPLE, BTN_SRC_SPOTIFY, BTN_SRC_QQ
+    BTN_SRC_APPLE, BTN_SRC_SPOTIFY, BTN_SRC_QQ, BTN_MINI_SRC
 };
 
 std::wstring FormatMs(int64_t ms) {
@@ -41,6 +41,21 @@ void MainWindow::BindChildWindows(LyricsWindow* lyricsWnd, LibraryWindow* librar
     m_libraryWnd = libraryWnd;
 }
 
+void MainWindow::InvalidateBgCache() {
+    m_bgCacheBmp.reset();
+    m_bgCacheW = 0;
+    m_bgCacheH = 0;
+}
+
+std::vector<std::wstring> MainWindow::GetMiniCycleItems(NowPlayingState const& info) const {
+    std::vector<std::wstring> items;
+    if (!info.title.empty()) items.push_back(info.title);
+    if (!info.artist.empty()) items.push_back(info.artist);
+    if (!info.album.empty()) items.push_back(info.album);
+    if (items.empty()) items.push_back(L"AirMuse Ready");
+    return items;
+}
+
 HWND MainWindow::Create() {
     WNDCLASSEXW wc{};
     wc.cbSize = sizeof(wc);
@@ -59,6 +74,16 @@ HWND MainWindow::Create() {
         nullptr, nullptr, m_hInst, this
     );
     return m_hwnd;
+}
+
+void MainWindow::StartIntroSequence() {
+    m_introActive = true;
+    m_pendingStartupPanels = true;
+    m_introStartTick = GetTickCount64();
+    m_startupAnim.SnapTo(0.0f);
+    m_startupAnim.target = 0.0f;
+    Render();
+    EnsureFrameTimer();
 }
 
 void MainWindow::BuildUIElements() {
@@ -98,6 +123,7 @@ void MainWindow::BuildUIElements() {
     addBtn(BTN_SRC_APPLE,   false, [this]() { m_controller.SwitchWebPlatform(WebPlatform::AppleMusic); if (!m_libVisible) SetLibraryVisible(true); else if (m_libraryWnd) m_libraryWnd->Render(); Render(); });
     addBtn(BTN_SRC_SPOTIFY, false, [this]() { m_controller.SwitchWebPlatform(WebPlatform::Spotify);    if (!m_libVisible) SetLibraryVisible(true); else if (m_libraryWnd) m_libraryWnd->Render(); Render(); });
     addBtn(BTN_SRC_QQ,      false, [this]() { m_controller.SwitchWebPlatform(WebPlatform::QQMusic);    if (!m_libVisible) SetLibraryVisible(true); else if (m_libraryWnd) m_libraryWnd->Render(); Render(); });
+    addBtn(BTN_MINI_SRC,    false, [this]() { SetLibraryVisible(!m_libVisible); });
 }
 
 void MainWindow::UpdateLayout(float w, float h) {
@@ -119,6 +145,7 @@ void MainWindow::UpdateLayout(float w, float h) {
             else if (b.id == BTN_SRC_APPLE)   b.bounds = RectF(32, h - 17, 13, 13);
             else if (b.id == BTN_SRC_SPOTIFY) b.bounds = RectF(50, h - 17, 13, 13);
             else if (b.id == BTN_SRC_QQ)      b.bounds = RectF(68, h - 17, 13, 13);
+            else if (b.id == BTN_MINI_SRC)    b.visible = false;
         } else {
             float startX = (w - 92.0f) * 0.5f;
             float xs[5] = { startX, startX + 18, startX + 37, startX + 56, startX + 74 };
@@ -126,15 +153,29 @@ void MainWindow::UpdateLayout(float w, float h) {
             else if (b.id == BTN_LYRICS)      b.bounds = RectF(w - 61, 8, 13, 13);
             else if (b.id == BTN_MINI_TOGGLE) b.bounds = RectF(w - 77, 8, 13, 13);
             else if (b.id == BTN_CLOSE)       b.bounds = RectF(w - 45, 8, 13, 13);
+            else if (b.id == BTN_MINI_SRC)    b.bounds = RectF(45, 8, 13, 13);
             else b.visible = false;
         }
     }
 }
 
 void MainWindow::ToggleMiniMode() {
-    m_miniMode = !m_miniMode;
+    bool nextMini = !m_miniMode;
+    if (nextMini && m_libVisible) {
+        SetLibraryVisible(false);
+    }
+    m_miniMode = nextMini;
+    m_dockMgr.SetMiniMode(m_miniMode);
     m_winWidth.target  = 320.0f;
     m_winHeight.target = m_miniMode ? 30.0f : 104.0f;
+    if (m_miniMode) {
+        m_miniFieldIdx = 0;
+        m_miniCycleTick = GetTickCount64();
+        auto items = GetMiniCycleItems(m_controller.Store().GetPlayback());
+        m_curMiniLine = items[0];
+        m_prevMiniLine.clear();
+        m_miniTextSlide.SnapTo(1.0f);
+    }
     if (m_lyricsWnd && m_dockMgr.LyricsDockSide() != DockSide::None) {
         m_lyricsWnd->SetMiniMode(m_miniMode);
     }
@@ -172,9 +213,31 @@ void MainWindow::EnsureFrameTimer() {
 
 void MainWindow::StepAnimations(float dt) {
     bool active = false;
+
+    if (m_introActive) {
+        ULONGLONG elapsed = GetTickCount64() - m_introStartTick;
+        if (elapsed >= 220) {
+            m_startupAnim.target = 1.0f;
+        } else {
+            active = true;
+        }
+        active |= m_startupAnim.Step(dt);
+
+        if (m_pendingStartupPanels && m_startupAnim.current >= 0.88f) {
+            m_pendingStartupPanels = false;
+            SetLyricsVisible(true);
+            SetLibraryVisible(true);
+        }
+        if (m_startupAnim.target >= 0.99f && m_startupAnim.current >= 0.995f) {
+            m_startupAnim.SnapTo(1.0f);
+            m_introActive = false;
+        }
+    }
+
     active |= m_winWidth.Step(dt);
     active |= m_winHeight.Step(dt);
     active |= m_hoverPanel.Step(dt);
+    active |= m_miniTextSlide.Step(dt);
 
     for (auto& b : m_buttons) {
         b.hoverAnim.target = (m_hoverBtnId == b.id) ? 1.0f : 0.0f;
@@ -188,13 +251,12 @@ void MainWindow::StepAnimations(float dt) {
     GetWindowRect(m_hwnd, &rc);
     if ((rc.right - rc.left) != wPx || (rc.bottom - rc.top) != hPx) {
         SetWindowPos(m_hwnd, nullptr, 0, 0, wPx, hPx, SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
-        GlassRenderer::EnableFrostedBlur(m_hwnd, wPx, hPx, m_dpi, m_winHeight.current < 45.0f);
-        m_dockMgr.SyncAllDocked();
     }
 
     if (!active) {
         m_animating = false;
         KillTimer(m_hwnd, TIMER_FRAME);
+        GlassRenderer::EnableFrostedBlur(m_hwnd, wPx, hPx, m_dpi, m_winHeight.current < 45.0f);
     }
     Render();
 }
@@ -207,38 +269,96 @@ void MainWindow::Render() {
     UpdateLayout(static_cast<float>(w), static_cast<float>(h));
 
     NowPlayingState info = m_controller.Store().GetPlayback();
-    if (info.TrackKey() != m_cachedArtKey) {
-        m_cachedArtKey = info.TrackKey();
+    std::wstring trackKey = info.TrackKey();
+    if (trackKey != m_cachedArtKey) {
+        m_cachedArtKey = trackKey;
         m_artworkBmp = GlassRenderer::DecodeArtworkBitmap(info.artworkBytes);
+        InvalidateBgCache();
+
+        auto items = GetMiniCycleItems(info);
+        m_miniFieldIdx = 0;
+        m_miniCycleTick = GetTickCount64();
+        m_prevMiniLine = m_curMiniLine;
+        m_curMiniLine = items[0];
+        if (m_miniMode && !m_prevMiniLine.empty() && m_prevMiniLine != m_curMiniLine) {
+            m_miniTextSlide.SnapTo(0.0f);
+            m_miniTextSlide.target = 1.0f;
+            EnsureFrameTimer();
+        }
     }
 
     int wPx = GlassRenderer::ToPx(w, m_dpi);
     int hPx = GlassRenderer::ToPx(h, m_dpi);
     float scale = static_cast<float>(m_dpi) / 96.0f;
 
-    HDC hdcScreen = GetDC(nullptr);
-    HDC hdcMem = CreateCompatibleDC(hdcScreen);
-    BITMAPINFO bmi{};
-    bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
-    bmi.bmiHeader.biWidth = wPx;
-    bmi.bmiHeader.biHeight = -hPx;
-    bmi.bmiHeader.biPlanes = 1;
-    bmi.bmiHeader.biBitCount = 32;
-    bmi.bmiHeader.biCompression = BI_RGB;
+    if (!m_surface.Ensure(wPx, hPx)) return;
 
-    void* bits = nullptr;
-    HBITMAP hBmp = CreateDIBSection(hdcScreen, &bmi, DIB_RGB_COLORS, &bits, nullptr, 0);
-    HGDIOBJ oldBmp = SelectObject(hdcMem, hBmp);
-
+    BYTE masterAlpha = 255;
     {
-        Graphics g(hdcMem);
+        Graphics g(m_surface.hdcMem);
+        g.Clear(Color(0, 0, 0, 0));
         g.ScaleTransform(scale, scale);
         g.SetSmoothingMode(SmoothingModeHighQuality);
         g.SetTextRenderingHint(TextRenderingHintAntiAlias);
-        g.SetInterpolationMode(InterpolationModeHighQualityBicubic);
+        g.SetInterpolationMode(m_animating ? InterpolationModeBilinear : InterpolationModeHighQualityBicubic);
+
+        if (m_introActive && m_startupAnim.current < 0.995f) {
+            float p = std::clamp(m_startupAnim.current, 0.0f, 1.0f);
+            float logoSize = 52.0f;
+            float curW = logoSize + (static_cast<float>(w) - logoSize) * p;
+            float curH = logoSize + (static_cast<float>(h) - logoSize) * p;
+            float cx = static_cast<float>(w) * 0.5f;
+            float cy = static_cast<float>(h) * 0.5f;
+            float rx = cx - curW * 0.5f;
+            float ry = cy - curH * 0.5f;
+
+            GraphicsPath expandClip;
+            GlassRenderer::AddRoundedRectPath(expandClip, rx, ry, curW, curH, 6.0f);
+            GraphicsState st = g.Save();
+            g.SetClip(&expandClip, CombineModeIntersect);
+
+            if (p > 0.05f) {
+                GlassRenderer::DrawAirPlayGlassFrame(g, w, h, 0.0f, m_focused, m_artworkBmp.get());
+            }
+
+            float logoAlpha = std::clamp(1.0f - p * 1.6f, 0.0f, 1.0f);
+            if (logoAlpha > 0.02f) {
+                LinearGradientBrush badgeBrush(PointF(rx, ry), PointF(rx, ry + curH),
+                                               Color(static_cast<BYTE>(235 * logoAlpha), 42, 46, 54),
+                                               Color(static_cast<BYTE>(245 * logoAlpha), 20, 22, 26));
+                g.FillPath(&badgeBrush, &expandClip);
+                Pen badgeRim(Color(static_cast<BYTE>(165 * logoAlpha), 235, 240, 250), 1.0f);
+                g.DrawPath(&badgeRim, &expandClip);
+                if (m_appLogoBmp) {
+                    GlassRenderer::DrawImageAlpha(g, m_appLogoBmp.get(), RectF(cx - 18.0f, cy - 18.0f, 36.0f, 36.0f),
+                                                  0, 0, m_appLogoBmp->GetWidth(), m_appLogoBmp->GetHeight(), logoAlpha);
+                }
+            }
+            g.Restore(st);
+            m_surface.Present(m_hwnd, wPx, hPx, 255);
+            return;
+        }
 
         float hoverAlpha = m_hoverPanel.current;
-        GlassRenderer::DrawAirPlayGlassFrame(g, w, h, m_miniMode ? hoverAlpha : 0.0f, m_focused, m_artworkBmp.get());
+        if (h > 50) {
+            if (!m_bgCacheBmp || m_bgCacheW != wPx || m_bgCacheH != hPx || m_bgCacheFocused != m_focused || m_bgCacheArtKey != m_cachedArtKey) {
+                m_bgCacheBmp = std::make_unique<Bitmap>(wPx, hPx, PixelFormat32bppPARGB);
+                Graphics bg(m_bgCacheBmp.get());
+                bg.Clear(Color(0, 0, 0, 0));
+                bg.ScaleTransform(scale, scale);
+                bg.SetSmoothingMode(SmoothingModeHighQuality);
+                bg.SetInterpolationMode(InterpolationModeHighQualityBicubic);
+                GlassRenderer::DrawAirPlayGlassFrame(bg, w, h, 0.0f, m_focused, m_artworkBmp.get());
+                m_bgCacheW = wPx;
+                m_bgCacheH = hPx;
+                m_bgCacheFocused = m_focused;
+                m_bgCacheArtKey = m_cachedArtKey;
+            }
+            g.DrawImage(m_bgCacheBmp.get(), RectF(0.0f, 0.0f, static_cast<REAL>(w), static_cast<REAL>(h)),
+                        0.0f, 0.0f, static_cast<REAL>(wPx), static_cast<REAL>(hPx), UnitPixel);
+        } else {
+            GlassRenderer::DrawAirPlayGlassFrame(g, w, h, m_miniMode ? hoverAlpha : 0.0f, m_focused, nullptr);
+        }
 
         int64_t livePosMs = m_scrubbing
             ? static_cast<int64_t>(m_scrubRatio * static_cast<float>(info.durationMs))
@@ -309,7 +429,6 @@ void MainWindow::Render() {
                 drawMainSprite(BTN_NEXT, 4);
                 drawMainSprite(BTN_EJECT, 5);
 
-                // 上玻璃条（左右留 gap）：仅右上角窗口按钮有梯形溢流暗雾（右侧对齐，左侧延伸至黄金分割点）
                 RectF topGlassClip(3.0f, 2.0f, static_cast<float>(w - 6), 18.0f);
                 GlassRenderer::DrawBarSpillFog(g, topGlassClip, static_cast<float>(w - 49), 130.0f, 34.0f, true, static_cast<BYTE>(215.0f * ctrlAlpha));
 
@@ -334,11 +453,8 @@ void MainWindow::Render() {
                     g.FillRectangle(&vb, w - 18, segY, 7, 2);
                 }
 
-                // 下玻璃条（左右留 gap）：鼠标滑入后显现左下角微型Logo组 + 右下角媒体库/歌词开关
                 RectF botGlassClip(3.0f, static_cast<float>(h - 20), static_cast<float>(w - 6), 18.0f);
-                // 左下角音源 Logo 组：左侧收齐(12px)，右侧延伸至黄金分割点(128px)
                 GlassRenderer::DrawBarSpillFog(g, botGlassClip, 47.0f, 32.0f, 110.0f, false, static_cast<BYTE>(205.0f * ctrlAlpha));
-                // 右下角功能按钮组：右侧收齐(14px)，左侧延伸至黄金分割点(96px)
                 GlassRenderer::DrawBarSpillFog(g, botGlassClip, static_cast<float>(w - 47), 80.0f, 32.0f, false, static_cast<BYTE>(215.0f * ctrlAlpha));
 
                 WebPlatform curPlat = m_controller.CurrentWebPlatform();
@@ -372,48 +488,68 @@ void MainWindow::Render() {
                 g.DrawString(FormatMs(info.durationMs).c_str(), -1, &timeFont, RectF(static_cast<REAL>(w - 64), 64.0f, 38.0f, 13.0f), &leftSf, &timeBrush);
             }
         } else {
+            RectF miniGlassClip(4.5f, 3.5f, static_cast<float>(w - 9), static_cast<float>(h - 7));
+            GraphicsState miniSaved = g.Save();
+            g.SetClip(miniGlassClip, CombineModeIntersect);
+
             float idleAlpha = 1.0f - hoverAlpha;
             if (idleAlpha > 0.02f) {
-                std::wstring line = info.title + L" — " + info.artist;
-                GlassRenderer::DrawGlyphHaloText(g, line, ff, 11.5f, RectF(14.0f, 5.0f, static_cast<REAL>(w - 28), 16.0f),
-                                                 centerSf, Color(245, 242, 246, 252), idleAlpha);
+                auto items = GetMiniCycleItems(info);
+                std::wstring line = items[static_cast<size_t>(m_miniFieldIdx) % items.size()];
+                if (m_curMiniLine.empty()) m_curMiniLine = line;
+
+                StringFormat vCenterSf;
+                vCenterSf.SetAlignment(StringAlignmentCenter);
+                vCenterSf.SetLineAlignment(StringAlignmentCenter);
+                vCenterSf.SetTrimming(StringTrimmingEllipsisCharacter);
+                vCenterSf.SetFormatFlags(StringFormatFlagsNoWrap);
+
+                float p = std::clamp(m_miniTextSlide.current, 0.0f, 1.0f);
+                float slideDist = 18.0f;
+                if (p < 0.98f && !m_prevMiniLine.empty()) {
+                    GlassRenderer::DrawGlyphHaloText(g, m_prevMiniLine, ff, 13.0f,
+                                                     RectF(12.0f, 5.0f - p * slideDist, static_cast<REAL>(w - 24), static_cast<REAL>(h - 6)),
+                                                     vCenterSf, Color(215, 212, 213, 215), idleAlpha * (1.0f - p));
+                }
+                if (p > 0.02f && !line.empty()) {
+                    GlassRenderer::DrawGlyphHaloText(g, line, ff, 13.0f,
+                                                     RectF(12.0f, 5.0f + (1.0f - p) * slideDist, static_cast<REAL>(w - 24), static_cast<REAL>(h - 6)),
+                                                     vCenterSf, Color(215, 212, 213, 215), idleAlpha * p);
+                }
             }
             if (hoverAlpha > 0.02f) {
-                RectF miniGlassClip(4.0f, 3.0f, static_cast<float>(w - 8), static_cast<float>(h - 6));
-                GlassRenderer::DrawBarSpillFog(g, miniGlassClip, static_cast<float>(w) * 0.5f, 56.0f, 56.0f, false,
-                                               static_cast<BYTE>(205.0f * hoverAlpha));
-                GlassRenderer::DrawBarSpillFog(g, miniGlassClip, static_cast<float>(w - 61), 36.0f, 28.0f, false,
-                                               static_cast<BYTE>(215.0f * hoverAlpha));
+                GlassRenderer::DrawTextHalo(g, static_cast<float>(w) * 0.5f, static_cast<float>(h) * 0.5f,
+                                            68.0f, 14.0f, static_cast<BYTE>(135.0f * hoverAlpha));
+                GlassRenderer::DrawTextHalo(g, static_cast<float>(w - 61), static_cast<float>(h) * 0.5f,
+                                            38.0f, 14.0f, static_cast<BYTE>(135.0f * hoverAlpha));
+                GlassRenderer::DrawTextHalo(g, 51.5f, static_cast<float>(h) * 0.5f,
+                                            20.0f, 14.0f, static_cast<BYTE>(135.0f * hoverAlpha));
+
+                if (auto* b = findBtn(BTN_MINI_SRC)) {
+                    float a = hoverAlpha * (m_libVisible || b->hoverAnim.current > 0.1f ? 1.0f : 0.85f);
+                    GlassRenderer::DrawPlatformLogo(g, static_cast<int>(m_controller.CurrentWebPlatform()), b->bounds,
+                                                    m_libVisible || b->hoverAnim.current > 0.1f, a);
+                }
+
                 auto drawMiniSprite = [&](int btnId, int spriteIdx) {
                     auto* b = findBtn(btnId);
                     if (!b || !b->visible) return;
                     GlassRenderer::DrawImageAlpha(g, m_miniCtrlBmp.get(), b->bounds, spriteIdx * 64, 0, 64, 64,
-                                                  hoverAlpha * (0.8f + 0.2f * b->hoverAnim.current), 1.0f + 0.15f * b->hoverAnim.current);
+                                                  hoverAlpha * (0.85f + 0.15f * b->hoverAnim.current), 1.0f + 0.15f * b->hoverAnim.current);
                 };
                 drawMiniSprite(BTN_STOP, 0);
                 drawMiniSprite(BTN_PREV, 1);
                 drawMiniSprite(BTN_PLAYPAUSE, info.isPlaying ? 3 : 2);
                 drawMiniSprite(BTN_NEXT, 4);
                 drawMiniSprite(BTN_EJECT, 5);
-
                 if (auto* b = findBtn(BTN_LYRICS))      GlassRenderer::DrawImageAlpha(g, m_winBtnsBmp.get(), b->bounds, 8 * 52, 52, 52, 52, hoverAlpha);
                 if (auto* b = findBtn(BTN_MINI_TOGGLE)) GlassRenderer::DrawImageAlpha(g, m_winBtnsBmp.get(), b->bounds, 4 * 52, 0, 52, 52, hoverAlpha);
                 if (auto* b = findBtn(BTN_CLOSE))       GlassRenderer::DrawImageAlpha(g, m_winBtnsBmp.get(), b->bounds, 2 * 52, 0, 52, 52, hoverAlpha);
             }
+            g.Restore(miniSaved);
         }
     }
-
-    RECT rcWin{};
-    GetWindowRect(m_hwnd, &rcWin);
-    POINT ptDst{ rcWin.left, rcWin.top }, ptSrc{ 0, 0 };
-    SIZE szWnd{ wPx, hPx };
-    BLENDFUNCTION bf{ AC_SRC_OVER, 0, 255, AC_SRC_ALPHA };
-    UpdateLayeredWindow(m_hwnd, hdcScreen, &ptDst, &szWnd, hdcMem, &ptSrc, 0, &bf, ULW_ALPHA);
-
-    SelectObject(hdcMem, oldBmp);
-    DeleteObject(hBmp);
-    DeleteDC(hdcMem);
-    ReleaseDC(nullptr, hdcScreen);
+    m_surface.Present(m_hwnd, wPx, hPx, masterAlpha);
 }
 
 LRESULT CALLBACK MainWindow::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
@@ -438,8 +574,21 @@ LRESULT MainWindow::HandleMessage(UINT msg, WPARAM wParam, LPARAM lParam) {
 
         int wPx = GlassRenderer::ToPx(320, m_dpi);
         int hPx = GlassRenderer::ToPx(104, m_dpi);
-        SetWindowPos(m_hwnd, nullptr, 0, 0, wPx, hPx, SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
+
+        RECT rcWork{};
+        SystemParametersInfoW(SPI_GETWORKAREA, 0, &rcWork, 0);
+        int margin = GlassRenderer::ToPx(16, m_dpi);
+        int totalW = GlassRenderer::ToPx(638, m_dpi);
+        int startX = rcWork.right - totalW - margin;
+        int startY = rcWork.top + margin;
+        SetWindowPos(m_hwnd, nullptr, startX, startY, wPx, hPx, SWP_NOZORDER | SWP_NOACTIVATE);
         GlassRenderer::EnableFrostedBlur(m_hwnd, wPx, hPx, m_dpi, false);
+
+        HICON hLogo = static_cast<HICON>(LoadImageW(m_hInst, MAKEINTRESOURCEW(IDR_MAIN_ICON), IMAGE_ICON, 48, 48, LR_DEFAULTCOLOR));
+        if (hLogo) {
+            m_appLogoBmp.reset(Bitmap::FromHICON(hLogo));
+            DestroyIcon(hLogo);
+        }
 
         m_mainCtrlBmp = GlassRenderer::LoadPngResource(m_hInst, IDR_PNG_MAINCONTROL);
         m_miniCtrlBmp = GlassRenderer::LoadPngResource(m_hInst, IDR_PNG_MINICONTROL);
@@ -457,6 +606,7 @@ LRESULT MainWindow::HandleMessage(UINT msg, WPARAM wParam, LPARAM lParam) {
         wcscpy_s(m_nid.szTip, L"AirMuse - Universal Music Controller");
         Shell_NotifyIconW(NIM_ADD, &m_nid);
 
+        m_miniCycleTick = GetTickCount64();
         SetTimer(m_hwnd, TIMER_CLOCK, 200, nullptr);
         Render();
         return 0;
@@ -472,18 +622,35 @@ LRESULT MainWindow::HandleMessage(UINT msg, WPARAM wParam, LPARAM lParam) {
     case WM_APP_STATE_CHANGED:
         m_controller.OnMediaSourceUpdated();
         Render();
-        if (m_lyricsWnd) m_lyricsWnd->Render();
+        if (m_lyricsWnd) m_lyricsWnd->OnPlaybackOrLyricsChanged();
         if (m_libraryWnd) m_libraryWnd->Render();
         return 0;
     case WM_APP_LYRICS_UPDATED:
         m_controller.OnLyricsUpdated();
-        if (m_lyricsWnd) m_lyricsWnd->Render();
+        if (m_lyricsWnd) m_lyricsWnd->OnPlaybackOrLyricsChanged();
         return 0;
     case WM_TIMER:
         if (wParam == TIMER_CLOCK) {
-            Render();
-            if (m_lyricsWnd) m_lyricsWnd->Render();
-            if (m_libraryWnd) m_libraryWnd->Render(); // 实时检测鼠标是否进入右侧 WebView 区域以触发悬停显隐
+            auto info = m_controller.Store().GetPlayback();
+            if (m_miniMode && !m_hovering) {
+                ULONGLONG now = GetTickCount64();
+                if (m_miniCycleTick == 0) m_miniCycleTick = now;
+                auto items = GetMiniCycleItems(info);
+                if (items.size() > 1 && (now - m_miniCycleTick) >= 10000) {
+                    m_miniCycleTick = now;
+                    m_prevMiniLine = items[static_cast<size_t>(m_miniFieldIdx) % items.size()];
+                    m_miniFieldIdx = (m_miniFieldIdx + 1) % static_cast<int>(items.size());
+                    m_curMiniLine = items[static_cast<size_t>(m_miniFieldIdx)];
+                    m_miniTextSlide.SnapTo(0.0f);
+                    m_miniTextSlide.target = 1.0f;
+                    EnsureFrameTimer();
+                }
+            }
+            if (info.isPlaying) {
+                if (!m_animating) Render();
+                if (m_lyricsWnd) m_lyricsWnd->OnPlaybackTick();
+            }
+            if (m_libraryWnd) m_libraryWnd->RefreshHoverIfChanged();
         } else if (wParam == TIMER_FRAME) {
             ULONGLONG now = GetTickCount64();
             float dt = static_cast<float>(now - m_lastFrameTick) / 1000.0f;
@@ -616,7 +783,3 @@ LRESULT MainWindow::HandleMessage(UINT msg, WPARAM wParam, LPARAM lParam) {
 }
 
 } // namespace airmuse
-
-
-
-

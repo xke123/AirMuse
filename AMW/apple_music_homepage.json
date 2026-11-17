@@ -1,0 +1,1837 @@
+﻿{
+  "pageName": "主页",
+  "url": "https://amp-api.music.apple.com/v1/me/recommendations",
+  "capturedAt": "2026-11-17T18:56:27.888Z",
+  "totalCategories": 18,
+  "categories": [
+    {
+      "id": "section-1",
+      "title": "专属精选推荐",
+      "itemCount": 9,
+      "items": [
+        {
+          "id": "ra.u-57fe7566664c2e391abb70ff757aa95f",
+          "title": "小可的电台",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "station",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/e9/31/64/e93164c8-bff1-a5d9-1ad9-99ff0042a5c1/412b88f3-3259-4c12-8d9c-98b28c6371d4.png/160x160sr.webp",
+          "linkUrl": "https://music.apple.com/cn/station/%E5%B0%8F%E5%8F%AF%E7%9A%84%E7%94%B5%E5%8F%B0/ra.u-57fe7566664c2e391abb70ff757aa95f"
+        },
+        {
+          "id": "6834264359",
+          "title": "请不要陷入爱情 - Single",
+          "subtitle": "阿肆",
+          "eyebrow": null,
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/37/30/33/373033bf-fd9b-0701-60eb-59273585ad87/cover.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/%E8%AF%B7%E4%B8%8D%E8%A6%81%E9%99%B7%E5%85%A5%E7%88%B1%E6%83%85-single/6834264359"
+        },
+        {
+          "id": "pl.pm-20e9f373919da0806af423d8340bb761",
+          "title": "爱不释耳",
+          "subtitle": "小可的 Apple Music",
+          "eyebrow": null,
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/e1/05/c3/e105c3d8-5146-8ee9-8a27-f0d35d7bba21/fa8530bb-a792-4be0-9125-7af9287d1344.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/%E7%88%B1%E4%B8%8D%E9%87%8A%E8%80%B3/pl.pm-20e9f373919da0806af423d8340bb761"
+        },
+        {
+          "id": "ra.160809474",
+          "title": "薛之谦与类似艺人",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "station",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features211/v4/09/70/0a/09700ae8-6360-cf09-fd2a-d08d5847e74d/mzl.uusgipnq.jpg/160x160AM.RSMA04.webp?imgLeft=Features122%2Fv4%2Fe4%2F8a%2F7a%2Fe48a7a52-d96d-9279-3591-ee17a595bccb%2Fmzl.nlflcqxm.jpg&imgRight=AMCArtistImages211%2Fv4%2F6d%2F53%2F0e%2F6d530e69-ce17-1c15-7605-b267ef760ea1%2Fami-identity-8cbee1395c1dbfa4daf6d4c572503010-2026-03-24T12-21-24.021Z_cropped.png",
+          "linkUrl": "https://music.apple.com/cn/station/%E8%96%9B%E4%B9%8B%E8%B0%A6%E4%B8%8E%E7%B1%BB%E4%BC%BC%E8%89%BA%E4%BA%BA/ra.160809474"
+        },
+        {
+          "id": "6823148530",
+          "title": "Rock Star 1 演唱会精选实录",
+          "subtitle": "伍佰 & China Blue",
+          "eyebrow": null,
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/41/29/2a/41292a80-ce9f-d046-046f-f4e3757293f2/26UM1IM29817.rgb.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/rock-star-1-%E6%BC%94%E5%94%B1%E6%9C%83%E7%B2%BE%E9%81%B8%E5%AF%A6%E9%8C%84/6823148530"
+        },
+        {
+          "id": "pl.ae58ec81f51f4a4abe54cd728cc78715",
+          "title": "Shawn Mendes：夏日精选",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features125/v4/56/d1/d1/56d1d1ac-2805-5cbe-655c-0f3b2e9915ef/U0MtTVMtV1ctU2hhd25fc19TdW1tZXJfTWl4LUFEQU1fSUQ9MTQ2MzIyMDg3Ny5wbmc.png/160x160SC.DN02.webp?l=zh-Hans",
+          "linkUrl": "https://music.apple.com/cn/playlist/shawn-mendes-%E5%A4%8F%E6%97%A5%E7%B2%BE%E9%80%89/pl.ae58ec81f51f4a4abe54cd728cc78715"
+        },
+        {
+          "id": "ra.q-MI4G",
+          "title": "精力充沛",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "station",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/7d/c9/de/7dc9dead-f692-ad4f-0ea8-68c852383154/4671133e-37d1-44ec-b57a-ddfa7c57f3f9.png/160x160sr.webp",
+          "linkUrl": "https://music.apple.com/cn/station/%E7%B2%BE%E5%8A%9B%E5%85%85%E6%B2%9B/ra.q-MI4G"
+        },
+        {
+          "id": "ra.q-GAI6IDU3ZmU3NTY2NjY0YzJlMzkxYWJiNzBmZjc1N2FhOTVm",
+          "title": "探索电台",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "station",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/21/37/6d/21376d86-9cd3-8a84-59ae-7bd4714d70ca/9e12fd03-9adc-444e-b787-b0208f0148bf.png/160x160sr.webp",
+          "linkUrl": "https://music.apple.com/cn/station/%E6%8E%A2%E7%B4%A2%E7%94%B5%E5%8F%B0/ra.q-GAI6IDU3ZmU3NTY2NjY0YzJlMzkxYWJiNzBmZjc1N2FhOTVm"
+        },
+        {
+          "id": "ra.387313548",
+          "title": "蔡健雅与类似艺人",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "station",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/AMCArtistImages221/v4/c2/9b/ff/c29bff02-a155-3694-4d13-2a47ac5f396c/165b6ea9-1231-416a-9ddb-03c3c63f2687_ami-identity-c5ed83010e1f1717674532d43a230994-2024-04-09T06-48-32.272Z_cropped.png/160x160AM.RSMA04.webp?imgLeft=Features211%2Fv4%2F35%2F85%2F2d%2F35852dc6-76f5-b4c4-1952-5a08fdc593e8%2Fmzl.ldiudyob.jpg&imgRight=AMCArtistImages221%2Fv4%2Fb4%2Fa8%2F50%2Fb4a8503d-dbc1-49e3-e1db-5b2432f81327%2Fami-identity-4a44fea5c0c8abb80f2dc7e7847d26f7-2025-12-26T10-10-24.908Z_cropped.png",
+          "linkUrl": "https://music.apple.com/cn/station/%E8%94%A1%E5%81%A5%E9%9B%85%E4%B8%8E%E7%B1%BB%E4%BC%BC%E8%89%BA%E4%BA%BA/ra.387313548"
+        }
+      ],
+      "timing": {
+        "hydrationDurationMs": 0,
+        "extractionDurationMs": 0.2,
+        "totalDurationMs": 0.2,
+        "avgTimePerItemMs": 0.022
+      }
+    },
+    {
+      "id": "section-2",
+      "title": "最近播放",
+      "itemCount": 12,
+      "items": [
+        {
+          "id": "p.QvDQV35hJRZvL5",
+          "title": "爱不释耳",
+          "subtitle": "近期你爱听的歌，尽收于此。随时更新。",
+          "eyebrow": null,
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/e1/05/c3/e105c3d8-5146-8ee9-8a27-f0d35d7bba21/fa8530bb-a792-4be0-9125-7af9287d1344.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.QvDQV35hJRZvL5"
+        },
+        {
+          "id": "1787929894",
+          "title": "初学者",
+          "subtitle": "薛之谦",
+          "eyebrow": null,
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/b0/09/04/b009043f-f576-54ce-5b1f-d7896d6933c0/9555150772273.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/%E5%88%9D%E5%AD%A6%E8%80%85/1787929894"
+        },
+        {
+          "id": "ra.u-57fe7566664c2e391abb70ff757aa95f",
+          "title": "小可的电台",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "station",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/e9/31/64/e93164c8-bff1-a5d9-1ad9-99ff0042a5c1/412b88f3-3259-4c12-8d9c-98b28c6371d4.png/160x160sr.webp",
+          "linkUrl": "https://music.apple.com/cn/station/%E5%B0%8F%E5%8F%AF%E7%9A%84%E7%94%B5%E5%8F%B0/ra.u-57fe7566664c2e391abb70ff757aa95f"
+        },
+        {
+          "id": "l.N26Y3rk",
+          "title": "麦田捕手",
+          "subtitle": "白安",
+          "eyebrow": null,
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/bd/69/2c/bd692c7e-ac11-0275-ec21-6a29d7952d7a/1500_BD0062l.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/l.N26Y3rk"
+        },
+        {
+          "id": "p.LV0PPv3CRdzPWg",
+          "title": "你的精选集",
+          "subtitle": "为你精选爱听好歌，首首不可或缺。听得越多，Apple Music 就越懂",
+          "eyebrow": null,
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/cd/62/0c/cd620c4b-bac6-d29c-8b62-c131bbece2e2/8028b2d5-b35b-4eaf-bd6f-0dbf23914590.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.LV0PPv3CRdzPWg"
+        },
+        {
+          "id": "pl.8e9831f8282c46bc80aceea9399bb32d",
+          "title": "国语情歌精选",
+          "subtitle": "Apple Music 国语流行",
+          "eyebrow": "你可能喜欢的歌单",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features115/v4/d8/91/49/d8914917-054b-4d20-085c-6de88137e122/U0MtTVMtQ0hOLU1hbmRvcG9wX0xvdmVfU29uZ3MtQURBTV9JRD0xMTI2MTM1NzEwLnBuZw.png/160x160SC.DN02.webp?l=zh-Hans",
+          "linkUrl": "https://music.apple.com/cn/playlist/%E5%9B%BD%E8%AF%AD%E6%83%85%E6%AD%8C%E7%B2%BE%E9%80%89/pl.8e9831f8282c46bc80aceea9399bb32d"
+        },
+        {
+          "id": "ra.985500514",
+          "title": "经典摇滚乐电台",
+          "subtitle": "Apple Music",
+          "eyebrow": "Apple Music 电台",
+          "type": "station",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/04/44/ee/0444ee5b-cd74-fbc2-ebc2-1fb2520175b9/4380cf64-2283-4322-b807-18fef3fe6e78.png/160x160sr.webp",
+          "linkUrl": "https://music.apple.com/cn/station/classic-rock/ra.985500514"
+        },
+        {
+          "id": "ra.985488923",
+          "title": "嘻哈电台",
+          "subtitle": "Apple Music",
+          "eyebrow": "Apple Music 电台",
+          "type": "station",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/ad/30/25/ad30256a-af7c-d3aa-69d4-a3e97d2ef59e/47d3bef9-24c6-48d9-98b5-8f1150d6c385.png/160x160sr.webp",
+          "linkUrl": "https://music.apple.com/cn/station/hip-hop/ra.985488923"
+        },
+        {
+          "id": "6805055407",
+          "title": "Airplane Mode",
+          "subtitle": "James Blunt",
+          "eyebrow": null,
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/17/8e/2b/178e2b94-8f53-74b8-3642-7ef36502d5f5/1200214944070.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/airplane-mode/6805055407"
+        },
+        {
+          "id": "6818422876",
+          "title": "Britney (25th Anniversary Edition)",
+          "subtitle": "布兰妮·斯皮尔斯",
+          "eyebrow": null,
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/3d/61/0f/3d610fd5-e074-45bb-1f0e-5a9bac6ac74d/196874836071.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/britney-25th-anniversary-edition/6818422876"
+        },
+        {
+          "id": "672994651",
+          "title": "说到爱",
+          "subtitle": "蔡健雅",
+          "eyebrow": null,
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/5d/6d/51/5d6d5168-5b14-da04-d7d4-4ce6e34ac177/4000x4000.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/%E8%AA%AA%E5%88%B0%E6%84%9B/672994651"
+        },
+        {
+          "id": "6831599264",
+          "title": "一篇往事 - Single",
+          "subtitle": "马頔",
+          "eyebrow": null,
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/f8/f4/7e/f8f47ef4-db61-9509-d361-81539c6f6a51/26UM1IM45002.rgb.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/%E4%B8%80%E7%AF%87%E5%BE%80%E4%BA%8B-single/6831599264"
+        }
+      ],
+      "timing": {
+        "hydrationDurationMs": 0,
+        "extractionDurationMs": 0.2,
+        "totalDurationMs": 0.2,
+        "avgTimePerItemMs": 0.017
+      }
+    },
+    {
+      "id": "section-3",
+      "title": "最新发行",
+      "itemCount": 12,
+      "items": [
+        {
+          "id": "6834264359",
+          "title": "请不要陷入爱情 - Single",
+          "subtitle": "阿肆",
+          "eyebrow": null,
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/37/30/33/373033bf-fd9b-0701-60eb-59273585ad87/cover.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/%E8%AF%B7%E4%B8%8D%E8%A6%81%E9%99%B7%E5%85%A5%E7%88%B1%E6%83%85-single/6834264359"
+        },
+        {
+          "id": "6823148530",
+          "title": "Rock Star 1 演唱会精选实录",
+          "subtitle": "伍佰 & China Blue",
+          "eyebrow": null,
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/41/29/2a/41292a80-ce9f-d046-046f-f4e3757293f2/26UM1IM29817.rgb.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/rock-star-1-%E6%BC%94%E5%94%B1%E6%9C%83%E7%B2%BE%E9%81%B8%E5%AF%A6%E9%8C%84/6823148530"
+        },
+        {
+          "id": "6828793400",
+          "title": "重启 (原创影集《重生密码》主题曲) - Single",
+          "subtitle": "韦礼安",
+          "eyebrow": null,
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/80/66/08/806608d3-be4b-af3a-85f2-7734486e3d49/196874955369.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/reborn-tv-series-the-awakened-theme-song-single/6828793400"
+        },
+        {
+          "id": "6828994864",
+          "title": "Take What You Need - Single",
+          "subtitle": "The Chainsmokers",
+          "eyebrow": null,
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/29/52/3f/29523f76-7bde-2d6d-9386-45e0ecbd9070/075679548139.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/take-what-you-need-single/6828994864"
+        },
+        {
+          "id": "6831599264",
+          "title": "一篇往事 - Single",
+          "subtitle": "马頔",
+          "eyebrow": null,
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/f8/f4/7e/f8f47ef4-db61-9509-d361-81539c6f6a51/26UM1IM45002.rgb.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/%E4%B8%80%E7%AF%87%E5%BE%80%E4%BA%8B-single/6831599264"
+        },
+        {
+          "id": "6830624132",
+          "title": "在奇迹之城遇见你 - Single",
+          "subtitle": "张靓颖 & 曾舜晞",
+          "eyebrow": null,
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/69/44/e4/6944e4fa-822e-2414-7e4f-ff21e8ebe536/26UM1IM43710.rgb.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/%E5%9C%A8%E5%A5%87%E8%BF%B9%E4%B9%8B%E5%9F%8E%E9%81%87%E8%A7%81%E4%BD%A0-single/6830624132"
+        },
+        {
+          "id": "6829122413",
+          "title": "Hong Kong (feat. 王菲季候風) - Single",
+          "subtitle": "The Weeknd",
+          "eyebrow": null,
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/0b/b2/81/0bb281a4-14af-a403-4af4-c39aa3f0d872/ticket.kusbehtm.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/hong-kong-feat-%E7%8E%8B%E8%8F%B2%E5%AD%A3%E5%80%99%E9%A2%A8-single/6829122413"
+        },
+        {
+          "id": "6827663907",
+          "title": "心湖 (《影之刃零》主题曲) - Single",
+          "subtitle": "张靓颖",
+          "eyebrow": null,
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/6b/07/f9/6b07f9c7-ff37-9333-2c0d-8cc86a9ba9a3/4896016873433.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/%E5%BF%83%E6%B9%96-%E5%BD%B1%E4%B9%8B%E5%88%83%E9%9B%B6-%E4%B8%BB%E9%A2%98%E6%9B%B2-single/6827663907"
+        },
+        {
+          "id": "6826132053",
+          "title": "来不及告诉你 - Single",
+          "subtitle": "王诗安",
+          "eyebrow": null,
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/d2/6f/07/d26f077d-da9c-c278-5ae2-aea2b0f59947/26UM1IM36638.rgb.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/%E4%BE%86%E4%B8%8D%E5%8F%8A%E5%91%8A%E8%A8%B4%E4%BD%A0-single/6826132053"
+        },
+        {
+          "id": "6825737184",
+          "title": "INDIAN SUMMER - Single",
+          "subtitle": "Alan Walker & KIDDO",
+          "eyebrow": null,
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/98/dc/7f/98dc7f0d-5a02-4285-c312-45384bfaa499/4636520.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/indian-summer-single/6825737184"
+        },
+        {
+          "id": "6827121427",
+          "title": "petal - EP",
+          "subtitle": "Ariana Grande",
+          "eyebrow": null,
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/79/07/12/790712dc-58fa-3dee-2ada-d99adde0266c/26UM1IM38195.rgb.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/petal-ep/6827121427"
+        },
+        {
+          "id": "6827074561",
+          "title": "排山倒海 - Single",
+          "subtitle": "阿肆",
+          "eyebrow": null,
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/6a/92/53/6a9253b5-dc72-7aa8-8ce8-d05565af3ce5/cover.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/%E6%8E%92%E5%B1%B1%E5%80%92%E6%B5%B7-single/6827074561"
+        }
+      ],
+      "timing": {
+        "hydrationDurationMs": 0,
+        "extractionDurationMs": 0.2,
+        "totalDurationMs": 0.2,
+        "avgTimePerItemMs": 0.017
+      }
+    },
+    {
+      "id": "section-4",
+      "title": "国语流行",
+      "itemCount": 12,
+      "items": [
+        {
+          "id": "pl.cac49f3ad523471f9a53b14f80ec78e7",
+          "title": "方大同：情歌精选",
+          "subtitle": "Apple Music 国语流行",
+          "eyebrow": null,
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/AMCArtistImages221/v4/d9/f7/61/d9f7618e-3772-4089-b24a-da79025a4186/0e242e96-3bec-4506-af0b-e6e138578346_ami-identity-588119312477b59f89e8b3cc47b71214-2024-08-23T08-05-52.560Z_cropped.png/160x160SC.FPLS04.webp?l=zh-Hans",
+          "linkUrl": "https://music.apple.com/cn/playlist/%E6%96%B9%E5%A4%A7%E5%90%8C-%E6%83%85%E6%AD%8C%E7%B2%BE%E9%80%89/pl.cac49f3ad523471f9a53b14f80ec78e7"
+        },
+        {
+          "id": "6771326786",
+          "title": "太阳之子",
+          "subtitle": "周杰伦",
+          "eyebrow": null,
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/ce/56/90/ce5690ac-67d8-49e7-b047-a01afacfd1d2/4000x4000_fa.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/%E5%A4%AA%E9%98%B3%E4%B9%8B%E5%AD%90/6771326786"
+        },
+        {
+          "id": "497091403",
+          "title": "呼彭唤友Live演唱会",
+          "subtitle": "彭佳慧",
+          "eyebrow": null,
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music/86/bd/05/mzi.pjhishpq.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/%E5%91%BC%E5%BD%AD%E5%96%9A%E5%8F%8Blive%E6%BC%94%E5%94%B1%E6%9C%83/497091403"
+        },
+        {
+          "id": "1788007687",
+          "title": "新地球",
+          "subtitle": "林俊杰",
+          "eyebrow": null,
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/57/5a/1b/575a1bc9-ca86-7549-e873-b55663ba6276/4711508105925.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/%E6%96%B0%E5%9C%B0%E7%90%83/1788007687"
+        },
+        {
+          "id": "pl.36272a40bb4445589eb1ab3caded29e5",
+          "title": "夏韵",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/1d/69/46/1d6946bb-0adb-c3c6-ff86-a65e9c694e6d/93aa3149-d0b3-4b0f-8697-39d9180057ea.png/160x160SC.DN02.webp?l=zh-Hans",
+          "linkUrl": "https://music.apple.com/cn/playlist/%E5%A4%8F%E9%9F%B5/pl.36272a40bb4445589eb1ab3caded29e5"
+        },
+        {
+          "id": "1801451198",
+          "title": "平原上的火焰 (《平原上的火焰》电影同名主题曲) - Single",
+          "subtitle": "徐佳莹",
+          "eyebrow": null,
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/71/24/8e/71248e7a-c732-a54b-214f-91135829976d/4894972701630.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/%E5%B9%B3%E5%8E%9F%E4%B8%8A%E7%9A%84%E7%81%AB%E7%84%B0-%E5%B9%B3%E5%8E%9F%E4%B8%8A%E7%9A%84%E7%81%AB%E7%84%B0-%E7%94%B5%E5%BD%B1%E5%90%8C%E5%90%8D%E4%B8%BB%E9%A2%98%E6%9B%B2-single/1801451198"
+        },
+        {
+          "id": "pl.2d41dde0ea154d54b397b82a15189293",
+          "title": "Songbook: Jonathan Lee",
+          "subtitle": "Apple Music 国语流行",
+          "eyebrow": null,
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/AMCArtistImages221/v4/18/00/86/180086c6-e8a8-a0ba-9f05-35aa1b5fec2b/ami-identity-c8a9847a654b4bf6efe77f7f3acdbde1-2025-05-07T06-04-29.911Z_cropped.png/160x160SC.FPTSW03.webp?l=zh-Hans",
+          "linkUrl": "https://music.apple.com/cn/playlist/songbook-jonathan-lee/pl.2d41dde0ea154d54b397b82a15189293"
+        },
+        {
+          "id": "1391587042",
+          "title": "气球",
+          "subtitle": "许哲珮",
+          "eyebrow": null,
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/b5/da/a9/b5daa9c5-97f4-2ac1-839b-5c9b047afef9/4713108189336.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/%E6%B0%A3%E7%90%83/1391587042"
+        },
+        {
+          "id": "1722409787",
+          "title": "署前街少年",
+          "subtitle": "赵雷",
+          "eyebrow": null,
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/3e/fc/be/3efcbe87-236a-ad35-98c0-b075cd95a1b4/6976364784976.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/%E7%BD%B2%E5%89%8D%E8%A1%97%E5%B0%91%E5%B9%B4/1722409787"
+        },
+        {
+          "id": "1781213251",
+          "title": "几乎是爱情",
+          "subtitle": "周兴哲",
+          "eyebrow": null,
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/d3/61/e7/d361e724-56cc-1753-2de1-56f0ab83f3e3/24UM1IM31530.rgb.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/%E5%87%A0%E4%B9%8E%E6%98%AF%E7%88%B1%E6%83%85/1781213251"
+        },
+        {
+          "id": "1690835161",
+          "title": "瘾",
+          "subtitle": "陈楚生",
+          "eyebrow": null,
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/f0/b4/1f/f0b41f0d-d6f1-017f-75ec-426e47df4018/6941904159910.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/%E7%98%BE/1690835161"
+        },
+        {
+          "id": "pl.8d2d18ddb49c4904a3cec0dd7a88011f",
+          "title": "Naiwen Yang Essentials",
+          "subtitle": "Apple Music 国语流行",
+          "eyebrow": null,
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/AMCArtistImages126/v4/d8/b9/81/d8b98147-369a-70df-ca6c-b7c78d806ab6/75291f3a-4d45-42c3-a950-92f97064fcce_ami-identity-1ce93a80525186a66d6f3d14bc590267-2023-08-23T02-36-40.094Z_cropped.png/160x160SC.FPESS05.webp?l=zh-Hans",
+          "linkUrl": "https://music.apple.com/cn/playlist/naiwen-yang-essentials/pl.8d2d18ddb49c4904a3cec0dd7a88011f"
+        }
+      ],
+      "timing": {
+        "hydrationDurationMs": 0,
+        "extractionDurationMs": 0.2,
+        "totalDurationMs": 0.2,
+        "avgTimePerItemMs": 0.017
+      }
+    },
+    {
+      "id": "section-5",
+      "title": "专属电台推荐",
+      "itemCount": 12,
+      "items": [
+        {
+          "id": "ra.u-57fe7566664c2e391abb70ff757aa95f",
+          "title": "小可的电台",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "station",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/e9/31/64/e93164c8-bff1-a5d9-1ad9-99ff0042a5c1/412b88f3-3259-4c12-8d9c-98b28c6371d4.png/160x160sr.webp",
+          "linkUrl": "https://music.apple.com/cn/station/%E5%B0%8F%E5%8F%AF%E7%9A%84%E7%94%B5%E5%8F%B0/ra.u-57fe7566664c2e391abb70ff757aa95f"
+        },
+        {
+          "id": "ra.q-GAI6IDU3ZmU3NTY2NjY0YzJlMzkxYWJiNzBmZjc1N2FhOTVm",
+          "title": "探索电台",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "station",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/21/37/6d/21376d86-9cd3-8a84-59ae-7bd4714d70ca/9e12fd03-9adc-444e-b787-b0208f0148bf.png/160x160sr.webp",
+          "linkUrl": "https://music.apple.com/cn/station/%E6%8E%A2%E7%B4%A2%E7%94%B5%E5%8F%B0/ra.q-GAI6IDU3ZmU3NTY2NjY0YzJlMzkxYWJiNzBmZjc1N2FhOTVm"
+        },
+        {
+          "id": "ra.160809474",
+          "title": "薛之谦与类似艺人",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "station",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features211/v4/09/70/0a/09700ae8-6360-cf09-fd2a-d08d5847e74d/mzl.uusgipnq.jpg/160x160AM.RSMA04.webp?imgLeft=Features122%2Fv4%2Fe4%2F8a%2F7a%2Fe48a7a52-d96d-9279-3591-ee17a595bccb%2Fmzl.nlflcqxm.jpg&imgRight=AMCArtistImages211%2Fv4%2F6d%2F53%2F0e%2F6d530e69-ce17-1c15-7605-b267ef760ea1%2Fami-identity-8cbee1395c1dbfa4daf6d4c572503010-2026-03-24T12-21-24.021Z_cropped.png",
+          "linkUrl": "https://music.apple.com/cn/station/%E8%96%9B%E4%B9%8B%E8%B0%A6%E4%B8%8E%E7%B1%BB%E4%BC%BC%E8%89%BA%E4%BA%BA/ra.160809474"
+        },
+        {
+          "id": "ra.387313548",
+          "title": "蔡健雅与类似艺人",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "station",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/AMCArtistImages221/v4/c2/9b/ff/c29bff02-a155-3694-4d13-2a47ac5f396c/165b6ea9-1231-416a-9ddb-03c3c63f2687_ami-identity-c5ed83010e1f1717674532d43a230994-2024-04-09T06-48-32.272Z_cropped.png/160x160AM.RSMA04.webp?imgLeft=Features211%2Fv4%2F35%2F85%2F2d%2F35852dc6-76f5-b4c4-1952-5a08fdc593e8%2Fmzl.ldiudyob.jpg&imgRight=AMCArtistImages221%2Fv4%2Fb4%2Fa8%2F50%2Fb4a8503d-dbc1-49e3-e1db-5b2432f81327%2Fami-identity-4a44fea5c0c8abb80f2dc7e7847d26f7-2025-12-26T10-10-24.908Z_cropped.png",
+          "linkUrl": "https://music.apple.com/cn/station/%E8%94%A1%E5%81%A5%E9%9B%85%E4%B8%8E%E7%B1%BB%E4%BC%BC%E8%89%BA%E4%BA%BA/ra.387313548"
+        },
+        {
+          "id": "ra.960030338",
+          "title": "League of Legends Music与类似艺人",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "station",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/AMCArtistImages221/v4/d9/c4/8d/d9c48d1d-5046-7731-0889-65b1e3d22648/e6cb9afa-3196-4227-ae14-188f108eec72_ami-identity-05607a94abb4a7494a19465e172e9703-2024-06-13T19-00-49.957Z_cropped.png/160x160AM.RSMA04.webp?imgLeft=AMCArtistImages211%2Fv4%2Fec%2F39%2Fe0%2Fec39e0c0-fb55-4770-55c6-649eb229454a%2Fami_U003aidentity_U003a1dd7294848be260cdf039cd44b085e1e-2026-10-22T17-35-12.616Z_cropped.png&imgRight=Features124%2Fv4%2Fd0%2Fa2%2F72%2Fd0a272f6-dde0-490c-f6d7-52a96ecfe69b%2Fmzl.bkhyknfw.jpg",
+          "linkUrl": "https://music.apple.com/cn/station/league-of-legends-music%E4%B8%8E%E7%B1%BB%E4%BC%BC%E8%89%BA%E4%BA%BA/ra.960030338"
+        },
+        {
+          "id": "ra.262836961",
+          "title": "Adele与类似艺人",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "station",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features125/v4/a2/2d/df/a22ddf71-9254-043c-c162-11fbc25c5ff3/mzl.ilbjswky.jpg/160x160AM.RSMA04.webp?imgLeft=Features221%2Fv4%2F35%2F66%2Fa4%2F3566a4be-5d49-06db-781a-0e0da0f1c956%2Fmza_15363053124567060624.png&imgRight=AMCArtistImages211%2Fv4%2F04%2Ffe%2F72%2F04fe7255-8298-6ea3-a842-489161a0afeb%2Fami-identity-759967e43150fe52efc34501d7c47ce8-2025-08-28T09-47-05.244Z_cropped.png",
+          "linkUrl": "https://music.apple.com/cn/station/adele%E4%B8%8E%E7%B1%BB%E4%BC%BC%E8%89%BA%E4%BA%BA/ra.262836961"
+        },
+        {
+          "id": "ra.701344136",
+          "title": "宋冬野与类似艺人",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "station",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features125/v4/c6/3e/a4/c63ea474-5fd9-acbe-4494-d83fc3e1c9ba/pr_source.png/160x160AM.RSMA04.webp?imgLeft=Features125%2Fv4%2F35%2F40%2Fcf%2F3540cff7-48a0-16c0-2b2d-7f68d05daf1b%2Fmzl.qinlfsfk.jpg&imgRight=Music122%2Fv4%2F78%2F46%2F8d%2F78468d47-1327-91f1-4712-c44503b062d6%2Fpr_source.png",
+          "linkUrl": "https://music.apple.com/cn/station/%E5%AE%8B%E5%86%AC%E9%87%8E%E4%B8%8E%E7%B1%BB%E4%BC%BC%E8%89%BA%E4%BA%BA/ra.701344136"
+        },
+        {
+          "id": "ra.357033986",
+          "title": "蔡琴与类似艺人",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "station",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music116/v4/f7/bd/d9/f7bdd97d-23d9-ad28-41ec-7c74a730e1fe/4711280069200.jpg/160x160AM.RSMA04.webp?albumFallback=true&imgLeft=Features115%2Fv4%2F99%2Ffa%2F8c%2F99fa8c5e-7c62-a557-9812-0942a8bd07fe%2Fmzl.nibyydqo.jpg&imgRight=Features221%2Fv4%2Fcb%2Ff3%2Ffc%2Fcbf3fc5f-bbde-eea9-007a-61c4f7158507%2Fmzl.bcnbykya.jpg",
+          "linkUrl": "https://music.apple.com/cn/station/%E8%94%A1%E7%90%B4%E4%B8%8E%E7%B1%BB%E4%BC%BC%E8%89%BA%E4%BA%BA/ra.357033986"
+        },
+        {
+          "id": "ra.295060477",
+          "title": "家家与类似艺人",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "station",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features221/v4/80/13/95/80139505-919f-195a-7618-db6cda126fc3/mzl.wuaqehbv.png/160x160AM.RSMA04.webp?imgLeft=Features221%2Fv4%2Fcd%2F87%2F37%2Fcd8737c2-1485-c492-33bc-5f0b9a074b69%2Fmzl.ajrzwnjk.jpg&imgRight=AMCArtistImages211%2Fv4%2Fbd%2F34%2Fc5%2Fbd34c581-78af-f106-f0ec-b0b9ba3b38a5%2Fami-identity-45df84415b7e212fff7db89bec10556e-2026-02-02T16-05-35.095Z_cropped.png",
+          "linkUrl": "https://music.apple.com/cn/station/%E5%AE%B6%E5%AE%B6%E4%B8%8E%E7%B1%BB%E4%BC%BC%E8%89%BA%E4%BA%BA/ra.295060477"
+        },
+        {
+          "id": "ra.159260351",
+          "title": "Taylor Swift与类似艺人",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "station",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/AMCArtistImages221/v4/6d/67/88/6d67888b-9e7f-53af-7853-0f91d6fd2332/ami_U003aidentity_U003a994af5c375f4c3aa96cd6ced4a700799-2026-09-25T04-00-05.358Z_cropped.png/160x160AM.RSMA04.webp?imgLeft=AMCArtistImages221%2Fv4%2F76%2Fca%2Fe2%2F76cae283-f3ba-aa7f-6256-1817e9b5179f%2Fami-identity-2d92b3a772aa3368c092544fed8cac42-2026-06-26T22-33-16.704Z_cropped.png&imgRight=AMCArtistImages211%2Fv4%2F06%2Ff0%2F41%2F06f0418f-97d3-34f8-f0a3-3acc37964d89%2Fami-identity-b7ce039aac2c803c4620ff4ff18920ca-2026-08-06T15-12-54.044Z_cropped.png",
+          "linkUrl": "https://music.apple.com/cn/station/taylor-swift%E4%B8%8E%E7%B1%BB%E4%BC%BC%E8%89%BA%E4%BA%BA/ra.159260351"
+        },
+        {
+          "id": "ra.412778295",
+          "title": "Ariana Grande与类似艺人",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "station",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/AMCArtistImages211/v4/06/f0/41/06f0418f-97d3-34f8-f0a3-3acc37964d89/ami-identity-b7ce039aac2c803c4620ff4ff18920ca-2026-08-06T15-12-54.044Z_cropped.png/160x160AM.RSMA04.webp?imgLeft=AMCArtistImages211%2Fv4%2Ff9%2Fba%2Fc0%2Ff9bac075-9a4f-a701-5700-ef9fb385b547%2Fami-identity-8f1a193175612e1ca5cde75c8e8f331d-2025-04-04T05-22-43.481Z_cropped.png&imgRight=AMCArtistImages211%2Fv4%2F47%2F79%2F63%2F47796327-5841-8691-ac9a-9e56e8e9d782%2Fami-identity-9dc79b57efd6f0e1ede00c6af8f8954c-2025-02-14T03-00-28.587Z_cropped.png",
+          "linkUrl": "https://music.apple.com/cn/station/ariana-grande%E4%B8%8E%E7%B1%BB%E4%BC%BC%E8%89%BA%E4%BA%BA/ra.412778295"
+        },
+        {
+          "id": "ra.937112091",
+          "title": "鲁向卉与类似艺人",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "station",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features124/v4/75/ac/14/75ac14e5-b5ba-6dac-40db-6faf923c060f/mzl.trklevul.jpg/160x160AM.RSMA04.webp?imgLeft=AMCArtistImages211%2Fv4%2F6d%2F53%2F0e%2F6d530e69-ce17-1c15-7605-b267ef760ea1%2Fami-identity-8cbee1395c1dbfa4daf6d4c572503010-2026-03-24T12-21-24.021Z_cropped.png&imgRight=Features114%2Fv4%2F72%2F1f%2F41%2F721f41bf-f9ea-5e86-d141-69c2632003a0%2Fmzl.ftjwncve.jpg",
+          "linkUrl": "https://music.apple.com/cn/station/%E9%B2%81%E5%90%91%E5%8D%89%E4%B8%8E%E7%B1%BB%E4%BC%BC%E8%89%BA%E4%BA%BA/ra.937112091"
+        }
+      ],
+      "timing": {
+        "hydrationDurationMs": 0,
+        "extractionDurationMs": 0.2,
+        "totalDurationMs": 0.2,
+        "avgTimePerItemMs": 0.017
+      }
+    },
+    {
+      "id": "section-6",
+      "title": "Drake的粉丝喜爱的内容",
+      "itemCount": 12,
+      "items": [
+        {
+          "id": "6814097810",
+          "title": "$ome $exy $ongs 4 U",
+          "subtitle": "PARTYNEXTDOOR & Drake",
+          "eyebrow": null,
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/65/a1/d8/65a1d809-dede-adf4-d85e-964070e77f58/808391285897.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/%24ome-%24exy-%24ongs-4-u/6814097810"
+        },
+        {
+          "id": "pl.659f6a1cac0f4232ad19d1a2cfdc9fb8",
+          "title": "The Weeknd 代表作",
+          "subtitle": "Apple Music R&B",
+          "eyebrow": null,
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/AMCArtistImages211/v4/5a/56/a4/5a56a4df-e9bf-8388-3bd3-72fdb1570d18/ami-identity-777ad796f94973f081f3e54e4b81fcb1-2026-04-16T21-49-06.937Z_cropped.png/160x160SC.FPESS05.webp?l=zh-Hans",
+          "linkUrl": "https://music.apple.com/cn/playlist/the-weeknd-%E4%BB%A3%E8%A1%A8%E4%BD%9C/pl.659f6a1cac0f4232ad19d1a2cfdc9fb8"
+        },
+        {
+          "id": "pl.4ec315df2bf04cc29dab9936fe18e107",
+          "title": "JAŸ-Z 代表作",
+          "subtitle": "Apple Music 嘻哈/说唱",
+          "eyebrow": null,
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/AMCArtistImages221/v4/45/27/3c/45273c24-32dd-85a4-a5ec-553f10b1a026/ami-identity-05b63aab4154bc3fa7092aab21153ea4-2026-06-25T03-43-21.091Z_cropped.png/160x160SC.FPESS05.webp?l=zh-Hans",
+          "linkUrl": "https://music.apple.com/cn/playlist/ja%C3%BF-z-%E4%BB%A3%E8%A1%A8%E4%BD%9C/pl.4ec315df2bf04cc29dab9936fe18e107"
+        },
+        {
+          "id": "pl.d8fda54286b9491791d7c7e8aafc7d59",
+          "title": "DJ Khaled Essentials",
+          "subtitle": "Apple Music 嘻哈/说唱",
+          "eyebrow": null,
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/AMCArtistImages211/v4/87/c5/5b/87c55bb0-3f15-acb3-fcca-84aa67242c75/ami-identity-1ec7047ad438e6af95952f6cd8ec7e2b-2026-04-14T19-48-21.103Z_cropped.png/160x160SC.FPESS05.webp?l=zh-Hans",
+          "linkUrl": "https://music.apple.com/cn/playlist/dj-khaled-essentials/pl.d8fda54286b9491791d7c7e8aafc7d59"
+        },
+        {
+          "id": "1729856932",
+          "title": "Whatever She Wants - Single",
+          "subtitle": "Bryson Tiller",
+          "eyebrow": null,
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music116/v4/6d/c3/0c/6dc30cf7-86ee-5e87-8703-d0eb4fbddbdd/196871828352.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/whatever-she-wants-single/1729856932"
+        },
+        {
+          "id": "1487887623",
+          "title": "Chixtape 5",
+          "subtitle": "Tory Lanez",
+          "eyebrow": null,
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music122/v4/c4/d3/2d/c4d32d1f-40ae-3a45-4055-77c0889a01d7/19UMGIM98547.rgb.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/chixtape-5/1487887623"
+        },
+        {
+          "id": "1445161331",
+          "title": "Birthday Sex (Remix) - Single",
+          "subtitle": "Jeremih",
+          "eyebrow": null,
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music118/v4/82/c3/da/82c3da4c-e11c-7d29-99f7-51729de3e391/00602527081106.rgb.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/birthday-sex-remix-single/1445161331"
+        },
+        {
+          "id": "pl.e189c2be80024d488ba04f3619043e40",
+          "title": "Chris Brown Essentials",
+          "subtitle": "Apple Music R&B",
+          "eyebrow": null,
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/AMCArtistImages221/v4/8e/3f/01/8e3f018f-66ca-b2b9-b9dd-8723eb7103d2/ami-identity-bd174f18b0e986781dbcc3955eebb0fb-2026-05-08T04-38-09.192Z_cropped.png/160x160SC.FPESS05.webp?l=zh-Hans",
+          "linkUrl": "https://music.apple.com/cn/playlist/chris-brown-essentials/pl.e189c2be80024d488ba04f3619043e40"
+        },
+        {
+          "id": "1481874613",
+          "title": "HIGHEST IN THE ROOM - Single",
+          "subtitle": "Travis Scott",
+          "eyebrow": null,
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music114/v4/30/5f/c4/305fc4b4-155d-8e67-7c7a-8eb35032fbcb/886448042792.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/highest-in-the-room-single/1481874613"
+        },
+        {
+          "id": "pl.d2a12c8cf5884f8990f1e5b3e4024266",
+          "title": "Lil Wayne Essentials",
+          "subtitle": "Apple Music 嘻哈/说唱",
+          "eyebrow": null,
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/AMCArtistImages211/v4/78/3a/1a/783a1a0a-1fe3-80d8-858f-b2d3d5f22baf/ami-identity-a65ba8774cde0e06f6b38b69c418c48d-2025-06-03T18-43-41.455Z_cropped.png/160x160SC.FPESS05.webp?l=zh-Hans",
+          "linkUrl": "https://music.apple.com/cn/playlist/lil-wayne-essentials/pl.d2a12c8cf5884f8990f1e5b3e4024266"
+        },
+        {
+          "id": "pl.f2932eb899d542e18c4f91fc9685dcaf",
+          "title": "J. Cole Essentials",
+          "subtitle": "Apple Music 嘻哈/说唱",
+          "eyebrow": null,
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/AMCArtistImages221/v4/e0/cb/8d/e0cb8db4-8d56-cc92-cae6-ee8f09c3a3bb/ami-identity-253b8334df60cfdb9573dabcfa4820c4-2026-02-05T22-58-24.229Z_cropped.png/160x160SC.FPESS05.webp?l=zh-Hans",
+          "linkUrl": "https://music.apple.com/cn/playlist/j-cole-essentials/pl.f2932eb899d542e18c4f91fc9685dcaf"
+        },
+        {
+          "id": "pl.e4cc8d668ac547aba17ba4acddc866b1",
+          "title": "Big Sean Essentials",
+          "subtitle": "Apple Music 嘻哈/说唱",
+          "eyebrow": null,
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/AMCArtistImages221/v4/45/53/bb/4553bbe8-7f5b-92d1-15e9-a8cf2c438b6d/e04d4684-6cad-461c-8418-ad89f8106195_file_cropped.png/160x160SC.FPESS05.webp?l=zh-Hans",
+          "linkUrl": "https://music.apple.com/cn/playlist/big-sean-essentials/pl.e4cc8d668ac547aba17ba4acddc866b1"
+        }
+      ],
+      "timing": {
+        "hydrationDurationMs": 0,
+        "extractionDurationMs": 0.2,
+        "totalDurationMs": 0.2,
+        "avgTimePerItemMs": 0.017
+      }
+    },
+    {
+      "id": "section-7",
+      "title": "心情主场",
+      "itemCount": 7,
+      "items": [
+        {
+          "id": "ra.q-MNDEBw",
+          "title": "心碎",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "station",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/af/26/e1/af26e11a-0708-5525-0bdd-47a74d3f17a8/d68c1c24-891b-445d-bb90-629d0419f4a7.png/160x160sr.webp",
+          "linkUrl": "https://music.apple.com/cn/station/%E5%BF%83%E7%A2%8E/ra.q-MNDEBw"
+        },
+        {
+          "id": "ra.q-MKvEBw",
+          "title": "心情有点 Blue",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "station",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/1f/eb/cb/1febcb3d-0181-9735-b0fd-af6fe0189da9/83b96562-ef8c-45d7-8694-b703a3602f5a.png/160x160sr.webp",
+          "linkUrl": "https://music.apple.com/cn/station/%E5%BF%83%E6%83%85%E6%9C%89%E7%82%B9-blue/ra.q-MKvEBw"
+        },
+        {
+          "id": "ra.q-MI4G",
+          "title": "精力充沛",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "station",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/7d/c9/de/7dc9dead-f692-ad4f-0ea8-68c852383154/4671133e-37d1-44ec-b57a-ddfa7c57f3f9.png/160x160sr.webp",
+          "linkUrl": "https://music.apple.com/cn/station/%E7%B2%BE%E5%8A%9B%E5%85%85%E6%B2%9B/ra.q-MI4G"
+        },
+        {
+          "id": "ra.q-MK3VCQ",
+          "title": "乐享悠闲",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "station",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/d7/50/52/d750523e-e1c3-cb1b-6556-3c3143813898/263186d0-d413-46fc-a194-7a733e15c659.png/160x160sr.webp",
+          "linkUrl": "https://music.apple.com/cn/station/%E4%B9%90%E4%BA%AB%E6%82%A0%E9%97%B2/ra.q-MK3VCQ"
+        },
+        {
+          "id": "ra.q-MLzEBw",
+          "title": "开心能量棒",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "station",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/14/13/13/1413136f-153c-9a4b-e890-edbb2c40a790/9f9b1c98-cf01-44ae-8d02-b5af106edcb6.png/160x160sr.webp",
+          "linkUrl": "https://music.apple.com/cn/station/%E5%BC%80%E5%BF%83%E8%83%BD%E9%87%8F%E6%A3%92/ra.q-MLzEBw"
+        },
+        {
+          "id": "ra.q-MO3UCQ",
+          "title": "爱情",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "station",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/ea/7b/7a/ea7b7ae8-1fea-fb8c-70f9-a4295b568257/b2455ee8-1432-472d-8b7c-f4fcaf2c60f9.png/160x160sr.webp",
+          "linkUrl": "https://music.apple.com/cn/station/%E7%88%B1%E6%83%85/ra.q-MO3UCQ"
+        },
+        {
+          "id": "ra.q-MMLEBw",
+          "title": "凝神专注",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "station",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/65/f4/19/65f41998-8f9b-bae2-7a41-19914c18316e/9202a438-aae6-413b-b8bc-b28679d8e33e.png/160x160sr.webp",
+          "linkUrl": "https://music.apple.com/cn/station/%E5%87%9D%E7%A5%9E%E4%B8%93%E6%B3%A8/ra.q-MMLEBw"
+        }
+      ],
+      "timing": {
+        "hydrationDurationMs": 0,
+        "extractionDurationMs": 0.2,
+        "totalDurationMs": 0.2,
+        "avgTimePerItemMs": 0.029
+      }
+    },
+    {
+      "id": "section-8",
+      "title": "专属推荐歌单",
+      "itemCount": 5,
+      "items": [
+        {
+          "id": "pl.pm-20e9f373919da0806af423d8340bb761",
+          "title": "爱不释耳",
+          "subtitle": "小可的 Apple Music",
+          "eyebrow": null,
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/e1/05/c3/e105c3d8-5146-8ee9-8a27-f0d35d7bba21/fa8530bb-a792-4be0-9125-7af9287d1344.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/%E7%88%B1%E4%B8%8D%E9%87%8A%E8%80%B3/pl.pm-20e9f373919da0806af423d8340bb761"
+        },
+        {
+          "id": "pl.pm-20e9f373919da080fdb2448d2b102d6f",
+          "title": "你的精选集",
+          "subtitle": "小可的 Apple Music",
+          "eyebrow": null,
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/cd/62/0c/cd620c4b-bac6-d29c-8b62-c131bbece2e2/8028b2d5-b35b-4eaf-bd6f-0dbf23914590.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/%E4%BD%A0%E7%9A%84%E7%B2%BE%E9%80%89%E9%9B%86/pl.pm-20e9f373919da080fdb2448d2b102d6f"
+        },
+        {
+          "id": "pl.pm-20e9f373919da0807460be993f9dc331",
+          "title": "能量充电",
+          "subtitle": "小可的 Apple Music",
+          "eyebrow": null,
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/81/95/73/8195734d-b697-d7d6-f688-db6e9a56a34f/c586352a-9f79-49a7-a1c8-ed6fd1c3d814.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/%E8%83%BD%E9%87%8F%E5%85%85%E7%94%B5/pl.pm-20e9f373919da0807460be993f9dc331"
+        },
+        {
+          "id": "pl.pm-20e9f373919da080ef5ddf07a276059a",
+          "title": "放松歌单",
+          "subtitle": "小可的 Apple Music",
+          "eyebrow": null,
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/8f/4f/49/8f4f493d-c8d2-afb8-98ce-071755c21294/8587f31f-0289-41aa-ad9e-af6689d39e7e.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/%E6%94%BE%E6%9D%BE%E6%AD%8C%E5%8D%95/pl.pm-20e9f373919da080ef5ddf07a276059a"
+        },
+        {
+          "id": "pl.pm-20e9f373919da08009af6866ab729578",
+          "title": "音乐新发现",
+          "subtitle": "小可的 Apple Music",
+          "eyebrow": null,
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/b3/97/c7/b397c7d9-428a-12f0-1225-5ffeb23b7e43/709074d7-9862-4599-9b8d-dcb217d953f9.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/%E9%9F%B3%E4%B9%90%E6%96%B0%E5%8F%91%E7%8E%B0/pl.pm-20e9f373919da08009af6866ab729578"
+        }
+      ],
+      "timing": {
+        "hydrationDurationMs": 0,
+        "extractionDurationMs": 0.2,
+        "totalDurationMs": 0.2,
+        "avgTimePerItemMs": 0.04
+      }
+    },
+    {
+      "id": "section-9",
+      "title": "推荐板块 9",
+      "itemCount": 1,
+      "items": [
+        {
+          "id": "ra.6827311866",
+          "title": "Classics in the Making '26",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "station",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/0b/15/3e/0b153eab-a692-dab4-dd67-d61d59c3c50f/9fa7b734-50c7-46b0-938f-8b5bdcec434c.png/160x160SC.DN02.webp?l=zh-Hans",
+          "linkUrl": "https://music.apple.com/cn/station/classics-in-the-making-26/ra.6827311866"
+        }
+      ],
+      "timing": {
+        "hydrationDurationMs": 0,
+        "extractionDurationMs": 0.2,
+        "totalDurationMs": 0.2,
+        "avgTimePerItemMs": 0.2
+      }
+    },
+    {
+      "id": "section-10",
+      "title": "流行音乐",
+      "itemCount": 7,
+      "items": [
+        {
+          "id": "445060342",
+          "title": "Set Fire to the Rain (Remixes) - EP",
+          "subtitle": "Adele",
+          "eyebrow": null,
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/06/6d/be/066dbe88-6d20-5621-9b6f-f603836f2920/634904054168.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/set-fire-to-the-rain-remixes-ep/445060342"
+        },
+        {
+          "id": "6782034491",
+          "title": "Hazel Eyes",
+          "subtitle": "Sam Smith",
+          "eyebrow": "新专辑与艺人分享",
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/aa/f2/49/aaf2494d-4c5f-83e6-74f8-a86be3c8fcbc/26UMGIM25261.rgb.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/hazel-eyes/6782034491"
+        },
+        {
+          "id": "6773855466",
+          "title": "I Know Too Much",
+          "subtitle": "Ellie Goulding",
+          "eyebrow": "新专辑",
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/d0/15/ab/d015abbf-aaf8-2eb6-20a2-2b3977553e95/26UMGIM63212.rgb.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/i-know-too-much/6773855466"
+        },
+        {
+          "id": "311092222",
+          "title": "Halo & Remixes",
+          "subtitle": "Beyoncé",
+          "eyebrow": null,
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music/09/12/69/mzi.zzyracdr.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/halo-remixes/311092222"
+        },
+        {
+          "id": "6807204709",
+          "title": "Fallen Angel (Digital EP) - Single",
+          "subtitle": "JENNIE",
+          "eyebrow": null,
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/1e/d3/3e/1ed33efc-f855-16ff-c995-692a79cad875/196874739761.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/fallen-angel-digital-ep-single/6807204709"
+        },
+        {
+          "id": "1771105914",
+          "title": "rosie",
+          "subtitle": "ROSÉ",
+          "eyebrow": null,
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/2d/14/66/2d14661b-345b-d0f3-4e86-56ef626e68aa/075679629203.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/rosie/1771105914"
+        },
+        {
+          "id": "6796390978",
+          "title": "Catch You If You Fall - EP",
+          "subtitle": "Florrie",
+          "eyebrow": null,
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/2f/53/92/2f53921c-3046-503c-3eff-20f8bef02d45/4099964265101.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/catch-you-if-you-fall-ep/6796390978"
+        }
+      ],
+      "timing": {
+        "hydrationDurationMs": 0,
+        "extractionDurationMs": 0.2,
+        "totalDurationMs": 0.2,
+        "avgTimePerItemMs": 0.029
+      }
+    },
+    {
+      "id": "section-11",
+      "title": "华语另类",
+      "itemCount": 12,
+      "items": [
+        {
+          "id": "200657007",
+          "title": "幻听",
+          "subtitle": "窦唯",
+          "eyebrow": null,
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/44/54/f2/4454f229-1ce3-7e90-34f6-8055e3b1b65e/4715122015479_cover.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/%E5%B9%BB%E8%81%BD/200657007"
+        },
+        {
+          "id": "1808897832",
+          "title": "Go East",
+          "subtitle": "新裤子乐队",
+          "eyebrow": null,
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/d6/ff/c6/d6ffc639-d4b6-cc8a-a1a3-6fe913b8815d/25UMGIM42356.rgb.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/go-east/1808897832"
+        },
+        {
+          "id": "6797926571",
+          "title": "南风",
+          "subtitle": "廖士贤",
+          "eyebrow": null,
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/db/2e/65/db2e65b8-ebaa-17f8-6138-53b6d6cf1498/4710149725707_cover.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/%E5%8D%97%E9%A2%A8/6797926571"
+        },
+        {
+          "id": "1808448172",
+          "title": "那不是我",
+          "subtitle": "谢天笑",
+          "eyebrow": null,
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/98/ed/14/98ed14ea-252e-f69c-aec4-29c4ac6d2340/25UMGIM42303.rgb.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/%E9%82%A3%E4%B8%8D%E6%98%AF%E6%88%91/1808448172"
+        },
+        {
+          "id": "1808447467",
+          "title": "咔咪哈咪哈",
+          "subtitle": "海龟先生",
+          "eyebrow": null,
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/46/89/a3/4689a3a9-3f6f-2212-843d-2bb6dc8e1edd/25UMGIM42410.rgb.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/%E5%92%94%E5%92%AA%E5%93%88%E5%92%AA%E5%93%88/1808447467"
+        },
+        {
+          "id": "1777004352",
+          "title": "好好的",
+          "subtitle": "柯泯薰",
+          "eyebrow": null,
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/49/b3/bf/49b3bf08-f441-4ceb-29a6-58694954c686/4711508093314.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/%E5%A5%BD%E5%A5%BD%E7%9A%84/1777004352"
+        },
+        {
+          "id": "1874538074",
+          "title": "涌 - EP",
+          "subtitle": "黑豹乐队",
+          "eyebrow": null,
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/69/d1/42/69d14281-e037-9d7e-6bfd-e80ffd7b1834/cover.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/%E6%B6%8C-ep/1874538074"
+        },
+        {
+          "id": "1808900373",
+          "title": "白日梦蓝",
+          "subtitle": "刺猬",
+          "eyebrow": null,
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/3e/f7/ae/3ef7ae24-794e-4198-40d6-1c5d43e7f6d0/25UMGIM42249.rgb.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/%E7%99%BD%E6%97%A5%E6%A2%A6%E8%93%9D/1808900373"
+        },
+        {
+          "id": "1388260148",
+          "title": "聊聊吧 (Live)",
+          "subtitle": "Tizzy Bac",
+          "eyebrow": null,
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/7a/86/13/7a8613c8-97ff-dd86-523c-0752870b1f9f/4712755920101.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/%E8%81%8A%E8%81%8A%E5%90%A7-live/1388260148"
+        },
+        {
+          "id": "1597320706",
+          "title": "劳动之余",
+          "subtitle": "声音玩具",
+          "eyebrow": null,
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/45/eb/0e/45eb0ea1-8710-35dc-1357-6324bf08ee68/cover.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/%E5%8A%B3%E5%8A%A8%E4%B9%8B%E4%BD%99/1597320706"
+        },
+        {
+          "id": "1706306375",
+          "title": "火星电台II",
+          "subtitle": "火星电台",
+          "eyebrow": null,
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/ed/b9/05/edb9054d-6584-e2d1-e015-8cf22c8c3175/6976364781135.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/%E7%81%AB%E6%98%9F%E7%94%B5%E5%8F%B0ii/1706306375"
+        },
+        {
+          "id": "pl.b51e55f673b34870bde5f90534653d0c",
+          "title": "Peng Tan Essentials",
+          "subtitle": "Apple Music 国语流行",
+          "eyebrow": null,
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features125/v4/0d/e2/b6/0de2b6b3-0aa7-c702-478b-d39b5fbb4ca0/mzl.yxrfrjxb.jpg/160x160SC.FPESS05.webp?l=zh-Hans",
+          "linkUrl": "https://music.apple.com/cn/playlist/peng-tan-essentials/pl.b51e55f673b34870bde5f90534653d0c"
+        }
+      ],
+      "timing": {
+        "hydrationDurationMs": 0,
+        "extractionDurationMs": 0.2,
+        "totalDurationMs": 0.2,
+        "avgTimePerItemMs": 0.017
+      }
+    },
+    {
+      "id": "section-12",
+      "title": "更多类似《初学者》的作品",
+      "itemCount": 12,
+      "items": [
+        {
+          "id": "1118757859",
+          "title": "周杰伦的床边故事",
+          "subtitle": "周杰伦",
+          "eyebrow": null,
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/58/28/f4/5828f491-62ab-61b6-25b4-23838e4f1dcf/dj.sxbqzong.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/%E5%91%A8%E6%9D%B0%E5%80%AB%E7%9A%84%E5%BA%8A%E9%82%8A%E6%95%85%E4%BA%8B/1118757859"
+        },
+        {
+          "id": "744962939",
+          "title": "渺小",
+          "subtitle": "田馥甄",
+          "eyebrow": null,
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features115/v4/12/31/75/123175fd-d416-da11-ea2f-39a5b113c3f8/dj.zyncqluo.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/%E6%B8%BA%E5%B0%8F/744962939"
+        },
+        {
+          "id": "1871400633",
+          "title": "和自己对话",
+          "subtitle": "林俊杰",
+          "eyebrow": null,
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/3d/d8/71/3dd8711e-41ec-29ee-72b6-0a2a480031d0/4711720281483.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/%E5%92%8C%E8%87%AA%E5%B7%B1%E5%B0%8D%E8%A9%B1/1871400633"
+        },
+        {
+          "id": "1124800418",
+          "title": "今日营业中",
+          "subtitle": "林宥嘉",
+          "eyebrow": null,
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music60/v4/12/1a/9a/121a9a3f-301c-ec4f-d384-bcb0ce8d6380/1400X1400.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/%E4%BB%8A%E6%97%A5%E7%87%9F%E6%A5%AD%E4%B8%AD/1124800418"
+        },
+        {
+          "id": "1422694136",
+          "title": "rice & shine",
+          "subtitle": "陈奕迅",
+          "eyebrow": null,
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music128/v4/b3/03/0f/b3030fa1-1000-4def-27d3-987b0ed2c69a/00602488972895.rgb.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/rice-shine/1422694136"
+        },
+        {
+          "id": "935650862",
+          "title": "李荣浩",
+          "subtitle": "李荣浩",
+          "eyebrow": null,
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/94/a5/64/94a56421-f42e-b4a0-1a7c-96497a7861c0/dj.puittmiw.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/%E6%9D%8E%E6%A6%AE%E6%B5%A9/935650862"
+        },
+        {
+          "id": "1158763922",
+          "title": "自传",
+          "subtitle": "五月天",
+          "eyebrow": null,
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/64/a0/f1/64a0f1b8-a36b-ff10-509a-9a8f5fef53ff/dj.zfoqlnar.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/%E8%87%AA%E5%82%B3/1158763922"
+        },
+        {
+          "id": "1070300722",
+          "title": "新的心跳 (Deluxe)",
+          "subtitle": "邓紫棋",
+          "eyebrow": null,
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/0c/63/2a/0c632a64-6157-696e-214b-14f223113837/dj.zykvqaou.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/%E6%96%B0%E7%9A%84%E5%BF%83%E8%B7%B3-deluxe/1070300722"
+        },
+        {
+          "id": "1137528397",
+          "title": "爱,教会我们的事",
+          "subtitle": "周兴哲",
+          "eyebrow": null,
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/98/bd/1b/98bd1b71-5023-d31b-7adc-c91cf52dd65f/886446012827.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/%E6%84%9B-%E6%95%99%E6%9C%83%E6%88%91%E5%80%91%E7%9A%84%E4%BA%8B/1137528397"
+        },
+        {
+          "id": "985223244",
+          "title": "WHITE",
+          "subtitle": "周柏豪",
+          "eyebrow": null,
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/63/1d/51/631d510f-2ab1-9d0e-a219-6a7822466d9e/dj.tooldxxp.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/white/985223244"
+        },
+        {
+          "id": "1443637757",
+          "title": "飞行器的执行周期",
+          "subtitle": "郭顶",
+          "eyebrow": null,
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/4b/55/95/4b5595a2-5d2c-38c7-8179-0a27e5ba58a1/00602488600859.rgb.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/%E9%A3%9B%E8%A1%8C%E5%99%A8%E7%9A%84%E5%9F%B7%E8%A1%8C%E9%80%B1%E6%9C%9F/1443637757"
+        },
+        {
+          "id": "1126284385",
+          "title": "青年晚报",
+          "subtitle": "许嵩",
+          "eyebrow": null,
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/e8/a5/4a/e8a54a8d-295b-9f83-413e-27e9365802f0/cover.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/%E9%9D%92%E5%B9%B4%E6%99%9A%E5%A0%B1/1126284385"
+        }
+      ],
+      "timing": {
+        "hydrationDurationMs": 0,
+        "extractionDurationMs": 0.2,
+        "totalDurationMs": 0.2,
+        "avgTimePerItemMs": 0.017
+      }
+    },
+    {
+      "id": "section-13",
+      "title": "K-Pop",
+      "itemCount": 12,
+      "items": [
+        {
+          "id": "pl.a784f95d4f504d579647523ff95433be",
+          "title": "K-Pop 新歌",
+          "subtitle": "Apple Music K-Pop",
+          "eyebrow": null,
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/95/ed/bc/95edbc85-6994-6fc2-851f-5e62b2d720ec/2818a03f-9b9d-4747-8545-862deb5b14eb.png/160x160SC.DN02.webp?l=zh-Hans",
+          "linkUrl": "https://music.apple.com/cn/playlist/k-pop-%E6%96%B0%E6%AD%8C/pl.a784f95d4f504d579647523ff95433be"
+        },
+        {
+          "id": "1812851427",
+          "title": "We are i-dle",
+          "subtitle": "i-dle",
+          "eyebrow": null,
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/7d/f4/8e/7df48efd-08cd-917d-5098-b78d6db8b153/4894972853438.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/we-are-i-dle/1812851427"
+        },
+        {
+          "id": "1868596000",
+          "title": "REVERXE - The 8th Album",
+          "subtitle": "EXO",
+          "eyebrow": null,
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/e2/41/ca/e241cafc-1447-2edf-4ca3-cd11ec4b376d/888735954610.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/reverxe-the-8th-album/1868596000"
+        },
+        {
+          "id": "pl.48229b41bbfc47d7af39dae8e8b5276e",
+          "title": "KPOPWRLD",
+          "subtitle": "Apple Music K-Pop",
+          "eyebrow": null,
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/c4/4e/5c/c44e5c5e-b974-8b9d-496e-3fc77ec48b85/cabe1ff0-524a-4f8e-861b-a5f4f08c1c9f.png/160x160SC.DN02.webp?l=zh-Hans",
+          "linkUrl": "https://music.apple.com/cn/playlist/kpopwrld/pl.48229b41bbfc47d7af39dae8e8b5276e"
+        },
+        {
+          "id": "6780313409",
+          "title": "V8",
+          "subtitle": "徐明浩 & Vernon",
+          "eyebrow": null,
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/3b/73/50/3b735017-0cc1-e7d1-5351-53649abb4bfc/823375220206_Cover.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/v8/6780313409"
+        },
+        {
+          "id": "6795782851",
+          "title": "TUNE & PLAY - EP",
+          "subtitle": "TUIDE",
+          "eyebrow": null,
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/f2/a0/02/f2a00270-a846-b0aa-65b3-91bc94442e10/823375310600_Cover.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/tune-play-ep/6795782851"
+        },
+        {
+          "id": "6807254179",
+          "title": "EPIKASE SONG BATTLE - Single",
+          "subtitle": "EPIK HIGH, Mithra Jin, TABLO & Tukutz",
+          "eyebrow": null,
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/a2/fb/a6/a2fba6b1-e083-f07c-5851-959249e18f5a/888272187632.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/epikase-song-battle-single/6807254179"
+        },
+        {
+          "id": "6797481676",
+          "title": "SYNK : aeXIS LINE - 2026 Special Digital Single - Single",
+          "subtitle": "aespa",
+          "eyebrow": null,
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/cc/41/23/cc4123a6-c1c0-7e86-e44a-2f0cb1f0e081/aespa_aeXIS_2026_-F.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/synk-aexis-line-2026-special-digital-single-single/6797481676"
+        },
+        {
+          "id": "6824466622",
+          "title": "October Archive - EP",
+          "subtitle": "脸红的思春期",
+          "eyebrow": null,
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/21/09/d5/2109d56a-ee00-e619-5401-ef1a06cc7c22/FrontCoverImage_1.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/october-archive-ep/6824466622"
+        },
+        {
+          "id": "1833426140",
+          "title": "DANCING ALONE (PARKMOONCHI Mix).zip - EP",
+          "subtitle": "KiiiKiii",
+          "eyebrow": null,
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/8b/d4/26/8bd426f4-5641-07b3-442a-a66839406da2/199538517293.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/dancing-alone-parkmoonchi-mix-zip-ep/1833426140"
+        },
+        {
+          "id": "6776079516",
+          "title": "CHOOM - EP",
+          "subtitle": "BABYMONSTER",
+          "eyebrow": null,
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/fd/c0/fa/fdc0fa32-5df8-c5a7-714a-2df265d33f0e/8809519881283.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/choom-ep/6776079516"
+        },
+        {
+          "id": "6801189433",
+          "title": "GREENGREEN_playextended",
+          "subtitle": "CORTIS",
+          "eyebrow": "新豪华版专辑",
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/99/db/df/99dbdf86-b7f8-86ce-e8da-4ddd845f1bdc/823375359456_Cover.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/greengreen-playextended/6801189433"
+        }
+      ],
+      "timing": {
+        "hydrationDurationMs": 0,
+        "extractionDurationMs": 0.2,
+        "totalDurationMs": 0.2,
+        "avgTimePerItemMs": 0.017
+      }
+    },
+    {
+      "id": "section-14",
+      "title": "流行创作人歌单",
+      "itemCount": 10,
+      "items": [
+        {
+          "id": "pl.5fd380a8010d408aaaba8d59b1b34892",
+          "title": "创作人：范晓萱",
+          "subtitle": "Apple Music 国语流行",
+          "eyebrow": null,
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/AMCArtistImages126/v4/08/b4/69/08b469c1-2117-a91e-3587-66a4378410f9/063c86d5-ace3-4a3e-b9a6-abc24d4d0fa6_ami-identity-944deb085e5c21e619949ad6bf893c8a-2023-04-01T13-59-20.527Z_cropped.png/160x160SC.FPTSW03.webp?l=zh-Hans",
+          "linkUrl": "https://music.apple.com/cn/playlist/%E5%88%9B%E4%BD%9C%E4%BA%BA-%E8%8C%83%E6%99%93%E8%90%B1/pl.5fd380a8010d408aaaba8d59b1b34892"
+        },
+        {
+          "id": "pl.b00dbe000ad341a89e198adaa706ef8b",
+          "title": "Songbook: Bebe Rexha",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/AMCArtistImages211/v4/78/93/da/7893da1b-c240-f11d-5ce2-2588403c6d49/file_cropped.png/160x160SC.FPTSW03.webp?l=zh-Hans",
+          "linkUrl": "https://music.apple.com/cn/playlist/songbook-bebe-rexha/pl.b00dbe000ad341a89e198adaa706ef8b"
+        },
+        {
+          "id": "pl.9b3bc3faec2240848f9330fb315d4683",
+          "title": "Songbook: Vincent Fang",
+          "subtitle": "Apple Music 国语流行",
+          "eyebrow": null,
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features122/v4/f4/07/1c/f4071c8d-f8aa-4f2f-9f66-0b3a52b9ac27/mza_7710295565310041848.png/160x160SC.FPTSW03.webp?l=zh-Hans",
+          "linkUrl": "https://music.apple.com/cn/playlist/songbook-vincent-fang/pl.9b3bc3faec2240848f9330fb315d4683"
+        },
+        {
+          "id": "pl.c3b2f29fe0024d9badcfaa7d93df3bd8",
+          "title": "Songbook: Khalil Fong",
+          "subtitle": "Apple Music 国语流行",
+          "eyebrow": null,
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/AMCArtistImages221/v4/d9/f7/61/d9f7618e-3772-4089-b24a-da79025a4186/0e242e96-3bec-4506-af0b-e6e138578346_ami-identity-588119312477b59f89e8b3cc47b71214-2024-08-23T08-05-52.560Z_cropped.png/160x160SC.FPTSW03.webp?l=zh-Hans",
+          "linkUrl": "https://music.apple.com/cn/playlist/songbook-khalil-fong/pl.c3b2f29fe0024d9badcfaa7d93df3bd8"
+        },
+        {
+          "id": "pl.6792fddb1c7242b58fb1b6353cd67d7e",
+          "title": "创作人：陈小霞",
+          "subtitle": "Apple Music 国语流行",
+          "eyebrow": null,
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features211/v4/07/e5/91/07e591e0-4d5a-d208-f7ab-74c3bbc81236/mzl.ceskmfvj.jpg/160x160SC.FPTSW03.webp?l=zh-Hans",
+          "linkUrl": "https://music.apple.com/cn/playlist/%E5%88%9B%E4%BD%9C%E4%BA%BA-%E9%99%88%E5%B0%8F%E9%9C%9E/pl.6792fddb1c7242b58fb1b6353cd67d7e"
+        },
+        {
+          "id": "pl.e0d5c30245f94aa384ec720c51207cd0",
+          "title": "Songbook: HUSH",
+          "subtitle": "Apple Music 国语流行",
+          "eyebrow": null,
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features112/v4/4a/2f/fc/4a2ffc87-a750-15f3-da89-d3961a64d3c1/mzl.hfrzzmyt.jpg/160x160SC.FPTSW03.webp?l=zh-Hans",
+          "linkUrl": "https://music.apple.com/cn/playlist/songbook-hush/pl.e0d5c30245f94aa384ec720c51207cd0"
+        },
+        {
+          "id": "pl.2aa5b0644b394fb8bd89fdbdb8762957",
+          "title": "Poo Bear: Songbook",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/AMCArtistImages211/v4/84/05/85/8405852b-b019-9d45-e889-a41e630bed59/7670577e-d45a-4bd1-af53-3ac4d6b5cca4_file_cropped.png/160x160SC.FPTSW03.webp?l=zh-Hans",
+          "linkUrl": "https://music.apple.com/cn/playlist/poo-bear-songbook/pl.2aa5b0644b394fb8bd89fdbdb8762957"
+        },
+        {
+          "id": "pl.857e88778aa94abe92c14e90168098e3",
+          "title": "创作人：丁世光",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/AMCArtistImages221/v4/80/28/8c/80288cac-f4e0-c8fa-a876-1e8e03edaa59/file_cropped.png/160x160SC.FPTSW03.webp?l=zh-Hans",
+          "linkUrl": "https://music.apple.com/cn/playlist/%E5%88%9B%E4%BD%9C%E4%BA%BA-%E4%B8%81%E4%B8%96%E5%85%89/pl.857e88778aa94abe92c14e90168098e3"
+        },
+        {
+          "id": "pl.13159edad6414ab3bb6c9f98c255c4b2",
+          "title": "创作人：徐佳莹",
+          "subtitle": "Apple Music 国语流行",
+          "eyebrow": null,
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/AMCArtistImages221/v4/b4/a8/50/b4a8503d-dbc1-49e3-e1db-5b2432f81327/ami-identity-4a44fea5c0c8abb80f2dc7e7847d26f7-2025-12-26T10-10-24.908Z_cropped.png/160x160SC.FPTSW03.webp?l=zh-Hans",
+          "linkUrl": "https://music.apple.com/cn/playlist/%E5%88%9B%E4%BD%9C%E4%BA%BA-%E5%BE%90%E4%BD%B3%E8%8E%B9/pl.13159edad6414ab3bb6c9f98c255c4b2"
+        },
+        {
+          "id": "pl.518bddc456ce47aabd75f03396c67d5c",
+          "title": "创作人：陈绮贞",
+          "subtitle": "Apple Music 国语流行",
+          "eyebrow": null,
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features115/v4/32/cc/dd/32ccdd9b-81ac-4a68-47e3-9500690570ad/mzl.trudsaxd.jpg/160x160SC.FPTSW03.webp?l=zh-Hans",
+          "linkUrl": "https://music.apple.com/cn/playlist/%E5%88%9B%E4%BD%9C%E4%BA%BA-%E9%99%88%E7%BB%AE%E8%B4%9E/pl.518bddc456ce47aabd75f03396c67d5c"
+        }
+      ],
+      "timing": {
+        "hydrationDurationMs": 0,
+        "extractionDurationMs": 0.2,
+        "totalDurationMs": 0.2,
+        "avgTimePerItemMs": 0.02
+      }
+    },
+    {
+      "id": "section-15",
+      "title": "2010年代",
+      "itemCount": 12,
+      "items": [
+        {
+          "id": "1133501171",
+          "title": "日常",
+          "subtitle": "田馥甄",
+          "eyebrow": null,
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/b1/43/db/b143db3c-5b3c-8db3-5af9-3b8d4aac88eb/hebe1400x1400.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/%E6%97%A5%E5%B8%B8/1133501171"
+        },
+        {
+          "id": "549032200",
+          "title": "给他",
+          "subtitle": "郭采洁",
+          "eyebrow": null,
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/02/51/9c/02519ca6-177c-a44c-bf88-f4ea2fcaf6af/825646563173.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/%E7%B5%A6%E4%BB%96/549032200"
+        },
+        {
+          "id": "1629551873",
+          "title": "先生小姐",
+          "subtitle": "Mr. Miss",
+          "eyebrow": null,
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music122/v4/cd/38/5a/cd385a22-e34e-bb2e-26fa-e2c1923cf65f/cover.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/%E5%85%88%E7%94%9F%E5%B0%8F%E5%A7%90/1629551873"
+        },
+        {
+          "id": "1488480125",
+          "title": "昼夜 - Single",
+          "subtitle": "海朋森 & 法兹乐队",
+          "eyebrow": null,
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/49/29/98/492998bb-fccf-f360-8c4b-8ba1ffd21d92/016027947792.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/day-and-night-single/1488480125"
+        },
+        {
+          "id": "pl.61a290586a7f4086ae5f25bf98ab6c45",
+          "title": "VAVA 代表作",
+          "subtitle": "Apple Music C-Pop",
+          "eyebrow": null,
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features221/v4/97/25/9f/97259f09-135c-7912-5672-05e86ceed683/mzl.ldcmpfxc.jpg/160x160SC.FPESS05.webp?l=zh-Hans",
+          "linkUrl": "https://music.apple.com/cn/playlist/vava-%E4%BB%A3%E8%A1%A8%E4%BD%9C/pl.61a290586a7f4086ae5f25bf98ab6c45"
+        },
+        {
+          "id": "1491912625",
+          "title": "人情公园 - Single",
+          "subtitle": "不优雅",
+          "eyebrow": null,
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music113/v4/a1/62/67/a1626704-b76b-8c29-c805-7ca18f1a7a84/rqgy.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/%E4%BA%BA%E6%83%85%E5%85%AC%E5%9C%92-single/1491912625"
+        },
+        {
+          "id": "1141811243",
+          "title": "我想再唱起歌",
+          "subtitle": "森淮",
+          "eyebrow": null,
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/de/b2/4c/deb24cd8-c2b1-8a88-a7da-d923bbd696b9/dj.atuhohid.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/%E6%88%91%E6%83%B3%E5%86%8D%E5%94%B1%E8%B5%B7%E6%AD%8C/1141811243"
+        },
+        {
+          "id": "1437034566",
+          "title": "皇后小姐 - EP",
+          "subtitle": "冰雪飞",
+          "eyebrow": null,
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music128/v4/46/ce/36/46ce3650-0b73-7884-5d71-3eeca9dbb744/cover.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/%E7%9A%87%E5%90%8E%E5%B0%8F%E5%A7%90-ep/1437034566"
+        },
+        {
+          "id": "1460634681",
+          "title": "Nice Fight. (Covers from One Punch Man) - Single",
+          "subtitle": "RoomTone",
+          "eyebrow": null,
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music113/v4/d1/a4/d1/d1a4d1de-31a3-b029-7d73-1ab8a0d7971d/artwork.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/nice-fight-covers-from-one-punch-man-single/1460634681"
+        },
+        {
+          "id": "1200658100",
+          "title": "待整理",
+          "subtitle": "Calculasian",
+          "eyebrow": null,
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/8c/43/fc/8c43fc63-81cb-a85c-c2bc-68e1bc96af52/CALC0005.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/%E5%BE%85%E6%95%B4%E7%90%86/1200658100"
+        },
+        {
+          "id": "1482253451",
+          "title": "浴室 (LP Version)",
+          "subtitle": "deca joins",
+          "eyebrow": null,
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music123/v4/3e/eb/4d/3eeb4d38-7c12-9dd2-b712-be49176dc215/193017013863.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/%E6%B5%B4%E5%AE%A4-lp-version/1482253451"
+        },
+        {
+          "id": "1601793544",
+          "title": "事实上我没有名字",
+          "subtitle": "许钧",
+          "eyebrow": null,
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/18/18/10/18181068-adb7-ca02-d2e1-668e52974789/000UwOre0TD4Gc_BxPgvQfkMUdHbbfEOXjQ4s0.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/%E4%BA%8B%E5%AE%9E%E4%B8%8A%E6%88%91%E6%B2%A1%E6%9C%89%E5%90%8D%E5%AD%97/1601793544"
+        }
+      ],
+      "timing": {
+        "hydrationDurationMs": 0,
+        "extractionDurationMs": 0.2,
+        "totalDurationMs": 0.2,
+        "avgTimePerItemMs": 0.017
+      }
+    },
+    {
+      "id": "section-16",
+      "title": "探索中国大陆独立音乐",
+      "itemCount": 10,
+      "items": [
+        {
+          "id": "1808448643",
+          "title": "孤岛",
+          "subtitle": "马頔",
+          "eyebrow": null,
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/2d/1f/38/2d1f389f-77d3-ab1b-d139-60982cea4937/25UMGIM42195.rgb.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/%E5%AD%A4%E5%B2%9B/1808448643"
+        },
+        {
+          "id": "1808898458",
+          "title": "Disco Girl",
+          "subtitle": "新裤子乐队",
+          "eyebrow": null,
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/ea/4c/31/ea4c31c7-dbc2-fc1e-3e86-68fdcdd29600/25UMGIM42189.rgb.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/disco-girl/1808898458"
+        },
+        {
+          "id": "1617999924",
+          "title": "乌鸦谷 - 晕晕众生,命命相连",
+          "subtitle": "刺猬",
+          "eyebrow": null,
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music122/v4/a9/1d/bb/a91dbbd3-fa88-e933-4ebb-0cc3ac5c9afb/6941636729009_1.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/%E7%83%8F%E9%B4%89%E8%B0%B7-%E6%9A%88%E6%9A%88%E7%9C%BE%E7%94%9F-%E5%91%BD%E5%91%BD%E7%9B%B8%E9%80%A3/1617999924"
+        },
+        {
+          "id": "1524443761",
+          "title": "成长小说",
+          "subtitle": "海朋森",
+          "eyebrow": null,
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music114/v4/c0/1d/c1/c01dc12a-be52-44ef-531e-a8d0e3255fbc/6666666666.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/%E6%88%90%E9%95%B7%E5%B0%8F%E8%AA%AA/1524443761"
+        },
+        {
+          "id": "1808446026",
+          "title": "喝彩之前",
+          "subtitle": "Re-TROS",
+          "eyebrow": null,
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/78/4c/2c/784c2c73-91ba-f628-9027-25bd3f7ebaab/25UMGIM42289.rgb.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/%E5%96%9D%E5%BD%A9%E4%B9%8B%E5%89%8D/1808446026"
+        },
+        {
+          "id": "1538548871",
+          "title": "万能青年旅店",
+          "subtitle": "万能青年旅店",
+          "eyebrow": null,
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music112/v4/62/43/86/6243868c-c362-74d0-68d5-1de5e89986ee/cover.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/%E4%B8%87%E8%83%BD%E9%9D%92%E5%B9%B4%E6%97%85%E5%BA%97/1538548871"
+        },
+        {
+          "id": "1808450285",
+          "title": "飞船,宇航员",
+          "subtitle": "尧十三",
+          "eyebrow": null,
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/01/75/56/017556d4-baea-defb-9c70-373336cddea8/25UMGIM42196.rgb.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/%E9%A3%9E%E8%88%B9-%E5%AE%87%E8%88%AA%E5%91%98/1808450285"
+        },
+        {
+          "id": "1494095459",
+          "title": "You Can Listen, You Can Talk",
+          "subtitle": "Carsick Cars",
+          "eyebrow": null,
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/63/73/71/6373713b-938f-24f7-736d-b1b249e90540/you_can.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/you-can-listen-you-can-talk/1494095459"
+        },
+        {
+          "id": "1619474414",
+          "title": "折叠故事",
+          "subtitle": "法兹乐队",
+          "eyebrow": null,
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music122/v4/c8/7c/55/c87c553e-2e9e-7c1c-a9f9-4d8f2155f6e8/193017058659.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/%E6%8A%98%E7%96%8A%E6%95%85%E4%BA%8B/1619474414"
+        },
+        {
+          "id": "1584619951",
+          "title": "恋人",
+          "subtitle": "Schoolgirl Byebye",
+          "eyebrow": null,
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/e8/57/13/e85713e2-e041-14ae-1dd6-aa2ab8c8c0df/193017049282.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/%E6%88%80%E4%BA%BA/1584619951"
+        }
+      ],
+      "timing": {
+        "hydrationDurationMs": 0,
+        "extractionDurationMs": 0.2,
+        "totalDurationMs": 0.2,
+        "avgTimePerItemMs": 0.02
+      }
+    },
+    {
+      "id": "section-17",
+      "title": "喜爱的艺人",
+      "itemCount": 6,
+      "items": [
+        {
+          "id": "ra.a-960030338",
+          "title": "League of Legends Music",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "station",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/AMCArtistImages221/v4/d9/c4/8d/d9c48d1d-5046-7731-0889-65b1e3d22648/e6cb9afa-3196-4227-ae14-188f108eec72_ami-identity-05607a94abb4a7494a19465e172e9703-2024-06-13T19-00-49.957Z_cropped.png/160x160AM.RSAB04.webp",
+          "linkUrl": "https://music.apple.com/cn/station/league-of-legends-music/ra.a-960030338"
+        },
+        {
+          "id": "ra.a-300117743",
+          "title": "周杰伦",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "station",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/AMCArtistImages211/v4/6d/53/0e/6d530e69-ce17-1c15-7605-b267ef760ea1/ami-identity-8cbee1395c1dbfa4daf6d4c572503010-2026-03-24T12-21-24.021Z_cropped.png/160x160AM.RSAB04.webp",
+          "linkUrl": "https://music.apple.com/cn/station/%E5%91%A8%E6%9D%B0%E4%BC%A6/ra.a-300117743"
+        },
+        {
+          "id": "ra.a-357033986",
+          "title": "蔡琴",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "station",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music116/v4/f7/bd/d9/f7bdd97d-23d9-ad28-41ec-7c74a730e1fe/4711280069200.jpg/160x160AM.RSAB04.webp?albumFallback=true",
+          "linkUrl": "https://music.apple.com/cn/station/%E8%94%A1%E7%90%B4/ra.a-357033986"
+        },
+        {
+          "id": "ra.a-864180966",
+          "title": "Rainy Mood",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "station",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/AMCArtistImages116/v4/e3/26/81/e326818c-8c47-cf9a-83cd-3e2c204405b7/39ceaf0e-3cd1-4fdc-b526-83b53b534d00_ami-identity-1b3b9a12e8d4dcfbbda23a1f86565051-2023-04-13T23-09-58.224Z_cropped.png/160x160AM.RSAB04.webp",
+          "linkUrl": "https://music.apple.com/cn/station/rainy-mood/ra.a-864180966"
+        },
+        {
+          "id": "ra.a-571294820",
+          "title": "艾怡良",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "station",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features211/v4/35/85/2d/35852dc6-76f5-b4c4-1952-5a08fdc593e8/mzl.ldiudyob.jpg/160x160AM.RSAB04.webp",
+          "linkUrl": "https://music.apple.com/cn/station/%E8%89%BE%E6%80%A1%E8%89%AF/ra.a-571294820"
+        },
+        {
+          "id": "ra.a-774883313",
+          "title": "林二汶",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "station",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features125/v4/0e/40/b2/0e40b202-b3a8-abfa-91f2-8826f03f43ca/mzl.eradvowe.jpg/160x160AM.RSAB04.webp",
+          "linkUrl": "https://music.apple.com/cn/station/%E6%9E%97%E4%BA%8C%E6%B1%B6/ra.a-774883313"
+        }
+      ],
+      "timing": {
+        "hydrationDurationMs": 0,
+        "extractionDurationMs": 0.2,
+        "totalDurationMs": 0.2,
+        "avgTimePerItemMs": 0.033
+      }
+    },
+    {
+      "id": "section-19",
+      "title": "音乐回忆：你的热门音乐",
+      "itemCount": 13,
+      "items": [
+        {
+          "id": "6444321639",
+          "title": "推荐精选",
+          "subtitle": "Apple Music",
+          "eyebrow": "再次聆听",
+          "type": "editorial",
+          "artworkUrl": null,
+          "linkUrl": "https://replay.music.apple.com/cn"
+        },
+        {
+          "id": "pl.rp-65COJWlyx",
+          "title": "音乐回忆：历年总览",
+          "subtitle": "小可的 Apple Music",
+          "eyebrow": "再次聆听",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/12/ff/83/12ff83eb-90d4-f77f-f9ef-f727ae2bc252/64299c7e-6fe2-4963-8c3b-cdec9b8a0041.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/%E9%9F%B3%E4%B9%90%E5%9B%9E%E5%BF%86-%E5%8E%86%E5%B9%B4%E6%80%BB%E8%A7%88/pl.rp-65COJWlyx"
+        },
+        {
+          "id": "pl.rp-0AxxtXpoW6J",
+          "title": "2026 音乐回忆",
+          "subtitle": "小可的 Apple Music",
+          "eyebrow": null,
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/e2/eb/52/e2eb523d-ac81-8d38-d45b-8b67f0b18a8c/66bf7e86-d1ee-4355-8782-995ae3c604fe.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/2026-%E9%9F%B3%E4%B9%90%E5%9B%9E%E5%BF%86/pl.rp-0AxxtXpoW6J"
+        },
+        {
+          "id": "pl.rp-75g5tXOzZ8g",
+          "title": "音乐回忆 2025",
+          "subtitle": "小可的 Apple Music",
+          "eyebrow": null,
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/e6/0f/3b/e60f3b4f-89cd-fa43-8617-e23b91bffd12/8db25351-cf07-40e1-9a53-dabda942538a.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/%E9%9F%B3%E4%B9%90%E5%9B%9E%E5%BF%86-2025/pl.rp-75g5tXOzZ8g"
+        },
+        {
+          "id": "pl.rp-8AnxszZVwRp",
+          "title": "音乐回忆 2024",
+          "subtitle": "小可的 Apple Music",
+          "eyebrow": null,
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/10/8c/2a/108c2aab-1ddd-8860-a2c9-b8a2fe3e7036/c92fc898-d79a-413e-9d12-c5e7c5182c80.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/%E9%9F%B3%E4%B9%90%E5%9B%9E%E5%BF%86-2024/pl.rp-8AnxszZVwRp"
+        },
+        {
+          "id": "pl.rp-P44AiMEpbB2",
+          "title": "音乐回忆 2023",
+          "subtitle": "小可的 Apple Music",
+          "eyebrow": null,
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/0b/28/db/0b28dbaa-0f32-1977-da7f-326036662d6d/d1035b35-ee02-4cbe-9ac4-5f98c264899a.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/%E9%9F%B3%E4%B9%90%E5%9B%9E%E5%BF%86-2023/pl.rp-P44AiMEpbB2"
+        },
+        {
+          "id": "pl.rp-Boo4h5n8pyA",
+          "title": "音乐回忆 2022",
+          "subtitle": "小可的 Apple Music",
+          "eyebrow": null,
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/85/72/b1/8572b1da-b68c-1a2e-db84-566d2ab3ba98/c0d87624-965b-45f1-a343-84ecfd499e54.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/%E9%9F%B3%E4%B9%90%E5%9B%9E%E5%BF%86-2022/pl.rp-Boo4h5n8pyA"
+        },
+        {
+          "id": "pl.rp-jdd4UDd2lQ3",
+          "title": "音乐回忆 2021",
+          "subtitle": "小可的 Apple Music",
+          "eyebrow": "个人专属推荐",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/e2/2d/4c/e22d4cab-a8ca-a890-8d3c-e4e200627c67/e389ad7c-6256-4746-8e13-3eb43537038f.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/%E9%9F%B3%E4%B9%90%E5%9B%9E%E5%BF%86-2021/pl.rp-jdd4UDd2lQ3"
+        },
+        {
+          "id": "pl.rp-9xxRSO7x6zp",
+          "title": "音乐回忆 2020",
+          "subtitle": "小可的 Apple Music",
+          "eyebrow": null,
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/e8/dd/02/e8dd0286-0b5b-8871-e024-59f18cdca46a/d901693b-5648-4d70-9551-48feb6c05f31.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/%E9%9F%B3%E4%B9%90%E5%9B%9E%E5%BF%86-2020/pl.rp-9xxRSO7x6zp"
+        },
+        {
+          "id": "pl.rp-E55BiLYz60k",
+          "title": "音乐回忆 2019",
+          "subtitle": "小可的 Apple Music",
+          "eyebrow": null,
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/22/f8/86/22f8864d-d282-5a92-fbed-d3da27b9f84c/d1e752f8-7741-4c7f-8b28-754570838edc.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/%E9%9F%B3%E4%B9%90%E5%9B%9E%E5%BF%86-2019/pl.rp-E55BiLYz60k"
+        },
+        {
+          "id": "pl.rp-XWWwTLD0nkp",
+          "title": "音乐回忆 2018",
+          "subtitle": "小可的 Apple Music",
+          "eyebrow": null,
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/9f/bd/c2/9fbdc291-ea22-4926-26ee-9599de876269/7de514db-7732-4bf4-b89c-29c571ebab7a.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/%E9%9F%B3%E4%B9%90%E5%9B%9E%E5%BF%86-2018/pl.rp-XWWwTLD0nkp"
+        },
+        {
+          "id": "pl.rp-yVVRtd03wvW",
+          "title": "音乐回忆 2017",
+          "subtitle": "小可的 Apple Music",
+          "eyebrow": null,
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/e6/bf/b8/e6bfb843-a01d-b0a8-3aa8-5ab06e48c0c5/3d01c346-9856-4623-a274-50b45195fbef.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/%E9%9F%B3%E4%B9%90%E5%9B%9E%E5%BF%86-2017/pl.rp-yVVRtd03wvW"
+        },
+        {
+          "id": "pl.rp-VQQ7S8a9GZz",
+          "title": "音乐回忆 2016",
+          "subtitle": "小可的 Apple Music",
+          "eyebrow": null,
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/d6/11/29/d61129eb-09f1-c971-84cc-6a1d9c68f652/258eea8a-c954-4007-9ff4-4a060a51cc84.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/%E9%9F%B3%E4%B9%90%E5%9B%9E%E5%BF%86-2016/pl.rp-VQQ7S8a9GZz"
+        }
+      ],
+      "timing": {
+        "hydrationDurationMs": 0,
+        "extractionDurationMs": 0.2,
+        "totalDurationMs": 0.2,
+        "avgTimePerItemMs": 0.015
+      }
+    }
+  ],
+  "timing": {
+    "totalDurationMs": 1354.77,
+    "breakdown": {
+      "navigationDurationMs": 1354.35,
+      "extractionDurationMs": 0.42
+    },
+    "totalCategories": 18,
+    "totalItems": 176,
+    "avgTimePerCategoryMs": 75.26,
+    "avgTimePerItemMs": 7.7
+  }
+}

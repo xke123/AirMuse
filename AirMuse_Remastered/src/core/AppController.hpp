@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #include <windows.h>
 #include <memory>
 #include "PlaybackStore.hpp"
@@ -33,6 +33,8 @@ public:
     void SetWebVisible(bool visible);
     void ResizeWebHost(int widthPx, int heightPx);
     void JumpToPlayingContext();
+    void PlayAppleMusicTrack(const std::wstring& kind, const std::wstring& collectionId, int trackIdx, const std::wstring& trackId);
+    void PlayAppleMusicStation(const std::wstring& stationId);
 
     void AdjustLyricsOffset(int64_t deltaMs);
 

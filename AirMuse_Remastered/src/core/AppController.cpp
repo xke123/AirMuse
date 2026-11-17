@@ -1,4 +1,4 @@
-﻿#include "AppController.hpp"
+#include "AppController.hpp"
 #include <algorithm>
 #include <thread>
 
@@ -79,6 +79,14 @@ void AppController::ResizeWebHost(int widthPx, int heightPx) {
 
 void AppController::JumpToPlayingContext() {
     if (m_webProvider) m_webProvider->NavigateToPlayingContext();
+}
+
+void AppController::PlayAppleMusicTrack(const std::wstring& kind, const std::wstring& collectionId, int trackIdx, const std::wstring& trackId) {
+    if (m_webProvider) m_webProvider->PlayAppleMusicTrack(kind, collectionId, trackIdx, trackId);
+}
+
+void AppController::PlayAppleMusicStation(const std::wstring& stationId) {
+    if (m_webProvider) m_webProvider->PlayAppleMusicStation(stationId);
 }
 
 void AppController::AdjustLyricsOffset(int64_t deltaMs) {

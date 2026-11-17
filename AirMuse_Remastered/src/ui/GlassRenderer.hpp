@@ -1,10 +1,28 @@
-﻿#pragma once
+#pragma once
 #include "../core/WinCommon.hpp"
 #include <memory>
 #include <string>
 #include <vector>
 
 namespace airmuse {
+
+struct LayeredSurface {
+    HDC hdcScreen = nullptr;
+    HDC hdcMem = nullptr;
+    HBITMAP hBmp = nullptr;
+    HGDIOBJ oldBmp = nullptr;
+    int widthPx = 0;
+    int heightPx = 0;
+
+    LayeredSurface() = default;
+    ~LayeredSurface();
+    LayeredSurface(LayeredSurface const&) = delete;
+    LayeredSurface& operator=(LayeredSurface const&) = delete;
+
+    bool Ensure(int wPx, int hPx);
+    void Present(HWND hwnd, int wPx, int hPx, BYTE masterAlpha = 255);
+    void Release();
+};
 
 class GlassRenderer {
 public:
@@ -19,18 +37,11 @@ public:
     static void DrawAirPlayGlassFrame(Gdiplus::Graphics& g, int dstW, int dstH, float hoverGloss, bool focused, Gdiplus::Bitmap* ambientArtwork = nullptr);
     static void DrawImageAlpha(Gdiplus::Graphics& g, Gdiplus::Bitmap* src, Gdiplus::RectF const& dst, int sx, int sy, int sw, int sh, float alpha, float brightness = 1.0f);
     static void DrawTextHalo(Gdiplus::Graphics& g, float cx, float cy, float rx, float ry, BYTE centerAlpha);
-
-    // 支持左右非对称延伸（黄金分割线方向性）+ 垂直梯形溢流的玻璃条暗雾
     static void DrawBarSpillFog(Gdiplus::Graphics& g, Gdiplus::RectF const& barClip, float anchorX, float leftSpan, float rightSpan, bool fromBottom, BYTE peakAlpha);
-
-    // 绘制微型平台矢量 Logo (0: Apple Music, 1: Spotify, 2: QQ音乐)
     static void DrawPlatformLogo(Gdiplus::Graphics& g, int platformIdx, Gdiplus::RectF const& rect, bool active, float alpha);
-
     static void DrawGlyphHaloText(Gdiplus::Graphics& g, std::wstring const& text, Gdiplus::FontFamily const& ff, float emSize,
                                   Gdiplus::RectF const& rect, Gdiplus::StringFormat const& sf, Gdiplus::Color textColor, float alphaScale);
     static void DrawCapsuleProgress(Gdiplus::Graphics& g, Gdiplus::RectF const& r, float ratio, bool highlight, bool scrubbing, std::wstring const& scrubTimeText);
 };
 
 } // namespace airmuse
-
-

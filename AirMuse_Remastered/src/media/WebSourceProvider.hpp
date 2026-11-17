@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #include "IMediaSourceProvider.hpp"
 #include "WebAdapters.hpp"
 
@@ -18,6 +18,9 @@ public:
     void Resize(int widthPx, int heightPx);
     void SetVisible(bool visible);
     void NavigateToPlayingContext();
+
+    void PlayAppleMusicTrack(const std::wstring& kind, const std::wstring& collectionId, int trackIdx, const std::wstring& trackId);
+    void PlayAppleMusicStation(const std::wstring& stationId);
 
     std::wstring Id() const override { return L"embedded_web"; }
     int BasePriority() const override { return 20; }

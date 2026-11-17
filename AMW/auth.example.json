@@ -1,0 +1,11 @@
+{
+  "cookies": [
+    {
+      "name": "media-user-token",
+      "value": "YOUR_MEDIA_USER_TOKEN_HERE",
+      "domain": ".music.apple.com",
+      "path": "/"
+    }
+  ],
+  "origins": []
+}

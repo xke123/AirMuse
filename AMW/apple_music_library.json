@@ -1,0 +1,4752 @@
+﻿{
+  "pageName": "资料库",
+  "url": "https://amp-api.music.apple.com/v1/me/library",
+  "capturedAt": "2026-11-17T18:56:27.889Z",
+  "totalCategories": 5,
+  "categories": [
+    {
+      "id": "section-library-favorites",
+      "title": "喜爱歌曲 (113 首)",
+      "itemCount": 100,
+      "items": [
+        {
+          "id": "i.MoxZoqlIk3bdrQ",
+          "title": "If You Want Me",
+          "subtitle": "陈霓 · 渐强",
+          "eyebrow": "喜爱 · 3:31",
+          "type": "fav-song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music128/v4/24/a6/65/24a66536-ceba-97cc-35b0-b9b9ae560bd8/00602488604741.rgb.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/1443086079",
+          "durationMs": 211952,
+          "durationFormatted": "3:31",
+          "playParams": {
+            "catalogId": "1443086079",
+            "id": "i.MoxZoqlIk3bdrQ",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "1443086079"
+          }
+        },
+        {
+          "id": "i.oOd6OQqHm7QKOZ",
+          "title": "Without You",
+          "subtitle": "高尔宣 OSN · Without You - Single",
+          "eyebrow": "喜爱 · 2:55",
+          "type": "fav-song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music116/v4/38/b7/d3/38b7d3e4-bc36-996c-6cfd-e376877c6ff9/4710243776186_cover.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/1456657983",
+          "durationMs": 175500,
+          "durationFormatted": "2:55",
+          "playParams": {
+            "catalogId": "1456657983",
+            "id": "i.oOd6OQqHm7QKOZ",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "1456657983"
+          }
+        },
+        {
+          "id": "i.YJMv1WgHlb7X6E",
+          "title": "南山南",
+          "subtitle": "马頔 · 孤岛",
+          "eyebrow": "喜爱 · 5:25",
+          "type": "fav-song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/2d/1f/38/2d1f389f-77d3-ab1b-d139-60982cea4937/25UMGIM42195.rgb.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/1808449224",
+          "durationMs": 325079,
+          "durationFormatted": "5:25",
+          "playParams": {
+            "catalogId": "1808449224",
+            "id": "i.YJMv1WgHlb7X6E",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "1808449224"
+          }
+        },
+        {
+          "id": "i.8WdrZQQfR4dELD",
+          "title": "勿听(《黑神话:悟空》盘丝岭片尾曲)",
+          "subtitle": "张紫宁, 赵紫骅 & 8082Audio · 《黑神话:悟空》游戏音乐精选集",
+          "eyebrow": "喜爱 · 4:15",
+          "type": "fav-song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/f7/8e/59/f78e5909-b716-22aa-a886-85b7f3ca5a29/4894965236323.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/1765255276",
+          "durationMs": 255056,
+          "durationFormatted": "4:15",
+          "playParams": {
+            "catalogId": "1765255276",
+            "id": "i.8WdrZQQfR4dELD",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "1765255276"
+          }
+        },
+        {
+          "id": "i.pmzqkJPcbWp8qM",
+          "title": "浮光掠影",
+          "subtitle": "阿肆 · 预谋邂逅",
+          "eyebrow": "喜爱 · 3:52",
+          "type": "fav-song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/7d/10/d9/7d10d9ef-c6e5-a09a-2155-1d8d2666160a/25UMGIM42250.rgb.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/1808447057",
+          "durationMs": 232478,
+          "durationFormatted": "3:52",
+          "playParams": {
+            "catalogId": "1808447057",
+            "id": "i.pmzqkJPcbWp8qM",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "1808447057"
+          }
+        },
+        {
+          "id": "i.zpZV5PJFJe5vD4",
+          "title": "演员",
+          "subtitle": "薛之谦 · 初学者",
+          "eyebrow": "喜爱 · 4:21",
+          "type": "fav-song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/b0/09/04/b009043f-f576-54ce-5b1f-d7896d6933c0/9555150772273.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/1787930244",
+          "durationMs": 261250,
+          "durationFormatted": "4:21",
+          "playParams": {
+            "catalogId": "1787930244",
+            "id": "i.zpZV5PJFJe5vD4",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "1787930244"
+          }
+        },
+        {
+          "id": "i.zpZxa9JHJe5vD4",
+          "title": "思念一个荒废的名字",
+          "subtitle": "陈楚生 · 瘾",
+          "eyebrow": "喜爱 · 4:42",
+          "type": "fav-song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/f0/b4/1f/f0b41f0d-d6f1-017f-75ec-426e47df4018/6941904159910.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/1690835164",
+          "durationMs": 282436,
+          "durationFormatted": "4:42",
+          "playParams": {
+            "catalogId": "1690835164",
+            "id": "i.zpZxa9JHJe5vD4",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "1690835164"
+          }
+        },
+        {
+          "id": "i.oOdPMkmhm7QKOZ",
+          "title": "想和你看五月的晚霞",
+          "subtitle": "陈华 · 华与浪漫 - Single",
+          "eyebrow": "喜爱 · 3:53",
+          "type": "fav-song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/9f/1d/3e/9f1d3ed4-7751-62ad-7d2a-22347a9c466b/4894972345278.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/1764436651",
+          "durationMs": 233407,
+          "durationFormatted": "3:53",
+          "playParams": {
+            "catalogId": "1764436651",
+            "id": "i.oOdPMkmhm7QKOZ",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "1764436651"
+          }
+        },
+        {
+          "id": "i.oOdK7Z6tm7QKOZ",
+          "title": "Remedy",
+          "subtitle": "Adele · 25",
+          "eyebrow": "喜爱 · 4:05",
+          "type": "fav-song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music116/v4/62/bc/87/62bc8791-2a12-4b01-8928-d601684a951c/634904074005.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/1051332397",
+          "durationMs": 245427,
+          "durationFormatted": "4:05",
+          "playParams": {
+            "catalogId": "1051332397",
+            "id": "i.oOdK7Z6tm7QKOZ",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "1051332397"
+          }
+        },
+        {
+          "id": "i.KoJ24AqFX82ZdL",
+          "title": "看见(《黑神话:悟空》黑风山片尾曲)",
+          "subtitle": "陈鸿宇 & 8082Audio · 《黑神话:悟空》游戏音乐精选集",
+          "eyebrow": "喜爱 · 3:47",
+          "type": "fav-song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/f7/8e/59/f78e5909-b716-22aa-a886-85b7f3ca5a29/4894965236323.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/1765255258",
+          "durationMs": 227358,
+          "durationFormatted": "3:47",
+          "playParams": {
+            "catalogId": "1765255258",
+            "id": "i.KoJ24AqFX82ZdL",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "1765255258"
+          }
+        },
+        {
+          "id": "i.5PkRKd2FMXvzom",
+          "title": "Mad Love (中文版)",
+          "subtitle": "Nene郑乃馨 · Mad Love",
+          "eyebrow": "喜爱 · 3:24",
+          "type": "fav-song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/d7/cd/4a/d7cd4ad0-ed48-a352-3553-c7736b848b56/196872014242.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/1740348786",
+          "durationMs": 204799,
+          "durationFormatted": "3:24",
+          "playParams": {
+            "catalogId": "1740348786",
+            "id": "i.5PkRKd2FMXvzom",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "1740348786"
+          }
+        },
+        {
+          "id": "i.pmz2eWKibWp8qM",
+          "title": "繁花·节选",
+          "subtitle": "陈晓明 · 致·小萌",
+          "eyebrow": "喜爱 · 1:28",
+          "type": "fav-song",
+          "artworkUrl": "https://store-033.blobstore.apple.com/sq-mq-us-033-000002/7f/8e/6d/7f8e6d1a-c069-f1f0-3b59-2ec32cd78067/image?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Date=20261117T185626Z&X-Amz-SignedHeaders=host&X-Amz-Expires=86400&X-Amz-Credential=MKIAU0HKO2RBEAT0UMZS%2F20261117%2Fstore-033%2Fs3%2Faws4_request&X-Amz-Signature=1b36e0332f1c9ff2ab7421de5275c7bfbce49b09a4e67431cb4062d71e4e277c",
+          "linkUrl": "https://music.apple.com/cn/song/i.pmz2eWKibWp8qM",
+          "durationMs": 88992,
+          "durationFormatted": "1:28",
+          "playParams": {
+            "id": "i.pmz2eWKibWp8qM",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": false
+          }
+        },
+        {
+          "id": "i.8WdrL61tR4dELD",
+          "title": "我的名字对你有什么意义",
+          "subtitle": "陈晓明 · 致·小萌",
+          "eyebrow": "喜爱 · 1:19",
+          "type": "fav-song",
+          "artworkUrl": "https://store-033.blobstore.apple.com/sq-mq-us-033-000002/78/41/de/7841deed-c7f8-f2ef-e390-d008ffda2f1e/image?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Date=20261117T185626Z&X-Amz-SignedHeaders=host&X-Amz-Expires=86400&X-Amz-Credential=MKIAU0HKO2RBEAT0UMZS%2F20261117%2Fstore-033%2Fs3%2Faws4_request&X-Amz-Signature=81103befee1223e5a8f25406425eadd5d58df374bf06727c5d480191bb7a1997",
+          "linkUrl": "https://music.apple.com/cn/song/i.8WdrL61tR4dELD",
+          "durationMs": 79177,
+          "durationFormatted": "1:19",
+          "playParams": {
+            "id": "i.8WdrL61tR4dELD",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": false
+          }
+        },
+        {
+          "id": "i.2P0Nk5zfK7E254",
+          "title": "Someone Like You",
+          "subtitle": "Adele · 21",
+          "eyebrow": "喜爱 · 4:45",
+          "type": "fav-song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/f8/df/0a/f8df0ac9-ae76-9dae-86d3-4e913fc54fb1/634904152062.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/403037927",
+          "durationMs": 285240,
+          "durationFormatted": "4:45",
+          "playParams": {
+            "catalogId": "403037927",
+            "id": "i.2P0Nk5zfK7E254",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "403037927"
+          }
+        },
+        {
+          "id": "i.5PkLxqmFMXvzom",
+          "title": "不搭",
+          "subtitle": "李荣浩 · 李荣浩",
+          "eyebrow": "喜爱 · 4:47",
+          "type": "fav-song",
+          "artworkUrl": "https://store-030.blobstore.apple.com/apple-sg-us-std-000002/5b/d8/ed/5bd8ed6b-bec3-f41f-8831-113266bff9ef/image?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Date=20261117T185626Z&X-Amz-SignedHeaders=host&X-Amz-Expires=86399&X-Amz-Credential=MKIA24RSZ22BB0LZX9JT%2F20261117%2Fstore-030%2Fs3%2Faws4_request&X-Amz-Signature=287022fe4ab8e1fe04605d9a5d9be4992d341b4e5e2e9d71cd4585d0b628630a",
+          "linkUrl": "https://music.apple.com/cn/song/i.5PkLxqmFMXvzom",
+          "durationMs": 287895,
+          "durationFormatted": "4:47",
+          "playParams": {
+            "id": "i.5PkLxqmFMXvzom",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": false
+          }
+        },
+        {
+          "id": "i.oOdNlpKtm7QKOZ",
+          "title": "胡66 - 空空如也『守著你離開後的世界, 空空如也...』【動態歌詞Lyrics】",
+          "subtitle": "EHPMusicChannel",
+          "eyebrow": "喜爱 · 3:31",
+          "type": "fav-song",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/song/1327591456",
+          "durationMs": 211983,
+          "durationFormatted": "3:31",
+          "playParams": {
+            "catalogId": "1327591456",
+            "id": "i.oOdNlpKtm7QKOZ",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "1327591456"
+          }
+        },
+        {
+          "id": "i.kGOWgdpFOr0l7x",
+          "title": "空空如也",
+          "subtitle": "胡66 · 空空如也 - Single",
+          "eyebrow": "喜爱 · 3:31",
+          "type": "fav-song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/23/a3/e1/23a3e1e0-2044-9d94-5726-a4e288ba9d64/4894972371260.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/1764521612",
+          "durationMs": 211538,
+          "durationFormatted": "3:31",
+          "playParams": {
+            "catalogId": "1764521612",
+            "id": "i.kGOWgdpFOr0l7x",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "1764521612"
+          }
+        },
+        {
+          "id": "i.YJMK0e5Flb7X6E",
+          "title": "Stay With Me",
+          "subtitle": "孙盛希 · Stay With Me - Single",
+          "eyebrow": "喜爱 · 2:54",
+          "type": "fav-song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music5/v4/29/44/c1/2944c1d7-c7dd-3a4a-81e5-0523062ec67e/cover.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/995875752",
+          "durationMs": 174454,
+          "durationFormatted": "2:54",
+          "playParams": {
+            "catalogId": "995875752",
+            "id": "i.YJMK0e5Flb7X6E",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "995875752"
+          }
+        },
+        {
+          "id": "i.Moxa86Ltk3bdrQ",
+          "title": "很爱很爱你",
+          "subtitle": "刘若英 · 很爱很爱你",
+          "eyebrow": "喜爱 · 4:43",
+          "type": "fav-song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/9d/4e/e2/9d4ee25a-cfd0-6904-9089-7c3774ff40eb/RD1427.4_Cover1440.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/1480803340",
+          "durationMs": 283000,
+          "durationFormatted": "4:43",
+          "playParams": {
+            "catalogId": "1480803340",
+            "id": "i.Moxa86Ltk3bdrQ",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "1480803340"
+          }
+        },
+        {
+          "id": "i.8WdrZ1eTR4dELD",
+          "title": "天黑黑 (Live)",
+          "subtitle": "莫文蔚 & 窦靖童 · 声生不息.宝岛季 (第九期 Live)",
+          "eyebrow": "喜爱 · 4:17",
+          "type": "fav-song",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/song/i.8WdrZ1eTR4dELD",
+          "durationMs": 257868,
+          "durationFormatted": "4:17",
+          "playParams": null
+        },
+        {
+          "id": "i.pmz25WKIbWp8qM",
+          "title": "眉间心上",
+          "subtitle": "鲁向卉 · 时间木马",
+          "eyebrow": "喜爱 · 4:41",
+          "type": "fav-song",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/song/i.pmz25WKIbWp8qM",
+          "durationMs": 281951,
+          "durationFormatted": "4:41",
+          "playParams": null
+        },
+        {
+          "id": "i.Moxa8omUk3bdrQ",
+          "title": "Love Yourself",
+          "subtitle": "Justin Bieber · Purpose (Deluxe)",
+          "eyebrow": "喜爱 · 3:53",
+          "type": "fav-song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/dd/28/22/dd282288-ad81-63ba-036e-1261596cd9c1/15UMGIM59416.rgb.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/1442692593",
+          "durationMs": 233719,
+          "durationFormatted": "3:53",
+          "playParams": {
+            "catalogId": "1442692593",
+            "id": "i.Moxa8omUk3bdrQ",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "1442692593"
+          }
+        },
+        {
+          "id": "i.5PkL3RmtMXvzom",
+          "title": "If I Die Young",
+          "subtitle": "The Band Perry · The Band Perry",
+          "eyebrow": "喜爱 · 3:42",
+          "type": "fav-song",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/song/495648263",
+          "durationMs": 222773,
+          "durationFormatted": "3:42",
+          "playParams": {
+            "catalogId": "495648263",
+            "id": "i.5PkL3RmtMXvzom",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "495648263"
+          }
+        },
+        {
+          "id": "i.KoJ2Po6IX82ZdL",
+          "title": "梦",
+          "subtitle": "森淮 · 我想再唱起歌",
+          "eyebrow": "喜爱 · 4:40",
+          "type": "fav-song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/de/b2/4c/deb24cd8-c2b1-8a88-a7da-d923bbd696b9/dj.atuhohid.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/1141811861",
+          "durationMs": 280088,
+          "durationFormatted": "4:40",
+          "playParams": {
+            "catalogId": "1141811861",
+            "id": "i.KoJ2Po6IX82ZdL",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "1141811861"
+          }
+        },
+        {
+          "id": "i.2P05JzzUK7E254",
+          "title": "电梯",
+          "subtitle": "郁可唯 · 00:00",
+          "eyebrow": "喜爱 · 4:53",
+          "type": "fav-song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/0a/97/6d/0a976d78-7c09-4576-5bdf-6740a78085f4/dj.sicuijbb.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/1185835190",
+          "durationMs": 293754,
+          "durationFormatted": "4:53",
+          "playParams": {
+            "catalogId": "1185835190",
+            "id": "i.2P05JzzUK7E254",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "1185835190"
+          }
+        },
+        {
+          "id": "i.2P01aPZfK7E254",
+          "title": "带我去找夜生活 - 健康版",
+          "subtitle": "告五人 · 带我去找夜生活 - 健康版 - Single",
+          "eyebrow": "喜爱 · 4:28",
+          "type": "fav-song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music114/v4/42/b1/e7/42b1e74c-10f7-85ee-2a43-b1e7d8d64a44/1._1500.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/1546063520",
+          "durationMs": 268000,
+          "durationFormatted": "4:28",
+          "playParams": {
+            "catalogId": "1546063520",
+            "id": "i.2P01aPZfK7E254",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "1546063520"
+          }
+        },
+        {
+          "id": "i.zpZxMpRtJe5vD4",
+          "title": "在不确定的世界里",
+          "subtitle": "魏如萱 · 还是要相信爱情啊混蛋们",
+          "eyebrow": "喜爱 · 4:02",
+          "type": "fav-song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music4/v4/52/9e/18/529e18f7-9847-90c7-1908-0b91c0556171/waa_bastards_sleeve_F_cover_4000x4000.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/877962978",
+          "durationMs": 242200,
+          "durationFormatted": "4:02",
+          "playParams": {
+            "catalogId": "877962978",
+            "id": "i.zpZxMpRtJe5vD4",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "877962978"
+          }
+        },
+        {
+          "id": "i.5Pk6J9QUMXvzom",
+          "title": "空心",
+          "subtitle": "光泽 · 光泽",
+          "eyebrow": "喜爱 · 4:39",
+          "type": "fav-song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music113/v4/e9/8d/14/e98d147e-99d3-3342-461e-1009227034e1/cover.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/1662493126",
+          "durationMs": 279002,
+          "durationFormatted": "4:39",
+          "playParams": {
+            "catalogId": "1662493126",
+            "id": "i.5Pk6J9QUMXvzom",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "1662493126"
+          }
+        },
+        {
+          "id": "i.kGOWQY5fOr0l7x",
+          "title": "只是不够爱自己",
+          "subtitle": "丁当 · 当我的好朋友",
+          "eyebrow": "喜爱 · 4:04",
+          "type": "fav-song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music20/v4/94/38/bd/9438bdca-e067-ee87-a902-1f7270ef7691/3000x3000_cover.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/1128684246",
+          "durationMs": 244933,
+          "durationFormatted": "4:04",
+          "playParams": {
+            "catalogId": "1128684246",
+            "id": "i.kGOWQY5fOr0l7x",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "1128684246"
+          }
+        },
+        {
+          "id": "i.2P01M0vfK7E254",
+          "title": "入海",
+          "subtitle": "庞宁 · 入海 - Single",
+          "eyebrow": "喜爱 · 4:12",
+          "type": "fav-song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music113/v4/30/9a/84/309a84eb-0514-4816-0360-ff011472a5a9/rh.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/1495016112",
+          "durationMs": 252777,
+          "durationFormatted": "4:12",
+          "playParams": {
+            "catalogId": "1495016112",
+            "id": "i.2P01M0vfK7E254",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "1495016112"
+          }
+        },
+        {
+          "id": "i.3VBoeVRHR0WKMz",
+          "title": "答应不爱你",
+          "subtitle": "郑中基 · Gold Typhoon Best Sellers Series - Ronald Cheng",
+          "eyebrow": "喜爱 · 3:26",
+          "type": "fav-song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music1/v4/6d/39/e7/6d39e72f-c3d0-d35a-6df0-56b9d0d8f50f/825646159789.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/964154829",
+          "durationMs": 206000,
+          "durationFormatted": "3:26",
+          "playParams": {
+            "catalogId": "964154829",
+            "id": "i.3VBoeVRHR0WKMz",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "964154829"
+          }
+        },
+        {
+          "id": "i.5PkRgl7TMXvzom",
+          "title": "我是真的爱你",
+          "subtitle": "李宗盛 · 李宗盛爱情论Ⅰ: 爱的代价",
+          "eyebrow": "喜爱 · 4:42",
+          "type": "fav-song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music5/v4/c5/c8/8b/c5c88b3e-187e-0d64-50d0-9b4194fb0154/dj.hrjkrikr.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/379603826",
+          "durationMs": 282360,
+          "durationFormatted": "4:42",
+          "playParams": {
+            "catalogId": "379603826",
+            "id": "i.5PkRgl7TMXvzom",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "379603826"
+          }
+        },
+        {
+          "id": "i.kGOg0QRUOr0l7x",
+          "title": "失语者",
+          "subtitle": "蔡健雅 · 失语者",
+          "eyebrow": "喜爱 · 3:41",
+          "type": "fav-song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music114/v4/f2/ec/25/f2ec2521-1615-d273-3d6c-a62120abfd64/mzm.rbdtggpp.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/1051208559",
+          "durationMs": 221907,
+          "durationFormatted": "3:41",
+          "playParams": {
+            "catalogId": "1051208559",
+            "id": "i.kGOg0QRUOr0l7x",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "1051208559"
+          }
+        },
+        {
+          "id": "i.oOdNL2mSm7QKOZ",
+          "title": "慢慢等 (全新编曲)",
+          "subtitle": "韦礼安 · 首张同名全创作专辑",
+          "eyebrow": "喜爱 · 3:53",
+          "type": "fav-song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/20/a1/bb/20a1bb37-e1e1-ab4c-f6e1-fa19483b5f89/asset.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/535064672",
+          "durationMs": 233347,
+          "durationFormatted": "3:53",
+          "playParams": {
+            "catalogId": "535064672",
+            "id": "i.oOdNL2mSm7QKOZ",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "535064672"
+          }
+        },
+        {
+          "id": "i.pmz51o9fbWp8qM",
+          "title": "有没有",
+          "subtitle": "韦礼安 · 首张同名全创作专辑",
+          "eyebrow": "喜爱 · 4:12",
+          "type": "fav-song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/20/a1/bb/20a1bb37-e1e1-ab4c-f6e1-fa19483b5f89/asset.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/535064648",
+          "durationMs": 252227,
+          "durationFormatted": "4:12",
+          "playParams": {
+            "catalogId": "535064648",
+            "id": "i.pmz51o9fbWp8qM",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "535064648"
+          }
+        },
+        {
+          "id": "i.kGOW8GRFOr0l7x",
+          "title": "梁山伯与朱丽叶",
+          "subtitle": "卓文萱 & 曹格 · 习惯",
+          "eyebrow": "喜爱 · 3:52",
+          "type": "fav-song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music/v4/8a/f8/0b/8af80b9d-00a7-b68f-dc30-e2bd0812fc75/RD-1776.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/560999719",
+          "durationMs": 232893,
+          "durationFormatted": "3:52",
+          "playParams": {
+            "catalogId": "560999719",
+            "id": "i.kGOW8GRFOr0l7x",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "560999719"
+          }
+        },
+        {
+          "id": "i.Moxq8dguk3bdrQ",
+          "title": "Immortals",
+          "subtitle": "Fall Out Boy · American Beauty / American Psycho",
+          "eyebrow": "喜爱 · 3:09",
+          "type": "fav-song",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/song/948356435",
+          "durationMs": 189395,
+          "durationFormatted": "3:09",
+          "playParams": {
+            "catalogId": "948356435",
+            "id": "i.Moxq8dguk3bdrQ",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "948356435"
+          }
+        },
+        {
+          "id": "i.3VBoQvAHR0WKMz",
+          "title": "我终于失去了你",
+          "subtitle": "李宗盛 · 理性与感性作品音乐会",
+          "eyebrow": "喜爱 · 4:53",
+          "type": "fav-song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/64/6f/e9/646fe970-7fbc-4aae-bb85-2c45e7404362/1500.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/1329432183",
+          "durationMs": 293440,
+          "durationFormatted": "4:53",
+          "playParams": {
+            "catalogId": "1329432183",
+            "id": "i.3VBoQvAHR0WKMz",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "1329432183"
+          }
+        },
+        {
+          "id": "i.3VBaoGNUR0WKMz",
+          "title": "少一点天份",
+          "subtitle": "孙盛希 · 俏摩女抢头婚 (电视原声带)",
+          "eyebrow": "喜爱 · 4:34",
+          "type": "fav-song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/07/0f/bb/070fbbe9-37ae-bd98-8acf-46247f5ab37c/555.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/948121015",
+          "durationMs": 274618,
+          "durationFormatted": "4:34",
+          "playParams": {
+            "catalogId": "948121015",
+            "id": "i.3VBaoGNUR0WKMz",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "948121015"
+          }
+        },
+        {
+          "id": "i.2P05dQzTK7E254",
+          "title": "身骑白马",
+          "subtitle": "徐佳莹 · LaLa首张创作专辑",
+          "eyebrow": "喜爱 · 5:13",
+          "type": "fav-song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music6/v4/43/52/5e/43525e86-9c47-cb57-5ca5-a374aa7afa40/LaLa.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/672648896",
+          "durationMs": 313187,
+          "durationFormatted": "5:13",
+          "playParams": {
+            "catalogId": "672648896",
+            "id": "i.2P05dQzTK7E254",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "672648896"
+          }
+        },
+        {
+          "id": "i.5Pk6ZoLTMXvzom",
+          "title": "布拉格广场",
+          "subtitle": "JOLIN蔡依林 · J女神 (典藏精选)",
+          "eyebrow": "喜爱 · 4:52",
+          "type": "fav-song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music/v4/e5/57/87/e55787b1-54d0-0c37-d72d-0f56c74f19e7/886443625020.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/556949922",
+          "durationMs": 292533,
+          "durationFormatted": "4:52",
+          "playParams": {
+            "catalogId": "556949922",
+            "id": "i.5Pk6ZoLTMXvzom",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "556949922"
+          }
+        },
+        {
+          "id": "i.pmzqP4BsbWp8qM",
+          "title": "痴情玫瑰花 (feat. 洪春風)",
+          "subtitle": "Under Lover · Lover",
+          "eyebrow": "喜爱 · 4:37",
+          "type": "fav-song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music69/v4/29/2f/be/292fbe6b-9def-2589-d595-ec23db1c7cf1/Lover.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/1090834748",
+          "durationMs": 277040,
+          "durationFormatted": "4:37",
+          "playParams": {
+            "catalogId": "1090834748",
+            "id": "i.pmzqP4BsbWp8qM",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "1090834748"
+          }
+        },
+        {
+          "id": "i.3VBam5RfR0WKMz",
+          "title": "天后",
+          "subtitle": "陈势安 · 再爱一遍·天后",
+          "eyebrow": "喜爱 · 4:49",
+          "type": "fav-song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music114/v4/97/1e/c8/971ec8ed-8a8e-8474-8adb-0b6168a1d211/cover.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/535085181",
+          "durationMs": 289400,
+          "durationFormatted": "4:49",
+          "playParams": {
+            "catalogId": "535085181",
+            "id": "i.3VBam5RfR0WKMz",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "535085181"
+          }
+        },
+        {
+          "id": "i.5PkRaN7UMXvzom",
+          "title": "I Don't Know",
+          "subtitle": "王诗安 · Diana Wang - EP",
+          "eyebrow": "喜爱 · 3:55",
+          "type": "fav-song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/26/ba/04/26ba045d-bee1-c724-2ca5-7f6ae5fc80b6/cover.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/1565510851",
+          "durationMs": 235623,
+          "durationFormatted": "3:55",
+          "playParams": {
+            "catalogId": "1565510851",
+            "id": "i.5PkRaN7UMXvzom",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "1565510851"
+          }
+        },
+        {
+          "id": "i.zpZem5VFJe5vD4",
+          "title": "I Don't Know",
+          "subtitle": "王诗安 · Diana Wang - EP",
+          "eyebrow": "喜爱 · 3:55",
+          "type": "fav-song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/26/ba/04/26ba045d-bee1-c724-2ca5-7f6ae5fc80b6/cover.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/1565510851",
+          "durationMs": 235623,
+          "durationFormatted": "3:55",
+          "playParams": {
+            "catalogId": "1565510851",
+            "id": "i.zpZem5VFJe5vD4",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "1565510851"
+          }
+        },
+        {
+          "id": "i.YJMKJN4flb7X6E",
+          "title": "I Don't Know",
+          "subtitle": "王诗安 · Diana Wang - EP",
+          "eyebrow": "喜爱 · 3:55",
+          "type": "fav-song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/26/ba/04/26ba045d-bee1-c724-2ca5-7f6ae5fc80b6/cover.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/1565510851",
+          "durationMs": 235623,
+          "durationFormatted": "3:55",
+          "playParams": {
+            "catalogId": "1565510851",
+            "id": "i.YJMKJN4flb7X6E",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "1565510851"
+          }
+        },
+        {
+          "id": "i.pmzq3q0IbWp8qM",
+          "title": "Set It All Free",
+          "subtitle": "斯嘉丽·约翰逊 · Sing (Original Motion Picture Soundtrack)",
+          "eyebrow": "喜爱 · 3:34",
+          "type": "fav-song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music122/v4/75/25/f9/7525f9ff-b693-67c3-7947-615beef22fb9/16UMGIM78574.rgb.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/1442373216",
+          "durationMs": 214547,
+          "durationFormatted": "3:34",
+          "playParams": {
+            "catalogId": "1442373216",
+            "id": "i.pmzq3q0IbWp8qM",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "1442373216"
+          }
+        },
+        {
+          "id": "i.kGOW3kKuOr0l7x",
+          "title": "If You Want Me",
+          "subtitle": "陈霓 · 渐强",
+          "eyebrow": "喜爱 · 3:31",
+          "type": "fav-song",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/song/1195061612",
+          "durationMs": 211952,
+          "durationFormatted": "3:31",
+          "playParams": {
+            "catalogId": "1195061612",
+            "id": "i.kGOW3kKuOr0l7x",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "1195061612"
+          }
+        },
+        {
+          "id": "i.oOd4YVqtm7QKOZ",
+          "title": "模特",
+          "subtitle": "李荣浩 · 模特",
+          "eyebrow": "喜爱 · 5:06",
+          "type": "fav-song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/87/b2/89/87b289ae-5728-6133-88a8-2a2658a535aa/196872064728.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/1743353794",
+          "durationMs": 306240,
+          "durationFormatted": "5:06",
+          "playParams": {
+            "catalogId": "1743353794",
+            "id": "i.oOd4YVqtm7QKOZ",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "1743353794"
+          }
+        },
+        {
+          "id": "i.KoJEaWefX82ZdL",
+          "title": "李白",
+          "subtitle": "李荣浩 · 模特",
+          "eyebrow": "喜爱 · 4:33",
+          "type": "fav-song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/87/b2/89/87b289ae-5728-6133-88a8-2a2658a535aa/196872064728.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/1743353792",
+          "durationMs": 273442,
+          "durationFormatted": "4:33",
+          "playParams": {
+            "catalogId": "1743353792",
+            "id": "i.KoJEaWefX82ZdL",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "1743353792"
+          }
+        },
+        {
+          "id": "i.Moxq69gtk3bdrQ",
+          "title": "别说",
+          "subtitle": "JC 陈咏桐 · 别说 - Single",
+          "eyebrow": "喜爱 · 3:45",
+          "type": "fav-song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music62/v4/2c/47/a8/2c47a881-d7cd-d865-5b6c-d2cdbe678996/cover_square_copy.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/1164859315",
+          "durationMs": 225456,
+          "durationFormatted": "3:45",
+          "playParams": {
+            "catalogId": "1164859315",
+            "id": "i.Moxq69gtk3bdrQ",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "1164859315"
+          }
+        },
+        {
+          "id": "i.2P05zRXSK7E254",
+          "title": "听见下雨的声音 (电影主题曲)",
+          "subtitle": "魏如昀 · 听见下雨的声音 (电影原声带)",
+          "eyebrow": "喜爱 · 4:41",
+          "type": "fav-song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/66/7e/50/667e50fc-c488-4223-0278-3d83ecc7f35a/OST.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/716614702",
+          "durationMs": 281422,
+          "durationFormatted": "4:41",
+          "playParams": {
+            "catalogId": "716614702",
+            "id": "i.2P05zRXSK7E254",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "716614702"
+          }
+        },
+        {
+          "id": "i.kGOgrG9fOr0l7x",
+          "title": "明明就",
+          "subtitle": "周杰伦 · 十二新作",
+          "eyebrow": "喜爱 · 4:20",
+          "type": "fav-song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/81/83/e6/8183e6c0-7137-7009-347e-326b53cb4a3b/2000x2000pix.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/587743637",
+          "durationMs": 260387,
+          "durationFormatted": "4:20",
+          "playParams": {
+            "catalogId": "587743637",
+            "id": "i.kGOgrG9fOr0l7x",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "587743637"
+          }
+        },
+        {
+          "id": "i.8WdGdY2HR4dELD",
+          "title": "我们的总和",
+          "subtitle": "艾怡良 · 说 艾怡良",
+          "eyebrow": "喜爱 · 4:16",
+          "type": "fav-song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/54/dd/ff/54ddff63-f59d-12ac-6452-e61819e9377d/886446691992.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/1270641108",
+          "durationMs": 256288,
+          "durationFormatted": "4:16",
+          "playParams": {
+            "catalogId": "1270641108",
+            "id": "i.8WdGdY2HR4dELD",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "1270641108"
+          }
+        },
+        {
+          "id": "i.kGOWmApUOr0l7x",
+          "title": "光害",
+          "subtitle": "谢和弦 · 要你知道",
+          "eyebrow": "喜爱 · 4:22",
+          "type": "fav-song",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/song/i.kGOWmApUOr0l7x",
+          "durationMs": 262584,
+          "durationFormatted": "4:22",
+          "playParams": null
+        },
+        {
+          "id": "i.pmzqmlOfbWp8qM",
+          "title": "说过的不算",
+          "subtitle": "赵泳鑫 · Get Out",
+          "eyebrow": "喜爱 · 4:33",
+          "type": "fav-song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music60/v4/42/66/ee/4266ee10-451a-b732-5cb7-53b66e1c29bc/coverforzhao.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/1132517842",
+          "durationMs": 273836,
+          "durationFormatted": "4:33",
+          "playParams": {
+            "catalogId": "1132517842",
+            "id": "i.pmzqmlOfbWp8qM",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "1132517842"
+          }
+        },
+        {
+          "id": "i.oOd4LEKCm7QKOZ",
+          "title": "痛快的哀艳",
+          "subtitle": "苏打绿 · 冬 未了",
+          "eyebrow": "喜爱 · 6:00",
+          "type": "fav-song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music116/v4/6e/b1/6e/6eb16e18-c22e-e2ee-7587-de25ba4892a2/cover.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/1593447103",
+          "durationMs": 360640,
+          "durationFormatted": "6:00",
+          "playParams": {
+            "catalogId": "1593447103",
+            "id": "i.oOd4LEKCm7QKOZ",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "1593447103"
+          }
+        },
+        {
+          "id": "i.kGO5lgPTOr0l7x",
+          "title": "Coming Home, Pt. II",
+          "subtitle": "Skylar Grey · The Buried Sessions of Skylar Grey - Single",
+          "eyebrow": "喜爱 · 2:44",
+          "type": "fav-song",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/song/494829104",
+          "durationMs": 164827,
+          "durationFormatted": "2:44",
+          "playParams": {
+            "catalogId": "494829104",
+            "id": "i.kGO5lgPTOr0l7x",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "494829104"
+          }
+        },
+        {
+          "id": "i.KoJe72vCX82ZdL",
+          "title": "Love the Way You Lie",
+          "subtitle": "Eminem · Recovery",
+          "eyebrow": "喜爱 · 4:23",
+          "type": "fav-song",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/song/377417326",
+          "durationMs": 263373,
+          "durationFormatted": "4:23",
+          "playParams": {
+            "catalogId": "377417326",
+            "id": "i.KoJe72vCX82ZdL",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "377417326"
+          }
+        },
+        {
+          "id": "i.5Pk657QFMXvzom",
+          "title": "Brave Shine",
+          "subtitle": "Aimer · DAWN",
+          "eyebrow": "喜爱 · 3:53",
+          "type": "fav-song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/a7/e4/91/a7e4914b-3e96-d119-0ce7-d9e7d5ab113a/4560429730019.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/1536130474",
+          "durationMs": 233493,
+          "durationFormatted": "3:53",
+          "playParams": {
+            "catalogId": "1536130474",
+            "id": "i.5Pk657QFMXvzom",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "1536130474"
+          }
+        },
+        {
+          "id": "i.MoxKEeYuk3bdrQ",
+          "title": "Brave Shine",
+          "subtitle": "Aimer · DAWN",
+          "eyebrow": "喜爱 · 3:53",
+          "type": "fav-song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/a7/e4/91/a7e4914b-3e96-d119-0ce7-d9e7d5ab113a/4560429730019.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/1536130474",
+          "durationMs": 233493,
+          "durationFormatted": "3:53",
+          "playParams": {
+            "catalogId": "1536130474",
+            "id": "i.MoxKEeYuk3bdrQ",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "1536130474"
+          }
+        },
+        {
+          "id": "i.MoxKEMZSk3bdrQ",
+          "title": "最好的安排",
+          "subtitle": "曲婉婷 · LLL",
+          "eyebrow": "喜爱 · 4:11",
+          "type": "fav-song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/61/71/54/61715454-8a15-64f1-52b3-62c843490adf/17UM1IM24682.rgb.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/1442277004",
+          "durationMs": 251483,
+          "durationFormatted": "4:11",
+          "playParams": {
+            "catalogId": "1442277004",
+            "id": "i.MoxKEMZSk3bdrQ",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "1442277004"
+          }
+        },
+        {
+          "id": "i.2P0NRPXFK7E254",
+          "title": "我爱他",
+          "subtitle": "丁当 · 夜猫",
+          "eyebrow": "喜爱 · 4:42",
+          "type": "fav-song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music49/v4/6e/71/c5/6e71c51c-2696-4ddc-33cb-e4d62bd7a3b7/BD0020-_-.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/1085515014",
+          "durationMs": 282400,
+          "durationFormatted": "4:42",
+          "playParams": {
+            "catalogId": "1085515014",
+            "id": "i.2P0NRPXFK7E254",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "1085515014"
+          }
+        },
+        {
+          "id": "i.KoJ24oqSX82ZdL",
+          "title": "我爱他",
+          "subtitle": "丁当 · 【下一站, 天后】自选+精选",
+          "eyebrow": "喜爱 · 4:41",
+          "type": "fav-song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/31/14/da/3114dad8-bffc-14c9-18fd-a836ef07d546/BD0032-_-Fu_Good.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/1085471721",
+          "durationMs": 281973,
+          "durationFormatted": "4:41",
+          "playParams": {
+            "catalogId": "1085471721",
+            "id": "i.KoJ24oqSX82ZdL",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "1085471721"
+          }
+        },
+        {
+          "id": "i.YJMzDp5Ulb7X6E",
+          "title": "如同悲伤被下载了两次 (feat. 林宥嘉)",
+          "subtitle": "陈珊妮 · 如同悲伤被下载了两次",
+          "eyebrow": "喜爱 · 4:18",
+          "type": "fav-song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music3/v4/36/b5/35/36b535f8-e4df-841b-e85b-3a052332b3b0/dj.rweriewi.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/1033805226",
+          "durationMs": 258560,
+          "durationFormatted": "4:18",
+          "playParams": {
+            "catalogId": "1033805226",
+            "id": "i.YJMzDp5Ulb7X6E",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "1033805226"
+          }
+        },
+        {
+          "id": "i.MoxKPPZUk3bdrQ",
+          "title": "疯起来 (feat. 葛仲珊)",
+          "subtitle": "孙盛希 · Girls",
+          "eyebrow": "喜爱 · 3:01",
+          "type": "fav-song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/21/d3/50/21d35024-af57-8fe7-a957-102c9552cb6d/dj.srnrelvb.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/913057110",
+          "durationMs": 181227,
+          "durationFormatted": "3:01",
+          "playParams": {
+            "catalogId": "913057110",
+            "id": "i.MoxKPPZUk3bdrQ",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "913057110"
+          }
+        },
+        {
+          "id": "i.2P0NvVLFK7E254",
+          "title": "说散就散",
+          "subtitle": "JC 陈咏桐 · 说散就散 - Single",
+          "eyebrow": "喜爱 · 3:50",
+          "type": "fav-song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/3a/18/eb/3a18eb78-06df-bf27-8f68-a1fd420b2218/4897067840276.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/1121523352",
+          "durationMs": 230571,
+          "durationFormatted": "3:50",
+          "playParams": {
+            "catalogId": "1121523352",
+            "id": "i.2P0NvVLFK7E254",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "1121523352"
+          }
+        },
+        {
+          "id": "i.8WdNRNAhR4dELD",
+          "title": "Hello",
+          "subtitle": "Adele · Hello - Single",
+          "eyebrow": "喜爱 · 4:55",
+          "type": "fav-song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music116/v4/8a/78/43/8a7843a2-45f6-87a1-9188-82a02384e376/634904074807.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/1051366040",
+          "durationMs": 295502,
+          "durationFormatted": "4:55",
+          "playParams": {
+            "catalogId": "1051366040",
+            "id": "i.8WdNRNAhR4dELD",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "1051366040"
+          }
+        },
+        {
+          "id": "i.KoJedKRhX82ZdL",
+          "title": "飙高音",
+          "subtitle": "黄明志 · 亚洲通杀 2015",
+          "eyebrow": "喜爱 · 4:03",
+          "type": "fav-song",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/song/i.KoJedKRhX82ZdL",
+          "durationMs": 243959,
+          "durationFormatted": "4:03",
+          "playParams": null
+        },
+        {
+          "id": "i.zpZV5XqTJe5vD4",
+          "title": "美丽七贤暝",
+          "subtitle": "张三李四 · 张三李四",
+          "eyebrow": "喜爱 · 3:50",
+          "type": "fav-song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music69/v4/db/05/5c/db055cef-2448-2bdf-6b13-3f4a8119de0e/887375504315.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/1078890486",
+          "durationMs": 230103,
+          "durationFormatted": "3:50",
+          "playParams": {
+            "catalogId": "1078890486",
+            "id": "i.zpZV5XqTJe5vD4",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "1078890486"
+          }
+        },
+        {
+          "id": "i.pmz0JPBFbWp8qM",
+          "title": "今天蓝山风景很美",
+          "subtitle": "黄裕翔 · 听见 黄裕翔",
+          "eyebrow": "喜爱 · 4:05",
+          "type": "fav-song",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/song/i.pmz0JPBFbWp8qM",
+          "durationMs": 245364,
+          "durationFormatted": "4:05",
+          "playParams": null
+        },
+        {
+          "id": "i.zpZV50dfJe5vD4",
+          "title": "大龄女子",
+          "subtitle": "彭佳慧 · 大龄女子",
+          "eyebrow": "喜爱 · 5:02",
+          "type": "fav-song",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/song/i.zpZV50dfJe5vD4",
+          "durationMs": 302427,
+          "durationFormatted": "5:02",
+          "playParams": null
+        },
+        {
+          "id": "i.pmz0J3EfbWp8qM",
+          "title": "深海之寻",
+          "subtitle": "李健 · 李健",
+          "eyebrow": "喜爱 · 4:30",
+          "type": "fav-song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/1e/fa/26/1efa26fe-6fc9-bae3-27d5-67f041702c62/4894944977063.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/1738881788",
+          "durationMs": 270347,
+          "durationFormatted": "4:30",
+          "playParams": {
+            "catalogId": "1738881788",
+            "id": "i.pmz0J3EfbWp8qM",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "1738881788"
+          }
+        },
+        {
+          "id": "i.MoxKPBYsk3bdrQ",
+          "title": "母系社会",
+          "subtitle": "张惠妹 · AMIT2",
+          "eyebrow": "喜爱 · 3:55",
+          "type": "fav-song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/bc/bb/87/bcbb8783-5f44-683b-5697-8ef3785692b9/cover.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/1834912997",
+          "durationMs": 235253,
+          "durationFormatted": "3:55",
+          "playParams": {
+            "catalogId": "1834912997",
+            "id": "i.MoxKPBYsk3bdrQ",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "1834912997"
+          }
+        },
+        {
+          "id": "i.5PkLNbYfMXvzom",
+          "title": "Sing Me to Sleep",
+          "subtitle": "Alan Walker · Sing Me to Sleep - Single",
+          "eyebrow": "喜爱 · 3:09",
+          "type": "fav-song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music111/v4/ec/14/b3/ec14b302-6fdf-6c7c-fd4a-d18ba4d845df/886446322063.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/1196295123",
+          "durationMs": 189333,
+          "durationFormatted": "3:09",
+          "playParams": {
+            "catalogId": "1196295123",
+            "id": "i.5PkLNbYfMXvzom",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "1196295123"
+          }
+        },
+        {
+          "id": "i.5PkRKP2SMXvzom",
+          "title": "暴风雪",
+          "subtitle": "李佳薇 · 爱的风暴",
+          "eyebrow": "喜爱 · 4:08",
+          "type": "fav-song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/02/f2/b0/02f2b0dc-03b4-581a-2003-7b8b0d1d1011/dj.popvzwxa.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/1102541880",
+          "durationMs": 248767,
+          "durationFormatted": "4:08",
+          "playParams": {
+            "catalogId": "1102541880",
+            "id": "i.5PkRKP2SMXvzom",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "1102541880"
+          }
+        },
+        {
+          "id": "i.kGO5NR8tOr0l7x",
+          "title": "炼爱",
+          "subtitle": "李佳薇 · 爱的风暴",
+          "eyebrow": "喜爱 · 4:19",
+          "type": "fav-song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/02/f2/b0/02f2b0dc-03b4-581a-2003-7b8b0d1d1011/dj.popvzwxa.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/1102541890",
+          "durationMs": 259500,
+          "durationFormatted": "4:19",
+          "playParams": {
+            "catalogId": "1102541890",
+            "id": "i.kGO5NR8tOr0l7x",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "1102541890"
+          }
+        },
+        {
+          "id": "i.MoxKWzgHk3bdrQ",
+          "title": "生命中的精灵",
+          "subtitle": "李宗盛 · 李宗盛的理性与感性作品音乐会",
+          "eyebrow": "喜爱 · 4:19",
+          "type": "fav-song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/64/6f/e9/646fe970-7fbc-4aae-bb85-2c45e7404362/1500.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/1329432177",
+          "durationMs": 259960,
+          "durationFormatted": "4:19",
+          "playParams": {
+            "catalogId": "1329432177",
+            "id": "i.MoxKWzgHk3bdrQ",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "1329432177"
+          }
+        },
+        {
+          "id": "i.oOdKrvDtm7QKOZ",
+          "title": "忽然之间",
+          "subtitle": "莫文蔚 · 含情莫莫.莫文蔚全精选集",
+          "eyebrow": "喜爱 · 3:22",
+          "type": "fav-song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/81/cc/52/81cc5224-3ace-5e3c-468a-17b4b71da831/dj.aqolbuce.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/200476335",
+          "durationMs": 202267,
+          "durationFormatted": "3:22",
+          "playParams": {
+            "catalogId": "200476335",
+            "id": "i.oOdKrvDtm7QKOZ",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "200476335"
+          }
+        },
+        {
+          "id": "i.pmz0XzQibWp8qM",
+          "title": "为你的寂寞唱歌",
+          "subtitle": "家家 · 为你的寂寞唱歌",
+          "eyebrow": "喜爱 · 5:03",
+          "type": "fav-song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/7d/be/20/7dbe2055-c1b7-8397-9249-e0a852b3fade/cover1500.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/1089858269",
+          "durationMs": 303624,
+          "durationFormatted": "5:03",
+          "playParams": {
+            "catalogId": "1089858269",
+            "id": "i.pmz0XzQibWp8qM",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "1089858269"
+          }
+        },
+        {
+          "id": "i.8WdNaPAIR4dELD",
+          "title": "燃点",
+          "subtitle": "胡夏 · 燃点",
+          "eyebrow": "喜爱 · 3:45",
+          "type": "fav-song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music114/v4/1c/06/94/1c069494-1ce6-124f-a29a-78cffd5ae11d/mzi.rubuqerv.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/501504402",
+          "durationMs": 225760,
+          "durationFormatted": "3:45",
+          "playParams": {
+            "catalogId": "501504402",
+            "id": "i.8WdNaPAIR4dELD",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "501504402"
+          }
+        },
+        {
+          "id": "i.pmz2o4KSbWp8qM",
+          "title": "以父之名",
+          "subtitle": "周杰伦 · 叶惠美",
+          "eyebrow": "喜爱 · 5:42",
+          "type": "fav-song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/45/8a/e4/458ae484-dc8b-5683-ce04-8d2948346462/JAY.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/535824736",
+          "durationMs": 342000,
+          "durationFormatted": "5:42",
+          "playParams": {
+            "catalogId": "535824736",
+            "id": "i.pmz2o4KSbWp8qM",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "535824736"
+          }
+        },
+        {
+          "id": "i.zpZV8APTJe5vD4",
+          "title": "看得最远的地方",
+          "subtitle": "张韶涵 · 第5季",
+          "eyebrow": "喜爱 · 4:07",
+          "type": "fav-song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music/v4/c6/33/68/c633685f-cf40-5f50-144d-6eec8c77d994/5.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/535400877",
+          "durationMs": 247480,
+          "durationFormatted": "4:07",
+          "playParams": {
+            "catalogId": "535400877",
+            "id": "i.zpZV8APTJe5vD4",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "535400877"
+          }
+        },
+        {
+          "id": "i.oOdKrX5Cm7QKOZ",
+          "title": "月牙湾",
+          "subtitle": "飞儿乐团 · 爱‧歌姬",
+          "eyebrow": "喜爱 · 5:05",
+          "type": "fav-song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/77/d1/5a/77d15a60-81ea-0ed1-e55a-09ee8c7d72ca/mzi.zqzlytbv.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/278677307",
+          "durationMs": 305991,
+          "durationFormatted": "5:05",
+          "playParams": {
+            "catalogId": "278677307",
+            "id": "i.oOdKrX5Cm7QKOZ",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "278677307"
+          }
+        },
+        {
+          "id": "i.kGO5vxpTOr0l7x",
+          "title": "被遗忘的",
+          "subtitle": "杨宗纬 · 原色",
+          "eyebrow": "喜爱 · 4:28",
+          "type": "fav-song",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/song/i.kGO5vxpTOr0l7x",
+          "durationMs": 268707,
+          "durationFormatted": "4:28",
+          "playParams": null
+        },
+        {
+          "id": "i.KoJe3XMHX82ZdL",
+          "title": "突然想到理想这个词",
+          "subtitle": "郝云 · 突然想到理想这个词",
+          "eyebrow": "喜爱 · 4:36",
+          "type": "fav-song",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/song/440166380",
+          "durationMs": 276067,
+          "durationFormatted": "4:36",
+          "playParams": {
+            "catalogId": "440166380",
+            "id": "i.KoJe3XMHX82ZdL",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "440166380"
+          }
+        },
+        {
+          "id": "i.5PkLNpDFMXvzom",
+          "title": "你给我听好",
+          "subtitle": "陈奕迅 · rice & shine",
+          "eyebrow": "喜爱 · 4:53",
+          "type": "fav-song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music128/v4/b3/03/0f/b3030fa1-1000-4def-27d3-987b0ed2c69a/00602488972895.rgb.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/1422694843",
+          "durationMs": 293293,
+          "durationFormatted": "4:53",
+          "playParams": {
+            "catalogId": "1422694843",
+            "id": "i.5PkLNpDFMXvzom",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "1422694843"
+          }
+        },
+        {
+          "id": "i.2P0NXvrfK7E254",
+          "title": "我终于失去了你",
+          "subtitle": "李宗盛 · 李宗盛的理性与感性作品音乐会",
+          "eyebrow": "喜爱 · 4:53",
+          "type": "fav-song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/64/6f/e9/646fe970-7fbc-4aae-bb85-2c45e7404362/1500.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/1329432183",
+          "durationMs": 293440,
+          "durationFormatted": "4:53",
+          "playParams": {
+            "catalogId": "1329432183",
+            "id": "i.2P0NXvrfK7E254",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "1329432183"
+          }
+        },
+        {
+          "id": "i.MoxKZpVSk3bdrQ",
+          "title": "寂寞难耐",
+          "subtitle": "李宗盛 · 滚石香港黄金十年 - 李宗盛精选",
+          "eyebrow": "喜爱 · 3:12",
+          "type": "fav-song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music69/v4/9c/75/13/9c75133c-2c04-628a-d34b-18c2884dbfa6/ROD-5284.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/1073842167",
+          "durationMs": 192600,
+          "durationFormatted": "3:12",
+          "playParams": {
+            "catalogId": "1073842167",
+            "id": "i.MoxKZpVSk3bdrQ",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "1073842167"
+          }
+        },
+        {
+          "id": "i.pmz0KP9ubWp8qM",
+          "title": "想你就写信",
+          "subtitle": "浪花兄弟 · 浪花兄弟同名专辑",
+          "eyebrow": "喜爱 · 3:49",
+          "type": "fav-song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music/v4/90/2b/4c/902b4cb2-d4c2-e1a9-3b9a-05f9bb7f56dc/asset.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/536085273",
+          "durationMs": 229320,
+          "durationFormatted": "3:49",
+          "playParams": {
+            "catalogId": "536085273",
+            "id": "i.pmz0KP9ubWp8qM",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "536085273"
+          }
+        },
+        {
+          "id": "i.8WdNYWpuR4dELD",
+          "title": "小幸运 (电影「我的少女时代」主题曲)",
+          "subtitle": "田馥甄 · 小幸运 (电影「我的少女时代」主题曲) - Single",
+          "eyebrow": "喜爱 · 4:25",
+          "type": "fav-song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/69/87/7f/69877fbc-cd2c-bb9b-2397-5f3ed14a04a8/Hebe_Little_Happiness_1400.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/1017697311",
+          "durationMs": 265522,
+          "durationFormatted": "4:25",
+          "playParams": {
+            "catalogId": "1017697311",
+            "id": "i.8WdNYWpuR4dELD",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "1017697311"
+          }
+        },
+        {
+          "id": "i.oOdK6L6im7QKOZ",
+          "title": "舍不得 ",
+          "subtitle": "小霞 · 小霞",
+          "eyebrow": "喜爱 · 3:45",
+          "type": "fav-song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music2/v4/f2/4c/d3/f24cd36a-b27d-9bf9-c980-bf42d885d4aa/886445638059.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/1066175120",
+          "durationMs": 225433,
+          "durationFormatted": "3:45",
+          "playParams": {
+            "catalogId": "1066175120",
+            "id": "i.oOdK6L6im7QKOZ",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "1066175120"
+          }
+        },
+        {
+          "id": "i.2P0N1NZFK7E254",
+          "title": "7 Years",
+          "subtitle": "Lukas Graham · Lukas Graham",
+          "eyebrow": "喜爱 · 3:57",
+          "type": "fav-song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music69/v4/1f/57/08/1f57082e-ee7e-dcb7-a73e-ba1f3468211d/093624920496.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/i.2P0N1NZFK7E254",
+          "durationMs": 237347,
+          "durationFormatted": "3:57",
+          "playParams": null
+        },
+        {
+          "id": "i.8WdNrdvFR4dELD",
+          "title": "Me and My Broken Heart",
+          "subtitle": "Rixton · Me and My Broken Heart",
+          "eyebrow": "喜爱 · 3:13",
+          "type": "fav-song",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/song/i.8WdNrdvFR4dELD",
+          "durationMs": 193987,
+          "durationFormatted": "3:13",
+          "playParams": null
+        },
+        {
+          "id": "i.zpZVxd9fJe5vD4",
+          "title": "Unravel (英文版)",
+          "subtitle": "Amy Chanrich · 在线热搜（华语）系列94",
+          "eyebrow": "喜爱 · 3:57",
+          "type": "fav-song",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/song/i.zpZVxd9fJe5vD4",
+          "durationMs": 237923,
+          "durationFormatted": "3:57",
+          "playParams": null
+        },
+        {
+          "id": "i.KoJeE1btX82ZdL",
+          "title": "Valder Fields",
+          "subtitle": "Tamas Wells · A Plea en Vendredi",
+          "eyebrow": "喜爱 · 2:38",
+          "type": "fav-song",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/song/210799891",
+          "durationMs": 158746,
+          "durationFormatted": "2:38",
+          "playParams": {
+            "catalogId": "210799891",
+            "id": "i.KoJeE1btX82ZdL",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "210799891"
+          }
+        },
+        {
+          "id": "i.KoJeEvqtX82ZdL",
+          "title": "THIS ILLUSION",
+          "subtitle": "LiSA · Fate/stay night [Unlimited Blade Works] オリジナルサウンドトラック I",
+          "eyebrow": "喜爱 · 4:04",
+          "type": "fav-song",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/song/i.KoJeEvqtX82ZdL",
+          "durationMs": 244480,
+          "durationFormatted": "4:04",
+          "playParams": null
+        },
+        {
+          "id": "i.KoJ2BX0CX82ZdL",
+          "title": "Can't Feel My Face",
+          "subtitle": "The Weeknd · Beauty Behind the Madness",
+          "eyebrow": "喜爱 · 3:33",
+          "type": "fav-song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/30/05/1e/30051e57-a63a-3acc-4b30-42568293f5f7/15UMGIM36514.rgb.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/1440858500",
+          "durationMs": 213525,
+          "durationFormatted": "3:33",
+          "playParams": {
+            "catalogId": "1440858500",
+            "id": "i.KoJ2BX0CX82ZdL",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "1440858500"
+          }
+        },
+        {
+          "id": "i.pmzqeVBcbWp8qM",
+          "title": "Lean On (feat. DJ Snake & MØ)",
+          "subtitle": "Major Lazer · Peace Is The Mission (Extended)",
+          "eyebrow": "喜爱 · 2:56",
+          "type": "fav-song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music116/v4/3a/9b/bd/3a9bbdba-5829-91c8-1349-cc04cdaf3423/653738030629_Cover.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/1696639397",
+          "durationMs": 176561,
+          "durationFormatted": "2:56",
+          "playParams": {
+            "catalogId": "1696639397",
+            "id": "i.pmzqeVBcbWp8qM",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "1696639397"
+          }
+        },
+        {
+          "id": "i.MoxKvKpfk3bdrQ",
+          "title": "Die A Happy Man",
+          "subtitle": "Thomas Rhett · Die A Happy Man",
+          "eyebrow": "喜爱 · 3:47",
+          "type": "fav-song",
+          "artworkUrl": "https://store-030.blobstore.apple.com/apple-sg-us-std-000002/84/0d/1c/840d1c53-3a1a-b20b-047b-997bb33701f0/image?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Date=20261117T185626Z&X-Amz-SignedHeaders=host&X-Amz-Expires=86400&X-Amz-Credential=MKIA24RSZ22BB0LZX9JT%2F20261117%2Fstore-030%2Fs3%2Faws4_request&X-Amz-Signature=9453fd026cb1e12a765f51b20a8ea9267727529f4b9d333418deee329285cae6",
+          "linkUrl": "https://music.apple.com/cn/song/i.MoxKvKpfk3bdrQ",
+          "durationMs": 227526,
+          "durationFormatted": "3:47",
+          "playParams": {
+            "id": "i.MoxKvKpfk3bdrQ",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": false
+          }
+        }
+      ],
+      "timing": {
+        "hydrationDurationMs": 0,
+        "extractionDurationMs": 0.2,
+        "totalDurationMs": 0.2,
+        "avgTimePerItemMs": 0.002
+      }
+    },
+    {
+      "id": "section-library-songs",
+      "title": "已存歌曲 (共 13830 首)",
+      "itemCount": 100,
+      "items": [
+        {
+          "id": "i.5Pk6opLfMXvzom",
+          "title": "哎呀, 手机呢?",
+          "subtitle": "宫阁 · GONG",
+          "eyebrow": "已存 · 3:28",
+          "type": "song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music71/v4/66/5f/08/665f086d-1714-8423-6dc4-d4073a39ed62/886446258461.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/1179975870",
+          "durationMs": 208873,
+          "durationFormatted": "3:28",
+          "playParams": {
+            "catalogId": "1179975870",
+            "id": "i.5Pk6opLfMXvzom",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "1179975870"
+          }
+        },
+        {
+          "id": "i.pmz2d4KtbWp8qM",
+          "title": "哎呀哎呀 (午夜版)",
+          "subtitle": "魏如萱 · 珍珠刑",
+          "eyebrow": "已存 · 3:32",
+          "type": "song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/1c/38/90/1c389041-b71b-91a0-9db8-684688ce9791/cover.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/1785188084",
+          "durationMs": 212259,
+          "durationFormatted": "3:32",
+          "playParams": {
+            "catalogId": "1785188084",
+            "id": "i.pmz2d4KtbWp8qM",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "1785188084"
+          }
+        },
+        {
+          "id": "i.pmz2BGaTbWp8qM",
+          "title": "哎呀咿呀",
+          "subtitle": "陈奕迅 · 问号",
+          "eyebrow": "已存 · 4:12",
+          "type": "song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/a1/2c/29/a12c2947-faea-f1c4-24e0-6612fc50ea13/00602488980715.rgb.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/1443783860",
+          "durationMs": 252813,
+          "durationFormatted": "4:12",
+          "playParams": {
+            "catalogId": "1443783860",
+            "id": "i.pmz2BGaTbWp8qM",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "1443783860"
+          }
+        },
+        {
+          "id": "i.8WdY11OCR4dELD",
+          "title": "别 (Outro)",
+          "subtitle": "宋冬野 · 再想想",
+          "eyebrow": "已存 · 5:04",
+          "type": "song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/45/c9/fe/45c9febc-d55c-62ef-c168-9cb013b9db65/26UMGIM69223.rgb.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/6777959326",
+          "durationMs": 304831,
+          "durationFormatted": "5:04",
+          "playParams": {
+            "catalogId": "6777959326",
+            "id": "i.8WdY11OCR4dELD",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "6777959326"
+          }
+        },
+        {
+          "id": "i.2P0D8pQTK7E254",
+          "title": "唉!",
+          "subtitle": "方大同 · 爱爱爱",
+          "eyebrow": "已存 · 3:40",
+          "type": "song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music/c3/d0/e5/mzi.kdgffvqb.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/220365917",
+          "durationMs": 220760,
+          "durationFormatted": "3:40",
+          "playParams": {
+            "catalogId": "220365917",
+            "id": "i.2P0D8pQTK7E254",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "220365917"
+          }
+        },
+        {
+          "id": "i.KoJ0o4vTX82ZdL",
+          "title": "不陌生的人",
+          "subtitle": "宋冬野 · 再想想",
+          "eyebrow": "已存 · 5:44",
+          "type": "song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/45/c9/fe/45c9febc-d55c-62ef-c168-9cb013b9db65/26UMGIM69223.rgb.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/6777959305",
+          "durationMs": 344474,
+          "durationFormatted": "5:44",
+          "playParams": {
+            "catalogId": "6777959305",
+            "id": "i.KoJ0o4vTX82ZdL",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "6777959305"
+          }
+        },
+        {
+          "id": "i.zpZRp5VTJe5vD4",
+          "title": "臭鸡蛋",
+          "subtitle": "胡彦斌 · 生死未定",
+          "eyebrow": "已存 · 3:34",
+          "type": "song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/f9/f4/0a/f9f40a5c-2af8-5249-9a76-217589247858/6937427398042.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/6783296402",
+          "durationMs": 214053,
+          "durationFormatted": "3:34",
+          "playParams": {
+            "catalogId": "6783296402",
+            "id": "i.zpZRp5VTJe5vD4",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "6783296402"
+          }
+        },
+        {
+          "id": "i.2P01p3NSK7E254",
+          "title": "出现又离开(Live)",
+          "subtitle": "梁博 · 尖叫之夜 - Single",
+          "eyebrow": "已存 · 6:56",
+          "type": "song",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/song/i.2P01p3NSK7E254",
+          "durationMs": 416555,
+          "durationFormatted": "6:56",
+          "playParams": null
+        },
+        {
+          "id": "i.oOd6OB9Cm7QKOZ",
+          "title": "慈悲刃",
+          "subtitle": "胡彦斌 · 生死未定",
+          "eyebrow": "已存 · 3:25",
+          "type": "song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/f9/f4/0a/f9f40a5c-2af8-5249-9a76-217589247858/6937427398042.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/6783296401",
+          "durationMs": 205600,
+          "durationFormatted": "3:25",
+          "playParams": {
+            "catalogId": "6783296401",
+            "id": "i.oOd6OB9Cm7QKOZ",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "6783296401"
+          }
+        },
+        {
+          "id": "i.8WdYWZ1SR4dELD",
+          "title": "此刻唱给你",
+          "subtitle": "胡彦斌 · 生死未定",
+          "eyebrow": "已存 · 4:07",
+          "type": "song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/f9/f4/0a/f9f40a5c-2af8-5249-9a76-217589247858/6937427398042.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/6783296405",
+          "durationMs": 247133,
+          "durationFormatted": "4:07",
+          "playParams": {
+            "catalogId": "6783296405",
+            "id": "i.8WdYWZ1SR4dELD",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "6783296405"
+          }
+        },
+        {
+          "id": "i.KoJE9K6UX82ZdL",
+          "title": "大宝藏图",
+          "subtitle": "二本猫 · 光亮徬徨的闪耀年纪",
+          "eyebrow": "已存 · 4:30",
+          "type": "song",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/song/1454738421",
+          "durationMs": 270677,
+          "durationFormatted": "4:30",
+          "playParams": {
+            "catalogId": "1454738421",
+            "id": "i.KoJE9K6UX82ZdL",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "6817733392"
+          }
+        },
+        {
+          "id": "i.zpZV50dfJe5vD4",
+          "title": "大龄女子",
+          "subtitle": "彭佳慧 · 大龄女子",
+          "eyebrow": "已存 · 5:02",
+          "type": "song",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/song/i.zpZV50dfJe5vD4",
+          "durationMs": 302427,
+          "durationFormatted": "5:02",
+          "playParams": null
+        },
+        {
+          "id": "i.pmz5goPUbWp8qM",
+          "title": "都要好好的",
+          "subtitle": "朱正廷 · Chapter Z - EP",
+          "eyebrow": "已存 · 3:54",
+          "type": "song",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/song/1792372657",
+          "durationMs": 234813,
+          "durationFormatted": "3:54",
+          "playParams": {
+            "catalogId": "1792372657",
+            "id": "i.pmz5goPUbWp8qM",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "6795510976"
+          }
+        },
+        {
+          "id": "i.pmzKmq0ubWp8qM",
+          "title": "对跖点",
+          "subtitle": "胡彦斌 · 生死未定",
+          "eyebrow": "已存 · 3:36",
+          "type": "song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/f9/f4/0a/f9f40a5c-2af8-5249-9a76-217589247858/6937427398042.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/6783296393",
+          "durationMs": 216160,
+          "durationFormatted": "3:36",
+          "playParams": {
+            "catalogId": "6783296393",
+            "id": "i.pmzKmq0ubWp8qM",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "6783296393"
+          }
+        },
+        {
+          "id": "i.pmz2X2OcbWp8qM",
+          "title": "凡星",
+          "subtitle": "毛不易 · 凡星 - Single",
+          "eyebrow": "已存 · 4:31",
+          "type": "song",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/song/i.pmz2X2OcbWp8qM",
+          "durationMs": 271675,
+          "durationFormatted": "4:31",
+          "playParams": null
+        },
+        {
+          "id": "i.MoxqvQrsk3bdrQ",
+          "title": "姑娘",
+          "subtitle": "彭佳慧 · 我想念我自己",
+          "eyebrow": "已存 · 4:23",
+          "type": "song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/c8/e9/3a/c8e93af2-d109-1085-2b36-b832636abae9/886446889627.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/1326871484",
+          "durationMs": 263922,
+          "durationFormatted": "4:23",
+          "playParams": {
+            "catalogId": "1326871484",
+            "id": "i.MoxqvQrsk3bdrQ",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "1326871484"
+          }
+        },
+        {
+          "id": "i.2P01peLHK7E254",
+          "title": "孤单者",
+          "subtitle": "林晨阳 · 孤单者 - Single",
+          "eyebrow": "已存 · 4:27",
+          "type": "song",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/song/i.2P01peLHK7E254",
+          "durationMs": 267875,
+          "durationFormatted": "4:27",
+          "playParams": null
+        },
+        {
+          "id": "i.pmz28KKTbWp8qM",
+          "title": "艾美丽 爱美丽",
+          "subtitle": "莫文蔚 · 宝贝",
+          "eyebrow": "已存 · 4:12",
+          "type": "song",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/song/i.pmz28KKTbWp8qM",
+          "durationMs": 252200,
+          "durationFormatted": "4:12",
+          "playParams": null
+        },
+        {
+          "id": "i.MoxKWkZSk3bdrQ",
+          "title": "爱",
+          "subtitle": "莫文蔚 · I",
+          "eyebrow": "已存 · 3:13",
+          "type": "song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/54/3f/a7/543fa7d1-700b-f37c-bf0c-faa452791966/5099750829028.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/312652421",
+          "durationMs": 193792,
+          "durationFormatted": "3:13",
+          "playParams": {
+            "catalogId": "312652421",
+            "id": "i.MoxKWkZSk3bdrQ",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "312652421"
+          }
+        },
+        {
+          "id": "i.KoJProYuX82ZdL",
+          "title": "爱",
+          "subtitle": "李志 · 我爱南京",
+          "eyebrow": "已存 · 3:20",
+          "type": "song",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/song/i.KoJProYuX82ZdL",
+          "durationMs": 200881,
+          "durationFormatted": "3:20",
+          "playParams": null
+        },
+        {
+          "id": "i.oOdPJK2Im7QKOZ",
+          "title": "爱",
+          "subtitle": "莫文蔚 · [i]",
+          "eyebrow": "已存 · 3:18",
+          "type": "song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/54/3f/a7/543fa7d1-700b-f37c-bf0c-faa452791966/5099750829028.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/312679567",
+          "durationMs": 198368,
+          "durationFormatted": "3:18",
+          "playParams": {
+            "catalogId": "312679567",
+            "id": "i.oOdPJK2Im7QKOZ",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "312679567"
+          }
+        },
+        {
+          "id": "i.YJMNYdAFlb7X6E",
+          "title": "爱 因为在心中",
+          "subtitle": "王力宏 · 盖世英雄",
+          "eyebrow": "已存 · 4:20",
+          "type": "song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/f9/82/88/f98288eb-ea32-6c8c-7919-357c31a4b437/1400X1400.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/1134353960",
+          "durationMs": 260333,
+          "durationFormatted": "4:20",
+          "playParams": {
+            "catalogId": "1134353960",
+            "id": "i.YJMNYdAFlb7X6E",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "1134353960"
+          }
+        },
+        {
+          "id": "i.8WdzOK2HR4dELD",
+          "title": "爱 欲 浮世绘",
+          "subtitle": "纵贯线 · 南[下]专线 - EP",
+          "eyebrow": "已存 · 4:37",
+          "type": "song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/91/f0/0f/91f00f7d-a413-2f05-b691-d628f76e5fd5/RD1877.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/542624188",
+          "durationMs": 277440,
+          "durationFormatted": "4:37",
+          "playParams": {
+            "catalogId": "542624188",
+            "id": "i.8WdzOK2HR4dELD",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "542624188"
+          }
+        },
+        {
+          "id": "i.3VB10eRUR0WKMz",
+          "title": "爱,很简单(I Love You)",
+          "subtitle": "陶喆 · 乐之路",
+          "eyebrow": "已存 · 4:31",
+          "type": "song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music118/v4/07/64/7c/07647c3b-8864-7d39-1823-dd993e7cd69f/825646871223.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/1372032311",
+          "durationMs": 271647,
+          "durationFormatted": "4:31",
+          "playParams": {
+            "catalogId": "1372032311",
+            "id": "i.3VB10eRUR0WKMz",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "1372032311"
+          }
+        },
+        {
+          "id": "i.zpZDvaRUJe5vD4",
+          "title": "爱,很简单(I Love You)Driginal 1993 English Demo",
+          "subtitle": "陶喆 · 乐之路",
+          "eyebrow": "已存 · 7:30",
+          "type": "song",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/song/i.zpZDvaRUJe5vD4",
+          "durationMs": 450899,
+          "durationFormatted": "7:30",
+          "playParams": {
+            "id": "i.zpZDvaRUJe5vD4",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": false
+          }
+        },
+        {
+          "id": "i.MoxqxZlIk3bdrQ",
+          "title": "爱.这件事情",
+          "subtitle": "傅又宣-傅珮嘉 · 爱.这件事情 - EP",
+          "eyebrow": "已存 · 3:54",
+          "type": "song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/01/16/6a/01166a75-79de-0ea0-6045-b2030b0cc6a5/001.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/934268910",
+          "durationMs": 234986,
+          "durationFormatted": "3:54",
+          "playParams": {
+            "catalogId": "934268910",
+            "id": "i.MoxqxZlIk3bdrQ",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "934268910"
+          }
+        },
+        {
+          "id": "i.kGObZJPUOr0l7x",
+          "title": "爱爱爱",
+          "subtitle": "方大同 · 爱爱爱",
+          "eyebrow": "已存 · 3:31",
+          "type": "song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music6/v4/04/12/0a/04120a36-824f-1524-6875-5c4316c62895/825646346097.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/747590718",
+          "durationMs": 211304,
+          "durationFormatted": "3:31",
+          "playParams": {
+            "catalogId": "747590718",
+            "id": "i.kGObZJPUOr0l7x",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "747590718"
+          }
+        },
+        {
+          "id": "i.8WdzJLefR4dELD",
+          "title": "爱爱爱 (Acoustic Version)",
+          "subtitle": "方大同 · 未来",
+          "eyebrow": "已存 · 3:45",
+          "type": "song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music/c3/35/6c/mzi.slgaieio.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/272875210",
+          "durationMs": 225306,
+          "durationFormatted": "3:45",
+          "playParams": {
+            "catalogId": "272875210",
+            "id": "i.8WdzJLefR4dELD",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "272875210"
+          }
+        },
+        {
+          "id": "i.2P05JVZfK7E254",
+          "title": "爱不需要装乖 (feat. 王诗安)",
+          "subtitle": "谢和弦 · 不需要装乖",
+          "eyebrow": "已存 · 3:52",
+          "type": "song",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/song/i.2P05JVZfK7E254",
+          "durationMs": 232242,
+          "durationFormatted": "3:52",
+          "playParams": null
+        },
+        {
+          "id": "i.YJMNlE4flb7X6E",
+          "title": "爱从零开始",
+          "subtitle": "孙燕姿 · Leave",
+          "eyebrow": "已存 · 4:20",
+          "type": "song",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/song/i.YJMNlE4flb7X6E",
+          "durationMs": 260649,
+          "durationFormatted": "4:20",
+          "playParams": null
+        },
+        {
+          "id": "i.3VB1LDXfR0WKMz",
+          "title": "爱错",
+          "subtitle": "王力宏 · 心中的日月",
+          "eyebrow": "已存 · 3:58",
+          "type": "song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/be/4a/77/be4a7730-c144-a39e-c7b6-9d26ea0ebff3/1400X1400.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/1134344911",
+          "durationMs": 238827,
+          "durationFormatted": "3:58",
+          "playParams": {
+            "catalogId": "1134344911",
+            "id": "i.3VB1LDXfR0WKMz",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "1134344911"
+          }
+        },
+        {
+          "id": "i.MoxN56pIk3bdrQ",
+          "title": "爱到不能爱",
+          "subtitle": "Apple Music",
+          "eyebrow": "已存 · 5:02",
+          "type": "song",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/song/i.MoxN56pIk3bdrQ",
+          "durationMs": 302773,
+          "durationFormatted": "5:02",
+          "playParams": null
+        },
+        {
+          "id": "i.zpZxQPdFJe5vD4",
+          "title": "爱到不能爱 2",
+          "subtitle": "Apple Music",
+          "eyebrow": "已存 · 5:10",
+          "type": "song",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/song/i.zpZxQPdFJe5vD4",
+          "durationMs": 310160,
+          "durationFormatted": "5:10",
+          "playParams": null
+        },
+        {
+          "id": "i.MoxN78mCk3bdrQ",
+          "title": "爱到站了",
+          "subtitle": "李千娜 · 爱到站了",
+          "eyebrow": "已存 · 3:41",
+          "type": "song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music114/v4/b7/01/22/b701222c-e303-ae7f-d794-864063eadbed/00602488973182.rgb.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/1442431582",
+          "durationMs": 221520,
+          "durationFormatted": "3:41",
+          "playParams": {
+            "catalogId": "1442431582",
+            "id": "i.MoxN78mCk3bdrQ",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "1442431582"
+          }
+        },
+        {
+          "id": "i.5PkRbPQfMXvzom",
+          "title": "爱得得体",
+          "subtitle": "王力宏 · 心跳",
+          "eyebrow": "已存 · 3:48",
+          "type": "song",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/song/1448353711",
+          "durationMs": 228133,
+          "durationFormatted": "3:48",
+          "playParams": {
+            "catalogId": "1448353711",
+            "id": "i.5PkRbPQfMXvzom",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "1448353711"
+          }
+        },
+        {
+          "id": "i.kGObYY5UOr0l7x",
+          "title": "爱的初体验",
+          "subtitle": "张震岳 · 滚石香港黄金十年 - 张震嶽精选",
+          "eyebrow": "已存 · 4:03",
+          "type": "song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music69/v4/fb/02/6a/fb026a2d-30fb-6e79-d249-e5fb86f75c1c/ROD-5274.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/1073037144",
+          "durationMs": 243442,
+          "durationFormatted": "4:03",
+          "playParams": {
+            "catalogId": "1073037144",
+            "id": "i.kGObYY5UOr0l7x",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "1073037144"
+          }
+        },
+        {
+          "id": "i.2P013WXfK7E254",
+          "title": "爱的初体验",
+          "subtitle": "张震岳 · 阿岳正传",
+          "eyebrow": "已存 · 3:59",
+          "type": "song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features4/v4/4c/1a/81/4c1a81cf-f582-37f8-d5ea-0bd8f5d00193/dj.rwfdgdyv.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/164053514",
+          "durationMs": 239373,
+          "durationFormatted": "3:59",
+          "playParams": {
+            "catalogId": "164053514",
+            "id": "i.2P013WXfK7E254",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "164053514"
+          }
+        },
+        {
+          "id": "i.MoxKWlKik3bdrQ",
+          "title": "爱的代价",
+          "subtitle": "李宗盛 · 李宗盛的理性与感性作品音乐会",
+          "eyebrow": "已存 · 6:10",
+          "type": "song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/64/6f/e9/646fe970-7fbc-4aae-bb85-2c45e7404362/1500.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/1329432686",
+          "durationMs": 370400,
+          "durationFormatted": "6:10",
+          "playParams": {
+            "catalogId": "1329432686",
+            "id": "i.MoxKWlKik3bdrQ",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "1329432686"
+          }
+        },
+        {
+          "id": "i.MoxqQoYTk3bdrQ",
+          "title": "爱的代价",
+          "subtitle": "张艾嘉 · 爱的代价",
+          "eyebrow": "已存 · 5:01",
+          "type": "song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/2f/8f/5b/2f8f5bd4-d6ea-b66c-f653-87701706ae95/dj.xyliymws.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/177306937",
+          "durationMs": 301893,
+          "durationFormatted": "5:01",
+          "playParams": {
+            "catalogId": "177306937",
+            "id": "i.MoxqQoYTk3bdrQ",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "177306937"
+          }
+        },
+        {
+          "id": "i.2P05vLvFK7E254",
+          "title": "爱的代价",
+          "subtitle": "李宗盛 · 滚石香港黄金十年 - 李宗盛精选",
+          "eyebrow": "已存 · 4:32",
+          "type": "song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music69/v4/9c/75/13/9c75133c-2c04-628a-d34b-18c2884dbfa6/ROD-5284.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/1073842169",
+          "durationMs": 272053,
+          "durationFormatted": "4:32",
+          "playParams": {
+            "catalogId": "1073842169",
+            "id": "i.2P05vLvFK7E254",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "1073842169"
+          }
+        },
+        {
+          "id": "i.8Wdr76OuR4dELD",
+          "title": "爱的代价",
+          "subtitle": "李宗盛 · 理性与感性作品音乐会",
+          "eyebrow": "已存 · 6:10",
+          "type": "song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/64/6f/e9/646fe970-7fbc-4aae-bb85-2c45e7404362/1500.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/1329432686",
+          "durationMs": 370400,
+          "durationFormatted": "6:10",
+          "playParams": {
+            "catalogId": "1329432686",
+            "id": "i.8Wdr76OuR4dELD",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "1329432686"
+          }
+        },
+        {
+          "id": "i.5Pk66oOSMXvzom",
+          "title": "爱的代价 (Live)",
+          "subtitle": "李宗盛 · 李宗盛「既然青春留不住-还是做个大叔好」演唱会巡回影音纪录 LIVE",
+          "eyebrow": "已存 · 5:03",
+          "type": "song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/b5/ee/9e/b5ee9ef1-09b4-f998-db9f-ce124fab9b3d/CD_cover_1500x1500.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/1173734828",
+          "durationMs": 303084,
+          "durationFormatted": "5:03",
+          "playParams": {
+            "catalogId": "1173734828",
+            "id": "i.5Pk66oOSMXvzom",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "1173734828"
+          }
+        },
+        {
+          "id": "i.MoxNVXKHk3bdrQ",
+          "title": "爱的飞行日记",
+          "subtitle": "周杰伦 · 跨时代",
+          "eyebrow": "已存 · 4:14",
+          "type": "song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/53/2d/dd/532dddf0-87d7-b9eb-7d8b-4eb194c84252/asset.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/536248202",
+          "durationMs": 254850,
+          "durationFormatted": "4:14",
+          "playParams": {
+            "catalogId": "536248202",
+            "id": "i.MoxNVXKHk3bdrQ",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "536248202"
+          }
+        },
+        {
+          "id": "i.pmzqOBPfbWp8qM",
+          "title": "爱的飞行日记 (feat. 杨瑞代)",
+          "subtitle": "周杰伦 · 跨时代",
+          "eyebrow": "已存 · 4:14",
+          "type": "song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/53/2d/dd/532dddf0-87d7-b9eb-7d8b-4eb194c84252/asset.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/536248202",
+          "durationMs": 254787,
+          "durationFormatted": "4:14",
+          "playParams": {
+            "catalogId": "536248202",
+            "id": "i.pmzqOBPfbWp8qM",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "536248202"
+          }
+        },
+        {
+          "id": "i.KoJE1o0UX82ZdL",
+          "title": "爱的力量",
+          "subtitle": "陈奂仁 · 差不多人生",
+          "eyebrow": "已存 · 3:19",
+          "type": "song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music123/v4/2e/2b/46/2e2b46dc-5952-0372-9615-65d1627d0798/653981721930.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/1517989925",
+          "durationMs": 199866,
+          "durationFormatted": "3:19",
+          "playParams": {
+            "catalogId": "1517989925",
+            "id": "i.KoJE1o0UX82ZdL",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "1517989925"
+          }
+        },
+        {
+          "id": "i.oOdPxeDSm7QKOZ",
+          "title": "爱的力量",
+          "subtitle": "飞儿乐团 · 无限",
+          "eyebrow": "已存 · 3:39",
+          "type": "song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/86/21/52/8621528e-c6fd-0b9d-7491-65ccdcef44e0/mzi.fqfcpkid.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/255922115",
+          "durationMs": 219573,
+          "durationFormatted": "3:39",
+          "playParams": {
+            "catalogId": "255922115",
+            "id": "i.oOdPxeDSm7QKOZ",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "255922115"
+          }
+        },
+        {
+          "id": "i.YJMNYJOTlb7X6E",
+          "title": "爱的天灵灵",
+          "subtitle": "王心凌 · Magic Cyndi",
+          "eyebrow": "已存 · 3:52",
+          "type": "song",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/song/1504805243",
+          "durationMs": 232227,
+          "durationFormatted": "3:52",
+          "playParams": {
+            "catalogId": "1504805243",
+            "id": "i.YJMNYJOTlb7X6E",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "1847592111"
+          }
+        },
+        {
+          "id": "i.KoJ2L10HX82ZdL",
+          "title": "爱的旋律",
+          "subtitle": "牛奶@咖啡 · 越长大越孤单",
+          "eyebrow": "已存 · 4:21",
+          "type": "song",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/song/1437768419",
+          "durationMs": 261466,
+          "durationFormatted": "4:21",
+          "playParams": {
+            "catalogId": "1437768419",
+            "id": "i.KoJ2L10HX82ZdL",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "1437768419"
+          }
+        },
+        {
+          "id": "i.KoJEYLMcX82ZdL",
+          "title": "爱疯了",
+          "subtitle": "戴佩妮 · 爱疯了",
+          "eyebrow": "已存 · 4:20",
+          "type": "song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music5/v4/d7/6c/83/d76c83b9-5f5b-5576-47f5-abec3889c067/825646246342.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/908275293",
+          "durationMs": 260400,
+          "durationFormatted": "4:20",
+          "playParams": {
+            "catalogId": "908275293",
+            "id": "i.KoJEYLMcX82ZdL",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "908275293"
+          }
+        },
+        {
+          "id": "i.YJMv8kDFlb7X6E",
+          "title": "爱过",
+          "subtitle": "飞儿乐团 · 爱‧歌姬",
+          "eyebrow": "已存 · 4:02",
+          "type": "song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/77/d1/5a/77d15a60-81ea-0ed1-e55a-09ee8c7d72ca/mzi.zqzlytbv.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/278677316",
+          "durationMs": 242800,
+          "durationFormatted": "4:02",
+          "playParams": {
+            "catalogId": "278677316",
+            "id": "i.YJMv8kDFlb7X6E",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "278677316"
+          }
+        },
+        {
+          "id": "i.8Wdr0kpFR4dELD",
+          "title": "爱过",
+          "subtitle": "张赫宣 · 爱过 - Single",
+          "eyebrow": "已存 · 4:22",
+          "type": "song",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/song/i.8Wdr0kpFR4dELD",
+          "durationMs": 262249,
+          "durationFormatted": "4:22",
+          "playParams": null
+        },
+        {
+          "id": "i.2P01782fK7E254",
+          "title": "爱过了头",
+          "subtitle": "萧敬腾 · 王妃",
+          "eyebrow": "已存 · 4:25",
+          "type": "song",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/song/i.2P01782fK7E254",
+          "durationMs": 265400,
+          "durationFormatted": "4:25",
+          "playParams": null
+        },
+        {
+          "id": "i.pmz0Jv9IbWp8qM",
+          "title": "爱很美",
+          "subtitle": "刘佳 · 一个人走",
+          "eyebrow": "已存 · 5:06",
+          "type": "song",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/song/i.pmz0Jv9IbWp8qM",
+          "durationMs": 306731,
+          "durationFormatted": "5:06",
+          "playParams": null
+        },
+        {
+          "id": "i.pmz2eO0sbWp8qM",
+          "title": "爱恨恢恢",
+          "subtitle": "周迅 · 单曲 - 爱恨恢恢",
+          "eyebrow": "已存 · 4:59",
+          "type": "song",
+          "artworkUrl": "https://store-033.blobstore.apple.com/sq-mq-us-033-000002/12/59/b1/1259b1f1-2e66-5894-dcfe-d2fb9b608f27/image?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Date=20261117T185626Z&X-Amz-SignedHeaders=host&X-Amz-Expires=86400&X-Amz-Credential=MKIAU0HKO2RBEAT0UMZS%2F20261117%2Fstore-033%2Fs3%2Faws4_request&X-Amz-Signature=c9d8c0b05c0b7c9a032095ff3df364856ec98b5af8913bd10f2fbc4ccedee169",
+          "linkUrl": "https://music.apple.com/cn/song/i.pmz2eO0sbWp8qM",
+          "durationMs": 299990,
+          "durationFormatted": "4:59",
+          "playParams": {
+            "id": "i.pmz2eO0sbWp8qM",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": false
+          }
+        },
+        {
+          "id": "i.YJMNY90flb7X6E",
+          "title": "爱你",
+          "subtitle": "王心凌 · 爱你",
+          "eyebrow": "已存 · 3:39",
+          "type": "song",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/song/1504646115",
+          "durationMs": 219627,
+          "durationFormatted": "3:39",
+          "playParams": {
+            "catalogId": "1504646115",
+            "id": "i.YJMNY90flb7X6E",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "1847591251"
+          }
+        },
+        {
+          "id": "i.pmz2pOQhbWp8qM",
+          "title": "爱你不是两三天",
+          "subtitle": "梁静茹 · 恋爱的力量",
+          "eyebrow": "已存 · 4:59",
+          "type": "song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features6/v4/34/d5/e1/34d5e191-acd0-2ef0-c4d5-1b4d778eadff/dj.yfbgiepo.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/181210957",
+          "durationMs": 299493,
+          "durationFormatted": "4:59",
+          "playParams": {
+            "catalogId": "181210957",
+            "id": "i.pmz2pOQhbWp8qM",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "181210957"
+          }
+        },
+        {
+          "id": "i.KoJP95YSX82ZdL",
+          "title": "爱你的句子",
+          "subtitle": "Apple Music",
+          "eyebrow": "已存 · 3:52",
+          "type": "song",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/song/i.KoJP95YSX82ZdL",
+          "durationMs": 232373,
+          "durationFormatted": "3:52",
+          "playParams": null
+        },
+        {
+          "id": "i.kGObaDpTOr0l7x",
+          "title": "爱你的句子 1",
+          "subtitle": "Apple Music",
+          "eyebrow": "已存 · 3:53",
+          "type": "song",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/song/i.kGObaDpTOr0l7x",
+          "durationMs": 233533,
+          "durationFormatted": "3:53",
+          "playParams": null
+        },
+        {
+          "id": "i.YJMNzZ0tlb7X6E",
+          "title": "爱你的句子 2",
+          "subtitle": "Apple Music",
+          "eyebrow": "已存 · 3:51",
+          "type": "song",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/song/i.YJMNzZ0tlb7X6E",
+          "durationMs": 231533,
+          "durationFormatted": "3:51",
+          "playParams": null
+        },
+        {
+          "id": "i.5PkvMWDSMXvzom",
+          "title": "爱你的宿命",
+          "subtitle": "Apple Music",
+          "eyebrow": "已存 · 4:03",
+          "type": "song",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/song/1458005985",
+          "durationMs": 243853,
+          "durationFormatted": "4:03",
+          "playParams": {
+            "catalogId": "1458005985",
+            "id": "i.5PkvMWDSMXvzom",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "1458005985"
+          }
+        },
+        {
+          "id": "i.8WdGOx1IR4dELD",
+          "title": "爱你就够了",
+          "subtitle": "毕书尽 · Bii Your Light",
+          "eyebrow": "已存 · 4:10",
+          "type": "song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music118/v4/5e/82/9d/5e829d48-7b65-da60-21c8-052b53fe5ded/Bii_Your_Light_cover.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/1289159353",
+          "durationMs": 250720,
+          "durationFormatted": "4:10",
+          "playParams": {
+            "catalogId": "1289159353",
+            "id": "i.8WdGOx1IR4dELD",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "1289159353"
+          }
+        },
+        {
+          "id": "i.8WdGe1NcR4dELD",
+          "title": "爱你没差",
+          "subtitle": "周杰伦 · 十二新作",
+          "eyebrow": "已存 · 4:40",
+          "type": "song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/81/83/e6/8183e6c0-7137-7009-347e-326b53cb4a3b/2000x2000pix.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/587743641",
+          "durationMs": 280720,
+          "durationFormatted": "4:40",
+          "playParams": {
+            "catalogId": "587743641",
+            "id": "i.8WdGe1NcR4dELD",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "587743641"
+          }
+        },
+        {
+          "id": "i.kGOb5EzsOr0l7x",
+          "title": "爱你却要说分手",
+          "subtitle": "Apple Music",
+          "eyebrow": "已存 · 4:36",
+          "type": "song",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/song/i.kGOb5EzsOr0l7x",
+          "durationMs": 276800,
+          "durationFormatted": "4:36",
+          "playParams": null
+        },
+        {
+          "id": "i.KoJE1AqcX82ZdL",
+          "title": "爱你我不鲁 (feat. 邓福如)",
+          "subtitle": "张三李四 · 张三李四 第二张同名专辑",
+          "eyebrow": "已存 · 3:26",
+          "type": "song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music128/v4/dc/16/41/dc16415d-cfa9-4279-143f-2b92465df70a/4713012741514.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/1329677726",
+          "durationMs": 206000,
+          "durationFormatted": "3:26",
+          "playParams": {
+            "catalogId": "1329677726",
+            "id": "i.KoJE1AqcX82ZdL",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "1329677726"
+          }
+        },
+        {
+          "id": "i.YJMv7gzHlb7X6E",
+          "title": "爱情",
+          "subtitle": "莫文蔚 · No.1 新曲+精选全纪录20首",
+          "eyebrow": "已存 · 4:46",
+          "type": "song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music2/v4/1d/3e/63/1d3e6390-e5b1-96bb-0f41-380d866e2432/RD-1553.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/657683882",
+          "durationMs": 286160,
+          "durationFormatted": "4:46",
+          "playParams": {
+            "catalogId": "657683882",
+            "id": "i.YJMv7gzHlb7X6E",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "657683882"
+          }
+        },
+        {
+          "id": "i.2P01VeZFK7E254",
+          "title": "爱情",
+          "subtitle": "张楚 · 孤独的人是可耻的",
+          "eyebrow": "已存 · 4:27",
+          "type": "song",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/song/i.2P01VeZFK7E254",
+          "durationMs": 267506,
+          "durationFormatted": "4:27",
+          "playParams": null
+        },
+        {
+          "id": "i.oOdN16kFm7QKOZ",
+          "title": "爱情，习作",
+          "subtitle": "卢广仲 · 七天",
+          "eyebrow": "已存 · 4:02",
+          "type": "song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/00/2a/62/002a62dd-bf80-6df9-0e07-8e17207592b4/cover5B-01_1400x1400.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/799190070",
+          "durationMs": 242076,
+          "durationFormatted": "4:02",
+          "playParams": {
+            "catalogId": "799190070",
+            "id": "i.oOdN16kFm7QKOZ",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "799190070"
+          }
+        },
+        {
+          "id": "i.KoJ2p56fX82ZdL",
+          "title": "爱情的花样",
+          "subtitle": "孙燕姿 · 逆光",
+          "eyebrow": "已存 · 3:43",
+          "type": "song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music123/v4/39/8e/7d/398e7d64-1877-03ab-17cb-460943429bc0/825646246939.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/905226309",
+          "durationMs": 223333,
+          "durationFormatted": "3:43",
+          "playParams": {
+            "catalogId": "905226309",
+            "id": "i.KoJ2p56fX82ZdL",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "905226309"
+          }
+        },
+        {
+          "id": "i.kGObRkKFOr0l7x",
+          "title": "爱情的路",
+          "subtitle": "蔡健雅 · 陌生人",
+          "eyebrow": "已存 · 4:51",
+          "type": "song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/91/c9/2d/91c92d40-d88b-b2f8-6951-8b5950bd62a5/mzi.qgyehuzk.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/297906557",
+          "durationMs": 291840,
+          "durationFormatted": "4:51",
+          "playParams": {
+            "catalogId": "297906557",
+            "id": "i.kGObRkKFOr0l7x",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "297906557"
+          }
+        },
+        {
+          "id": "i.zpZxL7qtJe5vD4",
+          "title": "爱情的模样",
+          "subtitle": "五月天 · 我们是五月天",
+          "eyebrow": "已存 · 5:05",
+          "type": "song",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/song/i.zpZxL7qtJe5vD4",
+          "durationMs": 305893,
+          "durationFormatted": "5:05",
+          "playParams": null
+        },
+        {
+          "id": "i.oOdNRW5Tm7QKOZ",
+          "title": "爱情的秋天",
+          "subtitle": "Apple Music",
+          "eyebrow": "已存 · 4:17",
+          "type": "song",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/song/i.oOdNRW5Tm7QKOZ",
+          "durationMs": 257080,
+          "durationFormatted": "4:17",
+          "playParams": null
+        },
+        {
+          "id": "i.pmz55JEhbWp8qM",
+          "title": "爱情的秋天 1",
+          "subtitle": "Apple Music",
+          "eyebrow": "已存 · 4:13",
+          "type": "song",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/song/i.pmz55JEhbWp8qM",
+          "durationMs": 253760,
+          "durationFormatted": "4:13",
+          "playParams": null
+        },
+        {
+          "id": "i.zpZDRkVTJe5vD4",
+          "title": "爱情的秋天 2",
+          "subtitle": "Apple Music",
+          "eyebrow": "已存 · 4:11",
+          "type": "song",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/song/i.zpZDRkVTJe5vD4",
+          "durationMs": 251693,
+          "durationFormatted": "4:11",
+          "playParams": null
+        },
+        {
+          "id": "i.MoxqRWZCk3bdrQ",
+          "title": "爱情废柴",
+          "subtitle": "周杰伦 · 周杰伦的床边故事",
+          "eyebrow": "已存 · 4:45",
+          "type": "song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/58/28/f4/5828f491-62ab-61b6-25b4-23838e4f1dcf/dj.sxbqzong.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/1118757879",
+          "durationMs": 285616,
+          "durationFormatted": "4:45",
+          "playParams": {
+            "catalogId": "1118757879",
+            "id": "i.MoxqRWZCk3bdrQ",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "1118757879"
+          }
+        },
+        {
+          "id": "i.pmzq52KcbWp8qM",
+          "title": "爱情化工厂",
+          "subtitle": "赖慈泓 · 别来无恙",
+          "eyebrow": "已存 · 3:56",
+          "type": "song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music128/v4/90/7e/f5/907ef579-0057-f8e4-40d2-467fe01fc7a6/Cover.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/1360994578",
+          "durationMs": 236390,
+          "durationFormatted": "3:56",
+          "playParams": {
+            "catalogId": "1360994578",
+            "id": "i.pmzq52KcbWp8qM",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "1360994578"
+          }
+        },
+        {
+          "id": "i.5Pk6Pm7TMXvzom",
+          "title": "爱情教会我们的事",
+          "subtitle": "周兴哲 · 爱,教会我们的事",
+          "eyebrow": "已存 · 4:54",
+          "type": "song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/98/bd/1b/98bd1b71-5023-d31b-7adc-c91cf52dd65f/886446012827.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/1137528433",
+          "durationMs": 294046,
+          "durationFormatted": "4:54",
+          "playParams": {
+            "catalogId": "1137528433",
+            "id": "i.5Pk6Pm7TMXvzom",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "1137528433"
+          }
+        },
+        {
+          "id": "i.zpZDpW1FJe5vD4",
+          "title": "爱情旅程",
+          "subtitle": "张韶涵 · 潘朵拉",
+          "eyebrow": "已存 · 4:38",
+          "type": "song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/c5/da/11/c5da111d-084e-cd46-d413-ab12685423de/4717398702138.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/535741215",
+          "durationMs": 278240,
+          "durationFormatted": "4:38",
+          "playParams": {
+            "catalogId": "535741215",
+            "id": "i.zpZDpW1FJe5vD4",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "535741215"
+          }
+        },
+        {
+          "id": "i.pmz5B9dCbWp8qM",
+          "title": "爱情摩天轮 (feat. 安苡葳 & DJ CK)",
+          "subtitle": "臭屁婴仔 · 摇摆叔叔DJ CK x 玖壹壹 MIXTAPE Vol.3",
+          "eyebrow": "已存 · 4:48",
+          "type": "song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music113/v4/95/61/34/95613497-990b-225e-32f1-b9dd712cf999/4710149675323.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/1484447382",
+          "durationMs": 288960,
+          "durationFormatted": "4:48",
+          "playParams": {
+            "catalogId": "1484447382",
+            "id": "i.pmz5B9dCbWp8qM",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "1484447382"
+          }
+        },
+        {
+          "id": "i.pmz5eJQsbWp8qM",
+          "title": "爱情酿的酒",
+          "subtitle": "伍思凯 · 不同",
+          "eyebrow": "已存 · 4:30",
+          "type": "song",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/song/1532223255",
+          "durationMs": 270160,
+          "durationFormatted": "4:30",
+          "playParams": {
+            "catalogId": "1532223255",
+            "id": "i.pmz5eJQsbWp8qM",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "1854987695"
+          }
+        },
+        {
+          "id": "i.oOdPY5pfm7QKOZ",
+          "title": "爱情酿的酒",
+          "subtitle": "辛龙 · 才子佳人",
+          "eyebrow": "已存 · 5:14",
+          "type": "song",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/song/917205371",
+          "durationMs": 314773,
+          "durationFormatted": "5:14",
+          "playParams": {
+            "catalogId": "917205371",
+            "id": "i.oOdPY5pfm7QKOZ",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "6773643231"
+          }
+        },
+        {
+          "id": "i.MoxqqgLuk3bdrQ",
+          "title": "爱情少尉",
+          "subtitle": "李宗盛 · 1984-1989 李宗盛作品集",
+          "eyebrow": "已存 · 3:16",
+          "type": "song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features124/v4/ee/6a/5b/ee6a5bdf-9708-deb4-190a-30f14329a285/dj.qajencgo.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/153276891",
+          "durationMs": 196000,
+          "durationFormatted": "3:16",
+          "playParams": {
+            "catalogId": "153276891",
+            "id": "i.MoxqqgLuk3bdrQ",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "153276891"
+          }
+        },
+        {
+          "id": "i.kGObp25fOr0l7x",
+          "title": "爱情是圆的",
+          "subtitle": "林宥嘉 · 神秘嘉宾",
+          "eyebrow": "已存 · 3:37",
+          "type": "song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/70/e0/d0/70e0d089-824a-50c1-f373-6594d690c4f0/asset.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/547520548",
+          "durationMs": 217182,
+          "durationFormatted": "3:37",
+          "playParams": {
+            "catalogId": "547520548",
+            "id": "i.kGObp25fOr0l7x",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "547520548"
+          }
+        },
+        {
+          "id": "i.pmz2oQ9hbWp8qM",
+          "title": "爱情万岁",
+          "subtitle": "五月天 · 知足 just my pride 最真杰作选",
+          "eyebrow": "已存 · 5:55",
+          "type": "song",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/song/151337330",
+          "durationMs": 355706,
+          "durationFormatted": "5:55",
+          "playParams": {
+            "catalogId": "151337330",
+            "id": "i.pmz2oQ9hbWp8qM",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "151337330"
+          }
+        },
+        {
+          "id": "i.8WdGeovTR4dELD",
+          "title": "爱情悬崖",
+          "subtitle": "周杰伦 · 叶惠美",
+          "eyebrow": "已存 · 4:22",
+          "type": "song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/45/8a/e4/458ae484-dc8b-5683-ce04-8d2948346462/JAY.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/535824744",
+          "durationMs": 262213,
+          "durationFormatted": "4:22",
+          "playParams": {
+            "catalogId": "535824744",
+            "id": "i.8WdGeovTR4dELD",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "535824744"
+          }
+        },
+        {
+          "id": "i.YJMvErAUlb7X6E",
+          "title": "爱情悬崖 (Live)",
+          "subtitle": "周杰伦 · 2004 无与伦比演唱会 (Live)",
+          "eyebrow": "已存 · 4:22",
+          "type": "song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/64/48/f1/6448f19e-b407-c1c1-9e18-aa5a45293be7/V4HttpAssetRepositoryClient-ticket.piuwzddv.jpg-4361441731299528635.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/535913723",
+          "durationMs": 262027,
+          "durationFormatted": "4:22",
+          "playParams": {
+            "catalogId": "535913723",
+            "id": "i.YJMvErAUlb7X6E",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "535913723"
+          }
+        },
+        {
+          "id": "i.pmz54oDSbWp8qM",
+          "title": "爱情有什么道理",
+          "subtitle": "李宗盛 · 李宗盛作品精选1",
+          "eyebrow": "已存 · 5:13",
+          "type": "song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/90/e1/40/90e1405a-a7db-4c70-492e-c78c39f6d249/dj.tgbgptcr.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/157624669",
+          "durationMs": 313733,
+          "durationFormatted": "5:13",
+          "playParams": {
+            "catalogId": "157624669",
+            "id": "i.pmz54oDSbWp8qM",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "157624669"
+          }
+        },
+        {
+          "id": "i.2P01VqQHK7E254",
+          "title": "爱情有什么道理",
+          "subtitle": "李宗盛 · 理性与感性作品音乐会",
+          "eyebrow": "已存 · 3:34",
+          "type": "song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/64/6f/e9/646fe970-7fbc-4aae-bb85-2c45e7404362/1500.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/1329432674",
+          "durationMs": 214560,
+          "durationFormatted": "3:34",
+          "playParams": {
+            "catalogId": "1329432674",
+            "id": "i.2P01VqQHK7E254",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "1329432674"
+          }
+        },
+        {
+          "id": "i.YJMKKgAUlb7X6E",
+          "title": "爱情有什么道理 (Live)",
+          "subtitle": "李宗盛 · 李宗盛「既然青春留不住-还是做个大叔好」演唱会巡回影音纪录 LIVE",
+          "eyebrow": "已存 · 4:28",
+          "type": "song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/b5/ee/9e/b5ee9ef1-09b4-f998-db9f-ce124fab9b3d/CD_cover_1500x1500.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/1173734639",
+          "durationMs": 268558,
+          "durationFormatted": "4:28",
+          "playParams": {
+            "catalogId": "1173734639",
+            "id": "i.YJMKKgAUlb7X6E",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "1173734639"
+          }
+        },
+        {
+          "id": "i.5PkvWqDTMXvzom",
+          "title": "爱情这杯酒谁喝都得醉",
+          "subtitle": "Apple Music",
+          "eyebrow": "已存 · 4:29",
+          "type": "song",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/song/1461699390",
+          "durationMs": 269840,
+          "durationFormatted": "4:29",
+          "playParams": {
+            "catalogId": "1461699390",
+            "id": "i.5PkvWqDTMXvzom",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "1461699390"
+          }
+        },
+        {
+          "id": "i.MoxaQXYIk3bdrQ",
+          "title": "爱情证书",
+          "subtitle": "孙燕姿 · YAN ZI",
+          "eyebrow": "已存 · 4:16",
+          "type": "song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music/15/ca/82/mzi.fsgrhyyg.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/280911991",
+          "durationMs": 256160,
+          "durationFormatted": "4:16",
+          "playParams": {
+            "catalogId": "280911991",
+            "id": "i.MoxaQXYIk3bdrQ",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "280911991"
+          }
+        },
+        {
+          "id": "i.MoxaAlYUk3bdrQ",
+          "title": "爱情之所以为爱情",
+          "subtitle": "梁静茹 · 静茹&情歌 别再为他流泪",
+          "eyebrow": "已存 · 4:19",
+          "type": "song",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/song/i.MoxaAlYUk3bdrQ",
+          "durationMs": 259546,
+          "durationFormatted": "4:19",
+          "playParams": null
+        },
+        {
+          "id": "i.2P05B83HK7E254",
+          "title": "爱情转移",
+          "subtitle": "陈奕迅 · 认了吧 (台湾版)",
+          "eyebrow": "已存 · 4:19",
+          "type": "song",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/song/252380388",
+          "durationMs": 259987,
+          "durationFormatted": "4:19",
+          "playParams": {
+            "catalogId": "252380388",
+            "id": "i.2P05B83HK7E254",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "252380388"
+          }
+        },
+        {
+          "id": "i.Moxa1ApCk3bdrQ",
+          "title": "爱情转移",
+          "subtitle": "陈奕迅 · 认了吧",
+          "eyebrow": "已存 · 4:19",
+          "type": "song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/27/cb/d6/27cbd6b4-c991-cd95-49e3-b6019462ff97/00602517338845.rgb.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/1443352465",
+          "durationMs": 259986,
+          "durationFormatted": "4:19",
+          "playParams": {
+            "catalogId": "1443352465",
+            "id": "i.Moxa1ApCk3bdrQ",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "1443352465"
+          }
+        },
+        {
+          "id": "i.pmz5B50hbWp8qM",
+          "title": "爱情字典",
+          "subtitle": "孙燕姿 · 风筝",
+          "eyebrow": "已存 · 3:50",
+          "type": "song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/7b/e7/26/7be7268a-8048-fe91-9f70-e6f0ef401372/mzi.uwhxxsbl.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/297994515",
+          "durationMs": 230791,
+          "durationFormatted": "3:50",
+          "playParams": {
+            "catalogId": "297994515",
+            "id": "i.pmz5B50hbWp8qM",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "297994515"
+          }
+        },
+        {
+          "id": "i.8Wdzv32hR4dELD",
+          "title": "爱人",
+          "subtitle": "王若琳 · 爱的呼唤",
+          "eyebrow": "已存 · 4:05",
+          "type": "song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music113/v4/c4/92/16/c4921601-2bb2-8c80-2a1f-d9266b6621f9/886448094227.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/1484792440",
+          "durationMs": 245267,
+          "durationFormatted": "4:05",
+          "playParams": {
+            "catalogId": "1484792440",
+            "id": "i.8Wdzv32hR4dELD",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "1484792440"
+          }
+        },
+        {
+          "id": "i.2P0DZJvHK7E254",
+          "title": "爱人 (日文版)",
+          "subtitle": "王若琳 · 爱的呼唤",
+          "eyebrow": "已存 · 4:06",
+          "type": "song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music113/v4/c4/92/16/c4921601-2bb2-8c80-2a1f-d9266b6621f9/886448094227.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/1484792446",
+          "durationMs": 246400,
+          "durationFormatted": "4:06",
+          "playParams": {
+            "catalogId": "1484792446",
+            "id": "i.2P0DZJvHK7E254",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "1484792446"
+          }
+        },
+        {
+          "id": "i.3VB1947FR0WKMz",
+          "title": "爱人别走",
+          "subtitle": "Apple Music",
+          "eyebrow": "已存 · 3:57",
+          "type": "song",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/song/i.3VB1947FR0WKMz",
+          "durationMs": 237813,
+          "durationFormatted": "3:57",
+          "playParams": null
+        },
+        {
+          "id": "i.zpZDmg9UJe5vD4",
+          "title": "爱人错过",
+          "subtitle": "告五人 · 我肯定在几百年前就说过爱你",
+          "eyebrow": "已存 · 4:52",
+          "type": "song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/10/ba/77/10ba77f4-47ae-8cb6-2913-cf49b78452b5/1..jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/1546062805",
+          "durationMs": 292075,
+          "durationFormatted": "4:52",
+          "playParams": {
+            "catalogId": "1546062805",
+            "id": "i.zpZDmg9UJe5vD4",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "1546062805"
+          }
+        },
+        {
+          "id": "i.pmzqQr0ubWp8qM",
+          "title": "爱人的自我修养",
+          "subtitle": "家家 · 还是想念",
+          "eyebrow": "已存 · 4:09",
+          "type": "song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/e5/e0/80/e5e080fd-28ab-6eb0-f1bb-8dec43b9b6e7/dj.lwghttpp.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/1190504668",
+          "durationMs": 249854,
+          "durationFormatted": "4:09",
+          "playParams": {
+            "catalogId": "1190504668",
+            "id": "i.pmzqQr0ubWp8qM",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "1190504668"
+          }
+        },
+        {
+          "id": "i.8Wdzxb1CR4dELD",
+          "title": "爱人动物",
+          "subtitle": "苏打绿 · 陪我歌唱",
+          "eyebrow": "已存 · 3:53",
+          "type": "song",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music123/v4/3e/ec/9d/3eec9d0c-cea6-33c9-3b07-e1897caeac17/cover.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/song/1461051418",
+          "durationMs": 233377,
+          "durationFormatted": "3:53",
+          "playParams": {
+            "catalogId": "1461051418",
+            "id": "i.8Wdzxb1CR4dELD",
+            "isLibrary": true,
+            "kind": "song",
+            "reporting": true,
+            "reportingId": "1461051418"
+          }
+        }
+      ],
+      "timing": {
+        "hydrationDurationMs": 0,
+        "extractionDurationMs": 0.2,
+        "totalDurationMs": 0.2,
+        "avgTimePerItemMs": 0.002
+      }
+    },
+    {
+      "id": "section-library-recent",
+      "title": "最近添加",
+      "itemCount": 25,
+      "items": [
+        {
+          "id": "l.rhO6P6t",
+          "title": "一样会爱上你 - Single",
+          "subtitle": "理想混蛋 & 高尔宣 OSN (1 首)",
+          "eyebrow": "最近添加",
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/a2/5e/01/a25e0198-8067-91f6-9ca8-deb2c69232c6/cover.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/l.rhO6P6t"
+        },
+        {
+          "id": "p.6xZak4JcgZX7LG",
+          "title": "今日热门：2026 年度最佳",
+          "subtitle": "资料库",
+          "eyebrow": "最近添加",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/b4/e0/39/b4e03955-0bdc-92b6-8fea-953077b384e4/bf5a5448-12c8-46d8-9235-1b15612a10dc.png/160x160SC.DN02.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.6xZak4JcgZX7LG"
+        },
+        {
+          "id": "p.QvDQRVvuJRZvL5",
+          "title": "League of Legends Hits",
+          "subtitle": "资料库",
+          "eyebrow": "最近添加",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/R9VoYAU8v5slE95WQbuZlA/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.QvDQRVvuJRZvL5"
+        },
+        {
+          "id": "p.6xZak1dCgZX7LG",
+          "title": "2026 年 9 月抖音热歌榜",
+          "subtitle": "资料库",
+          "eyebrow": "最近添加",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/9a/3b/c0/9a3bc076-59e2-9e98-fa18-d9abeafb812e/7d63a5bd-e7a0-4d55-96f0-bdbc6b869c25.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.6xZak1dCgZX7LG"
+        },
+        {
+          "id": "l.oyQnXko",
+          "title": "The Life of a Showgirl: The Encore",
+          "subtitle": "Taylor Swift (16 首)",
+          "eyebrow": "最近添加",
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Video211/v4/30/a2/3c/30a23c8a-1429-31db-701a-2918071d30cf/OBJECT_PROXYe4747b20-fe6c-4cd5-9b29-8f28ed5e597e_KEY_FRAME_OUTPUT_0_OBJECT_PROXYe4747b20-fe6c-4cd5-9b29-8f28ed5e597e.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/l.oyQnXko"
+        },
+        {
+          "id": "p.QvDQRYRiJRZvL5",
+          "title": "网络热播：C-Pop",
+          "subtitle": "资料库",
+          "eyebrow": "最近添加",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/e9/a0/48/e9a048c7-37f6-93bc-299e-bd14f0331213/92c843ca-d268-4bd0-ae8b-dec18bc6fe41.png/160x160SC.DN02.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.QvDQRYRiJRZvL5"
+        },
+        {
+          "id": "l.j3zHzj1",
+          "title": "再想想",
+          "subtitle": "宋冬野 (11 首)",
+          "eyebrow": "最近添加",
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/45/c9/fe/45c9febc-d55c-62ef-c168-9cb013b9db65/26UMGIM69223.rgb.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/l.j3zHzj1"
+        },
+        {
+          "id": "l.vhKIsY1",
+          "title": "生死未定",
+          "subtitle": "胡彦斌 (10 首)",
+          "eyebrow": "最近添加",
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/f9/f4/0a/f9f40a5c-2af8-5249-9a76-217589247858/6937427398042.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/l.vhKIsY1"
+        },
+        {
+          "id": "l.rViqD3p",
+          "title": "你在笑什麼",
+          "subtitle": "尹毓恪 (14 首)",
+          "eyebrow": "最近添加",
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music114/v4/9a/af/1d/9aaf1d5c-7bd3-6748-1960-50b27fb267c9/36372882.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/l.rViqD3p"
+        },
+        {
+          "id": "l.7v1usTf",
+          "title": "各自安好",
+          "subtitle": "刘若英 (11 首)",
+          "eyebrow": "最近添加",
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/5a/f2/c6/5af2c6eb-04bb-4126-a58c-7a70f5dfd305/1.2021-_-_Digital-Cover.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/l.7v1usTf"
+        },
+        {
+          "id": "l.gF5gHvv",
+          "title": "TOO YOUNG TO BE SAD (Apple Music Edition) - EP",
+          "subtitle": "Tate McRae (7 首)",
+          "eyebrow": "最近添加",
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features124/v4/80/5c/de/805cde66-4cc5-3b6b-7040-f68993abc65a/U0RTLU1TLVdXLVRhdGVfTWNSYWUtQURBTV9JRD0xNTU4NzM5ODI5LnBuZw.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/l.gF5gHvv"
+        },
+        {
+          "id": "p.gek1VBzUBvxmpW",
+          "title": "古装剧金曲",
+          "subtitle": "资料库",
+          "eyebrow": "最近添加",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features211/v4/71/0e/da/710eda45-e11d-6fdc-5e8d-89e3c08ce20a/d7ee14b0-ee2a-4ffb-b34f-799bae38e8f6.png/160x160SC.DN02.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.gek1VBzUBvxmpW"
+        },
+        {
+          "id": "p.6xZakeOigZX7LG",
+          "title": "春韶",
+          "subtitle": "资料库",
+          "eyebrow": "最近添加",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/b6/c5/93/b6c59314-8a34-3d36-42fe-038ed748f3a0/6c579cb1-66a2-453e-a979-f076b38d061d.png/160x160SC.DN02.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.6xZakeOigZX7LG"
+        },
+        {
+          "id": "p.QvDQR9buJRZvL5",
+          "title": "2026 年 3 月抖音热歌榜",
+          "subtitle": "资料库",
+          "eyebrow": "最近添加",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/23/55/f7/2355f7b1-fa9d-41cd-b64f-9fc813f0d7b6/5cd80b78-0045-4068-b799-da7244f51477.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.QvDQR9buJRZvL5"
+        },
+        {
+          "id": "l.lPy1jFf",
+          "title": "The Romantic",
+          "subtitle": "Bruno Mars (9 首)",
+          "eyebrow": "最近添加",
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Video211/v4/5a/b7/85/5ab785a8-7d22-dc9c-ba11-2fb6cee81a14/Job05528c9e-39b8-4a9f-81d8-97f3a7c5ed90-213405019-PreviewImage_Preview_Image_Intermediate_nonvideo_sdr_417908331_2505044295-Time1767935525520.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/l.lPy1jFf"
+        },
+        {
+          "id": "l.j0snHo",
+          "title": "完璧な旅",
+          "subtitle": "MUMU音樂台 (22 首)",
+          "eyebrow": "最近添加",
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/f3/89/19/f3891967-1d20-29f1-339b-55c24eba959f/artwork.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/l.j0snHo"
+        },
+        {
+          "id": "l.tazCoYl",
+          "title": "猪猪侠 - Single",
+          "subtitle": "陈洁丽 (1 首)",
+          "eyebrow": "最近添加",
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/4f/59/b8/4f59b858-1b14-8f7e-d4f6-b9bf123dfc11/199350632891.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/l.tazCoYl"
+        },
+        {
+          "id": "p.LV0PxM3uRdzPWg",
+          "title": "抖音 2025 年度热歌榜",
+          "subtitle": "资料库",
+          "eyebrow": "最近添加",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/a1/e8/59/a1e8590e-c7ab-564b-8462-f45fce53d10b/bac8c595-fbe0-4b18-bae9-cd9743207c5e.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.LV0PxM3uRdzPWg"
+        },
+        {
+          "id": "l.gWh4aIt",
+          "title": "Without You - Single",
+          "subtitle": "高尔宣 OSN (1 首)",
+          "eyebrow": "最近添加",
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music116/v4/38/b7/d3/38b7d3e4-bc36-996c-6cfd-e376877c6ff9/4710243776186_cover.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/l.gWh4aIt"
+        },
+        {
+          "id": "l.UMMG57A",
+          "title": "Prover / Tell me - EP",
+          "subtitle": "milet (4 首)",
+          "eyebrow": "最近添加",
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/2e/1f/6e/2e1f6ef8-3537-f9ab-3bae-c0e74837cd78/4547366480870.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/l.UMMG57A"
+        },
+        {
+          "id": "l.WOWJoMo",
+          "title": "海的模样",
+          "subtitle": "李芷婷 (10 首)",
+          "eyebrow": "最近添加",
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/95/7a/e6/957ae650-21af-75e1-0a7c-f4ee5c23144b/5026854278841.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/l.WOWJoMo"
+        },
+        {
+          "id": "l.cobwonl",
+          "title": "Fall in Love With",
+          "subtitle": "王俪婷 (1 首)",
+          "eyebrow": "最近添加",
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/7f/01/82/7f01829b-12f2-07b6-523a-48682be4ccbc/dj.wxgndfls.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/l.cobwonl"
+        },
+        {
+          "id": "p.PkxVvMvuWRp68X",
+          "title": "Shape of Love",
+          "subtitle": "资料库",
+          "eyebrow": "最近添加",
+          "type": "playlist",
+          "artworkUrl": "https://store-033.blobstore.apple.com/sq-mq-us-033-000002/ca/ac/db/caacdb0c-71b9-7931-9bf7-eb57cd58d950/image?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Date=20261117T185627Z&X-Amz-SignedHeaders=host&X-Amz-Expires=86399&X-Amz-Credential=MKIAU0HKO2RBEAT0UMZS%2F20261117%2Fstore-033%2Fs3%2Faws4_request&X-Amz-Signature=8fffc1d26fe9deed3ed3726a226e5c83901e7ee423ed01b23ae614cf76f4327a",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.PkxVvMvuWRp68X"
+        },
+        {
+          "id": "p.gek1VO6SBvxmpW",
+          "title": "音乐回忆 2025",
+          "subtitle": "资料库",
+          "eyebrow": "最近添加",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/e6/0f/3b/e60f3b4f-89cd-fa43-8617-e23b91bffd12/8db25351-cf07-40e1-9a53-dabda942538a.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.gek1VO6SBvxmpW"
+        },
+        {
+          "id": "l.418m91C",
+          "title": "Play (Extended Edition)",
+          "subtitle": "Ed Sheeran (18 首)",
+          "eyebrow": "最近添加",
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Video211/v4/e4/ae/d1/e4aed197-909d-1d7c-da4c-c1b833c65635/Job583292bf-3efc-4db5-b016-f1b276e909d2-202688066-PreviewImage_Preview_Image_Intermediate_nonvideo_sdr_396458238_2332451104-Time1757510608822.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/l.418m91C"
+        }
+      ],
+      "timing": {
+        "hydrationDurationMs": 0,
+        "extractionDurationMs": 0.2,
+        "totalDurationMs": 0.2,
+        "avgTimePerItemMs": 0.008
+      }
+    },
+    {
+      "id": "section-library-albums",
+      "title": "已存专辑",
+      "itemCount": 50,
+      "items": [
+        {
+          "id": "l.9VxSLWm",
+          "title": "哎呦, 不错哦",
+          "subtitle": "周杰伦 (12 首)",
+          "eyebrow": "2014",
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/16/db/ff/16dbff09-0750-29b0-07b7-3fa44f8a556e/dj.nzqvfsza.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/l.9VxSLWm"
+        },
+        {
+          "id": "l.kNEdmuv",
+          "title": "大龄女子",
+          "subtitle": "彭佳慧 (3 首)",
+          "eyebrow": "2015",
+          "type": "album",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/album/l.kNEdmuv"
+        },
+        {
+          "id": "l.fpEZbPg",
+          "title": "电影《梦想合伙人》主题曲原声带 - Single",
+          "subtitle": "周笔畅 (1 首)",
+          "eyebrow": "2016",
+          "type": "album",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/album/l.fpEZbPg"
+        },
+        {
+          "id": "l.ety3mB4",
+          "title": "凡是",
+          "subtitle": "许飞 (7 首)",
+          "eyebrow": "2019",
+          "type": "album",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/album/l.ety3mB4"
+        },
+        {
+          "id": "l.YKZc1Zh",
+          "title": "凡星 - Single",
+          "subtitle": "毛不易 (1 首)",
+          "eyebrow": "2023",
+          "type": "album",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/album/l.YKZc1Zh"
+        },
+        {
+          "id": "l.UQO3GFi",
+          "title": "给你一点颜色",
+          "subtitle": "崔健 (1 首)",
+          "eyebrow": "2005",
+          "type": "album",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/album/l.UQO3GFi"
+        },
+        {
+          "id": "l.4zjh3A6",
+          "title": "孤单者 - Single",
+          "subtitle": "林晨阳 (1 首)",
+          "eyebrow": "2020",
+          "type": "album",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/album/l.4zjh3A6"
+        },
+        {
+          "id": "l.oQjk2Go",
+          "title": "爱",
+          "subtitle": "周北树 (3 首)",
+          "eyebrow": "2017",
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music118/v4/77/83/37/7783377e-b1ef-7a89-519d-2224340aee80/6930043309980_cover.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/l.oQjk2Go"
+        },
+        {
+          "id": "l.i2mTaxk",
+          "title": "爱,教会我们的事",
+          "subtitle": "周兴哲 (4 首)",
+          "eyebrow": "2016",
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/98/bd/1b/98bd1b71-5023-d31b-7adc-c91cf52dd65f/886446012827.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/l.i2mTaxk"
+        },
+        {
+          "id": "l.6Gjidbo",
+          "title": "爱.这件事情 - EP",
+          "subtitle": "傅又宣-傅珮嘉 (1 首)",
+          "eyebrow": "2014",
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/01/16/6a/01166a75-79de-0ea0-6045-b2030b0cc6a5/001.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/l.6Gjidbo"
+        },
+        {
+          "id": "l.KlP3iFn",
+          "title": "爱。不爱",
+          "subtitle": "王心凌 (1 首)",
+          "eyebrow": "2012",
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/61/98/00/619800ae-cab1-78c8-e030-17ac9c3c2162/196871719452.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/l.KlP3iFn"
+        },
+        {
+          "id": "l.tClx5Pb",
+          "title": "爱‧歌姬",
+          "subtitle": "飞儿乐团 (4 首)",
+          "eyebrow": "2007",
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/77/d1/5a/77d15a60-81ea-0ed1-e55a-09ee8c7d72ca/mzi.zqzlytbv.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/l.tClx5Pb"
+        },
+        {
+          "id": "l.ZvULD88",
+          "title": "爱爱爱",
+          "subtitle": "方大同 (13 首)",
+          "eyebrow": "album",
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music6/v4/04/12/0a/04120a36-824f-1524-6875-5c4316c62895/825646346097.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/l.ZvULD88"
+        },
+        {
+          "id": "l.0UPGDl8",
+          "title": "爱到发烧",
+          "subtitle": "林子祥 (1 首)",
+          "eyebrow": "1983",
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music/a9/e8/4a/mzi.ohduhzun.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/l.0UPGDl8"
+        },
+        {
+          "id": "l.zi1w4ot",
+          "title": "爱到站了",
+          "subtitle": "李千娜 (1 首)",
+          "eyebrow": "2014",
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music114/v4/b7/01/22/b701222c-e303-ae7f-d794-864063eadbed/00602488973182.rgb.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/l.zi1w4ot"
+        },
+        {
+          "id": "l.v1KKif6",
+          "title": "爱的代价",
+          "subtitle": "张艾嘉 (1 首)",
+          "eyebrow": "1992",
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Video211/v4/13/89/d5/1389d530-d229-51fe-42d0-126cb96e080d/Jobda540ec1-6fbb-4b3e-9880-831ce9f69919-176081625-PreviewImage_Preview_Image_Intermediate_nonvideo_sdr_343781272_1901007680-Time1727061620782.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/l.v1KKif6"
+        },
+        {
+          "id": "l.F4bbCyy",
+          "title": "爱的风暴",
+          "subtitle": "李佳薇 (3 首)",
+          "eyebrow": "2016",
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/02/f2/b0/02f2b0dc-03b4-581a-2003-7b8b0d1d1011/dj.popvzwxa.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/l.F4bbCyy"
+        },
+        {
+          "id": "l.7i06NP3",
+          "title": "爱的呼唤",
+          "subtitle": "王若琳 (11 首)",
+          "eyebrow": "2019",
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music113/v4/c4/92/16/c4921601-2bb2-8c80-2a1f-d9266b6621f9/886448094227.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/l.7i06NP3"
+        },
+        {
+          "id": "l.bbGAVhA",
+          "title": "爱的时刻自选辑",
+          "subtitle": "萧敬腾 (2 首)",
+          "eyebrow": "2009",
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/c3/6a/f8/c36af80b-faaa-b232-e538-7a7d30a410bd/5051865669128.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/l.bbGAVhA"
+        },
+        {
+          "id": "l.kn1GJlf",
+          "title": "爱疯了",
+          "subtitle": "戴佩妮 (1 首)",
+          "eyebrow": "2005",
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music5/v4/d7/6c/83/d76c83b9-5f5b-5576-47f5-abec3889c067/825646246342.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/l.kn1GJlf"
+        },
+        {
+          "id": "l.ViKbNrm",
+          "title": "爱过 - Single",
+          "subtitle": "张赫宣 (1 首)",
+          "eyebrow": "2020",
+          "type": "album",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/album/l.ViKbNrm"
+        },
+        {
+          "id": "l.L6cIkP4",
+          "title": "光亮徬徨的闪耀年纪",
+          "subtitle": "二本猫 (10 首)",
+          "eyebrow": "2016",
+          "type": "album",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/album/l.L6cIkP4"
+        },
+        {
+          "id": "l.mjz5bne",
+          "title": "爱你",
+          "subtitle": "王心凌 (3 首)",
+          "eyebrow": "2004",
+          "type": "album",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/album/l.mjz5bne"
+        },
+        {
+          "id": "l.KKGaDf5",
+          "title": "爱你多一些精选-张学友",
+          "subtitle": "张学友 (1 首)",
+          "eyebrow": "1994",
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music118/v4/6f/11/d0/6f11d0ef-88f4-db54-90cd-fc51d081404c/00602517813434.rgb.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/l.KKGaDf5"
+        },
+        {
+          "id": "l.eTG63Rc",
+          "title": "爱你伍佰年: 2",
+          "subtitle": "伍佰 (1 首)",
+          "eyebrow": "1996",
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features115/v4/f6/7f/e2/f67fe262-8303-d556-2284-541ee5e1e703/dj.fwydjubj.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/l.eTG63Rc"
+        },
+        {
+          "id": "l.7gceqOA",
+          "title": "爱你伍佰年: 3",
+          "subtitle": "伍佰 (1 首)",
+          "eyebrow": "1997",
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/52/71/db/5271db92-47ec-5bec-119b-231adbfa3cdb/dj.xxevusra.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/l.7gceqOA"
+        },
+        {
+          "id": "l.mqpG3fe",
+          "title": "愛琴海 新歌+電音精選",
+          "subtitle": "李玟 (1 首)",
+          "eyebrow": "2002",
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music/ba/31/db/mzi.qxmesqyl.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/l.mqpG3fe"
+        },
+        {
+          "id": "l.wLw2hfc",
+          "title": "爱情的尽头",
+          "subtitle": "伍佰 & China Blue (1 首)",
+          "eyebrow": "1996",
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Video122/v4/09/89/16/09891657-a9ea-9311-9cac-07fbae632cad/Job551b097e-4ee9-4b22-b982-d6e5425a66df-140657216-PreviewImage_Preview_Image_Intermediate_nonvideo_sdr_264080931_1308784813-Time1670909647073.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/l.wLw2hfc"
+        },
+        {
+          "id": "l.9uTRwV9",
+          "title": "爱情万岁",
+          "subtitle": "五月天 (2 首)",
+          "eyebrow": "2003",
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/af/c2/33/afc233f6-d570-8f22-0a91-14a3e289a30d/dj.uhlsejtl.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/l.9uTRwV9"
+        },
+        {
+          "id": "l.dMATE91",
+          "title": "爱人",
+          "subtitle": "苏醒 (3 首)",
+          "eyebrow": "2016",
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music71/v4/69/36/67/6936670d-ab0f-a9aa-57ee-e96d29aa5ff8/886446083360.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/l.dMATE91"
+        },
+        {
+          "id": "l.5vWDVU5",
+          "title": "爱上回忆 - Single",
+          "subtitle": "吴听彻 (1 首)",
+          "eyebrow": "2020",
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music123/v4/c1/59/f5/c159f594-847d-e8d7-7668-ecc12c6fb5dc/ashy.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/l.5vWDVU5"
+        },
+        {
+          "id": "l.mf0IxVh",
+          "title": "爱上现在的我 (feat. 高尔宣 OSN) - Single",
+          "subtitle": "阎奕格 (1 首)",
+          "eyebrow": "2020",
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music114/v4/08/54/c8/0854c808-936f-e411-9ccc-ac53de4b571b/love.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/l.mf0IxVh"
+        },
+        {
+          "id": "l.rrA4Qj1",
+          "title": "爱似水仙 - EP",
+          "subtitle": "金海心 (1 首)",
+          "eyebrow": "2008",
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music113/v4/a4/24/73/a424738b-35f1-bda6-7064-22daa3cce35d/aisishuixian.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/l.rrA4Qj1"
+        },
+        {
+          "id": "l.JaOwfZb",
+          "title": "爱相同 致女伶 经典专辑",
+          "subtitle": "郭蘅祈 (2 首)",
+          "eyebrow": "2016",
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/97/90/ed/9790ed4c-3c5e-0e12-a228-c2a1d2fad3a3/190296348532.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/l.JaOwfZb"
+        },
+        {
+          "id": "l.MSKWUBx",
+          "title": "爱星光精选 (昨天今天明天)",
+          "subtitle": "群星 (2 首)",
+          "eyebrow": "2007",
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/39/4c/2d/394c2d53-d80a-cd27-71d0-dd7a06b88b7d/asset.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/l.MSKWUBx"
+        },
+        {
+          "id": "l.SZO2ZL4",
+          "title": "爱在情歌蔓延时",
+          "subtitle": "群星 (1 首)",
+          "eyebrow": "1994",
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Video211/v4/b1/b3/f8/b1b3f8c4-5354-fd29-2376-e93216ae3900/Jobf7b6e88a-5d48-4654-a34a-cc869ed6a5c0-180479811-PreviewImage_Preview_Image_Intermediate_nonvideo_sdr_352666991_1971690954-Time1732608513650.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/l.SZO2ZL4"
+        },
+        {
+          "id": "l.lkK0OF8",
+          "title": "爱在身边 (《爱在你声边》主题曲) - Single",
+          "subtitle": "周兴哲 (1 首)",
+          "eyebrow": "2017",
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music122/v4/53/7d/2a/537d2a2f-9399-fc8a-40fa-858a0b65d2ba/886446313757.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/l.lkK0OF8"
+        },
+        {
+          "id": "l.pVV3IAo",
+          "title": "爱在夏天 - Single",
+          "subtitle": "告五人 (1 首)",
+          "eyebrow": "2018",
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/64/92/f0/6492f048-9c1e-f890-c85a-dbd9fc26d97d/1..jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/l.pVV3IAo"
+        },
+        {
+          "id": "l.Ox9CxeC",
+          "title": "爱之世界",
+          "subtitle": "邓丽君 (1 首)",
+          "eyebrow": "1976",
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music128/v4/91/ad/27/91ad271e-055c-e24d-ea75-210774452b35/00602488885713.rgb.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/l.Ox9CxeC"
+        },
+        {
+          "id": "l.qmDL7ah",
+          "title": "愛してる - EP",
+          "subtitle": "中岛美嘉 (1 首)",
+          "eyebrow": "2003",
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/97/ce/f5/97cef571-24f7-12f9-6a23-4e773887c184/jacket_AICL01667B00Z_550.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/l.qmDL7ah"
+        },
+        {
+          "id": "l.5Gq5Hqy",
+          "title": "My Intuition",
+          "subtitle": "杨丞琳 (1 首)",
+          "eyebrow": "2005",
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/56/01/e8/5601e8f0-f66a-357e-e2dd-7ed4016a203a/mzi.vlvftogr.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/l.5Gq5Hqy"
+        },
+        {
+          "id": "l.7WQLyft",
+          "title": "安好 - Single",
+          "subtitle": "FZ.方丈, 金佬 & 李鸿儒 (1 首)",
+          "eyebrow": "2017",
+          "type": "album",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/album/l.7WQLyft"
+        },
+        {
+          "id": "l.BxtF0Z9",
+          "title": "安和 - Single",
+          "subtitle": "苏慧伦 (1 首)",
+          "eyebrow": "2020",
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music123/v4/61/86/75/6186758d-b58a-bd5b-5c5a-2f0b48051d06/1..jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/l.BxtF0Z9"
+        },
+        {
+          "id": "l.x37TcH8",
+          "title": "八度空间",
+          "subtitle": "周杰伦 (11 首)",
+          "eyebrow": "album",
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/96/c8/a1/96c8a1d8-8077-b8a7-8600-80b2abf1fe20/JAY.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/l.x37TcH8"
+        },
+        {
+          "id": "l.jYcYJLa",
+          "title": "八度空間",
+          "subtitle": "Jay Chou (1 首)",
+          "eyebrow": "album",
+          "type": "album",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/album/l.jYcYJLa"
+        },
+        {
+          "id": "l.Ko7IpKa",
+          "title": "巴斯特耳朵",
+          "subtitle": "小球 (庄鹃瑛) (3 首)",
+          "eyebrow": "2018",
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music118/v4/22/14/22/22142298-70ef-c494-a7e4-08608f2553da/00602577086793.rgb.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/l.Ko7IpKa"
+        },
+        {
+          "id": "l.gmpWLfb",
+          "title": "芭乐歌 - Single",
+          "subtitle": "韦礼安 (1 首)",
+          "eyebrow": "2023",
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music116/v4/d0/76/86/d076866e-ab12-1f03-b8f1-bb7a7472c94e/197188047696.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/l.gmpWLfb"
+        },
+        {
+          "id": "l.cZvXx89",
+          "title": "霸凌之家",
+          "subtitle": "王若琳 (1 首)",
+          "eyebrow": "2016",
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music71/v4/8e/99/e6/8e99e6ac-fae9-16f5-6d0f-b60f055c545d/886446179094.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/l.cZvXx89"
+        },
+        {
+          "id": "l.fMUE8y5",
+          "title": "霸凌之家 (Special Edition)",
+          "subtitle": "王若琳 (4 首)",
+          "eyebrow": "2016",
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music122/v4/d6/76/e2/d676e2ef-21b9-72b0-76a9-17ac06708b5e/886446314402.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/l.fMUE8y5"
+        },
+        {
+          "id": "l.7UMrUm2",
+          "title": "白日梦 - EP",
+          "subtitle": "卢焕刚 (6 首)",
+          "eyebrow": "2016",
+          "type": "album",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music71/v4/52/d0/2c/52d02c62-1724-9b10-3367-7b4ffffb483e/4712931524260.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/album/l.7UMrUm2"
+        }
+      ],
+      "timing": {
+        "hydrationDurationMs": 0,
+        "extractionDurationMs": 0.2,
+        "totalDurationMs": 0.2,
+        "avgTimePerItemMs": 0.004
+      }
+    },
+    {
+      "id": "section-library-artists",
+      "title": "关注艺人",
+      "itemCount": 50,
+      "items": [
+        {
+          "id": "r.3RXRmwb",
+          "title": "毕书尽",
+          "subtitle": "已加入资料库",
+          "eyebrow": "艺人",
+          "type": "artist",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/artist/r.3RXRmwb"
+        },
+        {
+          "id": "r.iVv8GJ1",
+          "title": "埃利·古尔丁",
+          "subtitle": "已加入资料库",
+          "eyebrow": "艺人",
+          "type": "artist",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/artist/r.iVv8GJ1"
+        },
+        {
+          "id": "r.uZM2LM6",
+          "title": "陈星翰",
+          "subtitle": "已加入资料库",
+          "eyebrow": "艺人",
+          "type": "artist",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/artist/r.uZM2LM6"
+        },
+        {
+          "id": "r.WHsioW9",
+          "title": "陈雪凝",
+          "subtitle": "已加入资料库",
+          "eyebrow": "艺人",
+          "type": "artist",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/artist/r.WHsioW9"
+        },
+        {
+          "id": "r.XMIgbI1",
+          "title": "崔健",
+          "subtitle": "已加入资料库",
+          "eyebrow": "艺人",
+          "type": "artist",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/artist/r.XMIgbI1"
+        },
+        {
+          "id": "r.k2W499l",
+          "title": "邓紫棋",
+          "subtitle": "已加入资料库",
+          "eyebrow": "艺人",
+          "type": "artist",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/artist/r.k2W499l"
+        },
+        {
+          "id": "r.pCucpHv",
+          "title": "二本猫",
+          "subtitle": "已加入资料库",
+          "eyebrow": "艺人",
+          "type": "artist",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/artist/r.pCucpHv"
+        },
+        {
+          "id": "r.RwAxyWq",
+          "title": "范丞丞",
+          "subtitle": "已加入资料库",
+          "eyebrow": "艺人",
+          "type": "artist",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/artist/r.RwAxyWq"
+        },
+        {
+          "id": "r.JwWivvv",
+          "title": "艾德·希兰",
+          "subtitle": "已加入资料库",
+          "eyebrow": "艺人",
+          "type": "artist",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/artist/r.JwWivvv"
+        },
+        {
+          "id": "r.A3WIlga",
+          "title": "艾莉西亚·凯斯",
+          "subtitle": "已加入资料库",
+          "eyebrow": "艺人",
+          "type": "artist",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/artist/r.A3WIlga"
+        },
+        {
+          "id": "r.UWj66r9",
+          "title": "艾梅丽·桑德",
+          "subtitle": "已加入资料库",
+          "eyebrow": "艺人",
+          "type": "artist",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/artist/r.UWj66r9"
+        },
+        {
+          "id": "r.voUortu",
+          "title": "艾瑞莎·富兰克林",
+          "subtitle": "已加入资料库",
+          "eyebrow": "艺人",
+          "type": "artist",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/artist/r.voUortu"
+        },
+        {
+          "id": "r.KT8z1Kk",
+          "title": "艾薇",
+          "subtitle": "已加入资料库",
+          "eyebrow": "艺人",
+          "type": "artist",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/artist/r.KT8z1Kk"
+        },
+        {
+          "id": "r.CtBEP2x",
+          "title": "艾怡良",
+          "subtitle": "已加入资料库",
+          "eyebrow": "艺人",
+          "type": "artist",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/artist/r.CtBEP2x"
+        },
+        {
+          "id": "r.M0ZT9o2",
+          "title": "爱客乐",
+          "subtitle": "已加入资料库",
+          "eyebrow": "艺人",
+          "type": "artist",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/artist/r.M0ZT9o2"
+        },
+        {
+          "id": "r.iZrJpyg",
+          "title": "爱莉安娜·格兰德",
+          "subtitle": "已加入资料库",
+          "eyebrow": "艺人",
+          "type": "artist",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/artist/r.iZrJpyg"
+        },
+        {
+          "id": "r.1TuopYg",
+          "title": "爱人眼睛",
+          "subtitle": "已加入资料库",
+          "eyebrow": "艺人",
+          "type": "artist",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/artist/r.1TuopYg"
+        },
+        {
+          "id": "r.37Auryi",
+          "title": "安德列・里欧 & 约翰 · 施特劳斯管弦乐团",
+          "subtitle": "已加入资料库",
+          "eyebrow": "艺人",
+          "type": "artist",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/artist/r.37Auryi"
+        },
+        {
+          "id": "r.KLuGdhk",
+          "title": "安子与九妹 & 1022女声",
+          "subtitle": "已加入资料库",
+          "eyebrow": "艺人",
+          "type": "artist",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/artist/r.KLuGdhk"
+        },
+        {
+          "id": "r.Glcxgyd",
+          "title": "奥拉佛・阿纳尔德斯",
+          "subtitle": "已加入资料库",
+          "eyebrow": "艺人",
+          "type": "artist",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/artist/r.Glcxgyd"
+        },
+        {
+          "id": "r.m2HhUPl",
+          "title": "八三夭",
+          "subtitle": "已加入资料库",
+          "eyebrow": "艺人",
+          "type": "artist",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/artist/r.m2HhUPl"
+        },
+        {
+          "id": "r.zYMDonc",
+          "title": "八十八颗芭乐籽",
+          "subtitle": "已加入资料库",
+          "eyebrow": "艺人",
+          "type": "artist",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/artist/r.zYMDonc"
+        },
+        {
+          "id": "r.SiXjMF1",
+          "title": "巴赖",
+          "subtitle": "已加入资料库",
+          "eyebrow": "艺人",
+          "type": "artist",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/artist/r.SiXjMF1"
+        },
+        {
+          "id": "r.inbgxZz",
+          "title": "白安",
+          "subtitle": "已加入资料库",
+          "eyebrow": "艺人",
+          "type": "artist",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/artist/r.inbgxZz"
+        },
+        {
+          "id": "r.r8YybF",
+          "title": "白日梦",
+          "subtitle": "已加入资料库",
+          "eyebrow": "艺人",
+          "type": "artist",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/artist/r.r8YybF"
+        },
+        {
+          "id": "r.iZY8Aib",
+          "title": "半吨兄弟",
+          "subtitle": "已加入资料库",
+          "eyebrow": "艺人",
+          "type": "artist",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/artist/r.iZY8Aib"
+        },
+        {
+          "id": "r.t81vEyq",
+          "title": "郭一凡",
+          "subtitle": "已加入资料库",
+          "eyebrow": "艺人",
+          "type": "artist",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/artist/r.t81vEyq"
+        },
+        {
+          "id": "r.Q52Er2B",
+          "title": "韩庚",
+          "subtitle": "已加入资料库",
+          "eyebrow": "艺人",
+          "type": "artist",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/artist/r.Q52Er2B"
+        },
+        {
+          "id": "r.HrAUgDh",
+          "title": "碧昂丝",
+          "subtitle": "已加入资料库",
+          "eyebrow": "艺人",
+          "type": "artist",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/artist/r.HrAUgDh"
+        },
+        {
+          "id": "r.5YiigBp",
+          "title": "波士顿交响乐团 & 吉尔 · 沙汉姆",
+          "subtitle": "已加入资料库",
+          "eyebrow": "艺人",
+          "type": "artist",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/artist/r.5YiigBp"
+        },
+        {
+          "id": "r.sTyd2f8",
+          "title": "卜星慧",
+          "subtitle": "已加入资料库",
+          "eyebrow": "艺人",
+          "type": "artist",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/artist/r.sTyd2f8"
+        },
+        {
+          "id": "r.ERLxSls",
+          "title": "不熟的朋友派对",
+          "subtitle": "已加入资料库",
+          "eyebrow": "艺人",
+          "type": "artist",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/artist/r.ERLxSls"
+        },
+        {
+          "id": "r.N2WUjZu",
+          "title": "布拉格爱乐乐团 & Gavin Sutherland",
+          "subtitle": "已加入资料库",
+          "eyebrow": "艺人",
+          "type": "artist",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/artist/r.N2WUjZu"
+        },
+        {
+          "id": "r.XGvbp7r",
+          "title": "布莱恩·泰勒",
+          "subtitle": "已加入资料库",
+          "eyebrow": "艺人",
+          "type": "artist",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/artist/r.XGvbp7r"
+        },
+        {
+          "id": "r.WwllsEt",
+          "title": "布兰妮·斯皮尔斯",
+          "subtitle": "已加入资料库",
+          "eyebrow": "艺人",
+          "type": "artist",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/artist/r.WwllsEt"
+        },
+        {
+          "id": "r.JbZ4e7s",
+          "title": "布魯斯·史普林斯汀",
+          "subtitle": "已加入资料库",
+          "eyebrow": "艺人",
+          "type": "artist",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/artist/r.JbZ4e7s"
+        },
+        {
+          "id": "r.i7Vu3nd",
+          "title": "蔡淳",
+          "subtitle": "已加入资料库",
+          "eyebrow": "艺人",
+          "type": "artist",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/artist/r.i7Vu3nd"
+        },
+        {
+          "id": "r.L4HbuL9",
+          "title": "蔡健雅",
+          "subtitle": "已加入资料库",
+          "eyebrow": "艺人",
+          "type": "artist",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/artist/r.L4HbuL9"
+        },
+        {
+          "id": "r.KJCvuCr",
+          "title": "蔡琴",
+          "subtitle": "已加入资料库",
+          "eyebrow": "艺人",
+          "type": "artist",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/artist/r.KJCvuCr"
+        },
+        {
+          "id": "r.FeFNaZa",
+          "title": "蔡依林",
+          "subtitle": "已加入资料库",
+          "eyebrow": "艺人",
+          "type": "artist",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/artist/r.FeFNaZa"
+        },
+        {
+          "id": "r.Kq4csZ8",
+          "title": "蔡智东",
+          "subtitle": "已加入资料库",
+          "eyebrow": "艺人",
+          "type": "artist",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/artist/r.Kq4csZ8"
+        },
+        {
+          "id": "r.y1POeg4",
+          "title": "仓央龙措",
+          "subtitle": "已加入资料库",
+          "eyebrow": "艺人",
+          "type": "artist",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/artist/r.y1POeg4"
+        },
+        {
+          "id": "r.XiElIof",
+          "title": "曹方",
+          "subtitle": "已加入资料库",
+          "eyebrow": "艺人",
+          "type": "artist",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/artist/r.XiElIof"
+        },
+        {
+          "id": "r.nJN5bKz",
+          "title": "曹格",
+          "subtitle": "已加入资料库",
+          "eyebrow": "艺人",
+          "type": "artist",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/artist/r.nJN5bKz"
+        },
+        {
+          "id": "r.tDJacvk",
+          "title": "曹轩宾",
+          "subtitle": "已加入资料库",
+          "eyebrow": "艺人",
+          "type": "artist",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/artist/r.tDJacvk"
+        },
+        {
+          "id": "r.drsCVKe",
+          "title": "曹杨",
+          "subtitle": "已加入资料库",
+          "eyebrow": "艺人",
+          "type": "artist",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/artist/r.drsCVKe"
+        },
+        {
+          "id": "r.ANcyAah",
+          "title": "曹寅",
+          "subtitle": "已加入资料库",
+          "eyebrow": "艺人",
+          "type": "artist",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/artist/r.ANcyAah"
+        },
+        {
+          "id": "r.HNmzNUj",
+          "title": "草东没有派对",
+          "subtitle": "已加入资料库",
+          "eyebrow": "艺人",
+          "type": "artist",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/artist/r.HNmzNUj"
+        },
+        {
+          "id": "r.pMuHG16",
+          "title": "岑宁儿",
+          "subtitle": "已加入资料库",
+          "eyebrow": "艺人",
+          "type": "artist",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/artist/r.pMuHG16"
+        },
+        {
+          "id": "r.GeXrsul",
+          "title": "曾静玟",
+          "subtitle": "已加入资料库",
+          "eyebrow": "艺人",
+          "type": "artist",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/artist/r.GeXrsul"
+        }
+      ],
+      "timing": {
+        "hydrationDurationMs": 0,
+        "extractionDurationMs": 0.2,
+        "totalDurationMs": 0.2,
+        "avgTimePerItemMs": 0.004
+      }
+    }
+  ],
+  "timing": {
+    "totalDurationMs": 2265.91,
+    "breakdown": {
+      "navigationDurationMs": 2265.55,
+      "extractionDurationMs": 0.35
+    },
+    "totalCategories": 5,
+    "totalItems": 325,
+    "avgTimePerCategoryMs": 453.18,
+    "avgTimePerItemMs": 6.97
+  }
+}

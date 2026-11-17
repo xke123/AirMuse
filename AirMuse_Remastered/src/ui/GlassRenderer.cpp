@@ -9,6 +9,75 @@ using namespace Gdiplus;
 
 namespace airmuse {
 
+LayeredSurface::~LayeredSurface() {
+    Release();
+}
+
+void LayeredSurface::Release() {
+    if (hdcMem && oldBmp) {
+        SelectObject(hdcMem, oldBmp);
+        oldBmp = nullptr;
+    }
+    if (hBmp) {
+        DeleteObject(hBmp);
+        hBmp = nullptr;
+    }
+    if (hdcMem) {
+        DeleteDC(hdcMem);
+        hdcMem = nullptr;
+    }
+    if (hdcScreen) {
+        ReleaseDC(nullptr, hdcScreen);
+        hdcScreen = nullptr;
+    }
+    widthPx = 0;
+    heightPx = 0;
+}
+
+bool LayeredSurface::Ensure(int wPx, int hPx) {
+    if (wPx <= 0 || hPx <= 0) return false;
+    if (hBmp && widthPx == wPx && heightPx == hPx) return true;
+
+    Release();
+
+    hdcScreen = GetDC(nullptr);
+    if (!hdcScreen) return false;
+    hdcMem = CreateCompatibleDC(hdcScreen);
+    if (!hdcMem) {
+        Release();
+        return false;
+    }
+
+    BITMAPINFO bmi{};
+    bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+    bmi.bmiHeader.biWidth = wPx;
+    bmi.bmiHeader.biHeight = -hPx;
+    bmi.bmiHeader.biPlanes = 1;
+    bmi.bmiHeader.biBitCount = 32;
+    bmi.bmiHeader.biCompression = BI_RGB;
+
+    void* bits = nullptr;
+    hBmp = CreateDIBSection(hdcScreen, &bmi, DIB_RGB_COLORS, &bits, nullptr, 0);
+    if (!hBmp) {
+        Release();
+        return false;
+    }
+    oldBmp = SelectObject(hdcMem, hBmp);
+    widthPx = wPx;
+    heightPx = hPx;
+    return true;
+}
+
+void LayeredSurface::Present(HWND hwnd, int wPx, int hPx, BYTE masterAlpha) {
+    if (!hwnd || !hdcScreen || !hdcMem || !hBmp) return;
+    RECT rcWin{};
+    GetWindowRect(hwnd, &rcWin);
+    POINT ptDst{ rcWin.left, rcWin.top }, ptSrc{ 0, 0 };
+    SIZE szWnd{ wPx, hPx };
+    BLENDFUNCTION bf{ AC_SRC_OVER, 0, masterAlpha, AC_SRC_ALPHA };
+    UpdateLayeredWindow(hwnd, hdcScreen, &ptDst, &szWnd, hdcMem, &ptSrc, 0, &bf, ULW_ALPHA);
+}
+
 void GlassRenderer::EnableFrostedBlur(HWND hwnd, int wPx, int hPx, int dpi, bool mini) {
     int r = ToPx(mini ? 4 : 8, dpi);
     HRGN rgn = CreateRoundRectRgn(ToPx(2, dpi), ToPx(2, dpi), wPx - ToPx(2, dpi), hPx - ToPx(2, dpi), r, r);
@@ -57,6 +126,10 @@ void GlassRenderer::AddRoundedRectPath(GraphicsPath& path, float x, float y, flo
 void GlassRenderer::DrawImageAlpha(Graphics& g, Bitmap* src, RectF const& dst, int sx, int sy, int sw, int sh, float alpha, float brightness) {
     if (!src || alpha <= 0.01f) return;
     alpha = std::clamp(alpha, 0.0f, 1.0f);
+    if (alpha >= 0.995f && std::abs(brightness - 1.0f) < 0.005f) {
+        g.DrawImage(src, dst, static_cast<REAL>(sx), static_cast<REAL>(sy), static_cast<REAL>(sw), static_cast<REAL>(sh), UnitPixel);
+        return;
+    }
     ColorMatrix cm = {{
         {brightness, 0, 0, 0, 0},
         {0, brightness, 0, 0, 0},
@@ -80,7 +153,6 @@ void GlassRenderer::DrawAirPlayGlassFrame(Graphics& g, int dstW, int dstH, float
         const float mH = static_cast<float>(dstH) - mPadY * 2.0f;
         const float r = 2.5f;
 
-        // 1. 外圈柔和深色外发光/投影 (利用四周 3~4px 留白区域)
         for (int i = 3; i >= 1; --i) {
             float exp = static_cast<float>(i) * 0.9f;
             GraphicsPath shadowPath;
@@ -89,7 +161,6 @@ void GlassRenderer::DrawAirPlayGlassFrame(Graphics& g, int dstW, int dstH, float
             g.DrawPath(&shadowPen, &shadowPath);
         }
 
-        // 2. 玻璃主体：全幅自上而下渐变烟熏背景雾（有文字/悬停时整体更深邃，无文字时也有质感暗灰渐变）
         GraphicsPath outer;
         AddRoundedRectPath(outer, mPadX, mPadY, mW, mH, r);
         BYTE aTop = static_cast<BYTE>(135 + 45 * hoverGloss);
@@ -106,14 +177,12 @@ void GlassRenderer::DrawAirPlayGlassFrame(Graphics& g, int dstW, int dstH, float
         glassBrush.SetInterpolationColors(colors, pos, 3);
         g.FillPath(&glassBrush, &outer);
 
-        // 3. 顶部 1px 玻璃高光折射带
         GraphicsState saved = g.Save();
         g.SetClip(&outer);
         Pen topSheen(Color(85, 255, 255, 255), 1.0f);
         g.DrawLine(&topSheen, mPadX + 1.0f, mPadY + 1.0f, mPadX + mW - 1.0f, mPadY + 1.0f);
         g.Restore(saved);
 
-        // 4. 外圈亮白色半透明玻璃边框 + 极细外轮廓线
         Pen outerRimDark(Color(115, 20, 22, 26), 1.0f);
         g.DrawPath(&outerRimDark, &outer);
 
@@ -125,11 +194,9 @@ void GlassRenderer::DrawAirPlayGlassFrame(Graphics& g, int dstW, int dstH, float
     }
 
     const float barH = 18.0f;
-    // 左右严格留出 15px padding 的单层独立玻璃条
     const float gx = padX;
     const float gw = fw;
 
-    // 1. 顶部单层玻璃条（无双层重影）
     {
         GraphicsPath topPath;
         AddRoundedRectPath(topPath, gx, padY, gw, barH + 2.0f, 4.5f);
@@ -139,7 +206,6 @@ void GlassRenderer::DrawAirPlayGlassFrame(Graphics& g, int dstW, int dstH, float
         g.DrawPath(&topBorder, &topPath);
     }
 
-    // 2. 底部单层玻璃条（无双层重影）
     float botY = padY + fh - barH;
     {
         GraphicsPath botPath;
@@ -150,7 +216,6 @@ void GlassRenderer::DrawAirPlayGlassFrame(Graphics& g, int dstW, int dstH, float
         g.DrawPath(&botBorder, &botPath);
     }
 
-    // 3. 中间深色主躯干（自然压在上下玻璃条内缘上）
     float midY = padY + barH;
     float midH = fh - barH * 2.0f;
     if (midH > 0.0f) {
@@ -256,7 +321,6 @@ void GlassRenderer::DrawPlatformLogo(Graphics& g, int platformIdx, RectF const& 
     float cy = r.Y + r.Height * 0.5f;
 
     if (platformIdx == 0) {
-        // Apple Music: 纯白双连音符矢量图标
         Pen beamPen(fg, 1.6f);
         Pen stemPen(fg, 1.35f);
         g.DrawLine(&stemPen, cx - 2.2f, cy + 3.2f, cx - 2.2f, cy - 3.0f);
@@ -266,7 +330,6 @@ void GlassRenderer::DrawPlatformLogo(Graphics& g, int platformIdx, RectF const& 
         g.FillEllipse(&wb, cx - 4.6f, cy + 1.8f, 3.2f, 2.7f);
         g.FillEllipse(&wb, cx + 0.4f, cy + 0.8f, 3.2f, 2.7f);
     } else if (platformIdx == 1) {
-        // Spotify: 纯白三道声波矢量图标
         Pen wave1(fg, 1.45f); wave1.SetStartCap(LineCapRound); wave1.SetEndCap(LineCapRound);
         Pen wave2(fg, 1.30f); wave2.SetStartCap(LineCapRound); wave2.SetEndCap(LineCapRound);
         Pen wave3(fg, 1.15f); wave3.SetStartCap(LineCapRound); wave3.SetEndCap(LineCapRound);
@@ -274,7 +337,6 @@ void GlassRenderer::DrawPlatformLogo(Graphics& g, int platformIdx, RectF const& 
         g.DrawArc(&wave2, cx - 4.1f, cy - 1.1f, 8.2f,  5.0f, 218.0f, 104.0f);
         g.DrawArc(&wave3, cx - 3.0f, cy + 1.3f, 6.0f,  3.8f, 218.0f, 104.0f);
     } else {
-        // QQ 音乐: 纯白单音符矢量图标
         Pen stemPen(fg, 1.5f);
         stemPen.SetStartCap(LineCapRound);
         stemPen.SetEndCap(LineCapRound);
@@ -285,74 +347,187 @@ void GlassRenderer::DrawPlatformLogo(Graphics& g, int platformIdx, RectF const& 
     }
 }
 
-void GlassRenderer::DrawGlyphHaloText(Graphics& g, std::wstring const& text, FontFamily const& ff, float emSize,
-                                      RectF const& rect, StringFormat const& sf, Color textColor, float alphaScale) {
-    if (text.empty() || alphaScale <= 0.02f) return;
+namespace {
 
-    // 1. 提取精确矢量字形轮廓并计算文字实际包围盒
+struct HaloCacheKey {
+    std::wstring text;
+    std::wstring family;
+    int emSizeQ = 0;
+    int rectWQ = 0;
+    int rectHQ = 0;
+    int align = 0;
+    ARGB colorArgb = 0;
+    int scaleQ = 100;
+
+    bool operator==(HaloCacheKey const& o) const {
+        return emSizeQ == o.emSizeQ && rectWQ == o.rectWQ && rectHQ == o.rectHQ &&
+               align == o.align && colorArgb == o.colorArgb && scaleQ == o.scaleQ &&
+               family == o.family && text == o.text;
+    }
+};
+
+struct HaloCacheEntry {
+    HaloCacheKey key;
+    std::unique_ptr<Bitmap> bmp;
+};
+
+constexpr float kHaloPadX = 28.0f;
+constexpr float kHaloPadY = 22.0f;
+
+std::unique_ptr<Bitmap> RenderGlyphHaloToBitmap(std::wstring const& text, FontFamily const& ff, float emSize,
+                                                RectF const& rect, StringFormat const& sf, Color textColor, float scale) {
+    int bmpW = std::max(1, static_cast<int>(std::ceil((rect.Width + kHaloPadX * 2.0f) * scale)));
+    int bmpH = std::max(1, static_cast<int>(std::ceil((rect.Height + kHaloPadY * 2.0f) * scale)));
+
+    auto bmp = std::make_unique<Bitmap>(bmpW, bmpH, PixelFormat32bppPARGB);
+    Graphics bg(bmp.get());
+    bg.Clear(Color(0, 0, 0, 0));
+    bg.ScaleTransform(scale, scale);
+    bg.SetSmoothingMode(SmoothingModeHighQuality);
+    bg.SetTextRenderingHint(TextRenderingHintAntiAlias);
+
+    RectF localRect(kHaloPadX, kHaloPadY, rect.Width, rect.Height);
+
+    StringFormat rawSf;
+    rawSf.SetAlignment(StringAlignmentNear);
+    rawSf.SetLineAlignment(StringAlignmentNear);
+    rawSf.SetFormatFlags(StringFormatFlagsNoWrap | StringFormatFlagsMeasureTrailingSpaces);
+
     GraphicsPath glyphPath;
-    glyphPath.AddString(text.c_str(), -1, &ff, FontStyleBold, emSize, rect, &sf);
+    glyphPath.AddString(text.c_str(), -1, &ff, FontStyleRegular, emSize, PointF(0.0f, 0.0f), &rawSf);
+
     RectF bounds{};
     glyphPath.GetBounds(&bounds);
+    if (bounds.Width <= 0.1f || bounds.Height <= 0.1f) return bmp;
+
+    if (bounds.Width > localRect.Width) {
+        glyphPath.Reset();
+        StringFormat clipSf(&sf);
+        clipSf.SetLineAlignment(StringAlignmentNear);
+        glyphPath.AddString(text.c_str(), -1, &ff, FontStyleRegular, emSize, localRect, &clipSf);
+        glyphPath.GetBounds(&bounds);
+    }
+
+    float targetCx = localRect.X + localRect.Width * 0.5f;
+    float targetCy = localRect.Y + localRect.Height * 0.5f;
+    if (sf.GetAlignment() == StringAlignmentNear) {
+        targetCx = localRect.X + bounds.Width * 0.5f;
+    } else if (sf.GetAlignment() == StringAlignmentFar) {
+        targetCx = localRect.X + localRect.Width - bounds.Width * 0.5f;
+    }
+    float actualCx = bounds.X + bounds.Width * 0.5f;
+    float actualCy = bounds.Y + bounds.Height * 0.5f;
+
+    Matrix alignMat;
+    alignMat.Translate(targetCx - actualCx, targetCy - actualCy);
+    glyphPath.Transform(&alignMat);
+    glyphPath.GetBounds(&bounds);
+
     float cx = bounds.X + bounds.Width * 0.5f;
     float cy = bounds.Y + bounds.Height * 0.5f;
 
-    // 2. 横向“撕扯感”各向异性烟雾拖尾层 (Anisotropic Torn-Fog Smear)
-    //    在水平方向做非对称拉长与微幅上下错位，模拟气流撕扯出的丝缕状暗雾
     struct TearLayer { float dx; float dy; float sx; float width; float alpha; };
     const TearLayer tears[] = {
-        { -16.0f, -0.8f, 1.18f, 11.0f, 11.0f },
-        {  17.5f,  0.6f, 1.20f, 11.5f, 11.0f },
-        { -9.5f,   1.1f, 1.10f,  9.5f, 16.0f },
-        {  10.5f, -1.0f, 1.12f,  9.5f, 16.0f },
-        { -4.5f,  -0.4f, 1.05f,  8.0f, 20.0f },
-        {  5.0f,   0.5f, 1.05f,  8.0f, 20.0f }
+        { -17.0f, -0.7f, 1.18f, 11.5f, 12.0f },
+        {  18.0f,  0.6f, 1.20f, 12.0f, 12.0f },
+        { -10.0f,  1.0f, 1.10f,  9.5f, 17.0f },
+        {  10.5f, -0.9f, 1.12f,  9.5f, 17.0f },
+        { -4.5f,  -0.4f, 1.05f,  8.0f, 22.0f },
+        {  5.0f,   0.4f, 1.05f,  8.0f, 22.0f }
     };
     for (auto const& tl : tears) {
-        BYTE a = static_cast<BYTE>(std::clamp(tl.alpha * alphaScale, 0.0f, 255.0f));
-        if (a == 0) continue;
-        GraphicsState st = g.Save();
-        g.TranslateTransform(cx + tl.dx, cy + tl.dy);
-        g.ScaleTransform(tl.sx, 0.92f);
-        g.TranslateTransform(-cx, -cy);
+        BYTE a = static_cast<BYTE>(std::clamp(tl.alpha, 0.0f, 255.0f));
+        GraphicsState st = bg.Save();
+        bg.TranslateTransform(cx + tl.dx, cy + tl.dy);
+        bg.ScaleTransform(tl.sx, 0.90f);
+        bg.TranslateTransform(-cx, -cy);
         Pen tearPen(Color(a, 14, 16, 20), tl.width);
         tearPen.SetLineJoin(LineJoinRound);
         tearPen.SetMiterLimit(1.0f);
-        g.DrawPath(&tearPen, &glyphPath);
-        g.Restore(st);
+        bg.DrawPath(&tearPen, &glyphPath);
+        bg.Restore(st);
     }
 
-    // 3. 柔和多尺度高斯扩散外发光 (降低峰值透明度，消除一圈圈阶梯感)
     constexpr int kSamples = 12;
     constexpr float kMaxRadius = 18.0f;
     constexpr float kSigma = 7.2f;
-    constexpr float kPeakAlpha = 26.0f;
+    constexpr float kPeakAlpha = 28.0f;
 
     for (int i = kSamples; i >= 1; --i) {
         float t = static_cast<float>(i) / static_cast<float>(kSamples);
         float radius = kMaxRadius * (t * t * 0.6f + t * 0.4f);
         float gaussian = std::exp(-(radius * radius) / (2.0f * kSigma * kSigma));
-        BYTE a = static_cast<BYTE>(std::clamp(kPeakAlpha * gaussian * alphaScale, 0.0f, 255.0f));
+        BYTE a = static_cast<BYTE>(std::clamp(kPeakAlpha * gaussian, 0.0f, 255.0f));
         if (a == 0) continue;
 
         Pen diffPen(Color(a, 14, 16, 20), radius * 2.0f);
         diffPen.SetLineJoin(LineJoinRound);
         diffPen.SetMiterLimit(1.0f);
-        g.DrawPath(&diffPen, &glyphPath);
+        bg.DrawPath(&diffPen, &glyphPath);
     }
 
-    // 4. 极细微暗内嵌边缘，保持字形清晰但不过分生硬
-    BYTE edgeA = static_cast<BYTE>(std::clamp(58.0f * alphaScale, 0.0f, 255.0f));
-    if (edgeA > 0) {
-        Pen rimPen(Color(edgeA, 18, 20, 24), 0.9f);
-        rimPen.SetLineJoin(LineJoinRound);
-        g.DrawPath(&rimPen, &glyphPath);
+    Pen rimPen(Color(38, 18, 20, 24), 0.65f);
+    rimPen.SetLineJoin(LineJoinRound);
+    bg.DrawPath(&rimPen, &glyphPath);
+
+    SolidBrush fill(textColor);
+    bg.FillPath(&fill, &glyphPath);
+    return bmp;
+}
+
+} // namespace
+
+void GlassRenderer::DrawGlyphHaloText(Graphics& g, std::wstring const& text, FontFamily const& ff, float emSize,
+                                      RectF const& rect, StringFormat const& sf, Color textColor, float alphaScale) {
+    if (text.empty() || alphaScale <= 0.02f || rect.Width <= 1.0f || rect.Height <= 1.0f) return;
+
+    Matrix mtx;
+    g.GetTransform(&mtx);
+    REAL elems[6]{};
+    mtx.GetElements(elems);
+    float scale = (elems[0] > 0.1f) ? elems[0] : 1.0f;
+
+    WCHAR ffName[LF_FACESIZE]{};
+    ff.GetFamilyName(ffName);
+
+    HaloCacheKey key;
+    key.text = text;
+    key.family = ffName;
+    key.emSizeQ = static_cast<int>(std::round(emSize * 10.0f));
+    key.rectWQ = static_cast<int>(std::round(rect.Width * 10.0f));
+    key.rectHQ = static_cast<int>(std::round(rect.Height * 10.0f));
+    key.align = static_cast<int>(sf.GetAlignment());
+    key.colorArgb = textColor.GetValue();
+    key.scaleQ = static_cast<int>(std::round(scale * 100.0f));
+
+    static std::vector<HaloCacheEntry> s_cache;
+    Bitmap* cached = nullptr;
+    for (size_t i = 0; i < s_cache.size(); ++i) {
+        if (s_cache[i].key == key) {
+            if (i + 1 < s_cache.size()) {
+                auto entry = std::move(s_cache[i]);
+                s_cache.erase(s_cache.begin() + static_cast<ptrdiff_t>(i));
+                s_cache.push_back(std::move(entry));
+            }
+            cached = s_cache.back().bmp.get();
+            break;
+        }
     }
 
-    // 5. 填充更淡、更通透的浅雾灰色文字
-    BYTE ta = static_cast<BYTE>(std::clamp(static_cast<float>(textColor.GetA()) * alphaScale, 0.0f, 255.0f));
-    SolidBrush fill(Color(ta, textColor.GetR(), textColor.GetG(), textColor.GetB()));
-    g.FillPath(&fill, &glyphPath);
+    if (!cached) {
+        auto bmp = RenderGlyphHaloToBitmap(text, ff, emSize, rect, sf, textColor, scale);
+        cached = bmp.get();
+        if (s_cache.size() >= 24) {
+            s_cache.erase(s_cache.begin());
+        }
+        s_cache.push_back(HaloCacheEntry{ std::move(key), std::move(bmp) });
+    }
+
+    if (cached) {
+        DrawImageAlpha(g, cached,
+                       RectF(rect.X - kHaloPadX, rect.Y - kHaloPadY, rect.Width + kHaloPadX * 2.0f, rect.Height + kHaloPadY * 2.0f),
+                       0, 0, cached->GetWidth(), cached->GetHeight(), alphaScale, 1.0f);
+    }
 }
 
 void GlassRenderer::DrawCapsuleProgress(Graphics& g, RectF const& r, float ratio, bool highlight, bool scrubbing, std::wstring const& scrubTimeText) {
@@ -402,4 +577,3 @@ void GlassRenderer::DrawCapsuleProgress(Graphics& g, RectF const& r, float ratio
 }
 
 } // namespace airmuse
-

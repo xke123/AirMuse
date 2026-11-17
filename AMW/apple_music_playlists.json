@@ -1,0 +1,2251 @@
+﻿{
+  "pageName": "播放列表",
+  "url": "https://amp-api.music.apple.com/v1/me/library/playlists",
+  "capturedAt": "2026-11-17T18:56:27.889Z",
+  "totalCategories": 4,
+  "categories": [
+    {
+      "id": "section-playlists-all",
+      "title": "所有播放列表 (101)",
+      "itemCount": 101,
+      "items": [
+        {
+          "id": "p.MLUk3bdrQ",
+          "title": "喜爱歌曲",
+          "subtitle": "官方智能歌单",
+          "eyebrow": "精选智能",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features116/v4/e3/6e/33/e36e33de-da6c-71e8-dc2e-fae168c924ba/47a3c06a-ab88-4d36-a040-41d730e71d45.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.MLUk3bdrQ",
+          "canEdit": false
+        },
+        {
+          "id": "p.6xZaExkCgZX7LG",
+          "title": "播放列表 2",
+          "subtitle": "自建歌单",
+          "eyebrow": "自建",
+          "type": "playlist",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/playlist/p.6xZaExkCgZX7LG",
+          "canEdit": true
+        },
+        {
+          "id": "p.AWXorqYF81moYR",
+          "title": "艾怡良的音乐告解：忏悔",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features116/v4/f2/ad/21/f2ad21d4-c657-8d46-2a96-73bc48501491/U0MtTVMtV1ctRXZlX0FpLUd1ZXN0X0N1cmF0b3JfUGxheWxpc3Rf5oe65oKULnBuZw.png/160x160SC.DN02.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.AWXorqYF81moYR",
+          "canEdit": false
+        },
+        {
+          "id": "p.AWXorA1s81moYR",
+          "title": "艾怡良的音乐告解：回忆",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features126/v4/a4/72/a3/a472a39c-bc03-b476-feae-5ea80965e9b9/U0MtTVMtV1ctRXZlX0FpLUd1ZXN0X0N1cmF0b3JfUGxheWxpc3Rf5Zue5oa2LnBuZw.png/160x160SC.DN02.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.AWXorA1s81moYR",
+          "canEdit": false
+        },
+        {
+          "id": "p.V7VY3A7FVPKgv0",
+          "title": "艾怡良的音乐告解：偏爱",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features116/v4/d4/4c/e4/d44ce49f-5979-ea86-0710-c944565fd6da/U0MtTVMtV1ctRXZlX0FpLUd1ZXN0X0N1cmF0b3JfUGxheWxpc3Rf5YGP5oSbLnBuZw.png/160x160SC.DN02.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.V7VY3A7FVPKgv0",
+          "canEdit": false
+        },
+        {
+          "id": "p.1YeWa75cbaZQLG",
+          "title": "艾怡良的音乐告解：自省",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features116/v4/85/7b/5d/857b5d30-c4f7-0b7d-8fb1-bf67690cda57/U0MtTVMtV1ctRXZlX0FpLUd1ZXN0X0N1cmF0b3JfUGxheWxpc3Rf6Ieq55yBLnBuZw.png/160x160SC.DN02.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.1YeWa75cbaZQLG",
+          "canEdit": false
+        },
+        {
+          "id": "p.QvDQV35hJRZvL5",
+          "title": "爱不释耳",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/e1/05/c3/e105c3d8-5146-8ee9-8a27-f0d35d7bba21/fa8530bb-a792-4be0-9125-7af9287d1344.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.QvDQV35hJRZvL5",
+          "canEdit": false
+        },
+        {
+          "id": "p.QvDQQK0hJRZvL5",
+          "title": "安静看书的背景音乐",
+          "subtitle": "自建歌单",
+          "eyebrow": "自建",
+          "type": "playlist",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/playlist/p.QvDQQK0hJRZvL5",
+          "canEdit": true
+        },
+        {
+          "id": "p.O1kzld4iDEOg4o",
+          "title": "巴赫与巴洛克",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features116/v4/d4/8c/ab/d48cab53-cc72-df05-2f8d-e96abf48540d/f6823773-2f82-48ac-8ad6-cc72e36d8354.png/160x160SC.DNC01.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.O1kzld4iDEOg4o",
+          "canEdit": false
+        },
+        {
+          "id": "p.LV0PlGxIRdzPWg",
+          "title": "白噪音",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features115/v4/6a/fd/1d/6afd1d5d-3b9c-bb08-bbb7-cf4158906cd2/U0MtTVMtV1ctV2hpdGVfTm9pc2UtQURBTV9JRD0xMzI5NzcwOTkxLnBuZw.png/160x160SC.DN02.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.LV0PlGxIRdzPWg",
+          "canEdit": false
+        },
+        {
+          "id": "p.O1kzE2OFDEOg4o",
+          "title": "坂本龙一代表作",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features126/v4/88/6d/18/886d1838-bd6b-78a1-1def-ee2bebd92e27/tns.culwksry.png/160x160SC.FPESS05.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.O1kzE2OFDEOg4o",
+          "canEdit": false
+        },
+        {
+          "id": "p.LV0PdLZcRdzPWg",
+          "title": "本月必听古典乐",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features116/v4/13/af/cb/13afcbf0-17c9-e1c3-a352-a6ad8902abcf/184cb85d-6dff-47c3-8fdc-f7bdc451ffd7.png/160x160SC.DNC01.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.LV0PdLZcRdzPWg",
+          "canEdit": false
+        },
+        {
+          "id": "p.PkxVBLKhWRp68X",
+          "title": "播放列表",
+          "subtitle": "自建歌单",
+          "eyebrow": "自建",
+          "type": "playlist",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/playlist/p.PkxVBLKhWRp68X",
+          "canEdit": true
+        },
+        {
+          "id": "p.1YeWqOLHbaZQLG",
+          "title": "蔡健雅私藏音乐料理：回味品特调",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features115/v4/f0/90/b6/f090b627-3016-095f-dc6b-24622a3be8fe/contsched.nibcwyqy.png/160x160SC.DN02.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.1YeWqOLHbaZQLG",
+          "canEdit": false
+        },
+        {
+          "id": "p.qQXLPe5FaOLber",
+          "title": "唱响金曲",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/13/d1/56/13d1568f-f0ab-419a-dc02-c80dcb535dbf/1d14717e-0298-4554-b54b-ca434b3a24ec.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.qQXLPe5FaOLber",
+          "canEdit": false
+        },
+        {
+          "id": "p.V7VYLXNtVPKgv0",
+          "title": "沉静",
+          "subtitle": "自建歌单",
+          "eyebrow": "自建",
+          "type": "playlist",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/playlist/p.V7VYLXNtVPKgv0",
+          "canEdit": true
+        },
+        {
+          "id": "p.LV0PEkVIRdzPWg",
+          "title": "陈二豆",
+          "subtitle": "自建歌单",
+          "eyebrow": "自建",
+          "type": "playlist",
+          "artworkUrl": "https://store-035.blobstore.apple.com/sq-mq-us-035-000002/26/c8/ea/26c8ea33-1d9e-61fb-0364-f29067af5301/image?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Date=20261117T185626Z&X-Amz-SignedHeaders=host&X-Amz-Expires=86400&X-Amz-Credential=MKIAZJRVM1CLAZIYJ6OU%2F20261117%2Fstore-035%2Fs3%2Faws4_request&X-Amz-Signature=6d402b60b2e0dd5ab1858dbeabdb3aec587d5716a115114844b3d6259cba832a",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.LV0PEkVIRdzPWg",
+          "canEdit": true
+        },
+        {
+          "id": "p.PkxV4DPcWRp68X",
+          "title": "陈慧琳代表作",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features116/v4/cf/98/79/cf9879d7-fbcd-45fe-c6cc-0f134bc27365/mzl.uiwfuqip.jpg/160x160SC.FPESS05.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.PkxV4DPcWRp68X",
+          "canEdit": false
+        },
+        {
+          "id": "p.1YeWP3kcbaZQLG",
+          "title": "陈佳明",
+          "subtitle": "自建歌单",
+          "eyebrow": "自建",
+          "type": "playlist",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/playlist/p.1YeWP3kcbaZQLG",
+          "canEdit": true
+        },
+        {
+          "id": "p.6xZa4gVigZX7LG",
+          "title": "陈奕迅",
+          "subtitle": "自建歌单",
+          "eyebrow": "自建",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/gen/1200x1200AM.PDCXS16.jpg?c1=C7CABF&c2=ACEADA&c3=D7FD71&c4=4D2745&signature=e198c16d24792ef0465d8856c48f6e75bcde11381b6e0f31c22944169dbec133&t=6ZmI5aWV6L-F&tc=FFFFFF&vkey=1",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.6xZa4gVigZX7LG",
+          "canEdit": true
+        },
+        {
+          "id": "p.V7VY3P0IVPKgv0",
+          "title": "创作人：艾怡良",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features211/v4/35/85/2d/35852dc6-76f5-b4c4-1952-5a08fdc593e8/mzl.ldiudyob.jpg/160x160SC.FPTSW03.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.V7VY3P0IVPKgv0",
+          "canEdit": false
+        },
+        {
+          "id": "p.gek1Z1VTBvxmpW",
+          "title": "创作人：陈珊妮",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features112/v4/23/0c/c1/230cc17b-906f-cca2-54ae-114827d6520d/mzl.gvltcddt.png/160x160SC.FPTSW03.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.gek1Z1VTBvxmpW",
+          "canEdit": false
+        },
+        {
+          "id": "p.gek13dWUBvxmpW",
+          "title": "创作人：陈小霞",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features211/v4/07/e5/91/07e591e0-4d5a-d208-f7ab-74c3bbc81236/mzl.ceskmfvj.jpg/160x160SC.FPTSW03.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.gek13dWUBvxmpW",
+          "canEdit": false
+        },
+        {
+          "id": "p.QvDQQ3RhJRZvL5",
+          "title": "创作人：周杰伦",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/AMCArtistImages211/v4/6d/53/0e/6d530e69-ce17-1c15-7605-b267ef760ea1/ami-identity-8cbee1395c1dbfa4daf6d4c572503010-2026-03-24T12-21-24.021Z_cropped.png/160x160SC.FPTSW03.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.QvDQQ3RhJRZvL5",
+          "canEdit": false
+        },
+        {
+          "id": "p.6xZakeOigZX7LG",
+          "title": "春韶",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/b6/c5/93/b6c59314-8a34-3d36-42fe-038ed748f3a0/6c579cb1-66a2-453e-a979-f076b38d061d.png/160x160SC.DN02.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.6xZakeOigZX7LG",
+          "canEdit": false
+        },
+        {
+          "id": "p.V7VYlBDFVPKgv0",
+          "title": "纯粹 · 励志",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features115/v4/77/47/65/774765f4-1637-83be-c8c0-5e7d90dee202/U0MtTVMtV1ctUHVyZV9Nb3RpdmF0aW9uLUFEQU1fSUQ9MTI4NzEwMjE2NS5wbmc.png/160x160SC.DN02.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.V7VYlBDFVPKgv0",
+          "canEdit": false
+        },
+        {
+          "id": "p.AWXo3PzF81moYR",
+          "title": "纯粹・放松",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features115/v4/92/e9/24/92e9248f-1300-9707-57b8-1df13f004c45/U0MtTVMtV1ctUHVyZV9DaGlsbC1BREFNX0lEPTExNDYwMzkzNTYucG5n.png/160x160SC.DN02.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.AWXo3PzF81moYR",
+          "canEdit": false
+        },
+        {
+          "id": "p.6xZam5vugZX7LG",
+          "title": "匆匆",
+          "subtitle": "自建歌单",
+          "eyebrow": "自建",
+          "type": "playlist",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/playlist/p.6xZam5vugZX7LG",
+          "canEdit": true
+        },
+        {
+          "id": "p.gek1ZkqsBvxmpW",
+          "title": "邓紫棋",
+          "subtitle": "自建歌单",
+          "eyebrow": "自建",
+          "type": "playlist",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/playlist/p.gek1ZkqsBvxmpW",
+          "canEdit": true
+        },
+        {
+          "id": "p.qQXL2XztaOLber",
+          "title": "邓紫棋代表作",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features122/v4/fc/4b/eb/fc4bebe6-9b10-481e-b406-3d0e299943cf/mzl.pjxmoluh.png/160x160SC.FPESS05.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.qQXL2XztaOLber",
+          "canEdit": false
+        },
+        {
+          "id": "p.AWXoBo4T81moYR",
+          "title": "第 28 届台湾金曲奖歌单",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features117/v4/b7/95/05/b79505b0-ba9d-8086-4dd0-790023b7e11d/pr_source.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.AWXoBo4T81moYR",
+          "canEdit": false
+        },
+        {
+          "id": "p.gek1L4zhBvxmpW",
+          "title": "第 29 届台湾金曲奖",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features125/v4/8b/97/8b/8b978bb1-6bd1-8b0b-32a2-06749c931530/pr_source.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.gek1L4zhBvxmpW",
+          "canEdit": false
+        },
+        {
+          "id": "p.6xZaEqaIgZX7LG",
+          "title": "第 30 届金曲奖",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features113/v4/5e/14/b4/5e14b4a1-0c48-eabf-d55c-c232046134e6/pr_source.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.6xZaEqaIgZX7LG",
+          "canEdit": false
+        },
+        {
+          "id": "p.PkxVPzeiWRp68X",
+          "title": "第 31 届金曲奖",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features124/v4/5f/3c/1e/5f3c1ecc-b659-e5b6-a0af-fa33bfe750de/U0MtTVMtV1ctR01BXzIwMjAucG5n.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.PkxVPzeiWRp68X",
+          "canEdit": false
+        },
+        {
+          "id": "p.V7VYlrbCVPKgv0",
+          "title": "电影中的歌",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features125/v4/39/f8/4f/39f84fe1-918e-b0fd-c9e4-b8875448f57a/contsched.rzlkuqtb.png/160x160SC.DN02.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.V7VYlrbCVPKgv0",
+          "canEdit": false
+        },
+        {
+          "id": "p.LV0PJ9EiRdzPWg",
+          "title": "丁世光：我的音乐神经",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features115/v4/2e/ec/77/2eec7788-afee-7963-c0c3-24625933113c/contsched.dpnaxrvp.png/160x160SC.DN02.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.LV0PJ9EiRdzPWg",
+          "canEdit": false
+        },
+        {
+          "id": "p.6xZa1WxcgZX7LG",
+          "title": "动漫音乐前线",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features125/v4/0a/ee/f4/0aeef4dc-84ec-e5fd-0f09-6f6e2a1b391f/U0MtTVMtV1ctSGFrZW5fQW5pc29uZy1BREFNX0lEPTEwNTA4NDg4MDUucG5n.png/160x160SC.DN02.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.6xZa1WxcgZX7LG",
+          "canEdit": false
+        },
+        {
+          "id": "p.LV0PxM3uRdzPWg",
+          "title": "抖音 2025 年度热歌榜",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/a1/e8/59/a1e8590e-c7ab-564b-8462-f45fce53d10b/bac8c595-fbe0-4b18-bae9-cd9743207c5e.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.LV0PxM3uRdzPWg",
+          "canEdit": false
+        },
+        {
+          "id": "p.V7VYG7WcVPKgv0",
+          "title": "抖音2018",
+          "subtitle": "自建歌单",
+          "eyebrow": "自建",
+          "type": "playlist",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/playlist/p.V7VYG7WcVPKgv0",
+          "canEdit": true
+        },
+        {
+          "id": "p.LV0PdNbcRdzPWg",
+          "title": "豆豆，不要动！",
+          "subtitle": "自建歌单",
+          "eyebrow": "自建",
+          "type": "playlist",
+          "artworkUrl": "https://store-035.blobstore.apple.com/sq-mq-us-035-000002/a9/f7/3a/a9f73a87-20b7-e60f-ea7b-04300b9de410/image?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Date=20261117T185626Z&X-Amz-SignedHeaders=host&X-Amz-Expires=86400&X-Amz-Credential=MKIAZJRVM1CLAZIYJ6OU%2F20261117%2Fstore-035%2Fs3%2Faws4_request&X-Amz-Signature=552dc062c4a28d080f2f389a80c91f5a965b8aa239ae504d7a88a5f60c43ea8a",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.LV0PdNbcRdzPWg",
+          "canEdit": true
+        },
+        {
+          "id": "p.qQXL4ROUaOLber",
+          "title": "《Fate/stay night》代表作",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features115/v4/ee/ac/83/eeac83c7-004c-97fd-59a6-3d150d49f02a/pr_source.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.qQXL4ROUaOLber",
+          "canEdit": false
+        },
+        {
+          "id": "p.QvDQ3zXIJRZvL5",
+          "title": "10杂辑",
+          "subtitle": "自建歌单",
+          "eyebrow": "自建",
+          "type": "playlist",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/playlist/p.QvDQ3zXIJRZvL5",
+          "canEdit": true
+        },
+        {
+          "id": "p.PkxV5NYUWRp68X",
+          "title": "未命名歌单",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/playlist/p.PkxV5NYUWRp68X",
+          "canEdit": false
+        },
+        {
+          "id": "p.PkxV53zUWRp68X",
+          "title": "2010 年代流行乐代表作品",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/18/a9/56/18a9560c-84ee-1e96-1278-3229728b8c5b/39f932dd-3dee-4ed1-8170-150ef34314c6.png/160x160SC.DN02.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.PkxV53zUWRp68X",
+          "canEdit": false
+        },
+        {
+          "id": "p.LV0PEoPCRdzPWg",
+          "title": "2010 年代流行乐代表作品 1",
+          "subtitle": "自建歌单",
+          "eyebrow": "自建",
+          "type": "playlist",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/playlist/p.LV0PEoPCRdzPWg",
+          "canEdit": true
+        },
+        {
+          "id": "p.gek1LZWSBvxmpW",
+          "title": "2010 年代情歌代表作品",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/a6/1c/8b/a61c8b1a-d623-852c-5f60-8de7c9b625bf/09612058-7227-43d2-8c41-b4ef2a36e994.png/160x160SC.DN02.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.gek1LZWSBvxmpW",
+          "canEdit": false
+        },
+        {
+          "id": "p.QvDQPx5uJRZvL5",
+          "title": "2010 年代日本动漫音乐代表作品",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features221/v4/34/1d/83/341d83e3-3e5b-dda5-246c-23856e712396/af9e5b39-7a02-41c5-aafc-ebf782ce888a.png/160x160SC.DN02.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.QvDQPx5uJRZvL5",
+          "canEdit": false
+        },
+        {
+          "id": "p.QvDQaNrIJRZvL5",
+          "title": "2010 pop",
+          "subtitle": "自建歌单",
+          "eyebrow": "自建",
+          "type": "playlist",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/playlist/p.QvDQaNrIJRZvL5",
+          "canEdit": true
+        },
+        {
+          "id": "p.6xZa1V6IgZX7LG",
+          "title": "2013 畅销金曲",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features71/v4/b2/d0/f3/b2d0f3cc-4798-5183-9747-449b8c7b2aa3/pr_source.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.6xZa1V6IgZX7LG",
+          "canEdit": false
+        },
+        {
+          "id": "p.PkxVBekFWRp68X",
+          "title": "2016 金曲奖提名作品",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features60/v4/91/2c/7b/912c7b83-d171-a141-3492-d3841e95e808/pr_source.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.PkxVBekFWRp68X",
+          "canEdit": false
+        },
+        {
+          "id": "p.PkxVVWotWRp68X",
+          "title": "2016 热门歌曲",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features115/v4/39/9d/11/399d11c9-9b0c-5272-598e-2e0e6f0db950/U0MtTVMtV1ctVG9wX1NvbmdzX29mXzIwMTYtQURBTV9JRD0xMTc3MTA3MjkxLnBuZw.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.PkxVVWotWRp68X",
+          "canEdit": false
+        },
+        {
+          "id": "p.O1kzzNVFDEOg4o",
+          "title": "2016美国公告牌Billboard单曲年榜",
+          "subtitle": "自建歌单",
+          "eyebrow": "自建",
+          "type": "playlist",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/playlist/p.O1kzzNVFDEOg4o",
+          "canEdit": true
+        },
+        {
+          "id": "p.LV0PP63hRdzPWg",
+          "title": "2016年上半年动漫新番歌曲精选",
+          "subtitle": "自建歌单",
+          "eyebrow": "自建",
+          "type": "playlist",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/playlist/p.LV0PP63hRdzPWg",
+          "canEdit": true
+        },
+        {
+          "id": "p.LV0PPXZiRdzPWg",
+          "title": "2016上 新番",
+          "subtitle": "自建歌单",
+          "eyebrow": "自建",
+          "type": "playlist",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/playlist/p.LV0PPXZiRdzPWg",
+          "canEdit": true
+        },
+        {
+          "id": "p.QvDQQkbIJRZvL5",
+          "title": "2016新番动漫OP&ED",
+          "subtitle": "自建歌单",
+          "eyebrow": "自建",
+          "type": "playlist",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/playlist/p.QvDQQkbIJRZvL5",
+          "canEdit": true
+        },
+        {
+          "id": "p.PkxVl6kUWRp68X",
+          "title": "未命名歌单",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/playlist/p.PkxVl6kUWRp68X",
+          "canEdit": false
+        },
+        {
+          "id": "p.1YeWGopibaZQLG",
+          "title": "2017 热门歌曲",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features118/v4/fc/63/d7/fc63d715-4328-9ef5-736e-47c2fa2dffd6/pr_source.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.1YeWGopibaZQLG",
+          "canEdit": false
+        },
+        {
+          "id": "p.O1kzPB6cDEOg4o",
+          "title": "2017 夏日之声",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/iTFbhmm_IH3K5BSYyjmfXg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.O1kzPB6cDEOg4o",
+          "canEdit": false
+        },
+        {
+          "id": "p.AWXo3eQC81moYR",
+          "title": "2018 乐年歌单",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features115/v4/8f/9e/db/8f9edb80-b915-8ce7-2c61-3329b79a34f9/cHJfc291cmNlLTEyLnBuZw.png/160x160SC.DN02.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.AWXo3eQC81moYR",
+          "canEdit": false
+        },
+        {
+          "id": "p.ZOAXDOxtG5pJbx",
+          "title": "未命名歌单",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/playlist/p.ZOAXDOxtG5pJbx",
+          "canEdit": false
+        },
+        {
+          "id": "p.gek1LA6iBvxmpW",
+          "title": "2018 EDC 电子音乐节",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features128/v4/11/1a/f3/111af3b6-2713-209b-9726-a08fcbb729eb/pr_source.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.gek1LA6iBvxmpW",
+          "canEdit": false
+        },
+        {
+          "id": "p.qQXL29puaOLber",
+          "title": "2019 年度最佳 Top 100",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features123/v4/79/a3/cf/79a3cf2c-cfbd-e78e-d133-e4862b7f7806/pr_source.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.qQXL29puaOLber",
+          "canEdit": false
+        },
+        {
+          "id": "p.QvDQPvviJRZvL5",
+          "title": "2020 年度最佳 Top 100",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features124/v4/45/2b/07/452b0706-fd69-a8e6-f623-e01ac34f17bf/U0MtTVMtQ0hOLVRoZV9Ub3BfU29uZ3Nfb2ZfMjAyMC1BREFNX0lEPTE1NDAzNDQ5MTQucG5n.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.QvDQPvviJRZvL5",
+          "canEdit": false
+        },
+        {
+          "id": "p.PkxVPEkiWRp68X",
+          "title": "2020 年度最热歌曲：全球",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features124/v4/27/d2/af/27d2afbd-bfc6-3359-1215-1db0e6065656/U0MtTVMtQ0hOLVRvcF8xMDBfU29uZ3NfMjAyMF9HbG9iYWwtQURBTV9JRD0xNTM5NzM4Mjk1LnBuZw.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.PkxVPEkiWRp68X",
+          "canEdit": false
+        },
+        {
+          "id": "p.LV0PE71iRdzPWg",
+          "title": "2020 年度最热歌曲：全球",
+          "subtitle": "自建歌单",
+          "eyebrow": "自建",
+          "type": "playlist",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/playlist/p.LV0PE71iRdzPWg",
+          "canEdit": true
+        },
+        {
+          "id": "p.O1kzgb6tDEOg4o",
+          "title": "2021 年度最热歌曲：中国大陆",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features116/v4/05/85/b0/0585b0a2-70a2-2557-192b-8c1cfe7acf56/U0MtTVMtQ0hOLVRvcF8xMDBfTG9jYWxfMjAyMS1BREFNX0lEPTE1Mzk3NDQwMTMucG5n.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.O1kzgb6tDEOg4o",
+          "canEdit": false
+        },
+        {
+          "id": "p.AWXokXJt81moYR",
+          "title": "2021金曲獎入圍作品（演唱類）",
+          "subtitle": "自建歌单",
+          "eyebrow": "自建",
+          "type": "playlist",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/playlist/p.AWXokXJt81moYR",
+          "canEdit": true
+        },
+        {
+          "id": "p.ZOAXBobhG5pJbx",
+          "title": "2022 年度最热歌曲：台湾地区",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features122/v4/79/99/8c/79998c65-b3e3-9fde-2fd0-42cf1922a73b/ab1a15ec-261b-4b64-8d33-df83ad40f917.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.ZOAXBobhG5pJbx",
+          "canEdit": false
+        },
+        {
+          "id": "p.1YeW73YtbaZQLG",
+          "title": "2023 年度最佳 TOP 100",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features126/v4/96/4d/82/964d826f-a053-0ff2-79da-cd0f191e5aad/f02122cb-0e97-4d05-bff8-f8ba8f565909.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.1YeW73YtbaZQLG",
+          "canEdit": false
+        },
+        {
+          "id": "p.QvDQR9buJRZvL5",
+          "title": "2026 年 3 月抖音热歌榜",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/23/55/f7/2355f7b1-fa9d-41cd-b64f-9fc813f0d7b6/5cd80b78-0045-4068-b799-da7244f51477.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.QvDQR9buJRZvL5",
+          "canEdit": false
+        },
+        {
+          "id": "p.6xZak1dCgZX7LG",
+          "title": "2026 年 9 月抖音热歌榜",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/9a/3b/c0/9a3bc076-59e2-9e98-fa18-d9abeafb812e/7d63a5bd-e7a0-4d55-96f0-bdbc6b869c25.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.6xZak1dCgZX7LG",
+          "canEdit": false
+        },
+        {
+          "id": "p.gek1B3KtBvxmpW",
+          "title": "阿桑 - Listen To HIM",
+          "subtitle": "自建歌单",
+          "eyebrow": "自建",
+          "type": "playlist",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/playlist/p.gek1B3KtBvxmpW",
+          "canEdit": true
+        },
+        {
+          "id": "p.O1kzggocDEOg4o",
+          "title": "方大同：情歌精选",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/AMCArtistImages221/v4/d9/f7/61/d9f7618e-3772-4089-b24a-da79025a4186/0e242e96-3bec-4506-af0b-e6e138578346_ami-identity-588119312477b59f89e8b3cc47b71214-2024-08-23T08-05-52.560Z_cropped.png/160x160SC.FPLS04.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.O1kzggocDEOg4o",
+          "canEdit": false
+        },
+        {
+          "id": "p.PkxVLLeIWRp68X",
+          "title": "放松歌单",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/8f/4f/49/8f4f493d-c8d2-afb8-98ce-071755c21294/8587f31f-0289-41aa-ad9e-af6689d39e7e.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.PkxVLLeIWRp68X",
+          "canEdit": false
+        },
+        {
+          "id": "p.QvDQa7MhJRZvL5",
+          "title": "飞儿乐团：情歌精选",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features115/v4/22/bc/48/22bc481c-7ab2-30b1-b4b2-9c8ab65a4013/mzl.lydlcmlx.jpg/160x160SC.FPLS04.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.QvDQa7MhJRZvL5",
+          "canEdit": false
+        },
+        {
+          "id": "p.qQXL7BOTaOLber",
+          "title": "钢琴休憩小站",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features125/v4/dc/47/7c/dc477c6f-9029-bd1c-8e89-87b04042a55b/U0MtTVMtV1ctUGlhbm9fQ2hpbGwtQURBTV9JRD0xMDcyODMxMzA0LnBuZw.png/160x160SC.DNC01.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.qQXL7BOTaOLber",
+          "canEdit": false
+        },
+        {
+          "id": "p.1YeWJYkfbaZQLG",
+          "title": "歌坛天后代表作品",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/d1/9d/07/d19d071f-cd15-8438-b021-9821f56994c8/5ee15a07-382b-446b-a6be-ec014c0e4c2b.png/160x160SC.DN02.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.1YeWJYkfbaZQLG",
+          "canEdit": false
+        },
+        {
+          "id": "p.V7VYp5bSVPKgv0",
+          "title": "古典乐潮",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/c2/e4/0d/c2e40dfc-78fc-5553-7205-802f0daae04c/213b6704-ebd7-4634-bb26-8605d319f9d3.png/160x160SC.DNC01.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.V7VYp5bSVPKgv0",
+          "canEdit": false
+        },
+        {
+          "id": "p.gek1VBzUBvxmpW",
+          "title": "古装剧金曲",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features211/v4/71/0e/da/710eda45-e11d-6fdc-5e8d-89e3c08ce20a/d7ee14b0-ee2a-4ffb-b34f-799bae38e8f6.png/160x160SC.DN02.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.gek1VBzUBvxmpW",
+          "canEdit": false
+        },
+        {
+          "id": "p.ZOAXZlbiG5pJbx",
+          "title": "关于我爱你",
+          "subtitle": "自建歌单",
+          "eyebrow": "自建",
+          "type": "playlist",
+          "artworkUrl": "https://store-033.blobstore.apple.com/sq-mq-us-033-000002/64/16/1e/64161ec1-6afe-fb5c-27c9-2bc9c45936a7/image?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Date=20261117T185626Z&X-Amz-SignedHeaders=host&X-Amz-Expires=86400&X-Amz-Credential=MKIAU0HKO2RBEAT0UMZS%2F20261117%2Fstore-033%2Fs3%2Faws4_request&X-Amz-Signature=72f652a88937a1393d1dc1f33320e8813b51a82717bb1a315e456efd0de15549",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.ZOAXZlbiG5pJbx",
+          "canEdit": true
+        },
+        {
+          "id": "p.6xZak4JcgZX7LG",
+          "title": "今日热门：2026 年度最佳",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/b4/e0/39/b4e03955-0bdc-92b6-8fea-953077b384e4/bf5a5448-12c8-46d8-9235-1b15612a10dc.png/160x160SC.DN02.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.6xZak4JcgZX7LG",
+          "canEdit": false
+        },
+        {
+          "id": "p.qQXLvNKhaOLber",
+          "title": "滚石爱情故事",
+          "subtitle": "自建歌单",
+          "eyebrow": "自建",
+          "type": "playlist",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/playlist/p.qQXLvNKhaOLber",
+          "canEdit": true
+        },
+        {
+          "id": "p.gek1MQgiBvxmpW",
+          "title": "国语流行",
+          "subtitle": "自建歌单",
+          "eyebrow": "自建",
+          "type": "playlist",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/playlist/p.gek1MQgiBvxmpW",
+          "canEdit": true
+        },
+        {
+          "id": "p.V7VYGYMfVPKgv0",
+          "title": "国语情歌精选",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features115/v4/d8/91/49/d8914917-054b-4d20-085c-6de88137e122/U0MtTVMtQ0hOLU1hbmRvcG9wX0xvdmVfU29uZ3MtQURBTV9JRD0xMTI2MTM1NzEwLnBuZw.png/160x160SC.DN02.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.V7VYGYMfVPKgv0",
+          "canEdit": false
+        },
+        {
+          "id": "p.V7VY8bDSVPKgv0",
+          "title": "国语情歌男歌手",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features71/v4/57/f2/7d/57f27dfa-a39f-b951-e6af-a34e87622805/pr_source.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.V7VY8bDSVPKgv0",
+          "canEdit": false
+        },
+        {
+          "id": "p.1YeW8B8cbaZQLG",
+          "title": "未命名歌单",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/playlist/p.1YeW8B8cbaZQLG",
+          "canEdit": false
+        },
+        {
+          "id": "p.qQXLWgOHaOLber",
+          "title": "黑神话·悟空",
+          "subtitle": "自建歌单",
+          "eyebrow": "自建",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/gen/1200x1200AM.PDCXS14.jpg?c1=FFFFC2&c2=FFFFC1&c3=FFFF8D&c4=0C0C0A&signature=a3cd1dd8dc8181e527556548fc9e113a579680618fbec239c41c015143293281&t=6buR56We6K-dwrfmgp_nqbo%3D&tc=FFFFFF&vkey=1",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.qQXLWgOHaOLber",
+          "canEdit": true
+        },
+        {
+          "id": "p.6xZaaNOigZX7LG",
+          "title": "华语优质女声 | 感动不用歇斯底里",
+          "subtitle": "自建歌单",
+          "eyebrow": "自建",
+          "type": "playlist",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/playlist/p.6xZaaNOigZX7LG",
+          "canEdit": true
+        },
+        {
+          "id": "p.gek11RKHBvxmpW",
+          "title": "吉卜力工作室代表作品",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/2f/7e/d1/2f7ed1ce-ba59-67c3-5eef-758772d61e46/f50fffa6-9b06-4719-834d-c951cfe9d267.png/160x160SC.DN02.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.gek11RKHBvxmpW",
+          "canEdit": false
+        },
+        {
+          "id": "p.PkxVLYYcWRp68X",
+          "title": "家家：情歌精选",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features221/v4/80/13/95/80139505-919f-195a-7618-db6cda126fc3/mzl.wuaqehbv.png/160x160SC.FPLS04.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.PkxVLYYcWRp68X",
+          "canEdit": false
+        },
+        {
+          "id": "p.qQXLL6LuaOLber",
+          "title": "今日不插电",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features125/v4/1a/9a/73/1a9a7339-bed4-899e-ca36-749c349bd3cb/U0MtTVMtV1ctVG9kYXlfc19BY291c3RpYy1BREFNX0lEPTEwMDQ3OTY3MDkucG5n.png/160x160SC.DN02.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.qQXLL6LuaOLber",
+          "canEdit": false
+        },
+        {
+          "id": "p.gek132GSBvxmpW",
+          "title": "今日全球热歌",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features125/v4/93/7a/5f/937a5f9e-6c2d-54a4-5d81-8b51ca0f2c08/U0MtTVMtV1ctSW50ZXJuYXRpb25hbF9IaXRzX1RvZGF5LUFEQU1fSUQ9MTE0OTIzMDE0Mi5wbmc.png/160x160SC.DN02.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.gek132GSBvxmpW",
+          "canEdit": false
+        },
+        {
+          "id": "p.qQXL3M5iaOLber",
+          "title": "今日热门",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/e5/91/b0/e591b0f7-7669-818b-bdb9-b278e7c3bbee/469cd7a6-04c9-4516-a17d-b5ba82b51e22.png/160x160SC.DN02.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.qQXL3M5iaOLber",
+          "canEdit": false
+        },
+        {
+          "id": "p.LV0PPEECRdzPWg",
+          "title": "今日最佳",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/a4/5d/0c/a45d0c54-9fad-e0e3-fb2c-d841157f1ba1/049926a1-1382-4864-a84f-222b99e0d4b8.png/160x160SC.DN02.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.LV0PPEECRdzPWg",
+          "canEdit": false
+        },
+        {
+          "id": "p.1YeWqBXSbaZQLG",
+          "title": "精选",
+          "subtitle": "自建歌单",
+          "eyebrow": "自建",
+          "type": "playlist",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/playlist/p.1YeWqBXSbaZQLG",
+          "canEdit": true
+        },
+        {
+          "id": "p.AWXole1I81moYR",
+          "title": "就不睡",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/playlist/p.AWXole1I81moYR",
+          "canEdit": false
+        },
+        {
+          "id": "p.O1kzlrafDEOg4o",
+          "title": "剧集中的歌",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features115/v4/80/c8/a7/80c8a7cb-162d-311d-e8e3-8c4c8e65ad43/contsched.tiontllc.png/160x160SC.DN02.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.O1kzlrafDEOg4o",
+          "canEdit": false
+        },
+        {
+          "id": "p.gek11R6TBvxmpW",
+          "title": "爵士动向",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features115/v4/6d/f9/08/6df908d5-9d24-61cc-36f6-82d742abead4/U0MtTVMtV1ctSmF6el9DdXJyZW50cy1BREFNX0lEPTEwMDQ3OTUzNjkucG5n.png/160x160SC.DN02.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.gek11R6TBvxmpW",
+          "canEdit": false
+        },
+        {
+          "id": "p.PkxVl5pTWRp68X",
+          "title": "开足马力，全速前进",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features116/v4/5a/50/3b/5a503b5b-60a9-4ed0-9ca1-ed1640982dd3/f1008960-7e27-4c1b-8279-a7c6ba57c75e.png/160x160SC.DN02.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.PkxVl5pTWRp68X",
+          "canEdit": false
+        },
+        {
+          "id": "p.qQXLP0rsaOLber",
+          "title": "空间音频体验：C-Pop",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/83/a2/44/83a244d6-288d-1033-732a-d5167a131d73/b5164ce4-17f0-400a-8030-9bb125ae8fc6.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.qQXLP0rsaOLber",
+          "canEdit": false
+        },
+        {
+          "id": "p.O1kzlm6TDEOg4o",
+          "title": "浪漫钢琴代表作品",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/30/c6/36/30c63686-928e-4458-abfd-20665c1ce148/c3cee76b-c343-4dca-a18a-6bed0a60acef.png/160x160SC.DNC01.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.O1kzlm6TDEOg4o",
+          "canEdit": false
+        }
+      ],
+      "timing": {
+        "hydrationDurationMs": 0,
+        "extractionDurationMs": 0.2,
+        "totalDurationMs": 0.2,
+        "avgTimePerItemMs": 0.002
+      }
+    },
+    {
+      "id": "section-playlists-mfy",
+      "title": "特别为你推荐 (16)",
+      "itemCount": 16,
+      "items": [
+        {
+          "id": "p.QvDQV35hJRZvL5",
+          "title": "爱不释耳",
+          "subtitle": "特别为你推荐",
+          "eyebrow": "专属定制",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/e1/05/c3/e105c3d8-5146-8ee9-8a27-f0d35d7bba21/fa8530bb-a792-4be0-9125-7af9287d1344.png/160x160cc.jpg",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.QvDQV35hJRZvL5",
+          "canEdit": false
+        },
+        {
+          "id": "p.PkxVLLeIWRp68X",
+          "title": "放松歌单",
+          "subtitle": "特别为你推荐",
+          "eyebrow": "专属定制",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/8f/4f/49/8f4f493d-c8d2-afb8-98ce-071755c21294/8587f31f-0289-41aa-ad9e-af6689d39e7e.png/160x160cc.jpg",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.PkxVLLeIWRp68X",
+          "canEdit": false
+        },
+        {
+          "id": "p.LV0PlZZcRdzPWg",
+          "title": "能量充电",
+          "subtitle": "特别为你推荐",
+          "eyebrow": "专属定制",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/81/95/73/8195734d-b697-d7d6-f688-db6e9a56a34f/c586352a-9f79-49a7-a1c8-ed6fd1c3d814.png/160x160cc.jpg",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.LV0PlZZcRdzPWg",
+          "canEdit": false
+        },
+        {
+          "id": "p.LV0PPv3CRdzPWg",
+          "title": "你的精选集",
+          "subtitle": "特别为你推荐",
+          "eyebrow": "专属定制",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/cd/62/0c/cd620c4b-bac6-d29c-8b62-c131bbece2e2/8028b2d5-b35b-4eaf-bd6f-0dbf23914590.png/160x160cc.jpg",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.LV0PPv3CRdzPWg",
+          "canEdit": false
+        },
+        {
+          "id": "p.PkxVV8vIWRp68X",
+          "title": "音乐新发现",
+          "subtitle": "特别为你推荐",
+          "eyebrow": "专属定制",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/b3/97/c7/b397c7d9-428a-12f0-1225-5ffeb23b7e43/709074d7-9862-4599-9b8d-dcb217d953f9.png/160x160cc.jpg",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.PkxVV8vIWRp68X",
+          "canEdit": false
+        },
+        {
+          "id": "p.O1kzvQ1iDEOg4o",
+          "title": "音乐回忆：历年总览",
+          "subtitle": "特别为你推荐",
+          "eyebrow": "专属定制",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/12/ff/83/12ff83eb-90d4-f77f-f9ef-f727ae2bc252/64299c7e-6fe2-4963-8c3b-cdec9b8a0041.png/160x160cc.jpg",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.O1kzvQ1iDEOg4o",
+          "canEdit": false
+        },
+        {
+          "id": "p.gek1VO6SBvxmpW",
+          "title": "音乐回忆 2025",
+          "subtitle": "特别为你推荐",
+          "eyebrow": "专属定制",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/e6/0f/3b/e60f3b4f-89cd-fa43-8617-e23b91bffd12/8db25351-cf07-40e1-9a53-dabda942538a.png/160x160cc.jpg",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.gek1VO6SBvxmpW",
+          "canEdit": false
+        },
+        {
+          "id": "p.AWXogNzU81moYR",
+          "title": "音乐回忆 2024",
+          "subtitle": "特别为你推荐",
+          "eyebrow": "专属定制",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/10/8c/2a/108c2aab-1ddd-8860-a2c9-b8a2fe3e7036/c92fc898-d79a-413e-9d12-c5e7c5182c80.png/160x160cc.jpg",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.AWXogNzU81moYR",
+          "canEdit": false
+        },
+        {
+          "id": "p.ZOAXB6eUG5pJbx",
+          "title": "音乐回忆 2023",
+          "subtitle": "特别为你推荐",
+          "eyebrow": "专属定制",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/0b/28/db/0b28dbaa-0f32-1977-da7f-326036662d6d/d1035b35-ee02-4cbe-9ac4-5f98c264899a.png/160x160cc.jpg",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.ZOAXB6eUG5pJbx",
+          "canEdit": false
+        },
+        {
+          "id": "p.qQXLWoQtaOLber",
+          "title": "音乐回忆 2022",
+          "subtitle": "特别为你推荐",
+          "eyebrow": "专属定制",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/85/72/b1/8572b1da-b68c-1a2e-db84-566d2ab3ba98/c0d87624-965b-45f1-a343-84ecfd499e54.png/160x160cc.jpg",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.qQXLWoQtaOLber",
+          "canEdit": false
+        },
+        {
+          "id": "p.O1kzgkzsDEOg4o",
+          "title": "音乐回忆 2021",
+          "subtitle": "特别为你推荐",
+          "eyebrow": "专属定制",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/e2/2d/4c/e22d4cab-a8ca-a890-8d3c-e4e200627c67/e389ad7c-6256-4746-8e13-3eb43537038f.png/160x160cc.jpg",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.O1kzgkzsDEOg4o",
+          "canEdit": false
+        },
+        {
+          "id": "p.QvDQ346iJRZvL5",
+          "title": "音乐回忆 2020",
+          "subtitle": "特别为你推荐",
+          "eyebrow": "专属定制",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/e8/dd/02/e8dd0286-0b5b-8871-e024-59f18cdca46a/d901693b-5648-4d70-9551-48feb6c05f31.png/160x160cc.jpg",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.QvDQ346iJRZvL5",
+          "canEdit": false
+        },
+        {
+          "id": "p.6xZa8baCgZX7LG",
+          "title": "音乐回忆 2019",
+          "subtitle": "特别为你推荐",
+          "eyebrow": "专属定制",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/22/f8/86/22f8864d-d282-5a92-fbed-d3da27b9f84c/d1e752f8-7741-4c7f-8b28-754570838edc.png/160x160cc.jpg",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.6xZa8baCgZX7LG",
+          "canEdit": false
+        },
+        {
+          "id": "p.gek1DQGuBvxmpW",
+          "title": "音乐回忆 2018",
+          "subtitle": "特别为你推荐",
+          "eyebrow": "专属定制",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/9f/bd/c2/9fbdc291-ea22-4926-26ee-9599de876269/7de514db-7732-4bf4-b89c-29c571ebab7a.png/160x160cc.jpg",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.gek1DQGuBvxmpW",
+          "canEdit": false
+        },
+        {
+          "id": "p.PkxV91KSWRp68X",
+          "title": "音乐回忆 2017",
+          "subtitle": "特别为你推荐",
+          "eyebrow": "专属定制",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/e6/bf/b8/e6bfb843-a01d-b0a8-3aa8-5ab06e48c0c5/3d01c346-9856-4623-a274-50b45195fbef.png/160x160cc.jpg",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.PkxV91KSWRp68X",
+          "canEdit": false
+        },
+        {
+          "id": "p.LV0PgAqhRdzPWg",
+          "title": "音乐回忆 2016",
+          "subtitle": "特别为你推荐",
+          "eyebrow": "专属定制",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/d6/11/29/d61129eb-09f1-c971-84cc-6a1d9c68f652/258eea8a-c954-4007-9ff4-4a060a51cc84.png/160x160cc.jpg",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.LV0PgAqhRdzPWg",
+          "canEdit": false
+        }
+      ],
+      "timing": {
+        "hydrationDurationMs": 0,
+        "extractionDurationMs": 0.2,
+        "totalDurationMs": 0.2,
+        "avgTimePerItemMs": 0.013
+      }
+    },
+    {
+      "id": "section-playlists-created",
+      "title": "自建歌单 (27)",
+      "itemCount": 27,
+      "items": [
+        {
+          "id": "p.6xZaExkCgZX7LG",
+          "title": "播放列表 2",
+          "subtitle": "自建歌单",
+          "eyebrow": "自建",
+          "type": "playlist",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/playlist/p.6xZaExkCgZX7LG",
+          "canEdit": true
+        },
+        {
+          "id": "p.QvDQQK0hJRZvL5",
+          "title": "安静看书的背景音乐",
+          "subtitle": "自建歌单",
+          "eyebrow": "自建",
+          "type": "playlist",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/playlist/p.QvDQQK0hJRZvL5",
+          "canEdit": true
+        },
+        {
+          "id": "p.PkxVBLKhWRp68X",
+          "title": "播放列表",
+          "subtitle": "自建歌单",
+          "eyebrow": "自建",
+          "type": "playlist",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/playlist/p.PkxVBLKhWRp68X",
+          "canEdit": true
+        },
+        {
+          "id": "p.V7VYLXNtVPKgv0",
+          "title": "沉静",
+          "subtitle": "自建歌单",
+          "eyebrow": "自建",
+          "type": "playlist",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/playlist/p.V7VYLXNtVPKgv0",
+          "canEdit": true
+        },
+        {
+          "id": "p.LV0PEkVIRdzPWg",
+          "title": "陈二豆",
+          "subtitle": "自建歌单",
+          "eyebrow": "自建",
+          "type": "playlist",
+          "artworkUrl": "https://store-035.blobstore.apple.com/sq-mq-us-035-000002/26/c8/ea/26c8ea33-1d9e-61fb-0364-f29067af5301/image?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Date=20261117T185626Z&X-Amz-SignedHeaders=host&X-Amz-Expires=86400&X-Amz-Credential=MKIAZJRVM1CLAZIYJ6OU%2F20261117%2Fstore-035%2Fs3%2Faws4_request&X-Amz-Signature=6d402b60b2e0dd5ab1858dbeabdb3aec587d5716a115114844b3d6259cba832a",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.LV0PEkVIRdzPWg",
+          "canEdit": true
+        },
+        {
+          "id": "p.1YeWP3kcbaZQLG",
+          "title": "陈佳明",
+          "subtitle": "自建歌单",
+          "eyebrow": "自建",
+          "type": "playlist",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/playlist/p.1YeWP3kcbaZQLG",
+          "canEdit": true
+        },
+        {
+          "id": "p.6xZa4gVigZX7LG",
+          "title": "陈奕迅",
+          "subtitle": "自建歌单",
+          "eyebrow": "自建",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/gen/1200x1200AM.PDCXS16.jpg?c1=C7CABF&c2=ACEADA&c3=D7FD71&c4=4D2745&signature=e198c16d24792ef0465d8856c48f6e75bcde11381b6e0f31c22944169dbec133&t=6ZmI5aWV6L-F&tc=FFFFFF&vkey=1",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.6xZa4gVigZX7LG",
+          "canEdit": true
+        },
+        {
+          "id": "p.6xZam5vugZX7LG",
+          "title": "匆匆",
+          "subtitle": "自建歌单",
+          "eyebrow": "自建",
+          "type": "playlist",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/playlist/p.6xZam5vugZX7LG",
+          "canEdit": true
+        },
+        {
+          "id": "p.gek1ZkqsBvxmpW",
+          "title": "邓紫棋",
+          "subtitle": "自建歌单",
+          "eyebrow": "自建",
+          "type": "playlist",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/playlist/p.gek1ZkqsBvxmpW",
+          "canEdit": true
+        },
+        {
+          "id": "p.V7VYG7WcVPKgv0",
+          "title": "抖音2018",
+          "subtitle": "自建歌单",
+          "eyebrow": "自建",
+          "type": "playlist",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/playlist/p.V7VYG7WcVPKgv0",
+          "canEdit": true
+        },
+        {
+          "id": "p.LV0PdNbcRdzPWg",
+          "title": "豆豆，不要动！",
+          "subtitle": "自建歌单",
+          "eyebrow": "自建",
+          "type": "playlist",
+          "artworkUrl": "https://store-035.blobstore.apple.com/sq-mq-us-035-000002/a9/f7/3a/a9f73a87-20b7-e60f-ea7b-04300b9de410/image?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Date=20261117T185626Z&X-Amz-SignedHeaders=host&X-Amz-Expires=86400&X-Amz-Credential=MKIAZJRVM1CLAZIYJ6OU%2F20261117%2Fstore-035%2Fs3%2Faws4_request&X-Amz-Signature=552dc062c4a28d080f2f389a80c91f5a965b8aa239ae504d7a88a5f60c43ea8a",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.LV0PdNbcRdzPWg",
+          "canEdit": true
+        },
+        {
+          "id": "p.QvDQ3zXIJRZvL5",
+          "title": "10杂辑",
+          "subtitle": "自建歌单",
+          "eyebrow": "自建",
+          "type": "playlist",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/playlist/p.QvDQ3zXIJRZvL5",
+          "canEdit": true
+        },
+        {
+          "id": "p.LV0PEoPCRdzPWg",
+          "title": "2010 年代流行乐代表作品 1",
+          "subtitle": "自建歌单",
+          "eyebrow": "自建",
+          "type": "playlist",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/playlist/p.LV0PEoPCRdzPWg",
+          "canEdit": true
+        },
+        {
+          "id": "p.QvDQaNrIJRZvL5",
+          "title": "2010 pop",
+          "subtitle": "自建歌单",
+          "eyebrow": "自建",
+          "type": "playlist",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/playlist/p.QvDQaNrIJRZvL5",
+          "canEdit": true
+        },
+        {
+          "id": "p.O1kzzNVFDEOg4o",
+          "title": "2016美国公告牌Billboard单曲年榜",
+          "subtitle": "自建歌单",
+          "eyebrow": "自建",
+          "type": "playlist",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/playlist/p.O1kzzNVFDEOg4o",
+          "canEdit": true
+        },
+        {
+          "id": "p.LV0PP63hRdzPWg",
+          "title": "2016年上半年动漫新番歌曲精选",
+          "subtitle": "自建歌单",
+          "eyebrow": "自建",
+          "type": "playlist",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/playlist/p.LV0PP63hRdzPWg",
+          "canEdit": true
+        },
+        {
+          "id": "p.LV0PPXZiRdzPWg",
+          "title": "2016上 新番",
+          "subtitle": "自建歌单",
+          "eyebrow": "自建",
+          "type": "playlist",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/playlist/p.LV0PPXZiRdzPWg",
+          "canEdit": true
+        },
+        {
+          "id": "p.QvDQQkbIJRZvL5",
+          "title": "2016新番动漫OP&ED",
+          "subtitle": "自建歌单",
+          "eyebrow": "自建",
+          "type": "playlist",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/playlist/p.QvDQQkbIJRZvL5",
+          "canEdit": true
+        },
+        {
+          "id": "p.LV0PE71iRdzPWg",
+          "title": "2020 年度最热歌曲：全球",
+          "subtitle": "自建歌单",
+          "eyebrow": "自建",
+          "type": "playlist",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/playlist/p.LV0PE71iRdzPWg",
+          "canEdit": true
+        },
+        {
+          "id": "p.AWXokXJt81moYR",
+          "title": "2021金曲獎入圍作品（演唱類）",
+          "subtitle": "自建歌单",
+          "eyebrow": "自建",
+          "type": "playlist",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/playlist/p.AWXokXJt81moYR",
+          "canEdit": true
+        },
+        {
+          "id": "p.gek1B3KtBvxmpW",
+          "title": "阿桑 - Listen To HIM",
+          "subtitle": "自建歌单",
+          "eyebrow": "自建",
+          "type": "playlist",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/playlist/p.gek1B3KtBvxmpW",
+          "canEdit": true
+        },
+        {
+          "id": "p.ZOAXZlbiG5pJbx",
+          "title": "关于我爱你",
+          "subtitle": "自建歌单",
+          "eyebrow": "自建",
+          "type": "playlist",
+          "artworkUrl": "https://store-033.blobstore.apple.com/sq-mq-us-033-000002/64/16/1e/64161ec1-6afe-fb5c-27c9-2bc9c45936a7/image?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Date=20261117T185626Z&X-Amz-SignedHeaders=host&X-Amz-Expires=86400&X-Amz-Credential=MKIAU0HKO2RBEAT0UMZS%2F20261117%2Fstore-033%2Fs3%2Faws4_request&X-Amz-Signature=72f652a88937a1393d1dc1f33320e8813b51a82717bb1a315e456efd0de15549",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.ZOAXZlbiG5pJbx",
+          "canEdit": true
+        },
+        {
+          "id": "p.qQXLvNKhaOLber",
+          "title": "滚石爱情故事",
+          "subtitle": "自建歌单",
+          "eyebrow": "自建",
+          "type": "playlist",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/playlist/p.qQXLvNKhaOLber",
+          "canEdit": true
+        },
+        {
+          "id": "p.gek1MQgiBvxmpW",
+          "title": "国语流行",
+          "subtitle": "自建歌单",
+          "eyebrow": "自建",
+          "type": "playlist",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/playlist/p.gek1MQgiBvxmpW",
+          "canEdit": true
+        },
+        {
+          "id": "p.qQXLWgOHaOLber",
+          "title": "黑神话·悟空",
+          "subtitle": "自建歌单",
+          "eyebrow": "自建",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/gen/1200x1200AM.PDCXS14.jpg?c1=FFFFC2&c2=FFFFC1&c3=FFFF8D&c4=0C0C0A&signature=a3cd1dd8dc8181e527556548fc9e113a579680618fbec239c41c015143293281&t=6buR56We6K-dwrfmgp_nqbo%3D&tc=FFFFFF&vkey=1",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.qQXLWgOHaOLber",
+          "canEdit": true
+        },
+        {
+          "id": "p.6xZaaNOigZX7LG",
+          "title": "华语优质女声 | 感动不用歇斯底里",
+          "subtitle": "自建歌单",
+          "eyebrow": "自建",
+          "type": "playlist",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/playlist/p.6xZaaNOigZX7LG",
+          "canEdit": true
+        },
+        {
+          "id": "p.1YeWqBXSbaZQLG",
+          "title": "精选",
+          "subtitle": "自建歌单",
+          "eyebrow": "自建",
+          "type": "playlist",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/playlist/p.1YeWqBXSbaZQLG",
+          "canEdit": true
+        }
+      ],
+      "timing": {
+        "hydrationDurationMs": 0,
+        "extractionDurationMs": 0.2,
+        "totalDurationMs": 0.2,
+        "avgTimePerItemMs": 0.007
+      }
+    },
+    {
+      "id": "section-playlists-saved",
+      "title": "收藏歌单 (74)",
+      "itemCount": 74,
+      "items": [
+        {
+          "id": "p.MLUk3bdrQ",
+          "title": "喜爱歌曲",
+          "subtitle": "官方智能歌单",
+          "eyebrow": "精选智能",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features116/v4/e3/6e/33/e36e33de-da6c-71e8-dc2e-fae168c924ba/47a3c06a-ab88-4d36-a040-41d730e71d45.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.MLUk3bdrQ",
+          "canEdit": false
+        },
+        {
+          "id": "p.AWXorqYF81moYR",
+          "title": "艾怡良的音乐告解：忏悔",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features116/v4/f2/ad/21/f2ad21d4-c657-8d46-2a96-73bc48501491/U0MtTVMtV1ctRXZlX0FpLUd1ZXN0X0N1cmF0b3JfUGxheWxpc3Rf5oe65oKULnBuZw.png/160x160SC.DN02.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.AWXorqYF81moYR",
+          "canEdit": false
+        },
+        {
+          "id": "p.AWXorA1s81moYR",
+          "title": "艾怡良的音乐告解：回忆",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features126/v4/a4/72/a3/a472a39c-bc03-b476-feae-5ea80965e9b9/U0MtTVMtV1ctRXZlX0FpLUd1ZXN0X0N1cmF0b3JfUGxheWxpc3Rf5Zue5oa2LnBuZw.png/160x160SC.DN02.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.AWXorA1s81moYR",
+          "canEdit": false
+        },
+        {
+          "id": "p.V7VY3A7FVPKgv0",
+          "title": "艾怡良的音乐告解：偏爱",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features116/v4/d4/4c/e4/d44ce49f-5979-ea86-0710-c944565fd6da/U0MtTVMtV1ctRXZlX0FpLUd1ZXN0X0N1cmF0b3JfUGxheWxpc3Rf5YGP5oSbLnBuZw.png/160x160SC.DN02.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.V7VY3A7FVPKgv0",
+          "canEdit": false
+        },
+        {
+          "id": "p.1YeWa75cbaZQLG",
+          "title": "艾怡良的音乐告解：自省",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features116/v4/85/7b/5d/857b5d30-c4f7-0b7d-8fb1-bf67690cda57/U0MtTVMtV1ctRXZlX0FpLUd1ZXN0X0N1cmF0b3JfUGxheWxpc3Rf6Ieq55yBLnBuZw.png/160x160SC.DN02.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.1YeWa75cbaZQLG",
+          "canEdit": false
+        },
+        {
+          "id": "p.QvDQV35hJRZvL5",
+          "title": "爱不释耳",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/e1/05/c3/e105c3d8-5146-8ee9-8a27-f0d35d7bba21/fa8530bb-a792-4be0-9125-7af9287d1344.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.QvDQV35hJRZvL5",
+          "canEdit": false
+        },
+        {
+          "id": "p.O1kzld4iDEOg4o",
+          "title": "巴赫与巴洛克",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features116/v4/d4/8c/ab/d48cab53-cc72-df05-2f8d-e96abf48540d/f6823773-2f82-48ac-8ad6-cc72e36d8354.png/160x160SC.DNC01.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.O1kzld4iDEOg4o",
+          "canEdit": false
+        },
+        {
+          "id": "p.LV0PlGxIRdzPWg",
+          "title": "白噪音",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features115/v4/6a/fd/1d/6afd1d5d-3b9c-bb08-bbb7-cf4158906cd2/U0MtTVMtV1ctV2hpdGVfTm9pc2UtQURBTV9JRD0xMzI5NzcwOTkxLnBuZw.png/160x160SC.DN02.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.LV0PlGxIRdzPWg",
+          "canEdit": false
+        },
+        {
+          "id": "p.O1kzE2OFDEOg4o",
+          "title": "坂本龙一代表作",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features126/v4/88/6d/18/886d1838-bd6b-78a1-1def-ee2bebd92e27/tns.culwksry.png/160x160SC.FPESS05.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.O1kzE2OFDEOg4o",
+          "canEdit": false
+        },
+        {
+          "id": "p.LV0PdLZcRdzPWg",
+          "title": "本月必听古典乐",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features116/v4/13/af/cb/13afcbf0-17c9-e1c3-a352-a6ad8902abcf/184cb85d-6dff-47c3-8fdc-f7bdc451ffd7.png/160x160SC.DNC01.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.LV0PdLZcRdzPWg",
+          "canEdit": false
+        },
+        {
+          "id": "p.1YeWqOLHbaZQLG",
+          "title": "蔡健雅私藏音乐料理：回味品特调",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features115/v4/f0/90/b6/f090b627-3016-095f-dc6b-24622a3be8fe/contsched.nibcwyqy.png/160x160SC.DN02.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.1YeWqOLHbaZQLG",
+          "canEdit": false
+        },
+        {
+          "id": "p.qQXLPe5FaOLber",
+          "title": "唱响金曲",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/13/d1/56/13d1568f-f0ab-419a-dc02-c80dcb535dbf/1d14717e-0298-4554-b54b-ca434b3a24ec.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.qQXLPe5FaOLber",
+          "canEdit": false
+        },
+        {
+          "id": "p.PkxV4DPcWRp68X",
+          "title": "陈慧琳代表作",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features116/v4/cf/98/79/cf9879d7-fbcd-45fe-c6cc-0f134bc27365/mzl.uiwfuqip.jpg/160x160SC.FPESS05.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.PkxV4DPcWRp68X",
+          "canEdit": false
+        },
+        {
+          "id": "p.V7VY3P0IVPKgv0",
+          "title": "创作人：艾怡良",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features211/v4/35/85/2d/35852dc6-76f5-b4c4-1952-5a08fdc593e8/mzl.ldiudyob.jpg/160x160SC.FPTSW03.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.V7VY3P0IVPKgv0",
+          "canEdit": false
+        },
+        {
+          "id": "p.gek1Z1VTBvxmpW",
+          "title": "创作人：陈珊妮",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features112/v4/23/0c/c1/230cc17b-906f-cca2-54ae-114827d6520d/mzl.gvltcddt.png/160x160SC.FPTSW03.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.gek1Z1VTBvxmpW",
+          "canEdit": false
+        },
+        {
+          "id": "p.gek13dWUBvxmpW",
+          "title": "创作人：陈小霞",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features211/v4/07/e5/91/07e591e0-4d5a-d208-f7ab-74c3bbc81236/mzl.ceskmfvj.jpg/160x160SC.FPTSW03.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.gek13dWUBvxmpW",
+          "canEdit": false
+        },
+        {
+          "id": "p.QvDQQ3RhJRZvL5",
+          "title": "创作人：周杰伦",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/AMCArtistImages211/v4/6d/53/0e/6d530e69-ce17-1c15-7605-b267ef760ea1/ami-identity-8cbee1395c1dbfa4daf6d4c572503010-2026-03-24T12-21-24.021Z_cropped.png/160x160SC.FPTSW03.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.QvDQQ3RhJRZvL5",
+          "canEdit": false
+        },
+        {
+          "id": "p.6xZakeOigZX7LG",
+          "title": "春韶",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/b6/c5/93/b6c59314-8a34-3d36-42fe-038ed748f3a0/6c579cb1-66a2-453e-a979-f076b38d061d.png/160x160SC.DN02.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.6xZakeOigZX7LG",
+          "canEdit": false
+        },
+        {
+          "id": "p.V7VYlBDFVPKgv0",
+          "title": "纯粹 · 励志",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features115/v4/77/47/65/774765f4-1637-83be-c8c0-5e7d90dee202/U0MtTVMtV1ctUHVyZV9Nb3RpdmF0aW9uLUFEQU1fSUQ9MTI4NzEwMjE2NS5wbmc.png/160x160SC.DN02.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.V7VYlBDFVPKgv0",
+          "canEdit": false
+        },
+        {
+          "id": "p.AWXo3PzF81moYR",
+          "title": "纯粹・放松",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features115/v4/92/e9/24/92e9248f-1300-9707-57b8-1df13f004c45/U0MtTVMtV1ctUHVyZV9DaGlsbC1BREFNX0lEPTExNDYwMzkzNTYucG5n.png/160x160SC.DN02.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.AWXo3PzF81moYR",
+          "canEdit": false
+        },
+        {
+          "id": "p.qQXL2XztaOLber",
+          "title": "邓紫棋代表作",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features122/v4/fc/4b/eb/fc4bebe6-9b10-481e-b406-3d0e299943cf/mzl.pjxmoluh.png/160x160SC.FPESS05.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.qQXL2XztaOLber",
+          "canEdit": false
+        },
+        {
+          "id": "p.AWXoBo4T81moYR",
+          "title": "第 28 届台湾金曲奖歌单",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features117/v4/b7/95/05/b79505b0-ba9d-8086-4dd0-790023b7e11d/pr_source.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.AWXoBo4T81moYR",
+          "canEdit": false
+        },
+        {
+          "id": "p.gek1L4zhBvxmpW",
+          "title": "第 29 届台湾金曲奖",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features125/v4/8b/97/8b/8b978bb1-6bd1-8b0b-32a2-06749c931530/pr_source.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.gek1L4zhBvxmpW",
+          "canEdit": false
+        },
+        {
+          "id": "p.6xZaEqaIgZX7LG",
+          "title": "第 30 届金曲奖",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features113/v4/5e/14/b4/5e14b4a1-0c48-eabf-d55c-c232046134e6/pr_source.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.6xZaEqaIgZX7LG",
+          "canEdit": false
+        },
+        {
+          "id": "p.PkxVPzeiWRp68X",
+          "title": "第 31 届金曲奖",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features124/v4/5f/3c/1e/5f3c1ecc-b659-e5b6-a0af-fa33bfe750de/U0MtTVMtV1ctR01BXzIwMjAucG5n.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.PkxVPzeiWRp68X",
+          "canEdit": false
+        },
+        {
+          "id": "p.V7VYlrbCVPKgv0",
+          "title": "电影中的歌",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features125/v4/39/f8/4f/39f84fe1-918e-b0fd-c9e4-b8875448f57a/contsched.rzlkuqtb.png/160x160SC.DN02.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.V7VYlrbCVPKgv0",
+          "canEdit": false
+        },
+        {
+          "id": "p.LV0PJ9EiRdzPWg",
+          "title": "丁世光：我的音乐神经",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features115/v4/2e/ec/77/2eec7788-afee-7963-c0c3-24625933113c/contsched.dpnaxrvp.png/160x160SC.DN02.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.LV0PJ9EiRdzPWg",
+          "canEdit": false
+        },
+        {
+          "id": "p.6xZa1WxcgZX7LG",
+          "title": "动漫音乐前线",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features125/v4/0a/ee/f4/0aeef4dc-84ec-e5fd-0f09-6f6e2a1b391f/U0MtTVMtV1ctSGFrZW5fQW5pc29uZy1BREFNX0lEPTEwNTA4NDg4MDUucG5n.png/160x160SC.DN02.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.6xZa1WxcgZX7LG",
+          "canEdit": false
+        },
+        {
+          "id": "p.LV0PxM3uRdzPWg",
+          "title": "抖音 2025 年度热歌榜",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/a1/e8/59/a1e8590e-c7ab-564b-8462-f45fce53d10b/bac8c595-fbe0-4b18-bae9-cd9743207c5e.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.LV0PxM3uRdzPWg",
+          "canEdit": false
+        },
+        {
+          "id": "p.qQXL4ROUaOLber",
+          "title": "《Fate/stay night》代表作",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features115/v4/ee/ac/83/eeac83c7-004c-97fd-59a6-3d150d49f02a/pr_source.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.qQXL4ROUaOLber",
+          "canEdit": false
+        },
+        {
+          "id": "p.PkxV5NYUWRp68X",
+          "title": "未命名歌单",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/playlist/p.PkxV5NYUWRp68X",
+          "canEdit": false
+        },
+        {
+          "id": "p.PkxV53zUWRp68X",
+          "title": "2010 年代流行乐代表作品",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/18/a9/56/18a9560c-84ee-1e96-1278-3229728b8c5b/39f932dd-3dee-4ed1-8170-150ef34314c6.png/160x160SC.DN02.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.PkxV53zUWRp68X",
+          "canEdit": false
+        },
+        {
+          "id": "p.gek1LZWSBvxmpW",
+          "title": "2010 年代情歌代表作品",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/a6/1c/8b/a61c8b1a-d623-852c-5f60-8de7c9b625bf/09612058-7227-43d2-8c41-b4ef2a36e994.png/160x160SC.DN02.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.gek1LZWSBvxmpW",
+          "canEdit": false
+        },
+        {
+          "id": "p.QvDQPx5uJRZvL5",
+          "title": "2010 年代日本动漫音乐代表作品",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features221/v4/34/1d/83/341d83e3-3e5b-dda5-246c-23856e712396/af9e5b39-7a02-41c5-aafc-ebf782ce888a.png/160x160SC.DN02.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.QvDQPx5uJRZvL5",
+          "canEdit": false
+        },
+        {
+          "id": "p.6xZa1V6IgZX7LG",
+          "title": "2013 畅销金曲",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features71/v4/b2/d0/f3/b2d0f3cc-4798-5183-9747-449b8c7b2aa3/pr_source.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.6xZa1V6IgZX7LG",
+          "canEdit": false
+        },
+        {
+          "id": "p.PkxVBekFWRp68X",
+          "title": "2016 金曲奖提名作品",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features60/v4/91/2c/7b/912c7b83-d171-a141-3492-d3841e95e808/pr_source.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.PkxVBekFWRp68X",
+          "canEdit": false
+        },
+        {
+          "id": "p.PkxVVWotWRp68X",
+          "title": "2016 热门歌曲",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features115/v4/39/9d/11/399d11c9-9b0c-5272-598e-2e0e6f0db950/U0MtTVMtV1ctVG9wX1NvbmdzX29mXzIwMTYtQURBTV9JRD0xMTc3MTA3MjkxLnBuZw.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.PkxVVWotWRp68X",
+          "canEdit": false
+        },
+        {
+          "id": "p.PkxVl6kUWRp68X",
+          "title": "未命名歌单",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/playlist/p.PkxVl6kUWRp68X",
+          "canEdit": false
+        },
+        {
+          "id": "p.1YeWGopibaZQLG",
+          "title": "2017 热门歌曲",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features118/v4/fc/63/d7/fc63d715-4328-9ef5-736e-47c2fa2dffd6/pr_source.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.1YeWGopibaZQLG",
+          "canEdit": false
+        },
+        {
+          "id": "p.O1kzPB6cDEOg4o",
+          "title": "2017 夏日之声",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/iTFbhmm_IH3K5BSYyjmfXg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.O1kzPB6cDEOg4o",
+          "canEdit": false
+        },
+        {
+          "id": "p.AWXo3eQC81moYR",
+          "title": "2018 乐年歌单",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features115/v4/8f/9e/db/8f9edb80-b915-8ce7-2c61-3329b79a34f9/cHJfc291cmNlLTEyLnBuZw.png/160x160SC.DN02.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.AWXo3eQC81moYR",
+          "canEdit": false
+        },
+        {
+          "id": "p.ZOAXDOxtG5pJbx",
+          "title": "未命名歌单",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/playlist/p.ZOAXDOxtG5pJbx",
+          "canEdit": false
+        },
+        {
+          "id": "p.gek1LA6iBvxmpW",
+          "title": "2018 EDC 电子音乐节",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features128/v4/11/1a/f3/111af3b6-2713-209b-9726-a08fcbb729eb/pr_source.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.gek1LA6iBvxmpW",
+          "canEdit": false
+        },
+        {
+          "id": "p.qQXL29puaOLber",
+          "title": "2019 年度最佳 Top 100",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features123/v4/79/a3/cf/79a3cf2c-cfbd-e78e-d133-e4862b7f7806/pr_source.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.qQXL29puaOLber",
+          "canEdit": false
+        },
+        {
+          "id": "p.QvDQPvviJRZvL5",
+          "title": "2020 年度最佳 Top 100",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features124/v4/45/2b/07/452b0706-fd69-a8e6-f623-e01ac34f17bf/U0MtTVMtQ0hOLVRoZV9Ub3BfU29uZ3Nfb2ZfMjAyMC1BREFNX0lEPTE1NDAzNDQ5MTQucG5n.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.QvDQPvviJRZvL5",
+          "canEdit": false
+        },
+        {
+          "id": "p.PkxVPEkiWRp68X",
+          "title": "2020 年度最热歌曲：全球",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features124/v4/27/d2/af/27d2afbd-bfc6-3359-1215-1db0e6065656/U0MtTVMtQ0hOLVRvcF8xMDBfU29uZ3NfMjAyMF9HbG9iYWwtQURBTV9JRD0xNTM5NzM4Mjk1LnBuZw.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.PkxVPEkiWRp68X",
+          "canEdit": false
+        },
+        {
+          "id": "p.O1kzgb6tDEOg4o",
+          "title": "2021 年度最热歌曲：中国大陆",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features116/v4/05/85/b0/0585b0a2-70a2-2557-192b-8c1cfe7acf56/U0MtTVMtQ0hOLVRvcF8xMDBfTG9jYWxfMjAyMS1BREFNX0lEPTE1Mzk3NDQwMTMucG5n.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.O1kzgb6tDEOg4o",
+          "canEdit": false
+        },
+        {
+          "id": "p.ZOAXBobhG5pJbx",
+          "title": "2022 年度最热歌曲：台湾地区",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features122/v4/79/99/8c/79998c65-b3e3-9fde-2fd0-42cf1922a73b/ab1a15ec-261b-4b64-8d33-df83ad40f917.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.ZOAXBobhG5pJbx",
+          "canEdit": false
+        },
+        {
+          "id": "p.1YeW73YtbaZQLG",
+          "title": "2023 年度最佳 TOP 100",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features126/v4/96/4d/82/964d826f-a053-0ff2-79da-cd0f191e5aad/f02122cb-0e97-4d05-bff8-f8ba8f565909.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.1YeW73YtbaZQLG",
+          "canEdit": false
+        },
+        {
+          "id": "p.QvDQR9buJRZvL5",
+          "title": "2026 年 3 月抖音热歌榜",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/23/55/f7/2355f7b1-fa9d-41cd-b64f-9fc813f0d7b6/5cd80b78-0045-4068-b799-da7244f51477.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.QvDQR9buJRZvL5",
+          "canEdit": false
+        },
+        {
+          "id": "p.6xZak1dCgZX7LG",
+          "title": "2026 年 9 月抖音热歌榜",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/9a/3b/c0/9a3bc076-59e2-9e98-fa18-d9abeafb812e/7d63a5bd-e7a0-4d55-96f0-bdbc6b869c25.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.6xZak1dCgZX7LG",
+          "canEdit": false
+        },
+        {
+          "id": "p.O1kzggocDEOg4o",
+          "title": "方大同：情歌精选",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/AMCArtistImages221/v4/d9/f7/61/d9f7618e-3772-4089-b24a-da79025a4186/0e242e96-3bec-4506-af0b-e6e138578346_ami-identity-588119312477b59f89e8b3cc47b71214-2024-08-23T08-05-52.560Z_cropped.png/160x160SC.FPLS04.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.O1kzggocDEOg4o",
+          "canEdit": false
+        },
+        {
+          "id": "p.PkxVLLeIWRp68X",
+          "title": "放松歌单",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/8f/4f/49/8f4f493d-c8d2-afb8-98ce-071755c21294/8587f31f-0289-41aa-ad9e-af6689d39e7e.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.PkxVLLeIWRp68X",
+          "canEdit": false
+        },
+        {
+          "id": "p.QvDQa7MhJRZvL5",
+          "title": "飞儿乐团：情歌精选",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features115/v4/22/bc/48/22bc481c-7ab2-30b1-b4b2-9c8ab65a4013/mzl.lydlcmlx.jpg/160x160SC.FPLS04.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.QvDQa7MhJRZvL5",
+          "canEdit": false
+        },
+        {
+          "id": "p.qQXL7BOTaOLber",
+          "title": "钢琴休憩小站",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features125/v4/dc/47/7c/dc477c6f-9029-bd1c-8e89-87b04042a55b/U0MtTVMtV1ctUGlhbm9fQ2hpbGwtQURBTV9JRD0xMDcyODMxMzA0LnBuZw.png/160x160SC.DNC01.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.qQXL7BOTaOLber",
+          "canEdit": false
+        },
+        {
+          "id": "p.1YeWJYkfbaZQLG",
+          "title": "歌坛天后代表作品",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/d1/9d/07/d19d071f-cd15-8438-b021-9821f56994c8/5ee15a07-382b-446b-a6be-ec014c0e4c2b.png/160x160SC.DN02.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.1YeWJYkfbaZQLG",
+          "canEdit": false
+        },
+        {
+          "id": "p.V7VYp5bSVPKgv0",
+          "title": "古典乐潮",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/c2/e4/0d/c2e40dfc-78fc-5553-7205-802f0daae04c/213b6704-ebd7-4634-bb26-8605d319f9d3.png/160x160SC.DNC01.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.V7VYp5bSVPKgv0",
+          "canEdit": false
+        },
+        {
+          "id": "p.gek1VBzUBvxmpW",
+          "title": "古装剧金曲",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features211/v4/71/0e/da/710eda45-e11d-6fdc-5e8d-89e3c08ce20a/d7ee14b0-ee2a-4ffb-b34f-799bae38e8f6.png/160x160SC.DN02.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.gek1VBzUBvxmpW",
+          "canEdit": false
+        },
+        {
+          "id": "p.6xZak4JcgZX7LG",
+          "title": "今日热门：2026 年度最佳",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/b4/e0/39/b4e03955-0bdc-92b6-8fea-953077b384e4/bf5a5448-12c8-46d8-9235-1b15612a10dc.png/160x160SC.DN02.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.6xZak4JcgZX7LG",
+          "canEdit": false
+        },
+        {
+          "id": "p.V7VYGYMfVPKgv0",
+          "title": "国语情歌精选",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features115/v4/d8/91/49/d8914917-054b-4d20-085c-6de88137e122/U0MtTVMtQ0hOLU1hbmRvcG9wX0xvdmVfU29uZ3MtQURBTV9JRD0xMTI2MTM1NzEwLnBuZw.png/160x160SC.DN02.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.V7VYGYMfVPKgv0",
+          "canEdit": false
+        },
+        {
+          "id": "p.V7VY8bDSVPKgv0",
+          "title": "国语情歌男歌手",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features71/v4/57/f2/7d/57f27dfa-a39f-b951-e6af-a34e87622805/pr_source.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.V7VY8bDSVPKgv0",
+          "canEdit": false
+        },
+        {
+          "id": "p.1YeW8B8cbaZQLG",
+          "title": "未命名歌单",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/playlist/p.1YeW8B8cbaZQLG",
+          "canEdit": false
+        },
+        {
+          "id": "p.gek11RKHBvxmpW",
+          "title": "吉卜力工作室代表作品",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/2f/7e/d1/2f7ed1ce-ba59-67c3-5eef-758772d61e46/f50fffa6-9b06-4719-834d-c951cfe9d267.png/160x160SC.DN02.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.gek11RKHBvxmpW",
+          "canEdit": false
+        },
+        {
+          "id": "p.PkxVLYYcWRp68X",
+          "title": "家家：情歌精选",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features221/v4/80/13/95/80139505-919f-195a-7618-db6cda126fc3/mzl.wuaqehbv.png/160x160SC.FPLS04.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.PkxVLYYcWRp68X",
+          "canEdit": false
+        },
+        {
+          "id": "p.qQXLL6LuaOLber",
+          "title": "今日不插电",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features125/v4/1a/9a/73/1a9a7339-bed4-899e-ca36-749c349bd3cb/U0MtTVMtV1ctVG9kYXlfc19BY291c3RpYy1BREFNX0lEPTEwMDQ3OTY3MDkucG5n.png/160x160SC.DN02.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.qQXLL6LuaOLber",
+          "canEdit": false
+        },
+        {
+          "id": "p.gek132GSBvxmpW",
+          "title": "今日全球热歌",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features125/v4/93/7a/5f/937a5f9e-6c2d-54a4-5d81-8b51ca0f2c08/U0MtTVMtV1ctSW50ZXJuYXRpb25hbF9IaXRzX1RvZGF5LUFEQU1fSUQ9MTE0OTIzMDE0Mi5wbmc.png/160x160SC.DN02.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.gek132GSBvxmpW",
+          "canEdit": false
+        },
+        {
+          "id": "p.qQXL3M5iaOLber",
+          "title": "今日热门",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/e5/91/b0/e591b0f7-7669-818b-bdb9-b278e7c3bbee/469cd7a6-04c9-4516-a17d-b5ba82b51e22.png/160x160SC.DN02.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.qQXL3M5iaOLber",
+          "canEdit": false
+        },
+        {
+          "id": "p.LV0PPEECRdzPWg",
+          "title": "今日最佳",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/a4/5d/0c/a45d0c54-9fad-e0e3-fb2c-d841157f1ba1/049926a1-1382-4864-a84f-222b99e0d4b8.png/160x160SC.DN02.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.LV0PPEECRdzPWg",
+          "canEdit": false
+        },
+        {
+          "id": "p.AWXole1I81moYR",
+          "title": "就不睡",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": null,
+          "linkUrl": "https://music.apple.com/cn/playlist/p.AWXole1I81moYR",
+          "canEdit": false
+        },
+        {
+          "id": "p.O1kzlrafDEOg4o",
+          "title": "剧集中的歌",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features115/v4/80/c8/a7/80c8a7cb-162d-311d-e8e3-8c4c8e65ad43/contsched.tiontllc.png/160x160SC.DN02.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.O1kzlrafDEOg4o",
+          "canEdit": false
+        },
+        {
+          "id": "p.gek11R6TBvxmpW",
+          "title": "爵士动向",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features115/v4/6d/f9/08/6df908d5-9d24-61cc-36f6-82d742abead4/U0MtTVMtV1ctSmF6el9DdXJyZW50cy1BREFNX0lEPTEwMDQ3OTUzNjkucG5n.png/160x160SC.DN02.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.gek11R6TBvxmpW",
+          "canEdit": false
+        },
+        {
+          "id": "p.PkxVl5pTWRp68X",
+          "title": "开足马力，全速前进",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features116/v4/5a/50/3b/5a503b5b-60a9-4ed0-9ca1-ed1640982dd3/f1008960-7e27-4c1b-8279-a7c6ba57c75e.png/160x160SC.DN02.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.PkxVl5pTWRp68X",
+          "canEdit": false
+        },
+        {
+          "id": "p.qQXLP0rsaOLber",
+          "title": "空间音频体验：C-Pop",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/83/a2/44/83a244d6-288d-1033-732a-d5167a131d73/b5164ce4-17f0-400a-8030-9bb125ae8fc6.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.qQXLP0rsaOLber",
+          "canEdit": false
+        },
+        {
+          "id": "p.O1kzlm6TDEOg4o",
+          "title": "浪漫钢琴代表作品",
+          "subtitle": "已收藏歌单",
+          "eyebrow": "收藏",
+          "type": "playlist",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/30/c6/36/30c63686-928e-4458-abfd-20665c1ce148/c3cee76b-c343-4dca-a18a-6bed0a60acef.png/160x160SC.DNC01.webp",
+          "linkUrl": "https://music.apple.com/cn/playlist/p.O1kzlm6TDEOg4o",
+          "canEdit": false
+        }
+      ],
+      "timing": {
+        "hydrationDurationMs": 0,
+        "extractionDurationMs": 0.2,
+        "totalDurationMs": 0.2,
+        "avgTimePerItemMs": 0.003
+      }
+    }
+  ],
+  "timing": {
+    "totalDurationMs": 2115.09,
+    "breakdown": {
+      "navigationDurationMs": 2114.96,
+      "extractionDurationMs": 0.13
+    },
+    "totalCategories": 4,
+    "totalItems": 218,
+    "avgTimePerCategoryMs": 528.77,
+    "avgTimePerItemMs": 9.7
+  }
+}

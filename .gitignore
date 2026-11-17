@@ -43,3 +43,8 @@ Makefile
 *.bak
 Thumbs.db
 Desktop.ini
+*.cache
+
+# Credentials & private tokens
+AMW/auth.json
+**/auth.json

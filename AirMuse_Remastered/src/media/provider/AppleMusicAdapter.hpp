@@ -1,0 +1,76 @@
+#pragma once
+#include "IWebAdapter.hpp"
+#include <string>
+#include <vector>
+#include <fstream>
+#include <windows.h>
+
+namespace airmuse {
+
+inline const wchar_t* GetAppleEngineScript() {
+    static std::wstring s_cached;
+    if (s_cached.empty()) {
+        wchar_t exePath[MAX_PATH] = { 0 };
+        GetModuleFileNameW(nullptr, exePath, MAX_PATH);
+        std::wstring exeDir = exePath;
+        auto pos = exeDir.find_last_of(L"\\/");
+        if (pos != std::wstring::npos) {
+            exeDir = exeDir.substr(0, pos);
+        }
+
+        std::vector<std::wstring> paths = {
+            exeDir + L"\\airmuse_apple_engine.js",
+            exeDir + L"\\src\\media\\airmuse_apple_engine.js",
+            exeDir + L"\\..\\src\\media\\airmuse_apple_engine.js",
+            exeDir + L"\\..\\..\\src\\media\\airmuse_apple_engine.js",
+            L"src/media/airmuse_apple_engine.js",
+            L"../src/media/airmuse_apple_engine.js",
+            L"../../src/media/airmuse_apple_engine.js",
+            L"airmuse_apple_engine.js"
+        };
+        for (const auto& p : paths) {
+            std::ifstream f(p, std::ios::binary);
+            if (f.is_open()) {
+                std::string utf8((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());
+                if (!utf8.empty()) {
+                    int len = MultiByteToWideChar(CP_UTF8, 0, utf8.c_str(), -1, nullptr, 0);
+                    if (len > 1) {
+                        s_cached.resize(len - 1);
+                        MultiByteToWideChar(CP_UTF8, 0, utf8.c_str(), -1, &s_cached[0], len);
+                        break;
+                    }
+                }
+            }
+        }
+    }
+    return s_cached.c_str();
+}
+
+/**
+ * @brief Apple Music Web 适配器 (现代 Amp-API + Image 3 渲染引擎)
+ */
+class AppleMusicAdapter : public IWebAdapter {
+public:
+    WebPlatform GetPlatform() const override { return WebPlatform::AppleMusic; }
+    const wchar_t* GetName() const override { return L"Apple Music"; }
+    const wchar_t* GetHomeUrl() const override { return L"https://music.apple.com"; }
+    const wchar_t* GetInjectScript() const override { return GetAppleEngineScript(); }
+
+    const wchar_t* GetPlayPauseJs() const override {
+        return L"(function(){const mk=window.MusicKit&&MusicKit.getInstance&&MusicKit.getInstance();if(mk)mk.isPlaying?mk.pause():mk.play();})();";
+    }
+
+    const wchar_t* GetNextJs() const override {
+        return L"(function(){const mk=window.MusicKit&&MusicKit.getInstance&&MusicKit.getInstance();if(mk)mk.skipToNextItem();})();";
+    }
+
+    const wchar_t* GetPrevJs() const override {
+        return L"(function(){const mk=window.MusicKit&&MusicKit.getInstance&&MusicKit.getInstance();if(mk)mk.skipToPreviousItem();})();";
+    }
+
+    const wchar_t* GetSeekJsTemplate() const override {
+        return L"(function(){const mk=window.MusicKit&&MusicKit.getInstance&&MusicKit.getInstance();if(mk)mk.seekToTime(%.3f);})();";
+    }
+};
+
+} // namespace airmuse

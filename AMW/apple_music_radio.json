@@ -1,0 +1,978 @@
+﻿{
+  "pageName": "广播",
+  "url": "https://amp-api-edge.music.apple.com/v1/editorial/cn/groupings?name=radio",
+  "capturedAt": "2026-11-17T18:56:27.889Z",
+  "totalCategories": 8,
+  "categories": [
+    {
+      "id": "section-1",
+      "title": "精品推荐",
+      "itemCount": 4,
+      "items": [
+        {
+          "id": "ra.6826176672",
+          "title": "Arlo Parks",
+          "subtitle": "Apple Music",
+          "eyebrow": "推荐单集",
+          "type": "station",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/a9/12/bb/a912bbea-c5b8-f241-ac2e-47ef965d1482/dee6ac5c-94df-4cae-b9bf-1003f217e287.png/160x160SC.DN02.webp?l=zh-Hans",
+          "linkUrl": "https://music.apple.com/cn/station/arlo-parks/ra.6826176672"
+        },
+        {
+          "id": "ra.6781808110",
+          "title": "Yung Miami",
+          "subtitle": "Apple Music",
+          "eyebrow": "推荐单集",
+          "type": "station",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/51/96/2b/51962bf1-e6f3-4a9e-5769-401bbd17837c/a183001b-d0d5-492a-9922-b485192468ea.png/160x160SC.DN02.webp?l=zh-Hans",
+          "linkUrl": "https://music.apple.com/cn/station/yung-miami/ra.6781808110"
+        },
+        {
+          "id": "ra.6795073831",
+          "title": "Jamie Miller",
+          "subtitle": "Apple Music",
+          "eyebrow": "推荐单集",
+          "type": "station",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features211/v4/1c/55/46/1c554684-f77c-defd-3d4e-53d8f093df48/da6621e7-d8f5-4420-8573-cd3ec52206cf.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/station/jamie-miller/ra.6795073831"
+        },
+        {
+          "id": "ra.6827314841",
+          "title": "GloRilla and Sexyy Red",
+          "subtitle": "Apple Music",
+          "eyebrow": "推荐单集",
+          "type": "station",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/6c/48/d8/6c48d83b-04f7-b075-872d-1ef769cfa1a7/c6ec6623-d80a-4def-91a0-77ba912b6256.png/160x160SC.DN02.webp?l=zh-Hans",
+          "linkUrl": "https://music.apple.com/cn/station/glorilla-and-sexyy-red/ra.6827314841"
+        }
+      ],
+      "timing": {
+        "hydrationDurationMs": 0,
+        "extractionDurationMs": 0.2,
+        "totalDurationMs": 0.2,
+        "avgTimePerItemMs": 0.05
+      }
+    },
+    {
+      "id": "section-2",
+      "title": "新近内容",
+      "itemCount": 20,
+      "items": [
+        {
+          "id": "ra.6826176672",
+          "title": "Arlo Parks",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "station",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/a9/12/bb/a912bbea-c5b8-f241-ac2e-47ef965d1482/dee6ac5c-94df-4cae-b9bf-1003f217e287.png/160x160SC.DN02.webp?l=zh-Hans",
+          "linkUrl": "https://music.apple.com/cn/station/arlo-parks/ra.6826176672"
+        },
+        {
+          "id": "ra.6827302558",
+          "title": "Lil Baby",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "station",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/d5/90/6d/d5906da5-90ad-03a6-3725-b6629722176f/a9bca9fd-7d7b-4690-8a64-db746e9dedea.png/160x160SC.DN02.webp?l=zh-Hans",
+          "linkUrl": "https://music.apple.com/cn/station/lil-baby/ra.6827302558"
+        },
+        {
+          "id": "ra.6795073831",
+          "title": "Jamie Miller",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "station",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features211/v4/1c/55/46/1c554684-f77c-defd-3d4e-53d8f093df48/da6621e7-d8f5-4420-8573-cd3ec52206cf.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/station/jamie-miller/ra.6795073831"
+        },
+        {
+          "id": "ra.6827314841",
+          "title": "GloRilla and Sexyy Red",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "station",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/6c/48/d8/6c48d83b-04f7-b075-872d-1ef769cfa1a7/c6ec6623-d80a-4def-91a0-77ba912b6256.png/160x160SC.DN02.webp?l=zh-Hans",
+          "linkUrl": "https://music.apple.com/cn/station/glorilla-and-sexyy-red/ra.6827314841"
+        },
+        {
+          "id": "ra.6824959614",
+          "title": "BE:FIRST",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "station",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/7b/bf/5d/7bbf5d8c-095e-bea7-f3a2-091fa96114e2/db6f4404-36c3-4585-8010-fe97d9fdd1f9.png/160x160SC.DN02.webp?l=zh-Hans",
+          "linkUrl": "https://music.apple.com/cn/station/be-first/ra.6824959614"
+        },
+        {
+          "id": "ra.6830593403",
+          "title": "Girl Ultra",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "station",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/eb/11/cd/eb11cd15-aa3d-b62b-05ce-719c14736916/ff456d5a-e73a-46df-aaac-fe51723f0db1.png/160x160SC.DN02.webp?l=zh-Hans",
+          "linkUrl": "https://music.apple.com/cn/station/girl-ultra/ra.6830593403"
+        },
+        {
+          "id": "ra.6781808110",
+          "title": "Yung Miami",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "station",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/51/96/2b/51962bf1-e6f3-4a9e-5769-401bbd17837c/a183001b-d0d5-492a-9922-b485192468ea.png/160x160SC.DN02.webp?l=zh-Hans",
+          "linkUrl": "https://music.apple.com/cn/station/yung-miami/ra.6781808110"
+        },
+        {
+          "id": "ra.6815836153",
+          "title": "nomi.",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "station",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/bd/a8/79/bda87986-7cfb-b6fd-d946-a6df7e8da486/405cc1c5-dd37-43c5-b416-803260c6c752.png/160x160SC.DN02.webp?l=zh-Hans",
+          "linkUrl": "https://music.apple.com/cn/station/nomi/ra.6815836153"
+        },
+        {
+          "id": "ra.6830217061",
+          "title": "DIIV: The Zane Lowe Interview",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "station",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/e4/8a/e9/e48ae982-26a9-8568-26d4-472ac8835f2b/5628b7ef-f29b-42d5-8259-82e153be2145.png/160x160SC.DN02.webp?l=zh-Hans",
+          "linkUrl": "https://music.apple.com/cn/station/diiv-the-zane-lowe-interview/ra.6830217061"
+        },
+        {
+          "id": "ra.6825064090",
+          "title": "Ovrkast.",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "station",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/6d/3a/fa/6d3afa50-a069-b03d-0b05-362e8a8bd5c1/6e70a562-35d3-431b-904b-30880e990d78.png/160x160SC.DN02.webp?l=zh-Hans",
+          "linkUrl": "https://music.apple.com/cn/station/ovrkast/ra.6825064090"
+        },
+        {
+          "id": "ra.6827311866",
+          "title": "Classics in the Making '26",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "station",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/0b/15/3e/0b153eab-a692-dab4-dd67-d61d59c3c50f/9fa7b734-50c7-46b0-938f-8b5bdcec434c.png/160x160SC.DN02.webp?l=zh-Hans",
+          "linkUrl": "https://music.apple.com/cn/station/classics-in-the-making-26/ra.6827311866"
+        },
+        {
+          "id": "ra.6828986593",
+          "title": "Burna Boy",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "station",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/e5/dc/6c/e5dc6c3d-0113-027f-8854-a949f28d3f69/aa4c7fe9-8441-4805-9989-65e4efab2ba7.png/160x160SC.DN02.webp?l=zh-Hans",
+          "linkUrl": "https://music.apple.com/cn/station/burna-boy/ra.6828986593"
+        },
+        {
+          "id": "ra.6828093895",
+          "title": "Dominic Fike",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "station",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/48/a9/a9/48a9a974-2f4c-b4db-d14a-17dcb3eb1c67/306c0402-7d1a-4979-ac39-0b48aebe68fa.png/160x160SC.DN02.webp?l=zh-Hans",
+          "linkUrl": "https://music.apple.com/cn/station/dominic-fike/ra.6828093895"
+        },
+        {
+          "id": "ra.6795073741",
+          "title": "Fontaines D.C.",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "station",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/d2/6c/d8/d26cd8d4-0063-80e5-9ee3-438822e51933/c15b8b8f-3aa7-4ad8-a8ae-126c8a31545c.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/station/fontaines-d-c/ra.6795073741"
+        },
+        {
+          "id": "ra.6821019058",
+          "title": "松木美定",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "station",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/54/01/a4/5401a4ea-e4f3-ccef-5e0e-cb82d38f2f4d/d29d873f-f07d-423e-a310-f5b2729838ce.png/160x160SC.DN02.webp?l=zh-Hans",
+          "linkUrl": "https://music.apple.com/cn/station/%E6%9D%BE%E6%9C%A8%E7%BE%8E%E5%AE%9A/ra.6821019058"
+        },
+        {
+          "id": "ra.6823318279",
+          "title": "U2: The Zane Lowe Interview",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "station",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/ef/58/1b/ef581b6b-46a9-e013-8e10-07b4894b05fb/70adeb15-e0a2-467c-bbcd-121f9ab2104c.png/160x160SC.DN02.webp?l=zh-Hans",
+          "linkUrl": "https://music.apple.com/cn/station/u2-the-zane-lowe-interview/ra.6823318279"
+        },
+        {
+          "id": "ra.6825499897",
+          "title": "Gus Dapperton",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "station",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/50/a8/8d/50a88d23-2681-fc1c-af30-65abe120823a/a4fdc79a-3673-488a-8ccc-3f53117b6141.png/160x160SC.DN02.webp?l=zh-Hans",
+          "linkUrl": "https://music.apple.com/cn/station/gus-dapperton/ra.6825499897"
+        },
+        {
+          "id": "ra.6825535801",
+          "title": "DJ Clue & Uncle Manny",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "station",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/e9/f3/47/e9f347af-5747-f9ee-7333-d0d9d50270ce/6b578e12-ea6b-40fb-910d-add3caf1f0e2.png/160x160SC.DN02.webp?l=zh-Hans",
+          "linkUrl": "https://music.apple.com/cn/station/dj-clue-uncle-manny/ra.6825535801"
+        },
+        {
+          "id": "ra.6825458622",
+          "title": "For The Fans: Zara Larsson",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "station",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features211/v4/2f/91/9b/2f919b92-b91c-fe67-fa83-738a859a52e5/c9c878f8-a381-4de2-9437-b4786ce66838.png/160x160SC.DN02.webp?l=zh-Hans",
+          "linkUrl": "https://music.apple.com/cn/station/for-the-fans-zara-larsson/ra.6825458622"
+        },
+        {
+          "id": "ra.6825500933",
+          "title": "Ashe and Chloe Qisha",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "station",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/a7/61/8a/a7618a27-c3c1-7595-f407-9a2c3688a87d/f56986d4-f6b3-46b2-b54c-93c34c535232.png/160x160SC.DN02.webp?l=zh-Hans",
+          "linkUrl": "https://music.apple.com/cn/station/ashe-and-chloe-qisha/ra.6825500933"
+        }
+      ],
+      "timing": {
+        "hydrationDurationMs": 0,
+        "extractionDurationMs": 0.2,
+        "totalDurationMs": 0.2,
+        "avgTimePerItemMs": 0.01
+      }
+    },
+    {
+      "id": "section-3",
+      "title": "艺人接管麦克风",
+      "itemCount": 11,
+      "items": [
+        {
+          "id": "ra.6781808110",
+          "title": "Yung Miami",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "station",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/51/96/2b/51962bf1-e6f3-4a9e-5769-401bbd17837c/a183001b-d0d5-492a-9922-b485192468ea.png/160x160SC.DN02.webp?l=zh-Hans",
+          "linkUrl": "https://music.apple.com/cn/station/yung-miami/ra.6781808110"
+        },
+        {
+          "id": "ra.1847703924",
+          "title": "Burna Boy",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "station",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/f7/c9/dd/f7c9dd77-2519-73d6-f542-b6f785e4dda0/958ac2dd-2786-4a69-982e-9da712ca7ede.png/160x160SC.DN02.webp?l=zh-Hans",
+          "linkUrl": "https://music.apple.com/cn/station/burna-boy/ra.1847703924"
+        },
+        {
+          "id": "ra.1894025348",
+          "title": "Kehlani",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "station",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/83/d9/22/83d922bc-2249-548d-9dd7-0d8ae1eb7a87/07f1b30c-abfd-43c4-8bcd-489c39de9d1c.png/160x160SC.DN02.webp?l=zh-Hans",
+          "linkUrl": "https://music.apple.com/cn/station/kehlani/ra.1894025348"
+        },
+        {
+          "id": "ra.6817941448",
+          "title": "Victoria Monét",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "station",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/e6/66/f2/e666f2b1-609f-1282-218b-f1b87302a170/7efc40d4-8982-4e91-bbd6-eeb4806ef344.png/160x160SC.DN02.webp?l=zh-Hans",
+          "linkUrl": "https://music.apple.com/cn/station/victoria-mon%C3%A9t/ra.6817941448"
+        },
+        {
+          "id": "ra.6817881730",
+          "title": "Quavo",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "station",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/42/20/ac/4220acb2-49e6-b960-cf08-f0347a3af5f1/3522d798-7109-4f9d-bbaa-6f6152c24a06.png/160x160SC.DN02.webp?l=zh-Hans",
+          "linkUrl": "https://music.apple.com/cn/station/quavo/ra.6817881730"
+        },
+        {
+          "id": "ra.1896858608",
+          "title": "SIENNA SPIRO",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "station",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/4e/a2/32/4ea2325d-3986-0505-e0bb-ba5d6a8125bb/98f3efa2-80b8-4010-b1a8-fd59a6c95926.png/160x160SC.DN02.webp?l=zh-Hans",
+          "linkUrl": "https://music.apple.com/cn/station/sienna-spiro/ra.1896858608"
+        },
+        {
+          "id": "ra.1881698762",
+          "title": "Ayra Starr",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "station",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/99/9d/dd/999ddd23-6023-6838-e863-5377634955d8/3fb654de-a41c-4a80-8fc5-c390a45df532.png/160x160SC.DN02.webp?l=zh-Hans",
+          "linkUrl": "https://music.apple.com/cn/station/ayra-starr/ra.1881698762"
+        },
+        {
+          "id": "ra.1895756613",
+          "title": "Arlo Parks",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "station",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/4e/4b/e5/4e4be560-f20f-a909-e6e4-b41a4af8ea79/469a01a2-1a8c-4385-ba2e-3eba3f3cf280.png/160x160SC.DN02.webp?l=zh-Hans",
+          "linkUrl": "https://music.apple.com/cn/station/arlo-parks/ra.1895756613"
+        },
+        {
+          "id": "ra.1896664711",
+          "title": "GIVĒON",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "station",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/ef/cc/de/efccde96-79f4-8479-1673-439433abcd25/9c7132d5-6f5e-4441-aea5-d26580008888.png/160x160SC.DN02.webp?l=zh-Hans",
+          "linkUrl": "https://music.apple.com/cn/station/giv%C4%93on/ra.1896664711"
+        },
+        {
+          "id": "ra.6808346885",
+          "title": "Kim Petras",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "station",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/d4/6f/6b/d46f6b40-9f65-e5cc-a5d1-86d6fed83387/ee5426b0-7075-43e7-a6ac-5bf2ce0b99c1.png/160x160SC.DN02.webp?l=zh-Hans",
+          "linkUrl": "https://music.apple.com/cn/station/kim-petras/ra.6808346885"
+        },
+        {
+          "id": "ra.6795316549",
+          "title": "Dwayne Johnson",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "station",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/47/86/90/47869077-e44a-5e47-f3e6-421768d7423d/2a080571-801d-4cd6-9d70-aa8f649034ee.png/160x160SC.DN02.webp?l=zh-Hans",
+          "linkUrl": "https://music.apple.com/cn/station/dwayne-johnson/ra.6795316549"
+        }
+      ],
+      "timing": {
+        "hydrationDurationMs": 0,
+        "extractionDurationMs": 0.2,
+        "totalDurationMs": 0.2,
+        "avgTimePerItemMs": 0.018
+      }
+    },
+    {
+      "id": "section-4",
+      "title": "Apple Music 电台主持人",
+      "itemCount": 5,
+      "items": [
+        {
+          "id": "6575365633",
+          "title": "推荐精选",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "editorial",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features116/v4/f1/bd/bf/f1bdbfb6-8358-1561-c60a-c808342f2e35/source/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/editorial/6575365633"
+        },
+        {
+          "id": "6575365634",
+          "title": "推荐精选",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "editorial",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/4f/b4/65/4fb46531-cc13-ba05-f289-5ccbfb88f333/source/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/editorial/6575365634"
+        },
+        {
+          "id": "6575365635",
+          "title": "推荐精选",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "editorial",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/ad/5a/3f/ad5a3f4b-1040-fc7b-5ce1-bffd45e29243/source/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/editorial/6575365635"
+        },
+        {
+          "id": "6575365636",
+          "title": "推荐精选",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "editorial",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/63/f0/d8/63f0d8c7-b7f4-0f62-e5f0-72578b57fe3b/source/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/editorial/6575365636"
+        },
+        {
+          "id": "6575365637",
+          "title": "推荐精选",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "editorial",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/10/c0/7e/10c07e3f-0b5a-ced2-ca52-82859d44f8df/source/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/editorial/6575365637"
+        }
+      ],
+      "timing": {
+        "hydrationDurationMs": 0,
+        "extractionDurationMs": 0.2,
+        "totalDurationMs": 0.2,
+        "avgTimePerItemMs": 0.04
+      }
+    },
+    {
+      "id": "section-5",
+      "title": "艺人主持节目",
+      "itemCount": 10,
+      "items": [
+        {
+          "id": "6575366209",
+          "title": "推荐精选",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "editorial",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/5e/b5/f4/5eb5f48a-fbe0-f74a-5557-770895e0c1f1/source/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/editorial/6575366209"
+        },
+        {
+          "id": "6575366210",
+          "title": "推荐精选",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "editorial",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/68/7e/61/687e6144-5bc4-b251-71de-8b51dda270f8/source/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/editorial/6575366210"
+        },
+        {
+          "id": "6575366211",
+          "title": "推荐精选",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "editorial",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/3e/7a/b2/3e7ab263-bdaf-83de-25ff-94c2796da6d5/source/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/editorial/6575366211"
+        },
+        {
+          "id": "6575366212",
+          "title": "推荐精选",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "editorial",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/41/b2/34/41b234b6-c65c-02d8-3260-6234e2256281/source/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/editorial/6575366212"
+        },
+        {
+          "id": "6575366213",
+          "title": "推荐精选",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "editorial",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/94/97/e7/9497e714-90da-6ef2-4daa-4c145394614b/source/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/editorial/6575366213"
+        },
+        {
+          "id": "6575366216",
+          "title": "推荐精选",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "editorial",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/ce/39/dd/ce39dded-28a5-2f9a-4836-9064cf99d9f2/source/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/editorial/6575366216"
+        },
+        {
+          "id": "6575366217",
+          "title": "推荐精选",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "editorial",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/2a/d3/bc/2ad3bc6b-49ac-cf81-69c7-22b10b7bd334/source/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/editorial/6575366217"
+        },
+        {
+          "id": "6575366218",
+          "title": "推荐精选",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "editorial",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/18/ee/83/18ee836f-6964-940c-c9ed-55b879a9cb98/source/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/editorial/6575366218"
+        },
+        {
+          "id": "6575366219",
+          "title": "推荐精选",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "editorial",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/e7/10/0d/e7100d4e-43fa-220e-edc5-8318206cb297/source/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/editorial/6575366219"
+        },
+        {
+          "id": "6575366220",
+          "title": "推荐精选",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "editorial",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/73/dc/be/73dcbe86-cd56-9fa1-9fff-261183adad0e/source/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/editorial/6575366220"
+        }
+      ],
+      "timing": {
+        "hydrationDurationMs": 0,
+        "extractionDurationMs": 0.2,
+        "totalDurationMs": 0.2,
+        "avgTimePerItemMs": 0.02
+      }
+    },
+    {
+      "id": "section-6",
+      "title": "艺人分享",
+      "itemCount": 20,
+      "items": [
+        {
+          "id": "1827142044",
+          "title": "Jackson Wang: The Zane Lowe Interview",
+          "subtitle": "Zane Lowe & Jackson Wang",
+          "eyebrow": null,
+          "type": "item",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Video211/v4/75/00/01/75000154-dc4e-1512-ff77-72132d6772b7/TN-MS-WW-Zane_JacksonWang_20250710-AUC_Episode.jpg/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/music-video/jackson-wang-the-zane-lowe-interview/1827142044"
+        },
+        {
+          "id": "1825529030",
+          "title": "Lady Gaga on Harlequin",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "item",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/FuseSocial221/v4/52/51/f5/5251f587-87e9-0dc8-a25d-0da40327a205/Job6d0c2775-72b5-491f-9060-199f349a9d67-196930857-PreviewImage_Preview_Image_Intermediate_nonvideo_385622259_2242872330-Time1752030515460.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/item/1825529030"
+        },
+        {
+          "id": "1815865765",
+          "title": "Elton John's Rocket Hour with sombr",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "item",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/FuseSocial221/v4/7f/ee/b3/7feeb3fb-6170-a7ca-8b2b-34bdc72ae79b/Job4ac7269e-3b3f-4eb2-9fca-5dc7b97c9102-193036030-PreviewImage_Preview_Image_Intermediate_nonvideo_378148734_2172069690-Time1747882385525.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/item/1815865765"
+        },
+        {
+          "id": "1801882792",
+          "title": "Selena Gomez, benny blanco, and Gracie Abrams",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "item",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/FuseSocial221/v4/3f/be/3b/3fbe3bc9-338d-b60a-c04d-e430d75c8eb6/Jobb835ff52-093c-4f9f-86a7-30c828f21c59-187855599-PreviewImage_Preview_Image_Intermediate_nonvideo_367812066_2084894814-Time1741838672575.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/item/1801882792"
+        },
+        {
+          "id": "1675326686",
+          "title": "Lil Yachty on \"Let's Start Here.\"",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "item",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/FuseSocial126/v4/c8/3e/b0/c83eb029-10a9-4b9e-578b-ae041e7d2921/Jobfb598b69-ae80-460b-8373-412ae6715b02-145963354-PreviewImage_preview_image_nonvideo_sdr-Time1677773622943.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/item/1675326686"
+        },
+        {
+          "id": "1692878292",
+          "title": "Elton John's Rocket Hour with The Lemon Twigs",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "item",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/FuseSocial116/v4/69/38/16/69381654-fdb4-affb-e1b9-55b0cba6de92/Job3baea2b0-40a5-45d7-8dbc-5fc051848f79-151536946-PreviewImage_preview_image_nonvideo_sdr-Time1686888315531.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/item/1692878292"
+        },
+        {
+          "id": "1677312678",
+          "title": "Elton John's Rocket Hour with Joel Corry.",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "item",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/FuseSocial116/v4/5b/b7/d4/5bb7d4ce-ec7f-881d-cae6-f6e207fb244a/Jobbecc1f7c-b08a-423c-a43e-d04e398dd6a1-146582069-PreviewImage_preview_image_nonvideo_sdr-Time1678878339124.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/item/1677312678"
+        },
+        {
+          "id": "1700922564",
+          "title": "The Zane Lowe Interview: Ice Spice",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "item",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/FuseSocial126/v4/9d/6d/7f/9d6d7fb2-fbae-54e0-6cd0-7cdd3d5260ec/Jobc881b087-223a-4ddb-9d83-6a6ad0c0a2d0-153772839-PreviewImage_preview_image_nonvideo_sdr-Time1691074812694.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/item/1700922564"
+        },
+        {
+          "id": "1787237532",
+          "title": "Elton John's Rocket Hour with Blossoms",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "item",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/FuseSocial211/v4/b9/dd/2c/b9dd2ce1-5073-75b6-6467-700c66e974cc/Job7f0c3d23-6390-4478-a9a9-31a65b74faab-182392866-PreviewImage_Preview_Image_Intermediate_nonvideo_356767946_2001884092-Time1735106329435.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/item/1787237532"
+        },
+        {
+          "id": "1691695563",
+          "title": "Coi Leray on \"Bops\"",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "item",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/FuseSocial116/v4/9d/a6/d1/9da6d1ec-ff87-fa1a-6914-193bb6ac1da5/Job928b28c7-abbb-4c86-a8bb-f027b1399be1-151172592-PreviewImage_preview_image_nonvideo_sdr-Time1686219201078.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/item/1691695563"
+        },
+        {
+          "id": "1698541826",
+          "title": "Greta Van Fleet on \"The Falling Sky\"",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "item",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/FuseSocial126/v4/2b/9a/49/2b9a4947-a3d8-433d-a9f6-31e15a10bb97/Job4ce81eea-13af-4bf4-b393-60cc88d63be5-153112862-PreviewImage_preview_image_nonvideo_sdr-Time1689868391997.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/item/1698541826"
+        },
+        {
+          "id": "1702842759",
+          "title": "The Linda Lindas on \"Resolution/Revolution\".",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "item",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/FuseSocial126/v4/51/13/7b/51137b27-aa2e-53c7-c23b-55faa2143113/Job20671bbb-172e-41ea-9605-8fd943b02c17-154332846-PreviewImage_preview_image_nonvideo_sdr-Time1692179667452.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/item/1702842759"
+        },
+        {
+          "id": "1689600649",
+          "title": "Carin Leon on “La Primera Cita”",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "item",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/FuseSocial126/v4/dc/b4/c1/dcb4c1bc-1677-da08-3276-5334efbacff5/Job80faea9a-1d2c-4c78-8db6-2c6504bff584-150555714-PreviewImage_preview_image_nonvideo_sdr-Time1685027159490.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/item/1689600649"
+        },
+        {
+          "id": "1724113888",
+          "title": "Channel Tres on \"Walked In The Room\"",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "item",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/FuseSocial116/v4/e7/c5/bb/e7c5bbe7-5e81-200e-445c-85306a169a20/Job66d794db-04ef-4cdf-b9b6-81df9ab5a38e-160904150-PreviewImage_preview_image_nonvideo_sdr-Time1704338788777.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/item/1724113888"
+        },
+        {
+          "id": "1770721254",
+          "title": "Elton John’s Rocket Hour With Fontaines D.C.",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "item",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/FuseSocial221/v4/7f/c3/6e/7fc36e33-ac23-5f9a-e9bf-abfa0f593917/SHW_MS_WW_Elton_FONTAINES_D.C._20240906_AUC_Episode_lang_en_gb.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/item/1770721254"
+        },
+        {
+          "id": "1755528279",
+          "title": "Elton John’s Rocket Hour with Chappell Roan",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "item",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/FuseSocial211/v4/7a/32/22/7a3222b7-7b81-5336-0da6-af88f1e036a9/Job6e9ac10f-a12e-4aab-9b90-11af109dcd81-171245989-PreviewImage_Preview_Image_Intermediate_nonvideo_333460551_1824494735-Time1720079028260.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/item/1755528279"
+        },
+        {
+          "id": "1705221480",
+          "title": "The Zane Lowe Interview: Russ",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "item",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/FuseSocial126/v4/87/e1/24/87e12463-d28f-c369-f9b0-2e0c2df6b381/Jobee463702-99dc-4426-bc1b-aa0c722c447a-155018361-PreviewImage_preview_image_nonvideo_sdr-Time1693484503058.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/item/1705221480"
+        },
+        {
+          "id": "1755520907",
+          "title": "Apple Music Live: Kacey Musgraves (Trailer)",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "item",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/FuseSocial211/v4/5e/c5/f2/5ec5f284-0ad6-c7e2-bfd7-822cf3f9d6d9/Jobd07353f1-c970-488a-ae32-0160c903dc23-171243124-PreviewImage_Preview_Image_Intermediate_nonvideo_333456122_1824467124-Time1720073542134.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/item/1755520907"
+        },
+        {
+          "id": "1748990438",
+          "title": "Rachel Chinouriri on \"What A Devastating Turn of Events\"",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "item",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/FuseSocial221/v4/2d/18/d9/2d18d985-bd3a-40c1-845d-c7f6d093000f/TN_MS_WW_Judd_Rachel_Chinouriri_20240418_AUC_Episode.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/item/1748990438"
+        },
+        {
+          "id": "1678690867",
+          "title": "GAYLE on “everybody hates me”",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "item",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/FuseSocial126/v4/98/ef/99/98ef99d8-b288-aa0f-47f5-27cc74b30e08/Joba97f79bd-6bf3-46bf-9ec6-5b5e0b70d32c-147017894-PreviewImage_preview_image_nonvideo_sdr-Time1679556883441.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/item/1678690867"
+        }
+      ],
+      "timing": {
+        "hydrationDurationMs": 0,
+        "extractionDurationMs": 0.2,
+        "totalDurationMs": 0.2,
+        "avgTimePerItemMs": 0.01
+      }
+    },
+    {
+      "id": "section-7",
+      "title": "热门电台",
+      "itemCount": 12,
+      "items": [
+        {
+          "id": "ra.985488923",
+          "title": "嘻哈电台",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "station",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/ad/30/25/ad30256a-af7c-d3aa-69d4-a3e97d2ef59e/47d3bef9-24c6-48d9-98b5-8f1150d6c385.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/station/hip-hop/ra.985488923"
+        },
+        {
+          "id": "ra.686227433",
+          "title": "流行乐电台",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "station",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/e4/ea/00/e4ea00bc-1fd8-014b-b542-a4492d7a2b4b/d08f4203-1210-403e-9f0c-d137b292d432.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/station/pop/ra.686227433"
+        },
+        {
+          "id": "ra.985500514",
+          "title": "经典摇滚乐电台",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "station",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/04/44/ee/0444ee5b-cd74-fbc2-ebc2-1fb2520175b9/4380cf64-2283-4322-b807-18fef3fe6e78.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/station/classic-rock/ra.985500514"
+        },
+        {
+          "id": "ra.985496511",
+          "title": "柔和爵士电台",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "station",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/62/21/c0/6221c0f2-5799-624b-8df3-dac125b5ad99/e10159c7-5a91-49ed-b572-f778440068f9.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/station/smooth-jazz/ra.985496511"
+        },
+        {
+          "id": "ra.985484166",
+          "title": "另类音乐电台",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "station",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/81/2b/fd/812bfd61-7be3-f413-7453-a0ec0d83ecd6/431e662c-fcb1-4b42-91f8-266e527bc803.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/station/alternative/ra.985484166"
+        },
+        {
+          "id": "ra.985484943",
+          "title": "弛放电子乐电台",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "station",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/7d/5c/64/7d5c6449-3b6a-bc5b-bbae-0d3756f08d7a/7fad37dc-fe3f-4031-a5af-f4bff49603c1.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/station/chill/ra.985484943"
+        },
+        {
+          "id": "ra.985499994",
+          "title": "R&B 电台",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "station",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/48/96/e5/4896e585-0832-703b-da91-a20ae6f272f6/d0bb6d44-20ad-4a51-ba4d-2bb9a21c64b8.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/station/r-b/ra.985499994"
+        },
+        {
+          "id": "ra.1055200360",
+          "title": "80 年代热歌电台",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "station",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/f9/51/08/f9510877-8987-cdcd-c643-33c58a025a1a/60524357-43fb-488e-b362-66a8d103217b.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/station/80s-pop/ra.1055200360"
+        },
+        {
+          "id": "ra.985498391",
+          "title": "摇篮曲电台",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "station",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/f1/bb/ca/f1bbca52-3760-2d12-fa67-c40fa74bac87/7d4bc886-2cec-411e-b342-f2defe5d5cbb.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/station/lullabies/ra.985498391"
+        },
+        {
+          "id": "ra.985486574",
+          "title": "古典音乐电台",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "station",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/ae/41/bc/ae41bc97-cb4a-8620-4e04-77a1dd762d7d/bf800e05-f413-4a0f-b53c-1da32b1f2acc.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/station/classical/ra.985486574"
+        },
+        {
+          "id": "ra.1060251598",
+          "title": "Spa 音乐",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "station",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/93/c0/06/93c006b1-97c4-5937-c422-729fddea387e/80871c25-452f-4ade-8de7-65edcea04af1.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/station/spa/ra.1060251598"
+        },
+        {
+          "id": "ra.1087953681",
+          "title": "钢琴曲电台",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "station",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/07/2a/06/072a069d-853a-546b-8c79-f97ab69b43da/038a2318-6c47-4597-a22b-6f1100f099e0.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/station/piano/ra.1087953681"
+        }
+      ],
+      "timing": {
+        "hydrationDurationMs": 0,
+        "extractionDurationMs": 0.2,
+        "totalDurationMs": 0.2,
+        "avgTimePerItemMs": 0.017
+      }
+    },
+    {
+      "id": "section-8",
+      "title": "风格电台",
+      "itemCount": 13,
+      "items": [
+        {
+          "id": "ra.985487895",
+          "title": "舞曲电台",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "station",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/0b/70/f1/0b70f1c1-ba8d-82b1-6dff-bee6203c1327/504fe00e-e1d3-4e8e-9a3c-adf0578ce247.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/station/dance/ra.985487895"
+        },
+        {
+          "id": "ra.1129219098",
+          "title": "成人摇滚电台",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "station",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/7a/a3/8d/7aa38da8-d7c0-f4c9-65a6-38ad1f9b2c99/0b938ebb-0bf8-4363-b30b-66170d1211cb.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/station/adult-rock/ra.1129219098"
+        },
+        {
+          "id": "ra.992731732",
+          "title": "K-Pop 电台",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "station",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/96/5b/d9/965bd968-9c1d-b832-abbf-3c9ee025175c/342333b1-178c-44ed-8b7f-c7d1199c393d.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/station/k-pop/ra.992731732"
+        },
+        {
+          "id": "ra.688864159",
+          "title": "酷乐家庭电台",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "station",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/2a/8b/05/2a8b0508-3115-be3f-4790-04408a67d81a/f532bbf9-ae2d-43d7-b30f-e211d2b609d7.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/station/cool-family-radio/ra.688864159"
+        },
+        {
+          "id": "ra.985496180",
+          "title": "爵士乐电台",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "station",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/96/a2/5f/96a25fa1-0118-5a98-5279-101cae9a82a8/677e6359-00a6-4408-bc44-e4c948712d54.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/station/jazz/ra.985496180"
+        },
+        {
+          "id": "ra.985496064",
+          "title": "独立音乐电台",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "station",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/29/f4/28/29f42894-9860-530e-f04d-9d34cc4f5c8b/01f15f3a-c5b9-4314-aab2-fd2681fae444.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/station/indie/ra.985496064"
+        },
+        {
+          "id": "ra.985501172",
+          "title": "不插电音乐电台",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "station",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/15/a4/da/15a4daaf-2dc0-ab02-1ece-fc4e1e5fe2e5/ef2c8852-503b-4f92-a835-5cecb409327f.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/station/acoustic/ra.985501172"
+        },
+        {
+          "id": "ra.985499642",
+          "title": "金属乐电台",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "station",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/8b/4a/e9/8b4ae9b1-685a-b300-e0e1-e6647d8d5c20/bbe4b889-289b-4c85-bf2e-9538c6559ca2.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/station/metal/ra.985499642"
+        },
+        {
+          "id": "ra.985484536",
+          "title": "蓝调电台",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "station",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/d3/95/56/d39556db-9387-b526-fb13-53a3560ac787/867f4afc-ce58-4758-80d2-13aed550b253.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/station/blues/ra.985484536"
+        },
+        {
+          "id": "ra.1055203784",
+          "title": "抒情摇滚电台",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "station",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/cc/0b/ee/cc0bee66-04d5-65e2-daee-e18ebbceff8f/47fe29bd-1efe-4395-ab8e-93f9ecdafaf2.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/station/mellow-rock/ra.1055203784"
+        },
+        {
+          "id": "ra.985500670",
+          "title": "硬摇滚电台",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "station",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/6b/0c/71/6b0c7106-2103-66d6-39fa-070ac96eefbb/1d802351-371d-43d6-ad45-04d4407a1945.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/station/hard-rock/ra.985500670"
+        },
+        {
+          "id": "ra.985488606",
+          "title": "电子乐电台",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "station",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/d8/66/f2/d866f272-8dd7-d5ed-b974-e7664f74b040/e27750e5-c610-4db6-977b-e8c4845c26d2.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/station/electronic/ra.985488606"
+        },
+        {
+          "id": "ra.985500499",
+          "title": "摇滚乐电台",
+          "subtitle": "Apple Music",
+          "eyebrow": null,
+          "type": "station",
+          "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Features/v4/6b/ea/c7/6beac763-3f5c-c42d-bee0-4856d9565bf1/9501d0ca-09f5-4497-a8a5-d2cc942792dd.png/160x160bb.webp",
+          "linkUrl": "https://music.apple.com/cn/station/rock/ra.985500499"
+        }
+      ],
+      "timing": {
+        "hydrationDurationMs": 0,
+        "extractionDurationMs": 0.2,
+        "totalDurationMs": 0.2,
+        "avgTimePerItemMs": 0.015
+      }
+    }
+  ],
+  "timing": {
+    "totalDurationMs": 958.21,
+    "breakdown": {
+      "navigationDurationMs": 958.1,
+      "extractionDurationMs": 0.11
+    },
+    "totalCategories": 8,
+    "totalItems": 95,
+    "avgTimePerCategoryMs": 119.78,
+    "avgTimePerItemMs": 10.09
+  }
+}

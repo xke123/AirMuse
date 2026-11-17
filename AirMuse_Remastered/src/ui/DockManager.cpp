@@ -16,6 +16,54 @@ void DockManager::AttachWindows(HWND mainWnd, HWND lyricsWnd, HWND libraryWnd, H
     m_webHost = webHostWnd;
 }
 
+POINT DockManager::ComputeLibraryDockPos(RECT const& rcMain, int libW, int libH, RevealDir* outDir) const {
+    (void)libW;
+    int ov = GlassRenderer::ToPx(DOCK_OVERLAP_DIP, m_dpi);
+    if (!m_miniMode) {
+        if (outDir) *outDir = RevealDir::FromLeft;
+        return { rcMain.right - ov, rcMain.top };
+    }
+
+    int belowY = rcMain.bottom - ov;
+    int aboveAnchorTop = rcMain.top;
+
+    if (m_lyrics && IsWindowVisible(m_lyrics)) {
+        RECT rcLrc{};
+        GetWindowRect(m_lyrics, &rcLrc);
+        if (m_lyricsSide == DockSide::Bottom) {
+            belowY = rcLrc.bottom - ov;
+        } else if (m_lyricsSide == DockSide::Top) {
+            aboveAnchorTop = rcLrc.top;
+        }
+    }
+
+    int aboveY = aboveAnchorTop - libH + ov;
+
+    HMONITOR hMon = MonitorFromWindow(m_main, MONITOR_DEFAULTTONEAREST);
+    MONITORINFO mi{};
+    mi.cbSize = sizeof(mi);
+    if (GetMonitorInfoW(hMon, &mi)) {
+        if (belowY + libH <= mi.rcWork.bottom) {
+            if (outDir) *outDir = RevealDir::FromTop;
+            return { rcMain.left, belowY };
+        }
+        if (outDir) *outDir = RevealDir::FromBottom;
+        return { rcMain.left, aboveY };
+    }
+    if (outDir) *outDir = RevealDir::FromTop;
+    return { rcMain.left, belowY };
+}
+
+RevealDir DockManager::LibraryRevealDir() const {
+    if (!m_main || !m_library || !m_miniMode) return RevealDir::FromLeft;
+    RECT rcMain{}, rcLib{};
+    GetWindowRect(m_main, &rcMain);
+    GetWindowRect(m_library, &rcLib);
+    RevealDir dir = RevealDir::FromLeft;
+    ComputeLibraryDockPos(rcMain, rcLib.right - rcLib.left, rcLib.bottom - rcLib.top, &dir);
+    return dir;
+}
+
 void DockManager::OnLyricsMoving(WINDOWPOS* wp) {
     if (m_syncing || !m_main || !m_lyrics || (wp->flags & SWP_NOMOVE)) return;
     RECT rcMain{}, rcLrc{};
@@ -46,15 +94,16 @@ void DockManager::OnLyricsMoving(WINDOWPOS* wp) {
 }
 
 void DockManager::OnLibraryMoving(WINDOWPOS* wp) {
-    if (m_syncing || !m_main || !m_lyrics || (wp->flags & SWP_NOMOVE)) return;
-    RECT rcMain{};
+    if (m_syncing || !m_main || !m_library || (wp->flags & SWP_NOMOVE)) return;
+    RECT rcMain{}, rcLib{};
     GetWindowRect(m_main, &rcMain);
-    int snap  = GlassRenderer::ToPx(SNAP_DIST_PX, m_dpi);
-    int dockX = rcMain.right - GlassRenderer::ToPx(DOCK_OVERLAP_DIP, m_dpi);
+    GetWindowRect(m_library, &rcLib);
+    int snap = GlassRenderer::ToPx(SNAP_DIST_PX, m_dpi);
+    POINT dockPt = ComputeLibraryDockPos(rcMain, rcLib.right - rcLib.left, rcLib.bottom - rcLib.top);
 
-    if (std::abs(wp->x - dockX) <= snap && std::abs(wp->y - rcMain.top) <= snap) {
-        wp->x = dockX;
-        wp->y = rcMain.top;
+    if (std::abs(wp->x - dockPt.x) <= snap && std::abs(wp->y - dockPt.y) <= snap) {
+        wp->x = dockPt.x;
+        wp->y = dockPt.y;
         m_libDocked = true;
     } else {
         m_libDocked = false;
@@ -81,7 +130,10 @@ void DockManager::SyncAllDocked() {
     }
 
     if (m_library && IsWindowVisible(m_library) && m_libDocked) {
-        SetWindowPos(m_library, nullptr, rcMain.right - ov, rcMain.top, 0, 0, SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
+        RECT rcLib{};
+        GetWindowRect(m_library, &rcLib);
+        POINT dockPt = ComputeLibraryDockPos(rcMain, rcLib.right - rcLib.left, rcLib.bottom - rcLib.top);
+        SetWindowPos(m_library, nullptr, dockPt.x, dockPt.y, 0, 0, SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
         SyncWebHostBounds();
     }
     m_syncing = false;

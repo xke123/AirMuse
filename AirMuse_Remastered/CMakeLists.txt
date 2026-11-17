@@ -41,6 +41,12 @@ add_executable(AirMuse WIN32
     src/AirMuse.rc
 )
 
+add_custom_command(TARGET AirMuse POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/media/airmuse_apple_engine.js"
+    "$<TARGET_FILE_DIR:AirMuse>/airmuse_apple_engine.js"
+)
+
 target_include_directories(AirMuse PRIVATE
     src
     "${WV2_DIR}/build/native/include"
