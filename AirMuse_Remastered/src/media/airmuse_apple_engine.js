@@ -354,13 +354,23 @@
                 overflow-y: auto;
                 overflow-x: hidden;
                 flex-shrink: 0;
-                padding: 4px 0;
+                padding: 4px 0 8px 0;
+                scroll-behavior: smooth;
             }
-            .am-sidebar::-webkit-scrollbar { width: 2px; }
-            .am-sidebar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.12); border-radius: 1px; }
+            .am-sidebar::-webkit-scrollbar { width: 3.5px; }
+            .am-sidebar::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.03); }
+            .am-sidebar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.35); border-radius: 2px; }
+            .am-sidebar::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.6); }
 
             .am-cat-item {
-                padding: 6px 3px;
+                flex-shrink: 0;
+                min-height: 24px;
+                height: 24px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 0 4px;
+                box-sizing: border-box;
                 font-size: 9.5px;
                 color: #8e8e93;
                 text-align: center;
@@ -371,6 +381,13 @@
                 text-overflow: ellipsis;
                 border-left: 2px solid transparent;
                 line-height: 1.25;
+            }
+            .am-cat-item span {
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                max-width: 100%;
+                display: block;
             }
             .am-cat-item:hover {
                 color: #e4e4e7;
@@ -406,7 +423,9 @@
                 gap: 5px;
             }
             .am-cards-scroll::-webkit-scrollbar { width: 3px; }
-            .am-cards-scroll::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.15); border-radius: 2px; }
+            .am-cards-scroll::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.03); }
+            .am-cards-scroll::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.28); border-radius: 2px; }
+            .am-cards-scroll::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.48); }
 
             /* 单栏卡片 (默认模式) */
             .am-item-card {
