@@ -1,4 +1,4 @@
-# run.ps1
+﻿# run.ps1
 Set-Location $PSScriptRoot
 
 $vsRoot = "E:\Soft\Dependency\VS2022BuildTools"
@@ -21,8 +21,8 @@ if (Test-Path "src\media\bundle.js") {
     } else {
         $uiCore = Get-Content "src\media\airmuse_ui_core.js" -Raw -Encoding UTF8
         $appleProvider = Get-Content "src\media\provider\apple_music_provider.js" -Raw -Encoding UTF8
-        $bundleHeader = "// airmuse_apple_engine.js`n(function () { if (window.__airmuseEngineInited) return; function bootstrap() { if (!document.body) { if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', bootstrap, { once: true }); } else { setTimeout(bootstrap, 50); } return; } if (window.__airmuseEngineInited) return; window.__airmuseEngineInited = true;"
-        $bundleFooter = "const provider = new window.AppleMusicProvider(); window.AirMuseUI.init(provider); } bootstrap(); })();"
+        $bundleHeader = "// airmuse_apple_engine.js`n(function () { function ensureAppMounted() { try { if (window.AirMuseUI && window.AirMuseUI.dom && window.AirMuseUI.dom.appRoot && document.body && !document.body.contains(window.AirMuseUI.dom.appRoot)) { document.body.appendChild(window.AirMuseUI.dom.appRoot); } } catch (_) {} } if (window.__airmuseEngineInited) { ensureAppMounted(); return; } function bootstrap() { if (!document.body) { if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', bootstrap, { once: true }); } else { setTimeout(bootstrap, 50); } return; } if (window.__airmuseEngineInited) { ensureAppMounted(); return; } window.__airmuseEngineInited = true; try {"
+        $bundleFooter = "const provider = new window.AppleMusicProvider(); window.AirMuseUI.init(provider); } catch (err) { console.error('[AirMuse] bootstrap error:', err); } } bootstrap(); })();"
         Set-Content -Path "src\media\airmuse_apple_engine.js" -Value ($bundleHeader + "`n" + $uiCore + "`n" + $appleProvider + "`n" + $bundleFooter) -Encoding UTF8
     }
 }

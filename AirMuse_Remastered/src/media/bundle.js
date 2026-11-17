@@ -14,7 +14,20 @@ const bundled = `// airmuse_apple_engine.js
 // DO NOT EDIT DIRECTLY: Modify src/media/airmuse_ui_core.js or src/media/provider/apple_music_provider.js instead.
 
 (function () {
-    if (window.__airmuseEngineInited) return;
+    function ensureAppMounted() {
+        try {
+            if (window.AirMuseUI && window.AirMuseUI.dom && window.AirMuseUI.dom.appRoot) {
+                if (document.body && !document.body.contains(window.AirMuseUI.dom.appRoot)) {
+                    document.body.appendChild(window.AirMuseUI.dom.appRoot);
+                }
+            }
+        } catch (_) {}
+    }
+
+    if (window.__airmuseEngineInited) {
+        ensureAppMounted();
+        return;
+    }
 
     function bootstrap() {
         if (!document.body) {
@@ -26,18 +39,25 @@ const bundled = `// airmuse_apple_engine.js
             return;
         }
 
-        if (window.__airmuseEngineInited) return;
+        if (window.__airmuseEngineInited) {
+            ensureAppMounted();
+            return;
+        }
         window.__airmuseEngineInited = true;
 
-        // ── 1. 通用 UI 核心组件框架 (Universal UI Core) ──
-        ${uiCoreCode}
+        try {
+            // ── 1. 通用 UI 核心组件框架 (Universal UI Core) ──
+            ${uiCoreCode}
 
-        // ── 2. Apple Music 音源适配器 (AppleMusicProvider) ──
-        ${appleProviderCode}
+            // ── 2. Apple Music 音源适配器 (AppleMusicProvider) ──
+            ${appleProviderCode}
 
-        // ── 3. 实例化并启动应用 ──
-        const provider = new window.AppleMusicProvider();
-        window.AirMuseUI.init(provider);
+            // ── 3. 实例化并启动应用 ──
+            const provider = new window.AppleMusicProvider();
+            window.AirMuseUI.init(provider);
+        } catch (err) {
+            console.error('[AirMuse] Engine bootstrap error:', err);
+        }
     }
 
     bootstrap();

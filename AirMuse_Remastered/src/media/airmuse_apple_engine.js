@@ -3,7 +3,20 @@
 // DO NOT EDIT DIRECTLY: Modify src/media/airmuse_ui_core.js or src/media/provider/apple_music_provider.js instead.
 
 (function () {
-    if (window.__airmuseEngineInited) return;
+    function ensureAppMounted() {
+        try {
+            if (window.AirMuseUI && window.AirMuseUI.dom && window.AirMuseUI.dom.appRoot) {
+                if (document.body && !document.body.contains(window.AirMuseUI.dom.appRoot)) {
+                    document.body.appendChild(window.AirMuseUI.dom.appRoot);
+                }
+            }
+        } catch (_) {}
+    }
+
+    if (window.__airmuseEngineInited) {
+        ensureAppMounted();
+        return;
+    }
 
     function bootstrap() {
         if (!document.body) {
@@ -15,11 +28,15 @@
             return;
         }
 
-        if (window.__airmuseEngineInited) return;
+        if (window.__airmuseEngineInited) {
+            ensureAppMounted();
+            return;
+        }
         window.__airmuseEngineInited = true;
 
-        // ── 1. 通用 UI 核心组件框架 (Universal UI Core) ──
-        /**
+        try {
+            // ── 1. 通用 UI 核心组件框架 (Universal UI Core) ──
+            /**
  * airmuse_ui_core.js
  * AirMuse 通用前端页面渲染与组件化核心框架 (Universal UI Core & Component Library)
  *
@@ -681,12 +698,15 @@
         // 初始化
         init(provider) {
             this.provider = provider;
-            this.Theme.apply();
-            this.mountScaffold();
-            this.bindEvents();
-            this.bindBridge();
-            this.loadInitialData();
-            this.startSPAKeeper();
+            try {
+                this.Theme.apply();
+                this.mountScaffold();
+                this.bindBridge();
+                this.startSPAKeeper();
+                this.loadInitialData();
+            } catch (err) {
+                console.error('[AirMuseUI] init error:', err);
+            }
         },
 
         // 构建脚手架
@@ -761,6 +781,26 @@
 
             this.renderTabs();
             this.renderSearchScopes();
+            this.bindEvents();
+        },
+
+        // 切换标签页
+        switchTab(tabId) {
+            if (this.currentTab === tabId && this.dom.detailView.style.display !== 'flex' && !this.isSearching) return;
+            this.currentTab = tabId;
+            this.activeCategoryIdx = 0;
+            this.exitSearchMode();
+            if (this.dom.tabGroup) {
+                this.dom.tabGroup.querySelectorAll('.am-tab-btn').forEach(b => {
+                    b.classList.toggle('active', b.dataset.tab === tabId);
+                });
+            }
+            this.render();
+            // 若无数据，自动从音源请求
+            const curData = this.datasets[this.currentTab];
+            if (!curData || !curData.categories || !curData.categories.length) {
+                this.fetchTabData(this.currentTab, false);
+            }
         },
 
         // 渲染顶部标签
@@ -777,19 +817,7 @@
                 btn.dataset.tab = tab.id;
                 btn.innerText = tab.label;
                 btn.onclick = () => {
-                    if (this.currentTab === tab.id && this.dom.detailView.style.display !== 'flex' && !this.isSearching) return;
-                    this.currentTab = tab.id;
-                    this.activeCategoryIdx = 0;
-                    this.exitSearchMode();
-                    this.dom.tabGroup.querySelectorAll('.am-tab-btn').forEach(b => {
-                        b.classList.toggle('active', b.dataset.tab === tab.id);
-                    });
-                    this.render();
-                    // 若无数据，自动从音源请求
-                    const curData = this.datasets[this.currentTab];
-                    if (!curData || !curData.categories || !curData.categories.length) {
-                        this.fetchTabData(this.currentTab, false);
-                    }
+                    this.switchTab(tab.id);
                 };
                 this.dom.tabGroup.appendChild(btn);
             });
@@ -1357,16 +1385,42 @@
             };
         },
 
-        // SPA 保活：若宿主页面发生内联 DOM 变动导致 `#airmuse-app` 意外丢失，自动恢复
+        // SPA 保活：监听宿主页面 DOM 变动与路由替换，确保 `#airmuse-app` 瞬间恢复，绝不黑屏
         startSPAKeeper() {
-            if (this._spaKeeperTimer) clearInterval(this._spaKeeperTimer);
-            this._spaKeeperTimer = setInterval(() => {
-                const app = document.getElementById('airmuse-app');
-                if (!app && document.body) {
-                    this.mountScaffold();
-                    this.render();
+            if (this._spaObserver) {
+                try { this._spaObserver.disconnect(); } catch (_) {}
+            }
+
+            const ensureMounted = () => {
+                if (!document.body) return;
+                const existing = document.getElementById('airmuse-app');
+                if (!existing) {
+                    if (this.dom.appRoot) {
+                        // 节点仍然保存在内存中，直接重新挂载到 body，保留所有事件和渲染状态
+                        document.body.appendChild(this.dom.appRoot);
+                    } else {
+                        // 全新初始化脚手架
+                        this.mountScaffold();
+                        this.render();
+                    }
                 }
-            }, 1000);
+            };
+
+            try {
+                this._spaObserver = new MutationObserver(() => {
+                    ensureMounted();
+                });
+                if (document.body) {
+                    this._spaObserver.observe(document.body, { childList: true });
+                }
+                if (document.documentElement) {
+                    this._spaObserver.observe(document.documentElement, { childList: true });
+                }
+            } catch (_) {}
+
+            // 双重保障：低频心跳检测 (250ms) 确保在任何极端 SPA 清理或导航下万无一失
+            if (this._spaKeeperTimer) clearInterval(this._spaKeeperTimer);
+            this._spaKeeperTimer = setInterval(ensureMounted, 250);
         }
     };
 
@@ -1375,8 +1429,8 @@
 })(typeof window !== 'undefined' ? window : this);
 
 
-        // ── 2. Apple Music 音源适配器 (AppleMusicProvider) ──
-        /**
+            // ── 2. Apple Music 音源适配器 (AppleMusicProvider) ──
+            /**
  * apple_music_provider.js
  * AirMuse Apple Music 专属数据适配器 (AppleMusicProvider)
  *
@@ -2044,9 +2098,12 @@
 })(typeof window !== 'undefined' ? window : this);
 
 
-        // ── 3. 实例化并启动应用 ──
-        const provider = new window.AppleMusicProvider();
-        window.AirMuseUI.init(provider);
+            // ── 3. 实例化并启动应用 ──
+            const provider = new window.AppleMusicProvider();
+            window.AirMuseUI.init(provider);
+        } catch (err) {
+            console.error('[AirMuse] Engine bootstrap error:', err);
+        }
     }
 
     bootstrap();

@@ -660,12 +660,15 @@
         // 初始化
         init(provider) {
             this.provider = provider;
-            this.Theme.apply();
-            this.mountScaffold();
-            this.bindEvents();
-            this.bindBridge();
-            this.loadInitialData();
-            this.startSPAKeeper();
+            try {
+                this.Theme.apply();
+                this.mountScaffold();
+                this.bindBridge();
+                this.startSPAKeeper();
+                this.loadInitialData();
+            } catch (err) {
+                console.error('[AirMuseUI] init error:', err);
+            }
         },
 
         // 构建脚手架
@@ -740,6 +743,26 @@
 
             this.renderTabs();
             this.renderSearchScopes();
+            this.bindEvents();
+        },
+
+        // 切换标签页
+        switchTab(tabId) {
+            if (this.currentTab === tabId && this.dom.detailView.style.display !== 'flex' && !this.isSearching) return;
+            this.currentTab = tabId;
+            this.activeCategoryIdx = 0;
+            this.exitSearchMode();
+            if (this.dom.tabGroup) {
+                this.dom.tabGroup.querySelectorAll('.am-tab-btn').forEach(b => {
+                    b.classList.toggle('active', b.dataset.tab === tabId);
+                });
+            }
+            this.render();
+            // 若无数据，自动从音源请求
+            const curData = this.datasets[this.currentTab];
+            if (!curData || !curData.categories || !curData.categories.length) {
+                this.fetchTabData(this.currentTab, false);
+            }
         },
 
         // 渲染顶部标签
@@ -756,19 +779,7 @@
                 btn.dataset.tab = tab.id;
                 btn.innerText = tab.label;
                 btn.onclick = () => {
-                    if (this.currentTab === tab.id && this.dom.detailView.style.display !== 'flex' && !this.isSearching) return;
-                    this.currentTab = tab.id;
-                    this.activeCategoryIdx = 0;
-                    this.exitSearchMode();
-                    this.dom.tabGroup.querySelectorAll('.am-tab-btn').forEach(b => {
-                        b.classList.toggle('active', b.dataset.tab === tab.id);
-                    });
-                    this.render();
-                    // 若无数据，自动从音源请求
-                    const curData = this.datasets[this.currentTab];
-                    if (!curData || !curData.categories || !curData.categories.length) {
-                        this.fetchTabData(this.currentTab, false);
-                    }
+                    this.switchTab(tab.id);
                 };
                 this.dom.tabGroup.appendChild(btn);
             });
@@ -1336,16 +1347,42 @@
             };
         },
 
-        // SPA 保活：若宿主页面发生内联 DOM 变动导致 `#airmuse-app` 意外丢失，自动恢复
+        // SPA 保活：监听宿主页面 DOM 变动与路由替换，确保 `#airmuse-app` 瞬间恢复，绝不黑屏
         startSPAKeeper() {
-            if (this._spaKeeperTimer) clearInterval(this._spaKeeperTimer);
-            this._spaKeeperTimer = setInterval(() => {
-                const app = document.getElementById('airmuse-app');
-                if (!app && document.body) {
-                    this.mountScaffold();
-                    this.render();
+            if (this._spaObserver) {
+                try { this._spaObserver.disconnect(); } catch (_) {}
+            }
+
+            const ensureMounted = () => {
+                if (!document.body) return;
+                const existing = document.getElementById('airmuse-app');
+                if (!existing) {
+                    if (this.dom.appRoot) {
+                        // 节点仍然保存在内存中，直接重新挂载到 body，保留所有事件和渲染状态
+                        document.body.appendChild(this.dom.appRoot);
+                    } else {
+                        // 全新初始化脚手架
+                        this.mountScaffold();
+                        this.render();
+                    }
                 }
-            }, 1000);
+            };
+
+            try {
+                this._spaObserver = new MutationObserver(() => {
+                    ensureMounted();
+                });
+                if (document.body) {
+                    this._spaObserver.observe(document.body, { childList: true });
+                }
+                if (document.documentElement) {
+                    this._spaObserver.observe(document.documentElement, { childList: true });
+                }
+            } catch (_) {}
+
+            // 双重保障：低频心跳检测 (250ms) 确保在任何极端 SPA 清理或导航下万无一失
+            if (this._spaKeeperTimer) clearInterval(this._spaKeeperTimer);
+            this._spaKeeperTimer = setInterval(ensureMounted, 250);
         }
     };
 
