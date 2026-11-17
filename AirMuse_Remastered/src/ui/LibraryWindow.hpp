@@ -25,6 +25,7 @@ public:
 private:
     static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
     LRESULT HandleMessage(UINT msg, WPARAM wParam, LPARAM lParam);
+    bool IsActiveOrHovered() const;
 
     HINSTANCE m_hInst;
     AppController& m_controller;
@@ -35,6 +36,8 @@ private:
 
     int m_hoverTab = -1; // 3: 关闭按钮, 4: 底部正在播放
     bool m_hovering = false;
+    bool m_focused = false;
+    bool m_lastActiveOrHover = false;
     bool m_lastMouseInside = false;
 
     LayeredSurface m_surface;

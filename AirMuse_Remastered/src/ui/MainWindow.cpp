@@ -615,6 +615,7 @@ LRESULT MainWindow::HandleMessage(UINT msg, WPARAM wParam, LPARAM lParam) {
         m_focused = (LOWORD(wParam) != WA_INACTIVE);
         Render();
         if (m_lyricsWnd) m_lyricsWnd->Render();
+        if (m_libraryWnd) m_libraryWnd->RefreshHoverIfChanged();
         return 0;
     case WM_WINDOWPOSCHANGED:
         m_dockMgr.SyncAllDocked();
