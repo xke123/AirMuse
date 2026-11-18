@@ -1,0 +1,199 @@
+[
+  {
+    "name": "AUDIO",
+    "type": "RT_RCDATA",
+    "raw_size": 15086,
+    "raw_file": "resources/raw_rcdata/AUDIO.bin",
+    "kind": "ICON",
+    "icon_file": "resources/icons/icon_audio_file.ico",
+    "desc": "File Association Icon for AUDIO"
+  },
+  {
+    "name": "HINTGLASS",
+    "type": "RT_RCDATA",
+    "raw_size": 3077,
+    "raw_file": "resources/raw_rcdata/HINTGLASS.bin",
+    "kind": "RLE_BITMAP",
+    "width": 40,
+    "height": 40,
+    "flags": 1,
+    "png_file": "resources/bitmaps/HINTGLASS.png"
+  },
+  {
+    "name": "ICONBUTTON",
+    "type": "RT_RCDATA",
+    "raw_size": 10546,
+    "raw_file": "resources/raw_rcdata/ICONBUTTON.bin",
+    "kind": "RLE_BITMAP",
+    "width": 165,
+    "height": 45,
+    "flags": 1,
+    "png_file": "resources/bitmaps/ICONBUTTON.png"
+  },
+  {
+    "name": "MAINCONTROL",
+    "type": "RT_RCDATA",
+    "raw_size": 9274,
+    "raw_file": "resources/raw_rcdata/MAINCONTROL.bin",
+    "kind": "RLE_BITMAP",
+    "width": 192,
+    "height": 32,
+    "flags": 1,
+    "png_file": "resources/bitmaps/MAINCONTROL.png"
+  },
+  {
+    "name": "MENUGLASS",
+    "type": "RT_RCDATA",
+    "raw_size": 1875,
+    "raw_file": "resources/raw_rcdata/MENUGLASS.bin",
+    "kind": "RLE_BITMAP",
+    "width": 40,
+    "height": 40,
+    "flags": 1,
+    "png_file": "resources/bitmaps/MENUGLASS.png"
+  },
+  {
+    "name": "MENUICON",
+    "type": "RT_RCDATA",
+    "raw_size": 4193,
+    "raw_file": "resources/raw_rcdata/MENUICON.bin",
+    "kind": "RLE_BITMAP",
+    "width": 210,
+    "height": 14,
+    "flags": 1,
+    "png_file": "resources/bitmaps/MENUICON.png"
+  },
+  {
+    "name": "MINICONTROL",
+    "type": "RT_RCDATA",
+    "raw_size": 3032,
+    "raw_file": "resources/raw_rcdata/MINICONTROL.bin",
+    "kind": "RLE_BITMAP",
+    "width": 96,
+    "height": 16,
+    "flags": 1,
+    "png_file": "resources/bitmaps/MINICONTROL.png"
+  },
+  {
+    "name": "MINIFONT",
+    "type": "RT_RCDATA",
+    "raw_size": 173,
+    "raw_file": "resources/raw_rcdata/MINIFONT.bin",
+    "kind": "RLE_BITMAP",
+    "width": 40,
+    "height": 5,
+    "flags": 1,
+    "png_file": "resources/bitmaps/MINIFONT.png"
+  },
+  {
+    "name": "PACKHINT",
+    "type": "RT_RCDATA",
+    "raw_size": 7306,
+    "raw_file": "resources/raw_rcdata/PACKHINT.bin",
+    "kind": "RLE_BITMAP",
+    "width": 160,
+    "height": 40,
+    "flags": 1,
+    "png_file": "resources/bitmaps/PACKHINT.png"
+  },
+  {
+    "name": "PLAYLIST",
+    "type": "RT_RCDATA",
+    "raw_size": 15086,
+    "raw_file": "resources/raw_rcdata/PLAYLIST.bin",
+    "kind": "ICON",
+    "icon_file": "resources/icons/icon_playlist_file.ico",
+    "desc": "File Association Icon for PLAYLIST"
+  },
+  {
+    "name": "PYCODE",
+    "type": "RT_RCDATA",
+    "raw_size": 262144,
+    "raw_file": "resources/raw_rcdata/PYCODE.bin",
+    "kind": "DATA_TABLE",
+    "binary_file": "resources/binaries/pinyin_index_table.dat",
+    "desc": "GBK Pinyin Initial Index Table (256 KB)"
+  },
+  {
+    "name": "QUADFONT",
+    "type": "RT_RCDATA",
+    "raw_size": 1948,
+    "raw_file": "resources/raw_rcdata/QUADFONT.bin",
+    "kind": "RLE_BITMAP",
+    "width": 130,
+    "height": 16,
+    "flags": 1,
+    "png_file": "resources/bitmaps/QUADFONT.png"
+  },
+  {
+    "name": "RATING",
+    "type": "RT_RCDATA",
+    "raw_size": 1006,
+    "raw_file": "resources/raw_rcdata/RATING.bin",
+    "kind": "RLE_BITMAP",
+    "width": 30,
+    "height": 12,
+    "flags": 1,
+    "png_file": "resources/bitmaps/RATING.png"
+  },
+  {
+    "name": "TAKDECLIB",
+    "type": "RT_RCDATA",
+    "raw_size": 99328,
+    "raw_file": "resources/raw_rcdata/TAKDECLIB.bin",
+    "kind": "NATIVE_DLL",
+    "binary_file": "resources/binaries/tak_deco_lib.dll",
+    "desc": "TAK Audio Lossless Decoder Dynamic Library"
+  },
+  {
+    "name": "TIMEFONT",
+    "type": "RT_RCDATA",
+    "raw_size": 506,
+    "raw_file": "resources/raw_rcdata/TIMEFONT.bin",
+    "kind": "RLE_BITMAP",
+    "width": 90,
+    "height": 14,
+    "flags": 1,
+    "png_file": "resources/bitmaps/TIMEFONT.png"
+  },
+  {
+    "name": "WINDOWBUTTON",
+    "type": "RT_RCDATA",
+    "raw_size": 6833,
+    "raw_file": "resources/raw_rcdata/WINDOWBUTTON.bin",
+    "kind": "RLE_BITMAP",
+    "width": 130,
+    "height": 26,
+    "flags": 1,
+    "png_file": "resources/bitmaps/WINDOWBUTTON.png"
+  },
+  {
+    "name": "WINDOWGLASS",
+    "type": "RT_RCDATA",
+    "raw_size": 1987,
+    "raw_file": "resources/raw_rcdata/WINDOWGLASS.bin",
+    "kind": "RLE_BITMAP",
+    "width": 30,
+    "height": 40,
+    "flags": 1,
+    "png_file": "resources/bitmaps/WINDOWGLASS.png"
+  },
+  {
+    "name": "WINDOWGLASSFOCUS",
+    "type": "RT_RCDATA",
+    "raw_size": 2051,
+    "raw_file": "resources/raw_rcdata/WINDOWGLASSFOCUS.bin",
+    "kind": "RLE_BITMAP",
+    "width": 30,
+    "height": 40,
+    "flags": 1,
+    "png_file": "resources/bitmaps/WINDOWGLASSFOCUS.png"
+  },
+  {
+    "name": "APPICON",
+    "type": "RT_GROUP_ICON",
+    "kind": "ICON",
+    "icon_file": "resources/icons/icon_app.ico",
+    "desc": "AirPlay Main Application Icon"
+  }
+]
