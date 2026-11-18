@@ -6,6 +6,7 @@
 #include "ui/MainWindow.hpp"
 #include "ui/LyricsWindow.hpp"
 #include "ui/LibraryWindow.hpp"
+#include "ui/TestPanelWindow.hpp"
 
 int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE, PWSTR, int) {
     SetCurrentProcessExplicitAppUserModelID(L"AirMuse.Player");
@@ -28,7 +29,11 @@ int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE, PWSTR, int) {
     airmuse::LibraryWindow libraryWnd(hInst, controller, dockMgr);
     HWND hwndLib = libraryWnd.Create(hwndMain);
 
+    airmuse::TestPanelWindow testPanel(hInst, controller, dockMgr);
+    testPanel.Create(hwndMain);
+
     mainWnd.BindChildWindows(&lyricsWnd, &libraryWnd);
+    mainWnd.BindTestPanel(&testPanel);
     dockMgr.AttachWindows(hwndMain, hwndLyrics, hwndLib, libraryWnd.WebHostHwnd());
 
     controller.Initialize(hwndMain, libraryWnd.WebHostHwnd());

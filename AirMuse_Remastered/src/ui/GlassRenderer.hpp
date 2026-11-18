@@ -39,6 +39,7 @@ public:
     static void DrawAirPlayGlassFrame(Gdiplus::Graphics& g, int dstW, int dstH, float hoverGloss, bool focused, Gdiplus::Bitmap* ambientArtwork = nullptr, bool hasMainGloss = false) {
         DrawAirPlayGlassFrame(g, dstW, dstH, hoverGloss, focused ? 1.0f : 0.0f, ambientArtwork, hasMainGloss);
     }
+    static void DrawScrollGlassFrame(Gdiplus::Graphics& g, int dstW, int dstH, float scrollProgress, float hoverGloss, float focusRatio, int mode = 1, Gdiplus::Bitmap* ambientArtwork = nullptr);
     static void DrawSpecularSweep(Gdiplus::Graphics& g, int dstW, int dstH, float sweepRatio, float intensity, float sweepRatioX = 0.5f);
     static void DrawImageAlpha(Gdiplus::Graphics& g, Gdiplus::Bitmap* src, Gdiplus::RectF const& dst, int sx, int sy, int sw, int sh, float alpha, float brightness = 1.0f);
     static void DrawTextHalo(Gdiplus::Graphics& g, float cx, float cy, float rx, float ry, BYTE centerAlpha);

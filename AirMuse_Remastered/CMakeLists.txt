@@ -39,6 +39,7 @@ add_executable(AirMuse WIN32
     src/ui/MainWindow.cpp
     src/ui/LyricsWindow.cpp
     src/ui/LibraryWindow.cpp
+    src/ui/TestPanelWindow.cpp
     src/AirMuse.rc
 )
 

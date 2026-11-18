@@ -227,55 +227,32 @@ void GlassRenderer::DrawAirPlayGlassFrame(Graphics& g, int dstW, int dstH, float
     DrawAirPlayGlassFrame(g, dstW, dstH, hoverGloss, focusRatio, ambientArtwork, false);
 }
 
-void GlassRenderer::DrawAirPlayGlassFrame(Graphics& g, int dstW, int dstH, float hoverGloss, float focusRatio, Bitmap* ambientArtwork, bool hasMainGloss) {
+void GlassRenderer::DrawAirPlayGlassFrame(Graphics& g, int dstW, int dstH, float /*hoverGloss*/, float focusRatio, Bitmap* ambientArtwork, bool /*hasMainGloss*/) {
     focusRatio = std::clamp(focusRatio, 0.0f, 1.0f);
-    const float padX = 2.5f, padY = 2.5f;
-    const float fw = static_cast<float>(dstW) - padX * 2.0f;
-    const float fh = static_cast<float>(dstH) - padY * 2.0f;
 
     if (dstH <= 36) {
-        const float mPadX = 4.0f, mPadY = 3.0f;
-        const float mW = static_cast<float>(dstW) - mPadX * 2.0f;
-        const float mH = static_cast<float>(dstH) - mPadY * 2.0f;
-        const float r = 3.2f;
+        Bitmap* bmpFocus = GetFocusGlassBitmap();
+        Bitmap* bmpUnfocus = GetUnfocusGlassBitmap();
 
-        for (int i = 3; i >= 1; --i) {
-            float exp = static_cast<float>(i) * 0.9f;
-            GraphicsPath shadowPath;
-            AddRoundedRectPath(shadowPath, mPadX - exp, mPadY - exp * 0.7f, mW + exp * 2.0f, mH + exp * 1.6f, r + exp);
-            Pen shadowPen(Color(static_cast<BYTE>(22 * (4 - i)), 8, 10, 14), 1.4f);
-            g.DrawPath(&shadowPen, &shadowPath);
+        InterpolationMode oldInterp = g.GetInterpolationMode();
+        g.SetInterpolationMode(InterpolationModeHighQualityBicubic);
+
+        GraphicsPath outerClip;
+        AddRoundedRectPath(outerClip, 0.0f, 0.0f, static_cast<float>(dstW), static_cast<float>(dstH), 3.2f);
+        GraphicsState sClip = g.Save();
+        g.SetClip(&outerClip, CombineModeIntersect);
+
+        if (focusRatio >= 0.99f) {
+            DrawAirPlay9Slice(g, bmpFocus, dstW, dstH, 1.0f);
+        } else if (focusRatio <= 0.01f) {
+            DrawAirPlay9Slice(g, bmpUnfocus, dstW, dstH, 1.0f);
+        } else {
+            DrawAirPlay9Slice(g, bmpUnfocus, dstW, dstH, 1.0f);
+            DrawAirPlay9Slice(g, bmpFocus, dstW, dstH, focusRatio);
         }
 
-        GraphicsPath outer;
-        AddRoundedRectPath(outer, mPadX, mPadY, mW, mH, r);
-        BYTE aTop = static_cast<BYTE>(135 + 45 * hoverGloss);
-        BYTE aMid = static_cast<BYTE>(88  + 38 * hoverGloss);
-        BYTE aBot = static_cast<BYTE>(52  + 24 * hoverGloss);
-        LinearGradientBrush glassBrush(PointF(0, mPadY), PointF(0, mPadY + mH),
-                                       Color(aTop, 28, 30, 35), Color(aBot, 210, 214, 222));
-        Color colors[3] = {
-            Color(aTop, 24, 26, 30),
-            Color(aMid, 58, 62, 68),
-            Color(aBot, 195, 200, 208)
-        };
-        REAL pos[3] = { 0.0f, 0.52f, 1.0f };
-        glassBrush.SetInterpolationColors(colors, pos, 3);
-        g.FillPath(&glassBrush, &outer);
-
-        GraphicsState saved = g.Save();
-        g.SetClip(&outer);
-        Pen topSheen(Color(static_cast<BYTE>(45 + 55 * focusRatio), 255, 255, 255), 1.0f);
-        g.DrawLine(&topSheen, mPadX + 1.0f, mPadY + 1.0f, mPadX + mW - 1.0f, mPadY + 1.0f);
-        g.Restore(saved);
-
-        Pen outerRimDark(Color(95, 22, 25, 30), 1.0f);
-        g.DrawPath(&outerRimDark, &outer);
-
-        GraphicsPath innerWhite;
-        AddRoundedRectPath(innerWhite, mPadX + 0.75f, mPadY + 0.75f, mW - 1.5f, mH - 1.5f, std::max(1.5f, r - 0.5f));
-        Pen whiteBorder(Color(static_cast<BYTE>(110 + 75 * focusRatio), 248, 250, 255), 1.0f);
-        g.DrawPath(&whiteBorder, &innerWhite);
+        g.Restore(sClip);
+        g.SetInterpolationMode(oldInterp);
         return;
     }
 
@@ -331,6 +308,429 @@ void GlassRenderer::DrawAirPlayGlassFrame(Graphics& g, int dstW, int dstH, float
         Pen grooveWhiteBot(Color(static_cast<BYTE>(45 + 35 * focusRatio), 255, 255, 255), 1.0f);
         g.DrawLine(&grooveDarkBot, midX, botY - 1.0f, midX + midW, botY - 1.0f);
         g.DrawLine(&grooveWhiteBot, midX, botY, midX + midW, botY);
+    }
+}
+
+void GlassRenderer::DrawScrollGlassFrame(Graphics& g, int dstW, int dstH, float animProgress, float /*hoverGloss*/, float focusRatio, int mode, Bitmap* ambientArtwork) {
+    animProgress = std::clamp(animProgress, 0.0f, 1.0f);
+    focusRatio = std::clamp(focusRatio, 0.0f, 1.0f);
+
+    const float W = static_cast<float>(dstW);
+    const float H = static_cast<float>(dstH);
+    const float barH = 20.0f;
+    const float cx = W * 0.5f;
+
+    float cy = H * 0.5f;
+    if (mode == 2) cy = barH * 0.5f;           // 10.0f (顶栏中心)
+    else if (mode == 3) cy = H - barH * 0.5f;  // 96.0f (底栏中心)
+
+    Bitmap* bmpFocus = GetFocusGlassBitmap();
+    Bitmap* bmpUnfocus = GetUnfocusGlassBitmap();
+
+    // =========================================================================
+    // 统一玻璃切片渲染核心 (100% 全阶段采用原版 9-宫格纯净白玻璃切片资产，零手绘渐变色)
+    // =========================================================================
+    auto makeAttr = [](float opacity, ImageAttributes& attr) -> ImageAttributes* {
+        if (opacity >= 0.999f) return nullptr;
+        ColorMatrix matrix = {{
+            {1.0f, 0.0f, 0.0f, 0.0f, 0.0f},
+            {0.0f, 1.0f, 0.0f, 0.0f, 0.0f},
+            {0.0f, 0.0f, 1.0f, 0.0f, 0.0f},
+            {0.0f, 0.0f, 0.0f, opacity, 0.0f},
+            {0.0f, 0.0f, 0.0f, 0.0f, 1.0f}
+        }};
+        attr.SetColorMatrix(&matrix, ColorMatrixFlagsDefault, ColorAdjustTypeBitmap);
+        return &attr;
+    };
+
+    // 1. 渲染独立单根封闭玻璃条 (用于阶段一玻璃珠与阶段二单条拉伸，上高光+下高光，全圆角)
+    auto drawSingleBar = [&](Bitmap* bmp, float x0, float y0, float curW, float cornerR, float opacity) {
+        if (!bmp || curW <= 0.5f || opacity <= 0.001f) return;
+        ImageAttributes attr;
+        ImageAttributes* pAttr = makeAttr(opacity, attr);
+
+        const float s = static_cast<float>(bmp->GetWidth()) / 30.0f;
+        const float dstCW = 15.0f;
+        const float srcCW = 15.0f * s;
+        const float srcCH_half = 10.0f * s; // 40 px @ 4x
+        const float srcW  = static_cast<float>(bmp->GetWidth());
+        const float srcH  = static_cast<float>(bmp->GetHeight());
+        const float srcY_bot = srcH - srcCH_half; // 120 px @ 4x
+
+        GraphicsPath clipPath;
+        bool needsClip = (cornerR > 3.2f || curW < W - 0.5f);
+        if (needsClip) {
+            AddRoundedRectPath(clipPath, x0, y0, curW, 20.0f, cornerR);
+        }
+
+        GraphicsState sClip = g.Save();
+        if (needsClip) {
+            g.SetClip(&clipPath, CombineModeIntersect);
+        }
+
+        if (curW <= dstCW * 2.0f) {
+            float halfW = curW * 0.5f;
+            float ratio = halfW / dstCW;
+            // 上半部 (0..10 DIP)
+            g.DrawImage(bmp, RectF(x0, y0, halfW, 10.0f), 0.0f, 0.0f, srcCW * ratio, srcCH_half, UnitPixel, pAttr);
+            g.DrawImage(bmp, RectF(x0 + halfW, y0, halfW, 10.0f), srcW - srcCW * ratio, 0.0f, srcCW * ratio, srcCH_half, UnitPixel, pAttr);
+            // 下半部 (10..20 DIP)
+            g.DrawImage(bmp, RectF(x0, y0 + 10.0f, halfW, 10.0f), 0.0f, srcY_bot, srcCW * ratio, srcCH_half, UnitPixel, pAttr);
+            g.DrawImage(bmp, RectF(x0 + halfW, y0 + 10.0f, halfW, 10.0f), srcW - srcCW * ratio, srcY_bot, srcCW * ratio, srcCH_half, UnitPixel, pAttr);
+        } else {
+            float edgeDstW = curW - dstCW * 2.0f;
+            float edgeSrcX = 14.0f * s;
+            float edgeSrcW = 2.0f * s;
+            // 上半部 (0..10 DIP)
+            g.DrawImage(bmp, RectF(x0, y0, dstCW, 10.0f), 0.0f, 0.0f, srcCW, srcCH_half, UnitPixel, pAttr);
+            g.DrawImage(bmp, RectF(x0 + curW - dstCW, y0, dstCW, 10.0f), srcW - srcCW, 0.0f, srcCW, srcCH_half, UnitPixel, pAttr);
+            g.DrawImage(bmp, RectF(x0 + dstCW, y0, edgeDstW, 10.0f), edgeSrcX, 0.0f, edgeSrcW, srcCH_half, UnitPixel, pAttr);
+            // 下半部 (10..20 DIP)
+            g.DrawImage(bmp, RectF(x0, y0 + 10.0f, dstCW, 10.0f), 0.0f, srcY_bot, srcCW, srcCH_half, UnitPixel, pAttr);
+            g.DrawImage(bmp, RectF(x0 + curW - dstCW, y0 + 10.0f, dstCW, 10.0f), srcW - srcCW, srcY_bot, srcCW, srcCH_half, UnitPixel, pAttr);
+            g.DrawImage(bmp, RectF(x0 + dstCW, y0 + 10.0f, edgeDstW, 10.0f), edgeSrcX, srcY_bot, edgeSrcW, srcCH_half, UnitPixel, pAttr);
+        }
+
+        g.Restore(sClip);
+    };
+
+    // 2. 渲染顶部玻璃条 (高度 20 DIP，源自 bmp 的 0..80 像素，顶高光+底咬合平边)
+    auto drawTopBar = [&](Bitmap* bmp, float x0, float y0, float curW, float cornerR, float opacity) {
+        if (!bmp || curW <= 0.5f || opacity <= 0.001f) return;
+        ImageAttributes attr;
+        ImageAttributes* pAttr = makeAttr(opacity, attr);
+
+        const float s = static_cast<float>(bmp->GetWidth()) / 30.0f;
+        const float dstCW = 15.0f;
+        const float srcCW = 15.0f * s;
+        const float srcCH = 20.0f * s; // 80 px @ 4x
+        const float srcW  = static_cast<float>(bmp->GetWidth());
+
+        GraphicsPath clipPath;
+        bool needsClip = (cornerR > 3.2f || curW < W - 0.5f);
+        if (needsClip) {
+            AddRoundedRectPath(clipPath, x0, y0, curW, 20.0f, cornerR);
+        }
+
+        GraphicsState sClip = g.Save();
+        if (needsClip) {
+            g.SetClip(&clipPath, CombineModeIntersect);
+        }
+
+        if (curW <= dstCW * 2.0f) {
+            float halfW = curW * 0.5f;
+            float ratio = halfW / dstCW;
+            g.DrawImage(bmp, RectF(x0, y0, halfW, 20.0f), 0.0f, 0.0f, srcCW * ratio, srcCH, UnitPixel, pAttr);
+            g.DrawImage(bmp, RectF(x0 + halfW, y0, halfW, 20.0f), srcW - srcCW * ratio, 0.0f, srcCW * ratio, srcCH, UnitPixel, pAttr);
+        } else {
+            float edgeDstW = curW - dstCW * 2.0f;
+            float edgeSrcX = 14.0f * s;
+            float edgeSrcW = 2.0f * s;
+            g.DrawImage(bmp, RectF(x0, y0, dstCW, 20.0f), 0.0f, 0.0f, srcCW, srcCH, UnitPixel, pAttr);
+            g.DrawImage(bmp, RectF(x0 + curW - dstCW, y0, dstCW, 20.0f), srcW - srcCW, 0.0f, srcCW, srcCH, UnitPixel, pAttr);
+            g.DrawImage(bmp, RectF(x0 + dstCW, y0, edgeDstW, 20.0f), edgeSrcX, 0.0f, edgeSrcW, srcCH, UnitPixel, pAttr);
+        }
+
+        g.Restore(sClip);
+    };
+
+    // 3. 渲染底部玻璃条 (高度 20 DIP，源自 bmp 的 80..160 像素，顶咬合平边+底高光)
+    auto drawBotBar = [&](Bitmap* bmp, float x0, float y0, float curW, float cornerR, float opacity) {
+        if (!bmp || curW <= 0.5f || opacity <= 0.001f) return;
+        ImageAttributes attr;
+        ImageAttributes* pAttr = makeAttr(opacity, attr);
+
+        const float s = static_cast<float>(bmp->GetWidth()) / 30.0f;
+        const float dstCW = 15.0f;
+        const float srcCW = 15.0f * s;
+        const float srcCH = 20.0f * s; // 80 px @ 4x
+        const float srcW  = static_cast<float>(bmp->GetWidth());
+        const float srcH  = static_cast<float>(bmp->GetHeight());
+        const float srcY  = srcH - srcCH; // 80 px @ 4x
+
+        GraphicsPath clipPath;
+        bool needsClip = (cornerR > 3.2f || curW < W - 0.5f);
+        if (needsClip) {
+            AddRoundedRectPath(clipPath, x0, y0, curW, 20.0f, cornerR);
+        }
+
+        GraphicsState sClip = g.Save();
+        if (needsClip) {
+            g.SetClip(&clipPath, CombineModeIntersect);
+        }
+
+        if (curW <= dstCW * 2.0f) {
+            float halfW = curW * 0.5f;
+            float ratio = halfW / dstCW;
+            g.DrawImage(bmp, RectF(x0, y0, halfW, 20.0f), 0.0f, srcY, srcCW * ratio, srcCH, UnitPixel, pAttr);
+            g.DrawImage(bmp, RectF(x0 + halfW, y0, halfW, 20.0f), srcW - srcCW * ratio, srcY, srcCW * ratio, srcCH, UnitPixel, pAttr);
+        } else {
+            float edgeDstW = curW - dstCW * 2.0f;
+            float edgeSrcX = 14.0f * s;
+            float edgeSrcW = 2.0f * s;
+            g.DrawImage(bmp, RectF(x0, y0, dstCW, 20.0f), 0.0f, srcY, srcCW, srcCH, UnitPixel, pAttr);
+            g.DrawImage(bmp, RectF(x0 + curW - dstCW, y0, dstCW, 20.0f), srcW - srcCW, srcY, srcCW, srcCH, UnitPixel, pAttr);
+            g.DrawImage(bmp, RectF(x0 + dstCW, y0, edgeDstW, 20.0f), edgeSrcX, srcY, edgeSrcW, srcCH, UnitPixel, pAttr);
+        }
+
+        g.Restore(sClip);
+    };
+
+    // 4. 渲染双条展开后的两侧垂直连贯玻璃侧边 (5 DIP 宽)
+    auto drawSideEdges = [&](Bitmap* bmp, float x0, float curW, float midTop, float midH, float opacity) {
+        if (!bmp || midH <= 0.0f || opacity <= 0.001f) return;
+        ImageAttributes attr;
+        ImageAttributes* pAttr = makeAttr(opacity, attr);
+
+        const float s = static_cast<float>(bmp->GetWidth()) / 30.0f;
+        const float edgeW = 5.0f;
+        const float srcEdgeW = 5.0f * s;
+        const float srcEdgeH = 2.0f * s;
+        const float edgeSrcY = 19.0f * s;
+        const float srcW  = static_cast<float>(bmp->GetWidth());
+
+        g.DrawImage(bmp, RectF(x0, midTop, edgeW, midH), 0.0f, edgeSrcY, srcEdgeW, srcEdgeH, UnitPixel, pAttr);
+        g.DrawImage(bmp, RectF(x0 + curW - edgeW, midTop, edgeW, midH), srcW - srcEdgeW, edgeSrcY, srcEdgeW, srcEdgeH, UnitPixel, pAttr);
+    };
+
+    auto renderWithFocus = [&](auto&& drawFunc) {
+        InterpolationMode oldInterp = g.GetInterpolationMode();
+        g.SetInterpolationMode(InterpolationModeHighQualityBicubic);
+        if (focusRatio >= 0.99f) {
+            drawFunc(bmpFocus, 1.0f);
+        } else if (focusRatio <= 0.01f) {
+            drawFunc(bmpUnfocus, 1.0f);
+        } else {
+            drawFunc(bmpUnfocus, 1.0f);
+            drawFunc(bmpFocus, focusRatio);
+        }
+        g.SetInterpolationMode(oldInterp);
+    };
+
+    // =========================================================================
+    // 阶段一: [0.00 ~ 0.22] 纯净原版玻璃珠凝聚 (Glass Orb Pop-in)
+    // =========================================================================
+    if (animProgress <= 0.22f) {
+        float u = animProgress / 0.22f;
+        float diam = 20.0f * std::min(1.0f, u * 1.15f);
+        float r = diam * 0.5f;
+        if (r < 0.5f) return;
+
+        float alpha = std::clamp(u * 1.4f, 0.0f, 1.0f);
+
+        // 外部纯白微光柔和光晕 (纯无色透明度过渡)
+        {
+            GraphicsPath glowPath;
+            glowPath.AddEllipse(cx - r * 1.6f, cy - r * 1.6f, r * 3.2f, r * 3.2f);
+            PathGradientBrush glowPgb(&glowPath);
+            glowPgb.SetCenterPoint(PointF(cx, cy));
+            glowPgb.SetCenterColor(Color(static_cast<BYTE>(50.0f * u), 255, 255, 255));
+            Color surroundGlow(0, 255, 255, 255);
+            int cnt = 1;
+            glowPgb.SetSurroundColors(&surroundGlow, &cnt);
+            g.FillPath(&glowPgb, &glowPath);
+        }
+
+        // 直接用系统原版白玻璃切片渲染小球 (圆角 r = diam * 0.5，形成天然无瑕的水晶玻璃圆珠)
+        renderWithFocus([&](Bitmap* bmp, float op) {
+            drawSingleBar(bmp, cx - r, cy - 10.0f, diam, r, op * alpha);
+        });
+
+        // 高光处的星芒闪光
+        if (u > 0.35f) {
+            float starU = std::clamp((u - 0.35f) / 0.55f, 0.0f, 1.0f);
+            float starIntensity = std::sin(starU * 3.14159f);
+            if (starIntensity > 0.02f) {
+                float hx = cx - r * 0.35f;
+                float hy = cy - r * 0.42f;
+                float rayLen = 5.0f * starIntensity;
+                BYTE starA = static_cast<BYTE>(240.0f * starIntensity);
+                Pen starPen(Color(starA, 255, 255, 255), 1.0f);
+                g.DrawLine(&starPen, hx - rayLen, hy, hx + rayLen, hy);
+                g.DrawLine(&starPen, hx, hy - rayLen, hx, hy + rayLen);
+                SolidBrush centerGlint(Color(starA, 255, 255, 255));
+                g.FillEllipse(&centerGlint, hx - 1.0f, hy - 1.0f, 2.0f, 2.0f);
+            }
+        }
+        return;
+    }
+
+    // =========================================================================
+    // 阶段二: [0.22 ~ 0.52] 原版白玻璃横向拉伸延展成单根玻璃条 (Horizontal Stretch)
+    // =========================================================================
+    if (animProgress <= 0.52f) {
+        float u = (animProgress - 0.22f) / 0.30f;
+        float s = 3.0f * u * u - 2.0f * u * u * u;
+        float curW = 20.0f + s * (W - 20.0f);
+        float r = std::min(10.0f, 10.0f - s * 6.8f); // 10 -> 3.2
+        float x0 = cx - curW * 0.5f;
+
+        // 横向微光纯白辉光
+        {
+            GraphicsPath sheenPath;
+            sheenPath.AddEllipse(x0 - 6.0f, cy - 14.0f, curW + 12.0f, 28.0f);
+            PathGradientBrush sheenPgb(&sheenPath);
+            sheenPgb.SetCenterPoint(PointF(cx, cy));
+            sheenPgb.SetCenterColor(Color(static_cast<BYTE>(35.0f * (1.0f - u * 0.35f)), 255, 255, 255));
+            Color surroundSheen(0, 255, 255, 255);
+            int cnt = 1;
+            sheenPgb.SetSurroundColors(&surroundSheen, &cnt);
+            g.FillPath(&sheenPgb, &sheenPath);
+        }
+
+        // 单根玻璃条横向拉伸 (100% 原版白玻璃材质，圆角从 10 渐变为 3.2)
+        renderWithFocus([&](Bitmap* bmp, float op) {
+            drawSingleBar(bmp, x0, cy - 10.0f, curW, r, op);
+        });
+        return;
+    }
+
+    // =========================================================================
+    // 阶段三 & 四: [0.52 ~ 0.70] 单条分裂为双条; [0.70 ~ 1.00] 卷轴双条展开
+    // =========================================================================
+    float yTop = 0.0f;
+    float yBot = H - barH;
+    float contactY = H * 0.5f;
+    float splitGlowAlpha = 0.0f;
+
+    if (animProgress <= 0.70f) {
+        // [阶段三: 分裂]
+        float u = (animProgress - 0.52f) / 0.18f;
+        float s = 3.0f * u * u - 2.0f * u * u * u;
+        splitGlowAlpha = (1.0f - u) * std::sin(u * 3.14159f);
+
+        if (mode == 2) {
+            yTop = 0.0f;
+            yBot = s * barH;
+            contactY = barH;
+        } else if (mode == 3) {
+            yTop = (H - barH) - s * barH;
+            yBot = H - barH;
+            contactY = H - barH;
+        } else {
+            // mode 1: 从中心分裂
+            yTop = (cy - barH * 0.5f) - s * (barH * 0.5f);
+            yBot = (cy - barH * 0.5f) + s * (barH * 0.5f);
+            contactY = cy;
+        }
+    } else {
+        // [阶段四: 卷轴展开]
+        float p = (animProgress - 0.70f) / 0.30f;
+        float s = 3.0f * p * p - 2.0f * p * p * p;
+        if (mode == 2) {
+            yTop = 0.0f;
+            yBot = barH + s * (H - 2.0f * barH);
+            contactY = barH;
+        } else if (mode == 3) {
+            yTop = (1.0f - s) * (H - 2.0f * barH);
+            yBot = H - barH;
+            contactY = H - barH;
+        } else {
+            yTop = (1.0f - s) * (cy - barH);
+            yBot = (1.0f - s) * cy + s * (H - barH);
+            contactY = cy;
+        }
+    }
+
+    const float midTop = yTop + barH;
+    const float midBot = yBot;
+    const float midH   = midBot - midTop;
+    const float midX   = 5.0f;
+    const float midW   = W - 10.0f;
+
+    // 1. 中间主显示区域底色 (仅在卷轴展开且高度大于0时绘制)
+    if (midH > 0.0f && midW > 0.0f) {
+        SolidBrush bodyBaseBrush(Color(255, 30, 31, 34));
+        g.FillRectangle(&bodyBaseBrush, RectF(midX, midTop, midW, midH));
+
+        // 专辑背景微漫反射 (如有)
+        if (ambientArtwork && ambientArtwork->GetWidth() > 0) {
+            float pScroll = std::max(0.0f, (animProgress - 0.70f) / 0.30f);
+            GraphicsState s = g.Save();
+            g.SetClip(RectF(midX, midTop, midW, midH));
+            DrawImageAlpha(g, ambientArtwork, RectF(midX, midTop - 30.0f, midW, midW),
+                           0, 0, ambientArtwork->GetWidth(), ambientArtwork->GetHeight(), 0.15f * pScroll, 0.85f);
+            g.Restore(s);
+        }
+
+        // 卷轴两端物理滚轴阴影
+        if (midH > 2.0f) {
+            float pScroll = (animProgress - 0.70f) / 0.30f;
+            float shadowDepth = std::min(10.0f, midH * 0.45f);
+            LinearGradientBrush topRollShadow(PointF(midX, midTop), PointF(midX, midTop + shadowDepth),
+                                              Color(static_cast<BYTE>(90 * (1.0f - pScroll * 0.5f)), 0, 0, 0),
+                                              Color(0, 0, 0, 0));
+            g.FillRectangle(&topRollShadow, RectF(midX, midTop, midW, shadowDepth));
+
+            LinearGradientBrush botRollShadow(PointF(midX, midBot - shadowDepth), PointF(midX, midBot),
+                                              Color(0, 0, 0, 0),
+                                              Color(static_cast<BYTE>(90 * (1.0f - pScroll * 0.5f)), 0, 0, 0));
+            g.FillRectangle(&botRollShadow, RectF(midX, midBot - shadowDepth, midW, shadowDepth));
+        }
+    }
+
+    // 2. 原版 9-宫格水晶玻璃条绘制 (100% 材质同源，物理分离无重叠叠黑)
+    renderWithFocus([&](Bitmap* bmp, float op) {
+        if (animProgress <= 0.70f) {
+            // [阶段三: 分裂过程中的两根玻璃条]
+            if (mode == 2) {
+                // 顶部玻璃条在 0..20，底部玻璃条从 y=20 向下平滑伸展滑出，两者互不重叠
+                drawTopBar(bmp, 0.0f, yTop, W, 3.2f, op);
+                GraphicsState sBot = g.Save();
+                g.SetClip(RectF(0.0f, barH, W, H - barH), CombineModeIntersect);
+                drawBotBar(bmp, 0.0f, yBot, W, 3.2f, op);
+                g.Restore(sBot);
+            } else if (mode == 3) {
+                // 底部玻璃条在 H-20..H，顶部玻璃条从 y=H-20 向上平滑伸展滑出，两者互不重叠
+                drawBotBar(bmp, 0.0f, yBot, W, 3.2f, op);
+                GraphicsState sTop = g.Save();
+                g.SetClip(RectF(0.0f, 0.0f, W, H - barH), CombineModeIntersect);
+                drawTopBar(bmp, 0.0f, yTop, W, 3.2f, op);
+                g.Restore(sTop);
+            } else {
+                // mode 1: 中心对称分裂 (通过中心交界线裁切，实现零重叠、物理无瑕分离)
+                GraphicsState sTop = g.Save();
+                g.SetClip(RectF(0.0f, 0.0f, W, cy), CombineModeIntersect);
+                drawTopBar(bmp, 0.0f, yTop, W, 3.2f, op);
+                g.Restore(sTop);
+
+                GraphicsState sBot = g.Save();
+                g.SetClip(RectF(0.0f, cy, W, H - cy), CombineModeIntersect);
+                drawBotBar(bmp, 0.0f, yBot, W, 3.2f, op);
+                g.Restore(sBot);
+            }
+        } else {
+            // [阶段四: 卷轴展开中的两根玻璃条与侧边连贯边框]
+            drawTopBar(bmp, 0.0f, yTop, W, 3.2f, op);
+            drawBotBar(bmp, 0.0f, yBot, W, 3.2f, op);
+            drawSideEdges(bmp, 0.0f, W, midTop, midH, op);
+        }
+    });
+
+    // 3. 原版物理咬合卡槽接缝 (Groove Seams) 与 分裂裂隙能量光
+    if (midH > 0.5f) {
+        Pen grooveDarkTop(Color(static_cast<BYTE>(190 + 35 * focusRatio), 12, 13, 16), 1.0f);
+        Pen grooveWhiteTop(Color(static_cast<BYTE>(45 + 35 * focusRatio), 255, 255, 255), 1.0f);
+        g.DrawLine(&grooveDarkTop, midX, midTop, midX + midW, midTop);
+        g.DrawLine(&grooveWhiteTop, midX, midTop + 1.0f, midX + midW, midTop + 1.0f);
+
+        Pen grooveDarkBot(Color(static_cast<BYTE>(190 + 35 * focusRatio), 12, 13, 16), 1.0f);
+        Pen grooveWhiteBot(Color(static_cast<BYTE>(45 + 35 * focusRatio), 255, 255, 255), 1.0f);
+        g.DrawLine(&grooveDarkBot, midX, midBot - 1.0f, midX + midW, midBot - 1.0f);
+        g.DrawLine(&grooveWhiteBot, midX, midBot, midX + midW, midBot);
+    } else {
+        // 两根玻璃条咬合接触线
+        Pen contactDark(Color(static_cast<BYTE>(175 + 45 * focusRatio), 14, 15, 18), 1.0f);
+        Pen contactLight(Color(static_cast<BYTE>(75 + 65 * focusRatio), 255, 255, 255), 1.0f);
+        g.DrawLine(&contactDark, 2.0f, contactY, W - 2.0f, contactY);
+        g.DrawLine(&contactLight, 3.0f, contactY + 1.0f, W - 3.0f, contactY + 1.0f);
+
+        // 分裂瞬间的纯白能量辉光
+        if (splitGlowAlpha > 0.02f) {
+            BYTE ga = static_cast<BYTE>(210.0f * splitGlowAlpha);
+            Pen energyPen(Color(ga, 240, 248, 255), 1.2f);
+            g.DrawLine(&energyPen, 8.0f, contactY, W - 8.0f, contactY);
+        }
     }
 }
 

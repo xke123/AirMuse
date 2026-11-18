@@ -53,10 +53,11 @@ HWND LyricsWindow::Create(HWND parentMain) {
 void LyricsWindow::SetVisible(bool visible) {
     if (visible) {
         if (!IsWindowVisible(m_hwnd)) {
-            m_revealAnim.SnapTo(0.0f);
+            m_animTime = 0.0f;
+            m_animProgress = 0.0f;
         }
         m_hiding = false;
-        m_revealAnim.target = 1.0f;
+        m_animTarget = 1.0f;
         m_dockMgr.SyncAllDocked();
         ShowWindow(m_hwnd, SW_SHOWNOACTIVATE);
         OnPlaybackOrLyricsChanged();
@@ -64,7 +65,7 @@ void LyricsWindow::SetVisible(bool visible) {
     } else {
         if (!IsWindowVisible(m_hwnd)) return;
         m_hiding = true;
-        m_revealAnim.target = 0.0f;
+        m_animTarget = 0.0f;
         EnsureFrameTimer();
     }
 }
@@ -165,8 +166,20 @@ bool LyricsWindow::StepMotion(float dt) {
     active |= m_winHeight.Step(dt);
     active |= m_scrollY.Step(dt);
     active |= m_miniLyricSlide.Step(dt);
-    active |= m_revealAnim.Step(dt);
     active |= m_focusAnim.Step(dt);
+
+    if (m_animTarget > 0.5f) {
+        if (m_animTime < m_animDuration) {
+            m_animTime = std::min(m_animDuration, m_animTime + dt);
+            active = true;
+        }
+    } else {
+        if (m_animTime > 0.0f) {
+            m_animTime = std::max(0.0f, m_animTime - dt);
+            active = true;
+        }
+    }
+    m_animProgress = (m_animDuration > 0.0f) ? std::clamp(m_animTime / m_animDuration, 0.0f, 1.0f) : m_animTarget;
 
     int w = DEFAULT_WIDTH_DIP;
     int h = static_cast<int>(std::round(m_winHeight.current));
@@ -180,7 +193,7 @@ bool LyricsWindow::StepMotion(float dt) {
     }
 
     if (!active) {
-        if (m_hiding) {
+        if (m_hiding && m_animProgress <= 0.005f) {
             m_hiding = false;
             ShowWindow(m_hwnd, SW_HIDE);
             return false;
@@ -212,40 +225,48 @@ void LyricsWindow::Render() {
     float scale = static_cast<float>(m_dpi) / 96.0f;
     if (!m_surface.Ensure(wPx, hPx)) return;
 
-    float rev = std::clamp(m_revealAnim.current, 0.0f, 1.0f);
-    BYTE masterAlpha = static_cast<BYTE>(std::round(255.0f * rev));
+    float animT = m_animProgress;
+    if (animT <= 0.005f) {
+        m_surface.Present(m_hwnd, wPx, hPx, 0);
+        return;
+    }
 
     {
         Graphics g(m_surface.hdcMem);
         g.Clear(Color(0, 0, 0, 0));
-        if (rev <= 0.01f) {
-            m_surface.Present(m_hwnd, wPx, hPx, 0);
-            return;
-        }
         g.ScaleTransform(scale, scale);
         g.SetSmoothingMode(SmoothingModeHighQuality);
         g.SetTextRenderingHint(TextRenderingHintAntiAlias);
 
-        if (rev < 0.995f) {
-            DockSide side = m_dockMgr.LyricsDockSide();
-            float wf = static_cast<float>(w);
-            float hf = static_cast<float>(h);
-            if (side == DockSide::Top) {
-                g.SetClip(RectF(0.0f, hf * (1.0f - rev), wf, hf * rev));
-                g.TranslateTransform(0.0f, (1.0f - rev) * hf * 0.45f);
-            } else if (side == DockSide::Left) {
-                g.SetClip(RectF(wf * (1.0f - rev), 0.0f, wf * rev, hf));
-                g.TranslateTransform((1.0f - rev) * wf * 0.45f, 0.0f);
-            } else if (side == DockSide::Right) {
-                g.SetClip(RectF(0.0f, 0.0f, wf * rev, hf));
-                g.TranslateTransform(-(1.0f - rev) * wf * 0.45f, 0.0f);
-            } else {
-                g.SetClip(RectF(0.0f, 0.0f, wf, hf * rev));
-                g.TranslateTransform(0.0f, -(1.0f - rev) * hf * 0.45f);
-            }
-        }
+        GraphicsState scrollClipState{};
+        bool hasScrollClip = false;
 
-        GlassRenderer::DrawAirPlayGlassFrame(g, w, h, m_mini && m_hovering ? 1.0f : 0.0f, m_focusAnim.current);
+        if (animT < 0.999f) {
+            // Mode 2: 从顶部玻璃条向下展开 (Top bar fixed, bottom bar rolls down)
+            GlassRenderer::DrawScrollGlassFrame(g, w, h, animT, m_mini && m_hovering ? 1.0f : 0.0f, m_focusAnim.current, 2);
+
+            if (animT <= 0.70f) {
+                // 阶段1~3：处于水晶玻璃珠、单根拉伸条或两根玻璃条分裂阶段，中间内容尚未卷出
+                m_surface.Present(m_hwnd, wPx, hPx, 255);
+                return;
+            }
+
+            // 阶段4：卷轴向下展开
+            const float W = static_cast<float>(w);
+            const float H = static_cast<float>(h);
+            const float barH = 20.0f;
+            float p = (animT - 0.70f) / 0.30f;
+            float s = 3.0f * p * p - 2.0f * p * p * p;
+            float yTop = 0.0f;
+            float yBot = barH + s * (H - 2.0f * barH);
+
+            RectF scrollClip(0.0f, yTop, W, (yBot + barH) - yTop);
+            scrollClipState = g.Save();
+            g.SetClip(scrollClip, CombineModeIntersect);
+            hasScrollClip = true;
+        } else {
+            GlassRenderer::DrawAirPlayGlassFrame(g, w, h, m_mini && m_hovering ? 1.0f : 0.0f, m_focusAnim.current);
+        }
 
         auto info = m_controller.Store().GetPlayback();
         auto lrc  = m_controller.Store().GetLyrics();
@@ -339,8 +360,12 @@ void LyricsWindow::Render() {
             }
             g.Restore(miniSaved);
         }
+
+        if (hasScrollClip) {
+            g.Restore(scrollClipState);
+        }
     }
-    m_surface.Present(m_hwnd, wPx, hPx, masterAlpha);
+    m_surface.Present(m_hwnd, wPx, hPx, 255);
 }
 
 LRESULT CALLBACK LyricsWindow::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {

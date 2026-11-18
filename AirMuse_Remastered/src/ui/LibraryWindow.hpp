@@ -24,6 +24,7 @@ public:
 
     void SetVisible(bool visible);
     void SetTopMost(bool topMost);
+    void SetAnimDuration(float dur) { m_animDuration = dur; }
     void RefreshHoverIfChanged();
     void Render();
 
@@ -50,6 +51,11 @@ private:
     bool m_lastMouseInside = false;
 
     SpringValue m_focusAnim{ 1.0f, MotionPreset::Gentle };
+    bool m_hiding = false;
+    float m_animDuration = 1.5f;
+    float m_animTime = 0.0f;
+    float m_animProgress = 0.0f;
+    float m_animTarget = 0.0f;
 
     LayeredSurface m_surface;
     std::unique_ptr<Gdiplus::Bitmap> m_winBtnsBmp;

@@ -62,13 +62,27 @@ HWND LibraryWindow::Create(HWND parentMain) {
 }
 
 void LibraryWindow::SetVisible(bool visible) {
-    ShowWindow(m_hwnd, visible ? SW_SHOWNOACTIVATE : SW_HIDE);
-    ShowWindow(m_webHostHwnd, visible ? SW_SHOWNOACTIVATE : SW_HIDE);
-    m_controller.SetWebVisible(visible);
     if (visible) {
-        m_lastActiveOrHover = true;
+        if (!IsWindowVisible(m_hwnd)) {
+            m_animTime = 0.0f;
+            m_animProgress = 0.0f;
+        }
+        m_hiding = false;
+        m_animTarget = 1.0f;
         m_dockMgr.SyncAllDocked();
+        ShowWindow(m_hwnd, SW_SHOWNOACTIVATE);
+        ShowWindow(m_webHostHwnd, SW_HIDE);
+        m_controller.SetWebVisible(true);
+        m_lastActiveOrHover = true;
         Render();
+        MotionCoordinator::Instance().RequestFrame();
+    } else {
+        if (!IsWindowVisible(m_hwnd)) return;
+        m_hiding = true;
+        m_animTarget = 0.0f;
+        ShowWindow(m_webHostHwnd, SW_HIDE);
+        m_controller.SetWebVisible(false);
+        MotionCoordinator::Instance().RequestFrame();
     }
 }
 
@@ -111,7 +125,43 @@ void LibraryWindow::RefreshHoverIfChanged() {
 }
 
 bool LibraryWindow::StepMotion(float dt) {
-    return m_focusAnim.Step(dt);
+    bool active = false;
+    active |= m_focusAnim.Step(dt);
+
+    if (m_animTarget > 0.5f) {
+        if (m_animTime < m_animDuration) {
+            m_animTime = std::min(m_animDuration, m_animTime + dt);
+            active = true;
+        }
+    } else {
+        if (m_animTime > 0.0f) {
+            m_animTime = std::max(0.0f, m_animTime - dt);
+            active = true;
+        }
+    }
+    m_animProgress = (m_animDuration > 0.0f) ? std::clamp(m_animTime / m_animDuration, 0.0f, 1.0f) : m_animTarget;
+
+    // WebView2 前台视口与展开联动：在卷轴展开接近完成（>= 0.92）时显示前台页面，在收起过程中保持隐藏
+    if (m_animTarget > 0.5f && m_animProgress >= 0.92f) {
+        if (m_webHostHwnd && !IsWindowVisible(m_webHostHwnd)) {
+            m_dockMgr.SyncWebHostBounds();
+            ShowWindow(m_webHostHwnd, SW_SHOWNOACTIVATE);
+        }
+    } else {
+        if (m_webHostHwnd && IsWindowVisible(m_webHostHwnd)) {
+            ShowWindow(m_webHostHwnd, SW_HIDE);
+        }
+    }
+
+    if (!active) {
+        if (m_hiding && m_animProgress <= 0.005f) {
+            m_hiding = false;
+            ShowWindow(m_hwnd, SW_HIDE);
+            if (m_webHostHwnd) ShowWindow(m_webHostHwnd, SW_HIDE);
+            return false;
+        }
+    }
+    return active;
 }
 
 void LibraryWindow::OnMotionRender() {
@@ -127,6 +177,12 @@ void LibraryWindow::Render() {
 
     if (!m_surface.Ensure(wPx, hPx)) return;
 
+    float animT = m_animProgress;
+    if (animT <= 0.005f) {
+        m_surface.Present(m_hwnd, wPx, hPx, 0);
+        return;
+    }
+
     {
         Graphics g(m_surface.hdcMem);
         g.Clear(Color(0, 0, 0, 0));
@@ -134,12 +190,36 @@ void LibraryWindow::Render() {
         g.SetSmoothingMode(SmoothingModeHighQuality);
         g.SetTextRenderingHint(TextRenderingHintAntiAlias);
 
-        // 1. 窗口外框：亚克力磨砂玻璃背景 (双态水晶毛玻璃高光动态过渡)
         float focus = m_focusAnim.current;
-        GlassRenderer::DrawAirPlayGlassFrame(g, w, h, 0.0f, focus);
+        float barAlpha = 1.0f;
+        float yBot = static_cast<float>(h - 20);
+
+        if (animT < 0.999f) {
+            GlassRenderer::DrawScrollGlassFrame(g, w, h, animT, 0.0f, focus, 2);
+
+            if (animT <= 0.52f) {
+                m_surface.Present(m_hwnd, wPx, hPx, 255);
+                return;
+            }
+
+            barAlpha = std::clamp((animT - 0.52f) / 0.18f, 0.0f, 1.0f);
+            const float barH = 20.0f;
+            if (animT <= 0.70f) {
+                float u = (animT - 0.52f) / 0.18f;
+                float s = 3.0f * u * u - 2.0f * u * u * u;
+                yBot = s * barH;
+            } else {
+                float p = (animT - 0.70f) / 0.30f;
+                float s = 3.0f * p * p - 2.0f * p * p * p;
+                yBot = barH + s * (static_cast<float>(h) - 2.0f * barH);
+            }
+        } else {
+            GlassRenderer::DrawAirPlayGlassFrame(g, w, h, 0.0f, focus);
+        }
 
         // 平滑渐显/渐隐顶部与底部的玻璃条文字及按钮
-        if (focus > 0.01f) {
+        float effAlpha = focus * barAlpha;
+        if (effAlpha > 0.01f) {
             FontFamily ff(L"Microsoft YaHei UI");
             StringFormat leftSf;
             leftSf.SetAlignment(StringAlignmentNear);
@@ -156,18 +236,18 @@ void LibraryWindow::Render() {
             if (userName.empty() && cur == WebPlatform::AppleMusic) userName = L"小可";
             std::wstring headerTitle = userName.empty() ? (L"未登录的 " + svcName) : (userName + L" 的 " + svcName);
 
-            // 标题光晕与文字 (随 focus 平滑呼吸)
-            BYTE topFogAlpha = static_cast<BYTE>(std::round(195.0f * focus));
+            // 标题光晕与文字 (随 effAlpha 平滑呼吸)
+            BYTE topFogAlpha = static_cast<BYTE>(std::round(195.0f * effAlpha));
             GlassRenderer::DrawBarSpillFog(g, topGlassClip, 42.0f, 26.0f, 165.0f, true, topFogAlpha);
-            GlassRenderer::DrawGlyphHaloText(g, headerTitle, ff, 10.5f, RectF(32.0f, 3.0f, static_cast<float>(w - 75), 16.0f), leftSf, Color(245, 240, 246, 255), focus);
+            GlassRenderer::DrawGlyphHaloText(g, headerTitle, ff, 10.5f, RectF(32.0f, 3.0f, static_cast<float>(w - 75), 16.0f), leftSf, Color(245, 240, 246, 255), effAlpha);
 
             // 右上角关闭按钮 (悬停高亮 + 平滑淡入淡出)
             bool hoverClose = (m_hoverTab == 3);
-            BYTE closeFogAlpha = static_cast<BYTE>(std::round((hoverClose ? 225.0f : 185.0f) * focus));
+            BYTE closeFogAlpha = static_cast<BYTE>(std::round((hoverClose ? 225.0f : 185.0f) * effAlpha));
             GlassRenderer::DrawBarSpillFog(g, topGlassClip, static_cast<float>(w - 38), 65.0f, 24.0f, true, closeFogAlpha);
-            GlassRenderer::DrawImageAlpha(g, m_winBtnsBmp.get(), RectF(static_cast<REAL>(w - 45), 4.0f, 13.0f, 13.0f), 2 * 52, 0, 52, 52, (hoverClose ? 1.0f : 0.88f) * focus, 1.18f);
+            GlassRenderer::DrawImageAlpha(g, m_winBtnsBmp.get(), RectF(static_cast<REAL>(w - 45), 4.0f, 13.0f, 13.0f), 2 * 52, 0, 52, 52, (hoverClose ? 1.0f : 0.88f) * effAlpha, 1.18f);
 
-            // 3. 底部玻璃条 (Y: 290 ~ 310 DIP)
+            // 3. 底部玻璃条 (跟随 yBot 动态移动)
             auto info = m_controller.Store().GetPlayback();
             std::wstring sourceLabel = L"Apple Music 就绪";
             if (!info.contextTitle.empty()) {
@@ -176,14 +256,14 @@ void LibraryWindow::Render() {
                 sourceLabel = L"正在播放 · " + info.title + (info.artist.empty() ? L"" : (L" - " + info.artist));
             }
 
-            RectF botGlassClip(5.0f, static_cast<float>(h - 20), static_cast<float>(w - 10), 18.0f);
+            RectF botGlassClip(5.0f, yBot, static_cast<float>(w - 10), 18.0f);
             bool hoverBot = (m_hoverTab == 4);
-            BYTE botFogAlpha = static_cast<BYTE>(std::round((hoverBot ? 235.0f : 195.0f) * focus));
+            BYTE botFogAlpha = static_cast<BYTE>(std::round((hoverBot ? 235.0f : 195.0f) * effAlpha));
             GlassRenderer::DrawBarSpillFog(g, botGlassClip, 42.0f, 26.0f, 180.0f, false, botFogAlpha);
 
-            RectF botRect(16.0f, static_cast<float>(h - 18), static_cast<float>(w - 32), 16.0f);
+            RectF botRect(16.0f, yBot + 2.0f, static_cast<float>(w - 32), 16.0f);
             Color botColor = hoverBot ? Color(255, 185, 232, 255) : Color(245, 242, 246, 252);
-            GlassRenderer::DrawGlyphHaloText(g, sourceLabel, ff, 9.5f, botRect, leftSf, botColor, focus);
+            GlassRenderer::DrawGlyphHaloText(g, sourceLabel, ff, 9.5f, botRect, leftSf, botColor, effAlpha);
         }
     }
 

@@ -14,6 +14,7 @@ namespace airmuse {
 
 class LyricsWindow;
 class LibraryWindow;
+class TestPanelWindow;
 
 class MainWindow : public IMotionClient {
 public:
@@ -26,6 +27,7 @@ public:
     HWND Create();
     HWND Hwnd() const { return m_hwnd; }
     void BindChildWindows(LyricsWindow* lyricsWnd, LibraryWindow* libraryWnd);
+    void BindTestPanel(TestPanelWindow* testPanelWnd);
 
     bool IsMiniMode() const { return m_miniMode; }
     bool IsTopMost() const { return m_topMost; }
@@ -72,6 +74,7 @@ private:
     DockManager& m_dockMgr;
     LyricsWindow* m_lyricsWnd = nullptr;
     LibraryWindow* m_libraryWnd = nullptr;
+    TestPanelWindow* m_testPanelWnd = nullptr;
 
     HWND m_hwnd = nullptr;
     int m_dpi = 96;
@@ -81,12 +84,15 @@ private:
     bool m_hovering = false;
     bool m_lyricsVisible = false;
     bool m_libVisible = false;
+    bool m_animSpeed2s = false; // false = 1.5s, true = 2.0s
+    float m_animDuration = 1.5f;
+    float m_introProgress = 0.0f;
+    float m_introTime = 0.0f;
 
     SpringValue m_winWidth{ static_cast<float>(DEFAULT_WIDTH_DIP), static_cast<float>(DEFAULT_WIDTH_DIP), 0.0f, 280.0f, 24.0f };
     SpringValue m_winHeight{ static_cast<float>(DEFAULT_HEIGHT_DIP), static_cast<float>(DEFAULT_HEIGHT_DIP), 0.0f, 280.0f, 24.0f };
     SpringValue m_hoverPanel{ 0.0f, 0.0f, 0.0f, 300.0f, 26.0f };
     SpringValue m_miniTextSlide{ 1.0f, 1.0f, 0.0f, 260.0f, 34.0f };
-    SpringValue m_startupAnim{ 0.0f, 0.0f, 0.0f, 210.0f, 28.0f };
     SpringValue m_focusAnim{ 1.0f, MotionPreset::Gentle };
     bool m_introActive = true;
     bool m_pendingStartupPanels = false;

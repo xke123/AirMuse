@@ -21,6 +21,7 @@ public:
 
     void SetVisible(bool visible);
     void SetMiniMode(bool mini);
+    void SetAnimDuration(float dur) { m_animDuration = dur; }
     void OnPlaybackTick();
     void OnPlaybackOrLyricsChanged();
     void Render();
@@ -55,8 +56,11 @@ private:
     SpringValue m_scrollY{ 0.0f, 0.0f, 0.0f, 220.0f, 30.0f };
     SpringValue m_winHeight{ static_cast<float>(DEFAULT_HEIGHT_DIP), static_cast<float>(DEFAULT_HEIGHT_DIP), 0.0f, 280.0f, 24.0f };
     SpringValue m_miniLyricSlide{ 1.0f, 1.0f, 0.0f, 260.0f, 34.0f };
-    SpringValue m_revealAnim{ 0.0f, 0.0f, 0.0f, 260.0f, 34.0f };
     SpringValue m_focusAnim{ 1.0f, MotionPreset::Gentle };
+    float m_animDuration = 1.5f;
+    float m_animTime = 0.0f;
+    float m_animProgress = 0.0f;
+    float m_animTarget = 0.0f;
     std::wstring m_prevMiniLine;
     std::wstring m_curMiniLine;
 
