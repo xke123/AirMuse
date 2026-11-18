@@ -34,7 +34,11 @@ public:
     static std::unique_ptr<Gdiplus::Bitmap> DecodeArtworkBitmap(std::vector<uint8_t> const& bytes);
 
     static void AddRoundedRectPath(Gdiplus::GraphicsPath& path, float x, float y, float w, float h, float r);
-    static void DrawAirPlayGlassFrame(Gdiplus::Graphics& g, int dstW, int dstH, float hoverGloss, bool focused, Gdiplus::Bitmap* ambientArtwork = nullptr);
+    static void DrawAirPlayGlassFrame(Gdiplus::Graphics& g, int dstW, int dstH, float hoverGloss, float focusRatio, Gdiplus::Bitmap* ambientArtwork = nullptr);
+    static void DrawAirPlayGlassFrame(Gdiplus::Graphics& g, int dstW, int dstH, float hoverGloss, bool focused, Gdiplus::Bitmap* ambientArtwork = nullptr) {
+        DrawAirPlayGlassFrame(g, dstW, dstH, hoverGloss, focused ? 1.0f : 0.0f, ambientArtwork);
+    }
+    static void DrawSpecularSweep(Gdiplus::Graphics& g, int dstW, int dstH, float sweepRatio, float intensity, float sweepRatioX = 0.5f);
     static void DrawImageAlpha(Gdiplus::Graphics& g, Gdiplus::Bitmap* src, Gdiplus::RectF const& dst, int sx, int sy, int sw, int sh, float alpha, float brightness = 1.0f);
     static void DrawTextHalo(Gdiplus::Graphics& g, float cx, float cy, float rx, float ry, BYTE centerAlpha);
     static void DrawBarSpillFog(Gdiplus::Graphics& g, Gdiplus::RectF const& barClip, float anchorX, float leftSpan, float rightSpan, bool fromBottom, BYTE peakAlpha);

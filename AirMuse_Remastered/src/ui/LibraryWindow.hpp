@@ -5,13 +5,15 @@
 #include "../core/AppController.hpp"
 #include "DockManager.hpp"
 #include "GlassRenderer.hpp"
+#include "SpringAnimator.hpp"
+#include "MotionCoordinator.hpp"
 
 namespace airmuse {
 
-class LibraryWindow {
+class LibraryWindow : public IMotionClient {
 public:
     LibraryWindow(HINSTANCE hInst, AppController& controller, DockManager& dockMgr);
-    ~LibraryWindow();
+    ~LibraryWindow() override;
 
     HWND Create(HWND parentMain);
     HWND Hwnd() const { return m_hwnd; }
@@ -21,6 +23,10 @@ public:
     void SetTopMost(bool topMost);
     void RefreshHoverIfChanged();
     void Render();
+
+    // IMotionClient
+    bool StepMotion(float dt) override;
+    void OnMotionRender() override;
 
 private:
     static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
@@ -39,6 +45,8 @@ private:
     bool m_focused = false;
     bool m_lastActiveOrHover = false;
     bool m_lastMouseInside = false;
+
+    SpringValue m_focusAnim{ 1.0f, MotionPreset::Gentle };
 
     LayeredSurface m_surface;
     std::unique_ptr<Gdiplus::Bitmap> m_winBtnsBmp;

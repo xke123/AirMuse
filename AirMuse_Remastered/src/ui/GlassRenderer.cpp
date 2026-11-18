@@ -142,7 +142,8 @@ void GlassRenderer::DrawImageAlpha(Graphics& g, Bitmap* src, RectF const& dst, i
     g.DrawImage(src, dst, static_cast<REAL>(sx), static_cast<REAL>(sy), static_cast<REAL>(sw), static_cast<REAL>(sh), UnitPixel, &ia);
 }
 
-void GlassRenderer::DrawAirPlayGlassFrame(Graphics& g, int dstW, int dstH, float hoverGloss, bool focused, Bitmap* ambientArtwork) {
+void GlassRenderer::DrawAirPlayGlassFrame(Graphics& g, int dstW, int dstH, float hoverGloss, float focusRatio, Bitmap* ambientArtwork) {
+    focusRatio = std::clamp(focusRatio, 0.0f, 1.0f);
     const float padX = 2.0f, padY = 2.0f;
     const float fw = static_cast<float>(dstW) - padX * 2.0f;
     const float fh = static_cast<float>(dstH) - padY * 2.0f;
@@ -179,7 +180,7 @@ void GlassRenderer::DrawAirPlayGlassFrame(Graphics& g, int dstW, int dstH, float
 
         GraphicsState saved = g.Save();
         g.SetClip(&outer);
-        Pen topSheen(Color(85, 255, 255, 255), 1.0f);
+        Pen topSheen(Color(static_cast<BYTE>(45 + 55 * focusRatio), 255, 255, 255), 1.0f);
         g.DrawLine(&topSheen, mPadX + 1.0f, mPadY + 1.0f, mPadX + mW - 1.0f, mPadY + 1.0f);
         g.Restore(saved);
 
@@ -188,7 +189,7 @@ void GlassRenderer::DrawAirPlayGlassFrame(Graphics& g, int dstW, int dstH, float
 
         GraphicsPath innerWhite;
         AddRoundedRectPath(innerWhite, mPadX + 0.75f, mPadY + 0.75f, mW - 1.5f, mH - 1.5f, std::max(1.5f, r - 0.5f));
-        Pen whiteBorder(Color(175, 248, 250, 255), 1.0f);
+        Pen whiteBorder(Color(static_cast<BYTE>(110 + 75 * focusRatio), 248, 250, 255), 1.0f);
         g.DrawPath(&whiteBorder, &innerWhite);
         return;
     }
@@ -197,22 +198,35 @@ void GlassRenderer::DrawAirPlayGlassFrame(Graphics& g, int dstW, int dstH, float
     const float gx = padX;
     const float gw = fw;
 
+    // 顶部水晶玻璃条 (失焦时沉静微暗，激活时晶莹通透带有高光反射)
     {
         GraphicsPath topPath;
         AddRoundedRectPath(topPath, gx, padY, gw, barH + 2.0f, 4.5f);
-        LinearGradientBrush topGlass(PointF(0, padY), PointF(0, padY + barH), Color(96, 224, 228, 236), Color(48, 152, 158, 166));
+        BYTE topA = static_cast<BYTE>(60 + 42 * focusRatio);
+        BYTE botA = static_cast<BYTE>(32 + 24 * focusRatio);
+        LinearGradientBrush topGlass(PointF(0, padY), PointF(0, padY + barH),
+                                     Color(topA, 224, 228, 236), Color(botA, 152, 158, 166));
         g.FillPath(&topGlass, &topPath);
-        Pen topBorder(Color(145, 14, 15, 18), 1.0f);
+
+        // 顶边 1px 晶体折射高光线 (AirPlay 经典标志)
+        Pen topSheen(Color(static_cast<BYTE>(30 + 85 * focusRatio), 255, 255, 255), 1.0f);
+        g.DrawLine(&topSheen, gx + 3.0f, padY + 1.0f, gx + gw - 3.0f, padY + 1.0f);
+
+        Pen topBorder(Color(static_cast<BYTE>(110 + 40 * focusRatio), 14, 15, 18), 1.0f);
         g.DrawPath(&topBorder, &topPath);
     }
 
     float botY = padY + fh - barH;
+    // 底部水晶玻璃条
     {
         GraphicsPath botPath;
         AddRoundedRectPath(botPath, gx, botY - 2.0f, gw, barH + 2.0f, 4.5f);
-        LinearGradientBrush botGlass(PointF(0, botY), PointF(0, padY + fh), Color(48, 152, 158, 166), Color(88, 214, 218, 226));
+        BYTE botTopA = static_cast<BYTE>(32 + 24 * focusRatio);
+        BYTE botBotA = static_cast<BYTE>(54 + 40 * focusRatio);
+        LinearGradientBrush botGlass(PointF(0, botY), PointF(0, padY + fh),
+                                     Color(botTopA, 152, 158, 166), Color(botBotA, 214, 218, 226));
         g.FillPath(&botGlass, &botPath);
-        Pen botBorder(Color(145, 14, 15, 18), 1.0f);
+        Pen botBorder(Color(static_cast<BYTE>(110 + 40 * focusRatio), 14, 15, 18), 1.0f);
         g.DrawPath(&botBorder, &botPath);
     }
 
@@ -234,12 +248,87 @@ void GlassRenderer::DrawAirPlayGlassFrame(Graphics& g, int dstW, int dstH, float
         g.Restore(saved);
 
         Pen midDark(Color(175, 10, 11, 14), 1.0f);
-        Pen midRim(Color(focused ? 52 : 30, 255, 255, 255), 1.0f);
+        Pen midRim(Color(static_cast<BYTE>(26 + 32 * focusRatio), 255, 255, 255), 1.0f);
         g.DrawPath(&midDark, &midPath);
+
         GraphicsPath midInner;
         AddRoundedRectPath(midInner, padX + 1.0f, midY + 1.0f, fw - 2.0f, midH - 2.0f, 4.5f);
         g.DrawPath(&midRim, &midInner);
+
+        // 焦点态微弱青色水晶漫反射内轮廓 (AirPlay 经典高光)
+        if (focusRatio > 0.05f) {
+            Pen crystalGlow(Color(static_cast<BYTE>(32 * focusRatio), 120, 220, 255), 1.0f);
+            g.DrawPath(&crystalGlow, &midInner);
+        }
     }
+}
+
+void GlassRenderer::DrawSpecularSweep(Graphics& g, int dstW, int dstH, float sweepRatio, float intensity, float /*sweepRatioX*/) {
+    if (intensity <= 0.005f) return;
+    const float padX = 2.0f, padY = 2.0f;
+    const float fw = static_cast<float>(dstW) - padX * 2.0f;
+    const float fh = static_cast<float>(dstH) - padY * 2.0f;
+    const float barH = 18.0f;
+
+    float midY = padY + barH;
+    float midH = fh - barH * 2.0f;
+    if (fw <= 10.0f || midH <= 10.0f) return;
+
+    // 严格限制在两个玻璃条中间的主面板区域 (midClip)
+    GraphicsPath midClip;
+    AddRoundedRectPath(midClip, padX, midY, fw, midH, 5.5f);
+
+    GraphicsState saved = g.Save();
+    g.SetClip(&midClip, CombineModeIntersect);
+
+    // 计算相机镜头炫光/光晕中心Y轴位置
+    float cy = midY + sweepRatio * midH;
+
+    // 绘制具有高斯/钟形羽化分布的横向全贯穿光学光晕层 (避免生硬“灯条”)
+    auto drawGaussianSheenLayer = [&](float totalH, BYTE peakAlpha, BYTE r, BYTE gColor, BYTE b) {
+        if (peakAlpha == 0 || totalH <= 1.0f) return;
+        float y0 = cy - totalH * 0.5f;
+        float y1 = cy + totalH * 0.5f;
+
+        // 高斯/钟形羽化权重系数：调高边缘最低亮度部分底色，使整体光晕饱满通透
+        static const REAL pos[11] = { 0.00f, 0.08f, 0.18f, 0.32f, 0.42f, 0.50f, 0.58f, 0.68f, 0.82f, 0.92f, 1.00f };
+        static const float weights[11] = { 0.00f, 0.28f, 0.54f, 0.80f, 0.94f, 1.00f, 0.94f, 0.80f, 0.54f, 0.28f, 0.00f };
+
+        Color colors[11];
+        for (int i = 0; i < 11; ++i) {
+            BYTE a = static_cast<BYTE>(std::round(peakAlpha * weights[i]));
+            colors[i] = Color(a, r, gColor, b);
+        }
+
+        LinearGradientBrush lgb(PointF(padX, y0), PointF(padX, y1), colors[0], colors[10]);
+        lgb.SetWrapMode(WrapModeClamp);
+        lgb.SetInterpolationColors(colors, pos, 11);
+
+        // 横向贯穿整个面板 (由 midClip 裁切自然契合玻璃圆角)
+        RectF bandRect(padX, y0, fw, totalH);
+        g.FillRectangle(&lgb, bandRect);
+    };
+
+    // 1. 外层漫射镜头镀膜光晕 (Broad AR-Coating Cyan Glow)
+    // 宽度(高度)扩充至整个界面的约三分之二 (2/3 dstH)，调高最低亮度部分的基底，柔和饱满
+    float totalH = std::max(56.0f, static_cast<float>(dstH) * (2.0f / 3.0f));
+    float h1 = totalH;
+    BYTE alpha1 = static_cast<BYTE>(std::clamp(intensity * 22.0f, 0.0f, 255.0f));
+    drawGaussianSheenLayer(h1, alpha1, 130, 215, 255);
+
+    // 2. 核心光学聚光光晕 (Core Specular Glare / Bloom)
+    // 调低最亮部分的亮度（从 38 降至 22），避免中心过曝刺眼
+    float h2 = totalH * 0.55f;
+    BYTE alpha2 = static_cast<BYTE>(std::clamp(intensity * 22.0f, 0.0f, 255.0f));
+    drawGaussianSheenLayer(h2, alpha2, 250, 252, 255);
+
+    // 3. 焦点柔光丝 (Soft Filament Bloom)
+    // 调低微焦点亮度（从 20 降至 10），与整体光晕平滑融为一体
+    float h3 = 14.0f;
+    BYTE alpha3 = static_cast<BYTE>(std::clamp(intensity * 10.0f, 0.0f, 255.0f));
+    drawGaussianSheenLayer(h3, alpha3, 255, 255, 255);
+
+    g.Restore(saved);
 }
 
 void GlassRenderer::DrawTextHalo(Graphics& g, float cx, float cy, float rx, float ry, BYTE centerAlpha) {

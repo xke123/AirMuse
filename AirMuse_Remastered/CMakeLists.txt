@@ -34,6 +34,7 @@ add_executable(AirMuse WIN32
     src/media/WebSourceProvider.cpp
     src/lyrics/LyricsEngine.cpp
     src/ui/GlassRenderer.cpp
+    src/ui/MotionCoordinator.cpp
     src/ui/DockManager.cpp
     src/ui/MainWindow.cpp
     src/ui/LyricsWindow.cpp
@@ -64,5 +65,6 @@ target_link_libraries(AirMuse PRIVATE
     crypt32
     ole32
     oleaut32
+    winmm
     windowsapp
 )

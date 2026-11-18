@@ -10,9 +10,13 @@ using namespace Gdiplus;
 namespace airmuse {
 
 LibraryWindow::LibraryWindow(HINSTANCE hInst, AppController& controller, DockManager& dockMgr)
-    : m_hInst(hInst), m_controller(controller), m_dockMgr(dockMgr) {}
+    : m_hInst(hInst), m_controller(controller), m_dockMgr(dockMgr) {
+    MotionCoordinator::Instance().RegisterClient(this);
+}
 
-LibraryWindow::~LibraryWindow() = default;
+LibraryWindow::~LibraryWindow() {
+    MotionCoordinator::Instance().UnregisterClient(this);
+}
 
 HWND LibraryWindow::Create(HWND parentMain) {
     WNDCLASSEXW wc{};
@@ -91,10 +95,19 @@ bool LibraryWindow::IsActiveOrHovered() const {
 void LibraryWindow::RefreshHoverIfChanged() {
     if (!m_hwnd || !IsWindowVisible(m_hwnd)) return;
     bool active = IsActiveOrHovered();
-    if (active != m_lastActiveOrHover) {
-        m_lastActiveOrHover = active;
-        Render();
+    float target = active ? 1.0f : 0.0f;
+    if (m_focusAnim.target != target) {
+        m_focusAnim.target = target;
+        MotionCoordinator::Instance().RequestFrame();
     }
+}
+
+bool LibraryWindow::StepMotion(float dt) {
+    return m_focusAnim.Step(dt);
+}
+
+void LibraryWindow::OnMotionRender() {
+    Render();
 }
 
 void LibraryWindow::Render() {
@@ -113,12 +126,12 @@ void LibraryWindow::Render() {
         g.SetSmoothingMode(SmoothingModeHighQuality);
         g.SetTextRenderingHint(TextRenderingHintAntiAlias);
 
-        // 1. 窗口外框：亚克力磨砂玻璃背景 (根据焦点状态决定亮边)
-        bool showGlassText = IsActiveOrHovered();
-        GlassRenderer::DrawAirPlayGlassFrame(g, w, h, 0.0f, showGlassText);
+        // 1. 窗口外框：亚克力磨砂玻璃背景 (双态水晶毛玻璃高光动态过渡)
+        float focus = m_focusAnim.current;
+        GlassRenderer::DrawAirPlayGlassFrame(g, w, h, 0.0f, focus);
 
-        // 仅在获得焦点或鼠标悬停时绘制顶部与底部的玻璃条文字及按钮
-        if (showGlassText) {
+        // 平滑渐显/渐隐顶部与底部的玻璃条文字及按钮
+        if (focus > 0.01f) {
             FontFamily ff(L"Microsoft YaHei UI");
             StringFormat leftSf;
             leftSf.SetAlignment(StringAlignmentNear);
@@ -126,7 +139,7 @@ void LibraryWindow::Render() {
             leftSf.SetTrimming(StringTrimmingEllipsisCharacter);
             leftSf.SetFormatFlags(StringFormatFlagsNoWrap);
 
-            // 2. 顶部玻璃条 (Y: 0 ~ 24 DIP，不可显示内容，仅作为窗口边框标题与关闭按钮)
+            // 2. 顶部玻璃条 (Y: 0 ~ 24 DIP)
             RectF topGlassClip(3.0f, 2.0f, static_cast<float>(w - 6), 18.0f);
 
             WebPlatform cur = m_controller.CurrentWebPlatform();
@@ -135,16 +148,18 @@ void LibraryWindow::Render() {
             if (userName.empty() && cur == WebPlatform::AppleMusic) userName = L"小可";
             std::wstring headerTitle = userName.empty() ? (L"未登录的 " + svcName) : (userName + L" 的 " + svcName);
 
-            // 标题光晕与文字
-            GlassRenderer::DrawBarSpillFog(g, topGlassClip, 42.0f, 26.0f, 165.0f, true, 195);
-            GlassRenderer::DrawGlyphHaloText(g, headerTitle, ff, 10.5f, RectF(32.0f, 3.0f, 210.0f, 16.0f), leftSf, Color(245, 240, 246, 255), 1.0f);
+            // 标题光晕与文字 (随 focus 平滑呼吸)
+            BYTE topFogAlpha = static_cast<BYTE>(std::round(195.0f * focus));
+            GlassRenderer::DrawBarSpillFog(g, topGlassClip, 42.0f, 26.0f, 165.0f, true, topFogAlpha);
+            GlassRenderer::DrawGlyphHaloText(g, headerTitle, ff, 10.5f, RectF(32.0f, 3.0f, 210.0f, 16.0f), leftSf, Color(245, 240, 246, 255), focus);
 
-            // 右上角关闭按钮
+            // 右上角关闭按钮 (悬停高亮 + 平滑淡入淡出)
             bool hoverClose = (m_hoverTab == 3);
-            GlassRenderer::DrawBarSpillFog(g, topGlassClip, static_cast<float>(w - 38), 65.0f, 24.0f, true, hoverClose ? 225 : 185);
-            GlassRenderer::DrawImageAlpha(g, m_winBtnsBmp.get(), RectF(static_cast<REAL>(w - 45), 4.0f, 13.0f, 13.0f), 2 * 52, 0, 52, 52, hoverClose ? 1.0f : 0.88f, 1.18f);
+            BYTE closeFogAlpha = static_cast<BYTE>(std::round((hoverClose ? 225.0f : 185.0f) * focus));
+            GlassRenderer::DrawBarSpillFog(g, topGlassClip, static_cast<float>(w - 38), 65.0f, 24.0f, true, closeFogAlpha);
+            GlassRenderer::DrawImageAlpha(g, m_winBtnsBmp.get(), RectF(static_cast<REAL>(w - 45), 4.0f, 13.0f, 13.0f), 2 * 52, 0, 52, 52, (hoverClose ? 1.0f : 0.88f) * focus, 1.18f);
 
-            // 3. 底部玻璃条 (Y: 298 ~ 318 DIP，不可显示内容，仅作为正在播放状态条)
+            // 3. 底部玻璃条 (Y: 298 ~ 318 DIP)
             auto info = m_controller.Store().GetPlayback();
             std::wstring sourceLabel = L"Apple Music 就绪";
             if (!info.contextTitle.empty()) {
@@ -155,11 +170,12 @@ void LibraryWindow::Render() {
 
             RectF botGlassClip(4.0f, static_cast<float>(h - 20), static_cast<float>(w - 8), 18.0f);
             bool hoverBot = (m_hoverTab == 4);
-            GlassRenderer::DrawBarSpillFog(g, botGlassClip, 42.0f, 26.0f, 180.0f, false, hoverBot ? 235 : 195);
+            BYTE botFogAlpha = static_cast<BYTE>(std::round((hoverBot ? 235.0f : 195.0f) * focus));
+            GlassRenderer::DrawBarSpillFog(g, botGlassClip, 42.0f, 26.0f, 180.0f, false, botFogAlpha);
 
             RectF botRect(16.0f, static_cast<float>(h - 19), static_cast<float>(w - 32), 16.0f);
             Color botColor = hoverBot ? Color(255, 185, 232, 255) : Color(245, 242, 246, 252);
-            GlassRenderer::DrawGlyphHaloText(g, sourceLabel, ff, 9.5f, botRect, leftSf, botColor, 1.0f);
+            GlassRenderer::DrawGlyphHaloText(g, sourceLabel, ff, 9.5f, botRect, leftSf, botColor, focus);
         }
     }
 

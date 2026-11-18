@@ -204,14 +204,10 @@ void MainWindow::SetLibraryVisible(bool visible) {
 }
 
 void MainWindow::EnsureFrameTimer() {
-    if (!m_animating) {
-        m_animating = true;
-        m_lastFrameTick = GetTickCount64();
-        SetTimer(m_hwnd, TIMER_FRAME, 15, nullptr);
-    }
+    MotionCoordinator::Instance().RequestFrame();
 }
 
-void MainWindow::StepAnimations(float dt) {
+bool MainWindow::StepMotion(float dt) {
     bool active = false;
 
     if (m_introActive) {
@@ -238,6 +234,19 @@ void MainWindow::StepAnimations(float dt) {
     active |= m_winHeight.Step(dt);
     active |= m_hoverPanel.Step(dt);
     active |= m_miniTextSlide.Step(dt);
+    active |= m_focusAnim.Step(dt);
+
+    bool sweepActive = false;
+    for (auto it = m_sweeps.begin(); it != m_sweeps.end();) {
+        it->progress += dt * it->speed;
+        if (it->progress >= 1.0f) {
+            it = m_sweeps.erase(it);
+        } else {
+            sweepActive = true;
+            ++it;
+        }
+    }
+    active |= sweepActive;
 
     for (auto& b : m_buttons) {
         b.hoverAnim.target = (m_hoverBtnId == b.id) ? 1.0f : 0.0f;
@@ -254,11 +263,34 @@ void MainWindow::StepAnimations(float dt) {
     }
 
     if (!active) {
-        m_animating = false;
-        KillTimer(m_hwnd, TIMER_FRAME);
         GlassRenderer::EnableFrostedBlur(m_hwnd, wPx, hPx, m_dpi, m_winHeight.current < 45.0f);
     }
+    return active;
+}
+
+void MainWindow::OnMotionRender() {
     Render();
+}
+
+void MainWindow::StepAnimations(float dt) {
+    if (StepMotion(dt)) {
+        Render();
+    }
+}
+
+void MainWindow::TriggerSweep(float startPos, float endPos, float speed, float originX) {
+    SpecularSweep s;
+    s.active = true;
+    s.startPos = startPos;
+    s.endPos = endPos;
+    s.progress = 0.0f;
+    s.speed = speed;
+    s.originX = originX;
+    if (m_sweeps.size() >= 2) {
+        m_sweeps.erase(m_sweeps.begin());
+    }
+    m_sweeps.push_back(s);
+    MotionCoordinator::Instance().RequestFrame();
 }
 
 void MainWindow::Render() {
@@ -318,7 +350,7 @@ void MainWindow::Render() {
             g.SetClip(&expandClip, CombineModeIntersect);
 
             if (p > 0.05f) {
-                GlassRenderer::DrawAirPlayGlassFrame(g, w, h, 0.0f, m_focused, m_artworkBmp.get());
+                GlassRenderer::DrawAirPlayGlassFrame(g, w, h, 0.0f, m_focusAnim.current, m_artworkBmp.get());
             }
 
             float logoAlpha = std::clamp(1.0f - p * 1.6f, 0.0f, 1.0f);
@@ -340,24 +372,43 @@ void MainWindow::Render() {
         }
 
         float hoverAlpha = m_hoverPanel.current;
+        float focusRatio = m_focusAnim.current;
         if (h > 50) {
-            if (!m_bgCacheBmp || m_bgCacheW != wPx || m_bgCacheH != hPx || m_bgCacheFocused != m_focused || m_bgCacheArtKey != m_cachedArtKey) {
-                m_bgCacheBmp = std::make_unique<Bitmap>(wPx, hPx, PixelFormat32bppPARGB);
-                Graphics bg(m_bgCacheBmp.get());
-                bg.Clear(Color(0, 0, 0, 0));
-                bg.ScaleTransform(scale, scale);
-                bg.SetSmoothingMode(SmoothingModeHighQuality);
-                bg.SetInterpolationMode(InterpolationModeHighQualityBicubic);
-                GlassRenderer::DrawAirPlayGlassFrame(bg, w, h, 0.0f, m_focused, m_artworkBmp.get());
-                m_bgCacheW = wPx;
-                m_bgCacheH = hPx;
-                m_bgCacheFocused = m_focused;
-                m_bgCacheArtKey = m_cachedArtKey;
+            bool focusSettled = m_focusAnim.IsSettled();
+            if (!focusSettled) {
+                InvalidateBgCache();
+                GlassRenderer::DrawAirPlayGlassFrame(g, w, h, 0.0f, focusRatio, m_artworkBmp.get());
+            } else {
+                if (!m_bgCacheBmp || m_bgCacheW != wPx || m_bgCacheH != hPx || m_bgCacheFocused != m_focused || m_bgCacheArtKey != m_cachedArtKey) {
+                    m_bgCacheBmp = std::make_unique<Bitmap>(wPx, hPx, PixelFormat32bppPARGB);
+                    Graphics bg(m_bgCacheBmp.get());
+                    bg.Clear(Color(0, 0, 0, 0));
+                    bg.ScaleTransform(scale, scale);
+                    bg.SetSmoothingMode(SmoothingModeHighQuality);
+                    bg.SetInterpolationMode(InterpolationModeHighQualityBicubic);
+                    GlassRenderer::DrawAirPlayGlassFrame(bg, w, h, 0.0f, focusRatio, m_artworkBmp.get());
+                    m_bgCacheW = wPx;
+                    m_bgCacheH = hPx;
+                    m_bgCacheFocused = m_focused;
+                    m_bgCacheArtKey = m_cachedArtKey;
+                }
+                g.DrawImage(m_bgCacheBmp.get(), RectF(0.0f, 0.0f, static_cast<REAL>(w), static_cast<REAL>(h)),
+                            0.0f, 0.0f, static_cast<REAL>(wPx), static_cast<REAL>(hPx), UnitPixel);
             }
-            g.DrawImage(m_bgCacheBmp.get(), RectF(0.0f, 0.0f, static_cast<REAL>(w), static_cast<REAL>(h)),
-                        0.0f, 0.0f, static_cast<REAL>(wPx), static_cast<REAL>(hPx), UnitPixel);
         } else {
-            GlassRenderer::DrawAirPlayGlassFrame(g, w, h, m_miniMode ? hoverAlpha : 0.0f, m_focused, nullptr);
+            GlassRenderer::DrawAirPlayGlassFrame(g, w, h, m_miniMode ? hoverAlpha : 0.0f, focusRatio, nullptr);
+        }
+
+        // AirPlay Zion 经典光学动效：相机镜头炫光/光晕 (横向贯穿底层渲染，位于文字与页面元素之下)
+        for (auto const& s : m_sweeps) {
+            if (s.progress < 1.0f) {
+                float t = s.progress;
+                // 开始稍微慢一点，带加速度 (初速度较低，平滑加速贯穿界面)
+                float eased = t * (0.25f + 0.75f * t);
+                float sweepPos = s.startPos + (s.endPos - s.startPos) * eased;
+                float intensity = std::sin(t * 3.14159265f);
+                GlassRenderer::DrawSpecularSweep(g, w, h, sweepPos, intensity, s.originX);
+            }
         }
 
         int64_t livePosMs = m_scrubbing
@@ -597,6 +648,9 @@ LRESULT MainWindow::HandleMessage(UINT msg, WPARAM wParam, LPARAM lParam) {
 
         BuildUIElements();
 
+        MotionCoordinator::Instance().AttachHost(m_hwnd);
+        MotionCoordinator::Instance().RegisterClient(this);
+
         m_nid.cbSize = sizeof(NOTIFYICONDATAW);
         m_nid.hWnd = m_hwnd;
         m_nid.uID = 1;
@@ -613,6 +667,8 @@ LRESULT MainWindow::HandleMessage(UINT msg, WPARAM wParam, LPARAM lParam) {
     }
     case WM_ACTIVATE:
         m_focused = (LOWORD(wParam) != WA_INACTIVE);
+        m_focusAnim.target = m_focused ? 1.0f : 0.0f;
+        EnsureFrameTimer();
         Render();
         if (m_lyricsWnd) m_lyricsWnd->Render();
         if (m_libraryWnd) m_libraryWnd->RefreshHoverIfChanged();
@@ -652,11 +708,8 @@ LRESULT MainWindow::HandleMessage(UINT msg, WPARAM wParam, LPARAM lParam) {
                 if (m_lyricsWnd) m_lyricsWnd->OnPlaybackTick();
             }
             if (m_libraryWnd) m_libraryWnd->RefreshHoverIfChanged();
-        } else if (wParam == TIMER_FRAME) {
-            ULONGLONG now = GetTickCount64();
-            float dt = static_cast<float>(now - m_lastFrameTick) / 1000.0f;
-            m_lastFrameTick = now;
-            StepAnimations(dt);
+        } else if (wParam == TIMER_MOTION_VSYNC || wParam == TIMER_FRAME) {
+            MotionCoordinator::Instance().OnTick();
         }
         return 0;
     case WM_MOUSEMOVE: {
@@ -688,6 +741,68 @@ LRESULT MainWindow::HandleMessage(UINT msg, WPARAM wParam, LPARAM lParam) {
             m_hoverBtnId = hit;
             EnsureFrameTimer();
         }
+
+        // AirPlay Zion 经典光学动效：中线跨越与触碰玻璃条出界扫光触发
+        float wDip = m_winWidth.current;
+        float hDip = m_winHeight.current;
+        float normX = (wDip > 0.0f) ? std::clamp(xDip / wDip, 0.20f, 0.80f) : 0.5f;
+        float midY = hDip * 0.5f;
+        // 移出边界以主界面显示区域（不含玻璃条）为准，即碰到玻璃条(20px)立即触发
+        float topGlassBoundary = 20.0f;
+        float botGlassBoundary = hDip - 20.0f;
+
+        ULONGLONG nowTick = GetTickCount64();
+        float dtMs = (m_lastMouseMoveTick > 0 && nowTick >= m_lastMouseMoveTick)
+            ? static_cast<float>(nowTick - m_lastMouseMoveTick) : 16.0f;
+        dtMs = std::clamp(dtMs, 1.0f, 100.0f);
+        m_lastMouseMoveTick = nowTick;
+
+        if (m_lastMouseY >= 0.0f && hDip > 40.0f) {
+            float dy = yDip - m_lastMouseY;
+            float speedY = std::abs(dy) / (dtMs * 0.001f);
+            // 垂直移动速度达到阈值(>400 DIP/s 或单帧跨越>=14 DIP)，判定为快速扫过/甩动
+            bool isFastVerticalMove = (speedY > 400.0f) || (std::abs(dy) >= 14.0f);
+
+            // 1. 中线触发 (仅在移动速度未超标的温和划过时显示；快速划过时不显示过半光带)
+            if (m_lastMouseY < midY && yDip >= midY) {
+                // 向下跨过中线 -> 从中线 0.5 开始向下流动至底边 1.0
+                if (m_lastMidCrossDir != 1) {
+                    if (!isFastVerticalMove) {
+                        TriggerSweep(0.5f, 1.0f, 2.0f, normX);
+                    }
+                    m_lastMidCrossDir = 1;
+                }
+            } else if (m_lastMouseY > midY && yDip <= midY) {
+                // 向上跨过中线 -> 从中线 0.5 开始向上流动至顶边 0.0
+                if (m_lastMidCrossDir != -1) {
+                    if (!isFastVerticalMove) {
+                        TriggerSweep(0.5f, 0.0f, 2.0f, normX);
+                    }
+                    m_lastMidCrossDir = -1;
+                }
+            }
+
+            // 2. 碰到玻璃条边界反弹触发 (固定触发：无论快慢，碰界必然从头反弹横扫)
+            if (!m_botBoundaryTriggered && dy > 0.0f && yDip >= botGlassBoundary) {
+                // 向下碰到玻璃条 -> 从底边 1.0 从头反向横扫至顶边 0.0
+                TriggerSweep(1.0f, 0.0f, 1.6f, normX);
+                m_botBoundaryTriggered = true;
+            } else if (!m_topBoundaryTriggered && dy < 0.0f && yDip <= topGlassBoundary) {
+                // 向上碰到玻璃条 -> 从顶边 0.0 从头反向横扫至底边 1.0
+                TriggerSweep(0.0f, 1.0f, 1.6f, normX);
+                m_topBoundaryTriggered = true;
+            }
+
+            // 离开玻璃条边界回移时重置边界锁
+            if (m_botBoundaryTriggered && yDip < botGlassBoundary - 10.0f) {
+                m_botBoundaryTriggered = false;
+            }
+            if (m_topBoundaryTriggered && yDip > topGlassBoundary + 10.0f) {
+                m_topBoundaryTriggered = false;
+            }
+        }
+        m_lastMouseY = yDip;
+
         TRACKMOUSEEVENT tme{ sizeof(tme), TME_LEAVE, m_hwnd, 0 };
         TrackMouseEvent(&tme);
         return 0;
@@ -697,6 +812,11 @@ LRESULT MainWindow::HandleMessage(UINT msg, WPARAM wParam, LPARAM lParam) {
         m_hoverPanel.target = 0.0f;
         m_hoverBtnId = -1;
         m_pressedBtnId = -1;
+        m_lastMouseY = -1.0f;
+        m_lastMouseMoveTick = 0;
+        m_lastMidCrossDir = 0;
+        m_topBoundaryTriggered = false;
+        m_botBoundaryTriggered = false;
         EnsureFrameTimer();
         return 0;
     case WM_LBUTTONDBLCLK:
@@ -773,6 +893,8 @@ LRESULT MainWindow::HandleMessage(UINT msg, WPARAM wParam, LPARAM lParam) {
         }
         return 0;
     case WM_DESTROY:
+        MotionCoordinator::Instance().UnregisterClient(this);
+        MotionCoordinator::Instance().DetachHost(m_hwnd);
         KillTimer(m_hwnd, TIMER_CLOCK);
         KillTimer(m_hwnd, TIMER_FRAME);
         Shell_NotifyIconW(NIM_DELETE, &m_nid);

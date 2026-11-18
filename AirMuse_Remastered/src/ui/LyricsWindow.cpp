@@ -15,7 +15,13 @@ constexpr float LINE_STEP = 28.0f;
 } // namespace
 
 LyricsWindow::LyricsWindow(HINSTANCE hInst, AppController& controller, DockManager& dockMgr)
-    : m_hInst(hInst), m_controller(controller), m_dockMgr(dockMgr) {}
+    : m_hInst(hInst), m_controller(controller), m_dockMgr(dockMgr) {
+    MotionCoordinator::Instance().RegisterClient(this);
+}
+
+LyricsWindow::~LyricsWindow() {
+    MotionCoordinator::Instance().UnregisterClient(this);
+}
 
 HWND LyricsWindow::Create(HWND parentMain) {
     WNDCLASSEXW wc{};
@@ -91,12 +97,7 @@ int LyricsWindow::ComputeStableActiveIndex(LyricsSnapshot const& lrc, int64_t li
 }
 
 void LyricsWindow::EnsureFrameTimer() {
-    if (!m_hwnd || !IsWindowVisible(m_hwnd)) return;
-    if (!m_animating) {
-        m_animating = true;
-        m_lastFrameTick = GetTickCount64();
-        SetTimer(m_hwnd, TIMER_LYRICS_FRAME, 15, nullptr);
-    }
+    MotionCoordinator::Instance().RequestFrame();
 }
 
 void LyricsWindow::OnPlaybackTick() {
@@ -150,12 +151,13 @@ void LyricsWindow::OnPlaybackOrLyricsChanged() {
     Render();
 }
 
-void LyricsWindow::StepAnimations(float dt) {
+bool LyricsWindow::StepMotion(float dt) {
     bool active = false;
     active |= m_winHeight.Step(dt);
     active |= m_scrollY.Step(dt);
     active |= m_miniLyricSlide.Step(dt);
     active |= m_revealAnim.Step(dt);
+    active |= m_focusAnim.Step(dt);
 
     int w = 320;
     int h = static_cast<int>(std::round(m_winHeight.current));
@@ -169,16 +171,24 @@ void LyricsWindow::StepAnimations(float dt) {
     }
 
     if (!active) {
-        m_animating = false;
-        KillTimer(m_hwnd, TIMER_LYRICS_FRAME);
         if (m_hiding) {
             m_hiding = false;
             ShowWindow(m_hwnd, SW_HIDE);
-            return;
+            return false;
         }
         GlassRenderer::EnableFrostedBlur(m_hwnd, wPx, hPx, m_dpi, m_mini);
     }
+    return active;
+}
+
+void LyricsWindow::OnMotionRender() {
     Render();
+}
+
+void LyricsWindow::StepAnimations(float dt) {
+    if (StepMotion(dt)) {
+        Render();
+    }
 }
 
 void LyricsWindow::Render() {
@@ -226,7 +236,7 @@ void LyricsWindow::Render() {
             }
         }
 
-        GlassRenderer::DrawAirPlayGlassFrame(g, w, h, m_mini && m_hovering ? 1.0f : 0.0f, true);
+        GlassRenderer::DrawAirPlayGlassFrame(g, w, h, m_mini && m_hovering ? 1.0f : 0.0f, m_focusAnim.current);
 
         auto info = m_controller.Store().GetPlayback();
         auto lrc  = m_controller.Store().GetLyrics();
@@ -344,6 +354,10 @@ LRESULT LyricsWindow::HandleMessage(UINT msg, WPARAM wParam, LPARAM lParam) {
         if (m_dpi == 0) m_dpi = 96;
         m_winBtnsBmp = GlassRenderer::LoadPngResource(m_hInst, IDR_PNG_WINDOWBUTTON);
         GlassRenderer::EnableFrostedBlur(m_hwnd, GlassRenderer::ToPx(320, m_dpi), GlassRenderer::ToPx(216, m_dpi), m_dpi, false);
+        return 0;
+    case WM_ACTIVATE:
+        m_focusAnim.target = (LOWORD(wParam) != WA_INACTIVE) ? 1.0f : 0.0f;
+        EnsureFrameTimer();
         return 0;
     case WM_TIMER:
         if (wParam == TIMER_LYRICS_FRAME) {

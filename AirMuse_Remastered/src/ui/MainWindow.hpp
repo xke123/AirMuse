@@ -8,16 +8,17 @@
 #include "UIElement.hpp"
 #include "DockManager.hpp"
 #include "GlassRenderer.hpp"
+#include "MotionCoordinator.hpp"
 
 namespace airmuse {
 
 class LyricsWindow;
 class LibraryWindow;
 
-class MainWindow {
+class MainWindow : public IMotionClient {
 public:
     MainWindow(HINSTANCE hInst, AppController& controller, DockManager& dockMgr);
-    ~MainWindow();
+    ~MainWindow() override;
 
     HWND Create();
     HWND Hwnd() const { return m_hwnd; }
@@ -31,6 +32,10 @@ public:
     void SetLibraryVisible(bool visible);
     void Render();
 
+    // IMotionClient
+    bool StepMotion(float dt) override;
+    void OnMotionRender() override;
+
 private:
     static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
     LRESULT HandleMessage(UINT msg, WPARAM wParam, LPARAM lParam);
@@ -41,6 +46,23 @@ private:
     void EnsureFrameTimer();
     void InvalidateBgCache();
     std::vector<std::wstring> GetMiniCycleItems(NowPlayingState const& info) const;
+    void TriggerSweep(float startPos, float endPos, float speed = 1.8f, float originX = 0.5f);
+
+    struct SpecularSweep {
+        bool active = true;
+        float startPos = 0.0f;
+        float endPos = 1.0f;
+        float progress = 0.0f;
+        float speed = 1.8f;
+        float originX = 0.5f;
+    };
+    std::vector<SpecularSweep> m_sweeps;
+
+    float m_lastMouseY = -1.0f;
+    ULONGLONG m_lastMouseMoveTick = 0;
+    int m_lastMidCrossDir = 0; // +1 = moving down across mid, -1 = moving up across mid
+    bool m_topBoundaryTriggered = false;
+    bool m_botBoundaryTriggered = false;
 
     HINSTANCE m_hInst;
     AppController& m_controller;
@@ -62,6 +84,7 @@ private:
     SpringValue m_hoverPanel{ 0.0f, 0.0f, 0.0f, 300.0f, 26.0f };
     SpringValue m_miniTextSlide{ 1.0f, 1.0f, 0.0f, 260.0f, 34.0f };
     SpringValue m_startupAnim{ 0.0f, 0.0f, 0.0f, 210.0f, 28.0f };
+    SpringValue m_focusAnim{ 1.0f, MotionPreset::Gentle };
     bool m_introActive = true;
     bool m_pendingStartupPanels = false;
     ULONGLONG m_introStartTick = 0;

@@ -5,12 +5,14 @@
 #include "SpringAnimator.hpp"
 #include "DockManager.hpp"
 #include "GlassRenderer.hpp"
+#include "MotionCoordinator.hpp"
 
 namespace airmuse {
 
-class LyricsWindow {
+class LyricsWindow : public IMotionClient {
 public:
     LyricsWindow(HINSTANCE hInst, AppController& controller, DockManager& dockMgr);
+    ~LyricsWindow() override;
     HWND Create(HWND parentMain);
     HWND Hwnd() const { return m_hwnd; }
 
@@ -19,6 +21,10 @@ public:
     void OnPlaybackTick();
     void OnPlaybackOrLyricsChanged();
     void Render();
+
+    // IMotionClient
+    bool StepMotion(float dt) override;
+    void OnMotionRender() override;
 
 private:
     static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
@@ -47,6 +53,7 @@ private:
     SpringValue m_winHeight{ 216.0f, 216.0f, 0.0f, 280.0f, 24.0f };
     SpringValue m_miniLyricSlide{ 1.0f, 1.0f, 0.0f, 260.0f, 34.0f };
     SpringValue m_revealAnim{ 0.0f, 0.0f, 0.0f, 260.0f, 34.0f };
+    SpringValue m_focusAnim{ 1.0f, MotionPreset::Gentle };
     std::wstring m_prevMiniLine;
     std::wstring m_curMiniLine;
 
