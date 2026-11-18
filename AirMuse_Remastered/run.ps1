@@ -1,18 +1,26 @@
-# run.ps1
+﻿# run.ps1
 Set-Location $PSScriptRoot
+
+# 1. 优先立即终止当前可能正在运行的 AirMuse 实例，确保后续编译写入与运行不被文件占用
+Get-Process -Name "AirMuse*" -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+Start-Sleep -Milliseconds 400
 
 $vsRoot = "E:\Soft\Dependency\VS2022BuildTools"
 $vcVars = Join-Path $vsRoot "VC\Auxiliary\Build\vcvars64.bat"
-cmd /c "`"$vcVars`" >nul && set" | ForEach-Object {
-    if ($_ -match "^([^=]+)=(.*)$") {
-        [System.Environment]::SetEnvironmentVariable($matches[1], $matches[2], "Process")
+if (Test-Path $vcVars) {
+    $tempBat = Join-Path $env:TEMP "airmuse_env_$PID.bat"
+    "@echo off`r`ncall `"$vcVars`" >nul 2>&1`r`nset" | Set-Content -Path $tempBat -Encoding ASCII
+    cmd /c "`"$tempBat`"" | ForEach-Object {
+        if ($_ -match "^([^=]+)=(.*)$") {
+            [System.Environment]::SetEnvironmentVariable($matches[1], $matches[2], "Process")
+        }
     }
+    Remove-Item -Path $tempBat -Force -ErrorAction SilentlyContinue
 }
 $cmake = Join-Path $vsRoot "Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe"
-
-# 终止可能已在运行的实例，避免写入文件被占用
-Stop-Process -Name AirMuse -Force -ErrorAction SilentlyContinue
-Start-Sleep -Milliseconds 600
+if (-not (Test-Path $cmake)) {
+    $cmake = "cmake"
+}
 
 # 自动打包组合前端组件化脚本 (UI Core + AppleMusicProvider -> airmuse_apple_engine.js)
 if (Test-Path "src\media\bundle.js") {

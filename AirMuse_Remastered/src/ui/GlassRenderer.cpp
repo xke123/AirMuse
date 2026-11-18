@@ -227,7 +227,7 @@ void GlassRenderer::DrawAirPlayGlassFrame(Graphics& g, int dstW, int dstH, float
     DrawAirPlayGlassFrame(g, dstW, dstH, hoverGloss, focusRatio, ambientArtwork, false);
 }
 
-void GlassRenderer::DrawAirPlayGlassFrame(Graphics& g, int dstW, int dstH, float /*hoverGloss*/, float focusRatio, Bitmap* ambientArtwork, bool /*hasMainGloss*/) {
+void GlassRenderer::DrawAirPlayGlassFrame(Graphics& g, int dstW, int dstH, float /*hoverGloss*/, float focusRatio, Bitmap* ambientArtwork, bool hasMainGloss) {
     focusRatio = std::clamp(focusRatio, 0.0f, 1.0f);
 
     if (dstH <= 36) {

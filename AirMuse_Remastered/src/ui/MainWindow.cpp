@@ -672,9 +672,6 @@ LRESULT MainWindow::HandleMessage(UINT msg, WPARAM wParam, LPARAM lParam) {
         return 0;
     case WM_WINDOWPOSCHANGED:
         m_dockMgr.SyncAllDocked();
-        if (m_testPanelWnd && IsWindowVisible(m_testPanelWnd->Hwnd())) {
-            m_testPanelWnd->SyncPositionWithMain();
-        }
         return DefWindowProcW(m_hwnd, msg, wParam, lParam);
     case WM_APP_STATE_CHANGED:
         m_controller.OnMediaSourceUpdated();
