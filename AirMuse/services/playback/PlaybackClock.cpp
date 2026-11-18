@@ -1,3 +1,0 @@
-#include "services/playback/PlaybackClock.hpp"
-#include <algorithm>
-namespace airmuse { void PlaybackClock::Calibrate(const MediaSnapshot&s){std::lock_guard l(mutex_);base_=s.position;duration_=s.duration;rate_=s.playbackRate;state_=s.status;sampled_=s.updatedAt;} Milliseconds PlaybackClock::PositionAt(std::chrono::steady_clock::time_point now)const{std::lock_guard l(mutex_);auto p=base_;if(state_==PlaybackStatus::Playing)p+=std::chrono::duration_cast<Milliseconds>((now-sampled_)*rate_);return duration_.count()>0?std::clamp(p,Milliseconds::zero(),duration_):std::max(p,Milliseconds::zero());} }

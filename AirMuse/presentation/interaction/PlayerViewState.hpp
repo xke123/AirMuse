@@ -1,2 +1,0 @@
-#pragma once
-namespace airmuse { enum class PlayerViewState{Compact,Expanded,Lyrics,Dragging}; class PlayerViewModel { public: PlayerViewState State()const{return state_;} bool ToggleExpanded(){if(state_==PlayerViewState::Dragging)return false;state_=state_==PlayerViewState::Compact?PlayerViewState::Expanded:PlayerViewState::Compact;return true;} void BeginDrag(){state_=PlayerViewState::Dragging;} void EndDrag(PlayerViewState restore=PlayerViewState::Compact){state_=restore;} private:PlayerViewState state_{PlayerViewState::Compact};}; }

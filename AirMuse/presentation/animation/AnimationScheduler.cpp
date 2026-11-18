@@ -1,3 +1,0 @@
-#include "presentation/animation/AnimationScheduler.hpp"
-#include <algorithm>
-namespace airmuse { AnimationScheduler::Id AnimationScheduler::Start(float f,float t,float d,std::function<void(float)>u){auto id=++next_;tweens_[id]={f,t,std::max(d,.001f),0,std::move(u)};return id;}void AnimationScheduler::Cancel(Id i){tweens_.erase(i);}void AnimationScheduler::Tick(float dt){for(auto it=tweens_.begin();it!=tweens_.end();){auto&t=it->second;t.elapsed+=dt;auto p=std::min(1.f,t.elapsed/t.duration);auto eased=p*p*(3-2*p);t.update(t.value+(t.target-t.value)*eased);if(p==1)it=tweens_.erase(it);else ++it;}} }
