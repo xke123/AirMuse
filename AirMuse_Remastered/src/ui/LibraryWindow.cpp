@@ -239,7 +239,7 @@ void LibraryWindow::Render() {
             // 标题光晕与文字 (随 effAlpha 平滑呼吸)
             BYTE topFogAlpha = static_cast<BYTE>(std::round(195.0f * effAlpha));
             GlassRenderer::DrawBarSpillFog(g, topGlassClip, 42.0f, 26.0f, 165.0f, true, topFogAlpha);
-            GlassRenderer::DrawGlyphHaloText(g, headerTitle, ff, 10.5f, RectF(32.0f, 3.0f, static_cast<float>(w - 75), 16.0f), leftSf, Color(245, 240, 246, 255), effAlpha);
+            GlassRenderer::DrawGlyphHaloText(g, headerTitle, ff, 10.5f, RectF(32.0f, 3.0f, static_cast<float>(w - 75), 16.0f), leftSf, Color(201, 201, 201), effAlpha);
 
             // 右上角关闭按钮 (悬停高亮 + 平滑淡入淡出)
             bool hoverClose = (m_hoverTab == 3);
@@ -262,7 +262,7 @@ void LibraryWindow::Render() {
             GlassRenderer::DrawBarSpillFog(g, botGlassClip, 42.0f, 26.0f, 180.0f, false, botFogAlpha);
 
             RectF botRect(16.0f, yBot + 2.0f, static_cast<float>(w - 32), 16.0f);
-            Color botColor = hoverBot ? Color(255, 255, 255, 255) : Color(245, 238, 242, 248);
+            Color botColor = hoverBot ? Color(255, 201, 201, 201) : Color(245, 166, 166, 166);
             GlassRenderer::DrawGlyphHaloText(g, sourceLabel, ff, 9.5f, botRect, leftSf, botColor, effAlpha);
         }
     }

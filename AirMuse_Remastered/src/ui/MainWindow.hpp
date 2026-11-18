@@ -14,7 +14,6 @@ namespace airmuse {
 
 class LyricsWindow;
 class LibraryWindow;
-class TestPanelWindow;
 
 class MainWindow : public IMotionClient {
 public:
@@ -27,7 +26,6 @@ public:
     HWND Create();
     HWND Hwnd() const { return m_hwnd; }
     void BindChildWindows(LyricsWindow* lyricsWnd, LibraryWindow* libraryWnd);
-    void BindTestPanel(TestPanelWindow* testPanelWnd);
 
     bool IsMiniMode() const { return m_miniMode; }
     bool IsTopMost() const { return m_topMost; }
@@ -74,7 +72,6 @@ private:
     DockManager& m_dockMgr;
     LyricsWindow* m_lyricsWnd = nullptr;
     LibraryWindow* m_libraryWnd = nullptr;
-    TestPanelWindow* m_testPanelWnd = nullptr;
 
     HWND m_hwnd = nullptr;
     int m_dpi = 96;
@@ -84,7 +81,6 @@ private:
     bool m_hovering = false;
     bool m_lyricsVisible = false;
     bool m_libVisible = false;
-    bool m_animSpeed2s = false; // false = 1.5s, true = 2.0s
     float m_animDuration = 1.5f;
     float m_introProgress = 0.0f;
     float m_introTime = 0.0f;

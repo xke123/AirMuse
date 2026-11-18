@@ -1,5 +1,4 @@
 #include "MainWindow.hpp"
-#include "TestPanelWindow.hpp"
 #include "LyricsWindow.hpp"
 #include "LibraryWindow.hpp"
 #include "GlassRenderer.hpp"
@@ -20,11 +19,7 @@ enum BtnId {
     BTN_STOP = 0, BTN_PREV, BTN_PLAYPAUSE, BTN_NEXT, BTN_EJECT,
     BTN_MINIMIZE, BTN_MINI_TOGGLE, BTN_TOPMOST, BTN_CLOSE,
     BTN_PROGRESS, BTN_VOL_BAR, BTN_LYRICS, BTN_LIBRARY,
-    BTN_SRC_APPLE, BTN_SRC_SPOTIFY, BTN_SRC_QQ, BTN_MINI_SRC,
-    BTN_TEST_M1_EXP, BTN_TEST_M1_COL,
-    BTN_TEST_M2_EXP, BTN_TEST_M2_COL,
-    BTN_TEST_M3_EXP, BTN_TEST_M3_COL,
-    BTN_TEST_SPEED_TOGGLE
+    BTN_SRC_APPLE, BTN_SRC_SPOTIFY, BTN_SRC_QQ, BTN_MINI_SRC
 };
 
 std::wstring FormatMs(int64_t ms) {
@@ -44,10 +39,6 @@ MainWindow::~MainWindow() = default;
 void MainWindow::BindChildWindows(LyricsWindow* lyricsWnd, LibraryWindow* libraryWnd) {
     m_lyricsWnd = lyricsWnd;
     m_libraryWnd = libraryWnd;
-}
-
-void MainWindow::BindTestPanel(TestPanelWindow* testPanelWnd) {
-    m_testPanelWnd = testPanelWnd;
 }
 
 void MainWindow::InvalidateBgCache() {
@@ -133,34 +124,6 @@ void MainWindow::BuildUIElements() {
     addBtn(BTN_SRC_SPOTIFY, false, [this]() { m_controller.SwitchWebPlatform(WebPlatform::Spotify);    if (!m_libVisible) SetLibraryVisible(true); else if (m_libraryWnd) m_libraryWnd->Render(); Render(); });
     addBtn(BTN_SRC_QQ,      false, [this]() { m_controller.SwitchWebPlatform(WebPlatform::QQMusic);    if (!m_libVisible) SetLibraryVisible(true); else if (m_libraryWnd) m_libraryWnd->Render(); Render(); });
     addBtn(BTN_MINI_SRC,    false, [this]() { SetLibraryVisible(!m_libVisible); });
-    addBtn(BTN_TEST_M1_EXP, false, [this]() {
-        if (m_testPanelWnd) m_testPanelWnd->Unroll(1);
-    });
-    addBtn(BTN_TEST_M1_COL, false, [this]() {
-        if (m_testPanelWnd) m_testPanelWnd->Rollup(1);
-    });
-    addBtn(BTN_TEST_M2_EXP, false, [this]() {
-        if (m_testPanelWnd) m_testPanelWnd->Unroll(2);
-    });
-    addBtn(BTN_TEST_M2_COL, false, [this]() {
-        if (m_testPanelWnd) m_testPanelWnd->Rollup(2);
-    });
-    addBtn(BTN_TEST_M3_EXP, false, [this]() {
-        if (m_testPanelWnd) m_testPanelWnd->Unroll(3);
-    });
-    addBtn(BTN_TEST_M3_COL, false, [this]() {
-        if (m_testPanelWnd) m_testPanelWnd->Rollup(3);
-    });
-    addBtn(BTN_TEST_SPEED_TOGGLE, false, [this]() {
-        m_animSpeed2s = !m_animSpeed2s;
-        m_animDuration = m_animSpeed2s ? 2.0f : 1.5f;
-        if (m_lyricsWnd) m_lyricsWnd->SetAnimDuration(m_animDuration);
-        if (m_libraryWnd) m_libraryWnd->SetAnimDuration(m_animDuration);
-        if (m_testPanelWnd) {
-            m_testPanelWnd->ToggleAnimSpeed();
-        }
-        Render();
-    });
 }
 
 void MainWindow::UpdateLayout(float w, float h) {
@@ -182,13 +145,6 @@ void MainWindow::UpdateLayout(float w, float h) {
             else if (b.id == BTN_SRC_APPLE)   b.bounds = RectF(32, h - 17, 13, 13);
             else if (b.id == BTN_SRC_SPOTIFY) b.bounds = RectF(50, h - 17, 13, 13);
             else if (b.id == BTN_SRC_QQ)      b.bounds = RectF(68, h - 17, 13, 13);
-            else if (b.id == BTN_TEST_M1_EXP) b.bounds = RectF(14.0f, 3.5f, 13.0f, 13.0f);
-            else if (b.id == BTN_TEST_M1_COL) b.bounds = RectF(30.0f, 3.5f, 13.0f, 13.0f);
-            else if (b.id == BTN_TEST_M2_EXP) b.bounds = RectF(50.0f, 3.5f, 13.0f, 13.0f);
-            else if (b.id == BTN_TEST_M2_COL) b.bounds = RectF(66.0f, 3.5f, 13.0f, 13.0f);
-            else if (b.id == BTN_TEST_M3_EXP) b.bounds = RectF(86.0f, 3.5f, 13.0f, 13.0f);
-            else if (b.id == BTN_TEST_M3_COL) b.bounds = RectF(102.0f, 3.5f, 13.0f, 13.0f);
-            else if (b.id == BTN_TEST_SPEED_TOGGLE) b.bounds = RectF(122.0f, 3.5f, 32.0f, 13.0f);
             else if (b.id == BTN_MINI_SRC)    b.visible = false;
         } else {
             float startX = (w - 92.0f) * 0.5f;
@@ -486,8 +442,8 @@ void MainWindow::Render() {
             if (idleAlpha > 0.02f) {
                 float textLeft = m_artworkBmp ? 54.0f : 36.0f;
                 float textW    = static_cast<float>(w) - textLeft - 36.0f;
-                SolidBrush titleBrush(Color(static_cast<BYTE>(245.0f * idleAlpha), 244, 247, 252));
-                SolidBrush subBrush(Color(static_cast<BYTE>(185.0f * idleAlpha), 180, 190, 206));
+                SolidBrush titleBrush(Color(static_cast<BYTE>(245.0f * idleAlpha), 235, 235, 235));
+                SolidBrush subBrush(Color(static_cast<BYTE>(185.0f * idleAlpha), 166, 166, 166));
                 g.DrawString(info.title.c_str(), -1, &titleFont, RectF(textLeft, 25.0f, textW, 19.0f), &centerSf, &titleBrush);
                 g.DrawString(info.artist.c_str(), -1, &subFont, RectF(textLeft, 45.0f, textW, 16.0f), &centerSf, &subBrush);
             }
@@ -537,7 +493,7 @@ void MainWindow::Render() {
                     int segY = 74 - seg * 4;
                     bool active = (seg * 12) < volPercent;
                     BYTE va = static_cast<BYTE>((active ? 200.0f : 65.0f) * ctrlAlpha);
-                    SolidBrush vb(active ? Color(va, 175, 220, 250) : Color(va, 255, 255, 255));
+                    SolidBrush vb(active ? Color(va, 201, 201, 201) : Color(va, 80, 80, 80));
                     g.FillRectangle(&vb, w - 18, segY, 7, 2);
                 }
 
@@ -571,131 +527,9 @@ void MainWindow::Render() {
                 bool hl = (bProg && bProg->hoverAnim.current > 0.1f);
                 GlassRenderer::DrawCapsuleProgress(g, RectF(pr.X, pr.Y + 4.0f, pr.Width, 6.0f), ratio, hl, m_scrubbing, FormatMs(livePosMs));
 
-                SolidBrush timeBrush(Color(static_cast<BYTE>(210.0f * bodyFade), 205, 216, 230));
+                SolidBrush timeBrush(Color(static_cast<BYTE>(210.0f * bodyFade), 166, 166, 166));
                 g.DrawString(FormatMs(livePosMs).c_str(), -1, &timeFont, RectF(26.0f, pr.Y + 1.0f, 38.0f, 13.0f), &rightSf, &timeBrush);
                 g.DrawString(FormatMs(info.durationMs).c_str(), -1, &timeFont, RectF(static_cast<REAL>(w - 64), pr.Y + 1.0f, 38.0f, 13.0f), &leftSf, &timeBrush);
-            }
-
-            // 顶部玻璃条测试按钮：6个微型高质感图标按钮 (双轴展开/收起，从顶向下展开/向上收起，从底向上展开/向下收起)
-            auto drawMicroIconBtn = [&](int btnId, int iconType) {
-                auto* b = findBtn(btnId);
-                if (!b || !b->visible) return;
-                float hProg = b->hoverAnim.current;
-                float sc    = b->pressAnim.current;
-                RectF r = b->bounds;
-                float dw = r.Width * sc, dh = r.Height * sc;
-                RectF dst(r.X + (r.Width - dw) * 0.5f, r.Y + (r.Height - dh) * 0.5f, dw, dh);
-
-                GraphicsPath pillPath;
-                GlassRenderer::AddRoundedRectPath(pillPath, dst.X, dst.Y, dst.Width, dst.Height, 2.5f);
-
-                BYTE fillA = static_cast<BYTE>(45.0f + 65.0f * hProg);
-                BYTE fillR = static_cast<BYTE>(20 + 25 * hProg);
-                BYTE fillG = static_cast<BYTE>(24 + 45 * hProg);
-                BYTE fillB = static_cast<BYTE>(32 + 75 * hProg);
-                SolidBrush fillBrush(Color(fillA, fillR, fillG, fillB));
-                g.FillPath(&fillBrush, &pillPath);
-
-                BYTE borderA = static_cast<BYTE>(75.0f + 140.0f * hProg);
-                Pen borderPen(Color(borderA, 215, 230, 255), 1.0f);
-                g.DrawPath(&borderPen, &pillPath);
-
-                float cx = dst.X + dst.Width * 0.5f;
-                float cy = dst.Y + dst.Height * 0.5f;
-                BYTE iconA = static_cast<BYTE>(195.0f + 60.0f * hProg);
-                Pen pen(Color(iconA, 238, 244, 255), 1.15f);
-                pen.SetStartCap(LineCapRound);
-                pen.SetEndCap(LineCapRound);
-                pen.SetLineJoin(LineJoinRound);
-
-                switch (iconType) {
-                case 0: { // 模式1 展开 (双轴中心向外展开 ↕)
-                    PointF topPts[3] = { { cx - 2.5f, cy - 1.0f }, { cx, cy - 3.5f }, { cx + 2.5f, cy - 1.0f } };
-                    g.DrawLines(&pen, topPts, 3);
-                    PointF botPts[3] = { { cx - 2.5f, cy + 1.0f }, { cx, cy + 3.5f }, { cx + 2.5f, cy + 1.0f } };
-                    g.DrawLines(&pen, botPts, 3);
-                    break;
-                }
-                case 1: { // 模式1 收起 (双轴向中心收起 ⇕)
-                    PointF topPts[3] = { { cx - 2.5f, cy - 3.5f }, { cx, cy - 1.0f }, { cx + 2.5f, cy - 3.5f } };
-                    g.DrawLines(&pen, topPts, 3);
-                    PointF botPts[3] = { { cx - 2.5f, cy + 3.5f }, { cx, cy + 1.0f }, { cx + 2.5f, cy + 3.5f } };
-                    g.DrawLines(&pen, botPts, 3);
-                    break;
-                }
-                case 2: { // 模式2 展开 (从顶栏向下展开 ⤓)
-                    g.DrawLine(&pen, cx - 3.5f, cy - 3.5f, cx + 3.5f, cy - 3.5f);
-                    g.DrawLine(&pen, cx, cy - 1.8f, cx, cy + 3.5f);
-                    PointF arrowPts[3] = { { cx - 2.2f, cy + 1.3f }, { cx, cy + 3.5f }, { cx + 2.2f, cy + 1.3f } };
-                    g.DrawLines(&pen, arrowPts, 3);
-                    break;
-                }
-                case 3: { // 模式2 收起 (从下往顶栏收起 ⤒)
-                    g.DrawLine(&pen, cx - 3.5f, cy - 3.5f, cx + 3.5f, cy - 3.5f);
-                    g.DrawLine(&pen, cx, cy + 3.5f, cx, cy - 1.0f);
-                    PointF arrowPts[3] = { { cx - 2.2f, cy + 1.2f }, { cx, cy - 1.0f }, { cx + 2.2f, cy + 1.2f } };
-                    g.DrawLines(&pen, arrowPts, 3);
-                    break;
-                }
-                case 4: { // 模式3 展开 (从底栏向上展开 ⤒)
-                    g.DrawLine(&pen, cx - 3.5f, cy + 3.5f, cx + 3.5f, cy + 3.5f);
-                    g.DrawLine(&pen, cx, cy + 1.8f, cx, cy - 3.5f);
-                    PointF arrowPts[3] = { { cx - 2.2f, cy - 1.3f }, { cx, cy - 3.5f }, { cx + 2.2f, cy - 1.3f } };
-                    g.DrawLines(&pen, arrowPts, 3);
-                    break;
-                }
-                case 5: { // 模式3 收起 (从上往底栏收起 ⤓)
-                    g.DrawLine(&pen, cx - 3.5f, cy + 3.5f, cx + 3.5f, cy + 3.5f);
-                    g.DrawLine(&pen, cx, cy - 3.5f, cx, cy + 1.0f);
-                    PointF arrowPts[3] = { { cx - 2.2f, cy - 1.2f }, { cx, cy + 1.0f }, { cx + 2.2f, cy - 1.2f } };
-                    g.DrawLines(&pen, arrowPts, 3);
-                    break;
-                }
-                }
-            };
-            drawMicroIconBtn(BTN_TEST_M1_EXP, 0);
-            drawMicroIconBtn(BTN_TEST_M1_COL, 1);
-            drawMicroIconBtn(BTN_TEST_M2_EXP, 2);
-            drawMicroIconBtn(BTN_TEST_M2_COL, 3);
-            drawMicroIconBtn(BTN_TEST_M3_EXP, 4);
-            drawMicroIconBtn(BTN_TEST_M3_COL, 5);
-
-            // 分组之间的微弱亚像素分割线
-            Pen sepPen(Color(45, 230, 240, 255), 1.0f);
-            g.DrawLine(&sepPen, 46.5f, 5.0f, 46.5f, 15.0f);
-            g.DrawLine(&sepPen, 82.5f, 5.0f, 82.5f, 15.0f);
-            g.DrawLine(&sepPen, 118.5f, 5.0f, 118.5f, 15.0f);
-
-            // 绘制动画时长切换胶囊按钮 (1.5s / 2.0s)
-            if (auto* bSpeed = findBtn(BTN_TEST_SPEED_TOGGLE)) {
-                RectF r = bSpeed->bounds;
-                float hProg = bSpeed->hoverAnim.current;
-                GraphicsPath pillPath;
-                GlassRenderer::AddRoundedRectPath(pillPath, r.X, r.Y, r.Width, r.Height, 3.2f);
-
-                // 1.5s 为清爽冰蓝色，2.0s 为温润金琥珀色
-                Color bgCol = m_animSpeed2s ?
-                    Color(static_cast<BYTE>(60 + 35 * hProg), 70, 52, 28) :
-                    Color(static_cast<BYTE>(60 + 35 * hProg), 24, 48, 68);
-                Color borderCol = m_animSpeed2s ?
-                    Color(static_cast<BYTE>(140 + 70 * hProg), 240, 195, 110) :
-                    Color(static_cast<BYTE>(140 + 70 * hProg), 130, 205, 255);
-                Color textCol = m_animSpeed2s ?
-                    Color(static_cast<BYTE>(230 + 25 * hProg), 255, 225, 160) :
-                    Color(static_cast<BYTE>(230 + 25 * hProg), 215, 242, 255);
-
-                SolidBrush bgBrush(bgCol);
-                Pen borderPen(borderCol, 1.0f);
-                g.FillPath(&bgBrush, &pillPath);
-                g.DrawPath(&borderPen, &pillPath);
-
-                Gdiplus::Font speedFont(L"Segoe UI", 7.0f, FontStyleBold, UnitPoint);
-                StringFormat sf;
-                sf.SetAlignment(StringAlignmentCenter);
-                sf.SetLineAlignment(StringAlignmentCenter);
-                SolidBrush txtBrush(textCol);
-                const wchar_t* speedText = m_animSpeed2s ? L"2.0s" : L"1.5s";
-                g.DrawString(speedText, -1, &speedFont, r, &sf, &txtBrush);
             }
         } else {
             RectF miniGlassClip(4.5f, 3.5f, static_cast<float>(w - 9), static_cast<float>(h - 7));
@@ -719,12 +553,12 @@ void MainWindow::Render() {
                 if (p < 0.98f && !m_prevMiniLine.empty()) {
                     GlassRenderer::DrawGlyphHaloText(g, m_prevMiniLine, ff, 13.0f,
                                                      RectF(12.0f, 5.0f - p * slideDist, static_cast<REAL>(w - 24), static_cast<REAL>(h - 6)),
-                                                     vCenterSf, Color(215, 212, 213, 215), idleAlpha * (1.0f - p));
+                                                     vCenterSf, Color(201, 201, 201), idleAlpha * (1.0f - p));
                 }
                 if (p > 0.02f && !line.empty()) {
                     GlassRenderer::DrawGlyphHaloText(g, line, ff, 13.0f,
                                                      RectF(12.0f, 5.0f + (1.0f - p) * slideDist, static_cast<REAL>(w - 24), static_cast<REAL>(h - 6)),
-                                                     vCenterSf, Color(215, 212, 213, 215), idleAlpha * p);
+                                                     vCenterSf, Color(201, 201, 201), idleAlpha * p);
                 }
             }
             if (hoverAlpha > 0.02f) {

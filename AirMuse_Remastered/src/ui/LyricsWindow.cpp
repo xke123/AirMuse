@@ -292,7 +292,7 @@ void LyricsWindow::Render() {
                 wchar_t hdr[64];
                 if (lrc.offsetMs != 0) swprintf_s(hdr, L"Lyrics (\u504f\u79fb %+.1fs)", lrc.offsetMs / 1000.0);
                 else wcscpy_s(hdr, L"Lyrics (\u6eda\u8f6e\u5fae\u8c03\u5ef6\u8fdf)");
-                SolidBrush hdrBrush(Color(240, 240, 246, 255));
+                SolidBrush hdrBrush(Color(240, 201, 201, 201));
                 g.DrawString(hdr, -1, &transFont, RectF(32.0f, 3.0f, 165.0f, 14.0f), nullptr, &hdrBrush);
 
                 GlassRenderer::DrawImageAlpha(g, m_winBtnsBmp.get(), RectF(static_cast<REAL>(w - 63), 4.0f, 13.0f, 13.0f), 7 * 52, 0, 52, 52, m_hoverBtn == 0 ? 1.0f : 0.85f, 1.15f);
@@ -304,7 +304,7 @@ void LyricsWindow::Render() {
             g.SetClip(Rect(8, bodyTop + 4, w - 16, bodyH - 8), CombineModeIntersect);
 
             if (lrc.lines.empty()) {
-                SolidBrush mb(Color(165, 190, 200, 215));
+                SolidBrush mb(Color(165, 166, 166, 166));
                 g.DrawString(lrc.statusText.c_str(), -1, &normalFont, RectF(14.0f, static_cast<REAL>(bodyTop + bodyH / 2 - 9), static_cast<REAL>(w - 28), 18.0f), &centerSf, &mb);
             } else {
                 float centerY = static_cast<float>(bodyTop + bodyH / 2) - 10.0f;
@@ -316,14 +316,17 @@ void LyricsWindow::Render() {
                     float edgeFade = std::clamp(1.15f - dist * 0.95f, 0.12f, 1.0f);
 
                     if (i == activeIdx) {
-                        SolidBrush ab(Color(static_cast<BYTE>(252 * edgeFade), 175, 225, 255));
+                        // 高亮歌词颜色: rgb(201, 201, 201)
+                        SolidBrush ab(Color(static_cast<BYTE>(255 * edgeFade), 201, 201, 201));
                         g.DrawString(lrc.lines[i].text.c_str(), -1, &activeFont, RectF(14.0f, y, static_cast<REAL>(w - 28), 18.0f), &centerSf, &ab);
                         if (!lrc.lines[i].trans.empty()) {
-                            SolidBrush tb(Color(static_cast<BYTE>(190 * edgeFade), 160, 195, 220));
+                            // 翻译歌词: rgb(166, 166, 166)
+                            SolidBrush tb(Color(static_cast<BYTE>(190 * edgeFade), 166, 166, 166));
                             g.DrawString(lrc.lines[i].trans.c_str(), -1, &transFont, RectF(14.0f, y + 17.0f, static_cast<REAL>(w - 28), 14.0f), &centerSf, &tb);
                         }
                     } else {
-                        SolidBrush nb(Color(static_cast<BYTE>(155 * edgeFade), 205, 212, 224));
+                        // 普通歌词: 柔和次级灰
+                        SolidBrush nb(Color(static_cast<BYTE>(140 * edgeFade), 110, 110, 110));
                         g.DrawString(lrc.lines[i].text.c_str(), -1, &normalFont, RectF(14.0f, y + 1.0f, static_cast<REAL>(w - 28), 16.0f), &centerSf, &nb);
                     }
                 }
@@ -351,12 +354,12 @@ void LyricsWindow::Render() {
             if (p < 0.98f && !m_prevMiniLine.empty()) {
                 GlassRenderer::DrawGlyphHaloText(g, m_prevMiniLine, ff, 13.0f,
                                                  RectF(12.0f, 5.0f - p * slideDist, static_cast<REAL>(w - 24), static_cast<REAL>(h - 6)),
-                                                 vCenterSf, Color(215, 212, 213, 215), baseAlpha * (1.0f - p));
+                                                 vCenterSf, Color(201, 201, 201), baseAlpha * (1.0f - p));
             }
             if (p > 0.02f && !curLine.empty()) {
                 GlassRenderer::DrawGlyphHaloText(g, curLine, ff, 13.0f,
                                                  RectF(12.0f, 5.0f + (1.0f - p) * slideDist, static_cast<REAL>(w - 24), static_cast<REAL>(h - 6)),
-                                                 vCenterSf, Color(215, 212, 213, 215), baseAlpha * p);
+                                                 vCenterSf, Color(201, 201, 201), baseAlpha * p);
             }
             g.Restore(miniSaved);
         }

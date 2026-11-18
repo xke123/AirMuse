@@ -130,7 +130,7 @@
                 bottom: 0 !important;
                 width: 100% !important;
                 height: 100% !important;
-                background: #18181b !important;
+                background: #171717 !important;
                 display: flex !important;
                 flex-direction: column !important;
                 z-index: 2147483647 !important;
@@ -143,7 +143,7 @@
             /* 顶部微型导航条 MicroNav (居中标签组，左刷新，右切换+搜索) */
             .am-top-bar {
                 height: 30px;
-                background: #141416;
+                background: #171717;
                 border-bottom: 1px solid rgba(255, 255, 255, 0.07);
                 display: flex;
                 align-items: center;
@@ -172,11 +172,11 @@
                 gap: 2px;
             }
 
-            /* 图标小按钮 */
+            /* 图标小按钮 (主色 rgb(166, 166, 166)，悬停高亮 rgb(201, 201, 201)) */
             .am-icon-btn {
                 background: transparent;
                 border: none;
-                color: #a1a1aa;
+                color: #a6a6a6;
                 cursor: pointer;
                 padding: 3px 5px;
                 font-size: 11px;
@@ -188,28 +188,28 @@
                 line-height: 1;
             }
             .am-icon-btn:hover {
-                background: rgba(255, 255, 255, 0.09);
-                color: #ffffff;
+                background: rgba(201, 201, 201, 0.12);
+                color: #c9c9c9;
             }
             .am-icon-btn.active {
-                color: #ffffff;
-                background: rgba(255, 255, 255, 0.16);
+                color: #c9c9c9;
+                background: rgba(201, 201, 201, 0.18);
             }
 
             /* 居中标签组 */
             .am-tab-group {
                 display: inline-flex;
                 align-items: center;
-                background: #1e1e22;
+                background: #1e1e1e;
                 border-radius: 6px;
                 padding: 2px;
                 gap: 1px;
-                border: 1px solid rgba(255, 255, 255, 0.05);
+                border: 1px solid rgba(255, 255, 255, 0.06);
             }
             .am-tab-btn {
                 border: none;
                 background: transparent;
-                color: #a1a1aa;
+                color: #a6a6a6;
                 font-size: 10px;
                 font-weight: 500;
                 padding: 2px 7px;
@@ -219,10 +219,10 @@
                 white-space: nowrap;
                 line-height: 1.2;
             }
-            .am-tab-btn:hover { color: #f4f4f5; }
+            .am-tab-btn:hover { color: #c9c9c9; }
             .am-tab-btn.active {
-                background: linear-gradient(180deg, #ececf0 0%, #c4c4cc 100%);
-                color: #121214;
+                background: linear-gradient(180deg, #c9c9c9 0%, #a6a6a6 100%);
+                color: #171717;
                 font-weight: 600;
                 box-shadow: 0 1px 4px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.8);
                 border: 1px solid rgba(255, 255, 255, 0.4);
@@ -231,7 +231,7 @@
             /* 快速搜索栏 (完全替换顶部标签栏，共享 32px 高度) */
             .am-search-bar {
                 height: 32px;
-                background: #18181b;
+                background: #171717;
                 border-bottom: 1px solid rgba(255, 255, 255, 0.08);
                 display: flex;
                 align-items: center;
@@ -245,19 +245,19 @@
                 width: 22px !important;
                 height: 22px !important;
                 padding: 0 !important;
-                color: #a1a1aa !important;
+                color: #a6a6a6 !important;
                 border-radius: 4px !important;
                 line-height: 1 !important;
             }
             .am-search-back-btn:hover {
-                color: #ffffff !important;
-                background: rgba(255, 255, 255, 0.08) !important;
+                color: #c9c9c9 !important;
+                background: rgba(201, 201, 201, 0.12) !important;
             }
             .am-search-input-wrap {
                 flex: 1;
                 display: flex;
                 align-items: center;
-                background: #242428;
+                background: #202020;
                 border: 1px solid rgba(255, 255, 255, 0.08);
                 border-radius: 6px;
                 padding: 0 6px;
@@ -267,13 +267,13 @@
                 transition: border-color 0.15s, background 0.15s;
             }
             .am-search-input-wrap:focus-within {
-                border-color: rgba(228, 228, 231, 0.55);
-                background: #27272b;
-                box-shadow: 0 0 6px rgba(228, 228, 231, 0.15);
+                border-color: rgba(201, 201, 201, 0.55);
+                background: #262626;
+                box-shadow: 0 0 6px rgba(201, 201, 201, 0.15);
             }
             .am-search-icon {
                 font-size: 10px;
-                color: #71717a;
+                color: #a6a6a6;
                 margin-right: 4px;
                 flex-shrink: 0;
                 line-height: 1;
@@ -282,18 +282,18 @@
                 flex: 1;
                 border: none;
                 background: transparent;
-                color: #f4f4f5;
+                color: #e4e4e7;
                 font-size: 10px;
                 outline: none;
                 padding: 0;
                 min-width: 0;
                 line-height: 1.2;
             }
-            .am-search-input::placeholder { color: #71717a; }
+            .am-search-input::placeholder { color: #707070; }
             .am-search-clear {
                 border: none;
                 background: transparent;
-                color: #71717a;
+                color: #a6a6a6;
                 font-size: 10px;
                 cursor: pointer;
                 padding: 0 2px;
@@ -301,7 +301,7 @@
                 line-height: 1;
                 flex-shrink: 0;
             }
-            .am-search-clear:hover { color: #f4f4f5; }
+            .am-search-clear:hover { color: #c9c9c9; }
             .am-search-right {
                 display: flex;
                 align-items: center;
@@ -310,7 +310,7 @@
             }
             .am-search-scope {
                 display: flex;
-                background: #242428;
+                background: #202020;
                 border-radius: 12px;
                 padding: 2px;
                 gap: 2px;
@@ -320,7 +320,7 @@
             .am-scope-btn {
                 border: none;
                 background: transparent;
-                color: #a1a1aa;
+                color: #a6a6a6;
                 font-size: 9px;
                 font-weight: 500;
                 padding: 1.5px 6px;
@@ -330,10 +330,10 @@
                 white-space: nowrap;
                 line-height: 1.2;
             }
-            .am-scope-btn:hover { color: #ffffff; }
+            .am-scope-btn:hover { color: #c9c9c9; }
             .am-scope-btn.active {
-                background: linear-gradient(180deg, #ececf0 0%, #c4c4cc 100%);
-                color: #121214;
+                background: linear-gradient(180deg, #c9c9c9 0%, #a6a6a6 100%);
+                color: #171717;
                 font-weight: 600;
                 box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
                 border: 1px solid rgba(255, 255, 255, 0.35);
@@ -350,8 +350,8 @@
             /* 左侧分类专区 (Sidebar) */
             .am-sidebar {
                 width: 72px;
-                background: #121214;
-                border-right: 1px solid rgba(255, 255, 255, 0.05);
+                background: #141414;
+                border-right: 1px solid rgba(255, 255, 255, 0.06);
                 display: flex;
                 flex-direction: column;
                 overflow-y: auto;
@@ -362,8 +362,8 @@
             }
             .am-sidebar::-webkit-scrollbar { width: 3.5px; }
             .am-sidebar::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.03); }
-            .am-sidebar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.35); border-radius: 2px; }
-            .am-sidebar::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.6); }
+            .am-sidebar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.25); border-radius: 2px; }
+            .am-sidebar::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.45); }
 
             .am-cat-item {
                 flex-shrink: 0;
@@ -375,7 +375,7 @@
                 padding: 0 4px;
                 box-sizing: border-box;
                 font-size: 9.5px;
-                color: #8e8e93;
+                color: #a6a6a6;
                 text-align: center;
                 cursor: pointer;
                 transition: all 0.12s ease;
@@ -393,18 +393,18 @@
                 display: block;
             }
             .am-cat-item:hover {
-                color: #e4e4e7;
-                background: rgba(255, 255, 255, 0.03);
+                color: #c9c9c9;
+                background: rgba(201, 201, 201, 0.06);
             }
             .am-cat-item.active {
                 color: #ffffff;
                 font-weight: 600;
-                border-left-color: #e4e4e7;
-                background: rgba(255, 255, 255, 0.09);
-                box-shadow: inset 1px 0 0 rgba(255, 255, 255, 0.25);
+                border-left-color: #c9c9c9;
+                background: rgba(201, 201, 201, 0.12);
+                box-shadow: inset 1px 0 0 rgba(201, 201, 201, 0.35);
             }
 
-            /* 右侧内容面板 (Content Panel) */
+            /* 右侧内容面板 (Content Panel) - 主色 rgb(23, 23, 23) */
             .am-content-panel {
                 flex: 1;
                 min-width: 0;
@@ -412,7 +412,7 @@
                 flex-direction: column;
                 position: relative;
                 overflow: hidden;
-                background: #18181b;
+                background: #171717;
             }
 
             /* 卡片滚动区域 (Cards Scroll) */
@@ -428,14 +428,14 @@
             }
             .am-cards-scroll::-webkit-scrollbar { width: 3px; }
             .am-cards-scroll::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.03); }
-            .am-cards-scroll::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.28); border-radius: 2px; }
-            .am-cards-scroll::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.48); }
+            .am-cards-scroll::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.25); border-radius: 2px; }
+            .am-cards-scroll::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.45); }
 
             /* 单栏卡片 (默认模式) */
             .am-item-card {
                 display: flex;
                 align-items: center;
-                background: #202024;
+                background: #1e1e1e;
                 border-radius: 5px;
                 padding: 4px 6px;
                 gap: 7px;
@@ -443,12 +443,13 @@
                 transition: background 0.12s ease, transform 0.08s ease;
                 position: relative;
                 overflow: hidden;
-                border: 1px solid rgba(255, 255, 255, 0.03);
+                border: 1px solid rgba(255, 255, 255, 0.04);
                 min-height: 44px;
                 flex-shrink: 0;
             }
             .am-item-card:hover {
-                background: #2a2a2e;
+                background: #252525;
+                border-color: rgba(201, 201, 201, 0.25);
                 transform: translateX(1px);
             }
             .am-item-card:active {
@@ -602,12 +603,12 @@
                 grid-column: 1 / -1;
             }
 
-            /* 详情页模式 (仅在右侧面板内展开) */
+            /* 详情页模式 (仅在右侧面板内展开) - 主色 rgb(23, 23, 23) */
             .am-detail-view {
                 display: none;
                 flex-direction: column;
                 min-height: 0;
-                background: #18181b;
+                background: #171717;
                 position: absolute;
                 inset: 0;
                 z-index: 5;
@@ -615,39 +616,40 @@
             .am-detail-header {
                 height: 28px;
                 padding: 0 8px;
-                background: #141416;
-                border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+                background: #171717;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.08);
                 display: flex;
                 align-items: center;
                 gap: 6px;
                 flex-shrink: 0;
             }
             .am-detail-btn {
-                border: none;
-                background: #27272a;
-                color: #f4f4f5;
+                border: 1px solid rgba(255, 255, 255, 0.08);
+                background: #232323;
+                color: #a6a6a6;
                 font-size: 10px;
                 padding: 2px 7px;
                 border-radius: 4px;
                 cursor: pointer;
+                transition: background 0.12s, color 0.12s;
             }
-            .am-detail-btn:hover { background: #3f3f46; }
+            .am-detail-btn:hover { background: #303030; color: #c9c9c9; }
             .am-detail-btn.play-all {
-                background: linear-gradient(180deg, #ececf0 0%, #c4c4cc 100%);
-                color: #121214;
+                background: linear-gradient(180deg, #c9c9c9 0%, #a6a6a6 100%);
+                color: #171717;
                 font-weight: 600;
-                border: 1px solid rgba(255, 255, 255, 0.45);
+                border: 1px solid rgba(255, 255, 255, 0.4);
                 box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.7);
             }
             .am-detail-btn.play-all:hover {
-                background: linear-gradient(180deg, #ffffff 0%, #d4d4d8 100%);
-                color: #000000;
+                background: linear-gradient(180deg, #e0e0e0 0%, #c9c9c9 100%);
+                color: #171717;
                 box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5), inset 0 1px 0 #ffffff;
             }
             .am-detail-title {
                 font-size: 11px;
                 font-weight: 600;
-                color: #f4f4f5;
+                color: #e4e4e7;
                 white-space: nowrap;
                 overflow: hidden;
                 text-overflow: ellipsis;
@@ -662,29 +664,29 @@
                 cursor: pointer;
                 transition: background 0.12s;
             }
-            .am-track-row:hover { background: #222226; }
+            .am-track-row:hover { background: rgba(201, 201, 201, 0.08); }
             .am-track-row.active {
-                background: rgba(255, 255, 255, 0.10);
-                border-left: 2px solid #e4e4e7;
+                background: rgba(201, 201, 201, 0.12);
+                border-left: 2px solid #c9c9c9;
             }
             .am-track-row.active .am-track-idx {
-                color: #ffffff;
+                color: #c9c9c9;
                 font-weight: 700;
-                text-shadow: 0 0 6px rgba(255, 255, 255, 0.4);
+                text-shadow: 0 0 6px rgba(201, 201, 201, 0.5);
             }
             .am-track-row.active .am-track-name {
                 color: #ffffff;
                 font-weight: 600;
-                text-shadow: 0 0 6px rgba(255, 255, 255, 0.3);
+                text-shadow: 0 0 6px rgba(201, 201, 201, 0.3);
             }
             .am-track-row.active .am-track-artist {
-                color: #c4c4cc;
+                color: #c9c9c9;
             }
-            .am-track-idx { font-size: 9.5px; color: #71717a; width: 16px; text-align: center; }
+            .am-track-idx { font-size: 9.5px; color: #707070; width: 16px; text-align: center; }
             .am-track-body { flex: 1; min-width: 0; display: flex; flex-direction: column; }
-            .am-track-name { font-size: 10.5px; color: #f4f4f5; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-            .am-track-artist { font-size: 9px; color: #a1a1aa; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-            .am-track-dur { font-size: 9px; color: #71717a; margin-left: 4px; }
+            .am-track-name { font-size: 10.5px; color: #e4e4e7; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+            .am-track-artist { font-size: 9px; color: #8e8e93; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+            .am-track-dur { font-size: 9px; color: #707070; margin-left: 4px; }
 
             .am-empty-tip {
                 font-size: 11px;

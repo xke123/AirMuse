@@ -256,15 +256,23 @@ void GlassRenderer::DrawAirPlayGlassFrame(Graphics& g, int dstW, int dstH, float
         return;
     }
 
-    // 1. 中间主显示区域底色 (Middle Main Body: 纯粹深炭灰基底，去除主面板高光)
+    // 1. 中间主显示区域底色 (Middle Main Body)
     const float midY = 20.0f;
     const float midH = static_cast<float>(dstH) - 40.0f;
     const float midX = 5.0f;
     const float midW = static_cast<float>(dstW) - 10.0f;
 
     if (midH > 0.0f && midW > 0.0f) {
-        SolidBrush bodyBaseBrush(Color(255, 30, 31, 34));
-        g.FillRectangle(&bodyBaseBrush, RectF(midX, midY, midW, midH));
+        if (hasMainGloss) {
+            // 主面板垂直方向从 rgb(58, 58, 58) 过度到 rgb(31, 31, 31)
+            LinearGradientBrush bodyBaseBrush(PointF(midX, midY), PointF(midX, midY + midH),
+                                              Color(255, 58, 58, 58), Color(255, 31, 31, 31));
+            g.FillRectangle(&bodyBaseBrush, RectF(midX, midY, midW, midH));
+        } else {
+            // 歌词面板和数据来源面板的主色: rgb(23, 23, 23)
+            SolidBrush bodyBaseBrush(Color(255, 23, 23, 23));
+            g.FillRectangle(&bodyBaseBrush, RectF(midX, midY, midW, midH));
+        }
 
         // 专辑背景微漫反射 (如有)
         if (ambientArtwork && ambientArtwork->GetWidth() > 0) {
@@ -640,8 +648,16 @@ void GlassRenderer::DrawScrollGlassFrame(Graphics& g, int dstW, int dstH, float 
 
     // 1. 中间主显示区域底色 (仅在卷轴展开且高度大于0时绘制)
     if (midH > 0.0f && midW > 0.0f) {
-        SolidBrush bodyBaseBrush(Color(255, 30, 31, 34));
-        g.FillRectangle(&bodyBaseBrush, RectF(midX, midTop, midW, midH));
+        if (mode == 1) {
+            // 主面板: 垂直方向从 rgb(58, 58, 58) 过度到 rgb(31, 31, 31)
+            LinearGradientBrush bodyBaseBrush(PointF(midX, midTop), PointF(midX, midBot),
+                                              Color(255, 58, 58, 58), Color(255, 31, 31, 31));
+            g.FillRectangle(&bodyBaseBrush, RectF(midX, midTop, midW, midH));
+        } else {
+            // 歌词面板与数据来源面板的主色: rgb(23, 23, 23)
+            SolidBrush bodyBaseBrush(Color(255, 23, 23, 23));
+            g.FillRectangle(&bodyBaseBrush, RectF(midX, midTop, midW, midH));
+        }
 
         // 专辑背景微漫反射 (如有)
         if (ambientArtwork && ambientArtwork->GetWidth() > 0) {
@@ -1095,8 +1111,9 @@ void GlassRenderer::DrawCapsuleProgress(Graphics& g, RectF const& r, float ratio
     bgPath.AddArc(r.X + r.Width - h, y, h, h, 270, 180);
     bgPath.CloseFigure();
 
-    SolidBrush bgBrush(Color(145, 16, 18, 22));
-    Pen borderPen(Color(highlight || scrubbing ? 160 : 58, 255, 255, 255), 1.0f);
+    // 进度条背景底槽：与系统主色 rgb(23, 23, 23) 统一
+    SolidBrush bgBrush(Color(180, 23, 23, 23));
+    Pen borderPen(Color(highlight || scrubbing ? 160 : 60, 201, 201, 201), 1.0f);
     g.FillPath(&bgBrush, &bgPath);
     g.DrawPath(&borderPen, &bgPath);
 
@@ -1108,7 +1125,10 @@ void GlassRenderer::DrawCapsuleProgress(Graphics& g, RectF const& r, float ratio
         fgPath.AddArc(r.X + fillW - h + 1, y + 1, h - 2, h - 2, 270, 180);
         fgPath.CloseFigure();
 
-        LinearGradientBrush fgBrush(PointF(r.X, y), PointF(r.X, y + h), Color(230, 185, 232, 255), Color(205, 85, 155, 215));
+        // 胶囊进度条填充色：垂直方向从 高亮色 rgb(201, 201, 201) 过渡到 UI主色 rgb(166, 166, 166)
+        LinearGradientBrush fgBrush(PointF(r.X, y), PointF(r.X, y + h),
+                                    Color(245, 201, 201, 201),
+                                    Color(220, 166, 166, 166));
         g.FillPath(&fgBrush, &fgPath);
     }
 
@@ -1117,8 +1137,8 @@ void GlassRenderer::DrawCapsuleProgress(Graphics& g, RectF const& r, float ratio
         RectF tipRect(thumbX - 20.0f, y - 18.0f, 40.0f, 14.0f);
         GraphicsPath tipPath;
         AddRoundedRectPath(tipPath, tipRect.X, tipRect.Y, tipRect.Width, tipRect.Height, 3.0f);
-        SolidBrush tipBg(Color(220, 20, 24, 32));
-        Pen tipBorder(Color(140, 175, 225, 255), 1.0f);
+        SolidBrush tipBg(Color(230, 23, 23, 23));
+        Pen tipBorder(Color(180, 201, 201, 201), 1.0f);
         g.FillPath(&tipBg, &tipPath);
         g.DrawPath(&tipBorder, &tipPath);
 
@@ -1127,7 +1147,7 @@ void GlassRenderer::DrawCapsuleProgress(Graphics& g, RectF const& r, float ratio
         StringFormat sf;
         sf.SetAlignment(StringAlignmentCenter);
         sf.SetLineAlignment(StringAlignmentCenter);
-        SolidBrush txtBrush(Color(250, 230, 244, 255));
+        SolidBrush txtBrush(Color(255, 201, 201, 201));
         g.DrawString(scrubTimeText.c_str(), -1, &tipFont, tipRect, &sf, &txtBrush);
     }
 }
