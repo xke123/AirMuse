@@ -262,7 +262,7 @@ void LibraryWindow::Render() {
             GlassRenderer::DrawBarSpillFog(g, botGlassClip, 42.0f, 26.0f, 180.0f, false, botFogAlpha);
 
             RectF botRect(16.0f, yBot + 2.0f, static_cast<float>(w - 32), 16.0f);
-            Color botColor = hoverBot ? Color(255, 185, 232, 255) : Color(245, 242, 246, 252);
+            Color botColor = hoverBot ? Color(255, 255, 255, 255) : Color(245, 238, 242, 248);
             GlassRenderer::DrawGlyphHaloText(g, sourceLabel, ff, 9.5f, botRect, leftSf, botColor, effAlpha);
         }
     }

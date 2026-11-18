@@ -525,23 +525,52 @@
             const mk = window.MusicKit && window.MusicKit.getInstance ? window.MusicKit.getInstance() : null;
             if (!mk) return;
 
+            // 1. [0ms 极速响应] 立即向 UI 和 C++ 发送乐观播放状态，完全跳过网络握手延迟，曲名/歌手/进度瞬间更新
+            const title = item.name || item.title || '';
+            const artist = item.artistName || item.subtitle || '';
+            const durationMs = item.durationMs || 0;
+            const albumName = (category && (category.title || category.name)) || item.albumName || '';
+            this._notifyOptimisticNowPlaying({
+                title,
+                artist,
+                album: albumName,
+                contextTitle: albumName,
+                durationMs,
+                isPlaying: true
+            });
+
             try {
+                // 2. [队列复用极速优化] 若当前点击的曲目属于同一个歌单/专辑，直接切索引，避免重新向苹果云端全量拉取歌单
+                const colId = category ? (category.id || null) : null;
+                const isSameCollection = colId && (this._currentCollectionId === colId);
+                const hasValidQueue = mk.queue && mk.queue.items && mk.queue.items.length > 0;
+
+                if (isSameCollection && hasValidQueue && typeof index === 'number' && index >= 0 && index < mk.queue.items.length) {
+                    if (typeof mk.changeToMediaAtIndex === 'function') {
+                        await mk.changeToMediaAtIndex(index);
+                        mk.play();
+                        return;
+                    }
+                }
+
+                // 3. 记录当前歌单/专辑 ID，供下次同歌单切歌时零延迟复用
+                if (colId) {
+                    this._currentCollectionId = colId;
+                }
+
+                // 4. 并行非阻塞发起队列与播放请求
                 if (item.type === 'station') {
                     await mk.setQueue({ station: item.id });
-                    await mk.play();
                 } else if (item.type === 'song' || item.type === 'fav-song') {
                     await mk.setQueue({ song: item.id });
-                    await mk.play();
                 } else if (category && category.type && category.type.includes('playlist')) {
                     await mk.setQueue({ playlist: category.id, startWith: index });
-                    await mk.play();
                 } else if (category && category.type === 'album') {
                     await mk.setQueue({ album: category.id, startWith: index });
-                    await mk.play();
                 } else {
                     await mk.setQueue({ song: item.id });
-                    await mk.play();
                 }
+                mk.play();
             } catch (_) {}
             this._notifyNowPlaying();
         }
@@ -549,6 +578,10 @@
         async playCollection(item, tracks = null, startIndex = 0) {
             const mk = window.MusicKit && window.MusicKit.getInstance ? window.MusicKit.getInstance() : null;
             if (!mk) return;
+
+            if (item && item.id) {
+                this._currentCollectionId = item.id;
+            }
 
             try {
                 if (item.type.includes('playlist')) {
@@ -564,6 +597,17 @@
         playByNative(kind, collectionId, trackIdx, trackId) {
             const mk = window.MusicKit && window.MusicKit.getInstance ? window.MusicKit.getInstance() : null;
             if (!mk) return;
+
+            // 队列复用优化
+            if (collectionId && this._currentCollectionId === collectionId && mk.queue && mk.queue.items && trackIdx >= 0) {
+                if (typeof mk.changeToMediaAtIndex === 'function') {
+                    mk.changeToMediaAtIndex(trackIdx).then(() => mk.play());
+                    return;
+                }
+            }
+
+            if (collectionId) this._currentCollectionId = collectionId;
+
             try {
                 if (kind === 'playlist' && collectionId) {
                     mk.setQueue({ playlist: collectionId, startWith: trackIdx }).then(() => mk.play());
@@ -595,6 +639,22 @@
 
         onUserChange(callback) {
             this._userCallback = callback;
+        }
+
+        _notifyOptimisticNowPlaying(meta) {
+            if (!this._nowPlayingCallback) return;
+            try {
+                this._nowPlayingCallback({
+                    source: 'Apple Music',
+                    title: meta.title || '',
+                    artist: meta.artist || '',
+                    album: meta.album || '',
+                    contextTitle: meta.contextTitle || meta.album || '',
+                    isPlaying: true,
+                    positionMs: 0,
+                    durationMs: meta.durationMs || 0
+                });
+            } catch (_) {}
         }
 
         _notifyNowPlaying() {
@@ -653,11 +713,39 @@
             } catch (_) {}
         }
 
+        _attachNativeEvents() {
+            // 接入 MusicKit 原生状态变更事件与 audio 元素直通事件，彻底消除 350ms 轮询等待
+            try {
+                const mk = window.MusicKit && window.MusicKit.getInstance ? window.MusicKit.getInstance() : null;
+                if (mk && typeof mk.addEventListener === 'function') {
+                    mk.addEventListener('playbackStateDidChange', () => this._notifyNowPlaying());
+                    mk.addEventListener('nowPlayingItemDidChange', () => this._notifyNowPlaying());
+                    mk.addEventListener('playbackTimeDidChange', () => this._notifyNowPlaying());
+                }
+            } catch (_) {}
+
+            const hookAudio = () => {
+                const audios = document.querySelectorAll('audio, video');
+                audios.forEach(a => {
+                    if (a.__airmuseHooked) return;
+                    a.__airmuseHooked = true;
+                    a.preload = 'auto';
+                    a.addEventListener('play', () => this._notifyNowPlaying());
+                    a.addEventListener('playing', () => this._notifyNowPlaying());
+                    a.addEventListener('pause', () => this._notifyNowPlaying());
+                    a.addEventListener('seeked', () => this._notifyNowPlaying());
+                });
+            };
+            hookAudio();
+            setInterval(hookAudio, 2500);
+        }
+
         _startMonitor() {
+            this._attachNativeEvents();
             setInterval(() => {
                 this._notifyNowPlaying();
                 this._detectUser();
-            }, 350);
+            }, 500);
         }
     }
 

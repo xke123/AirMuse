@@ -192,8 +192,8 @@
                 color: #ffffff;
             }
             .am-icon-btn.active {
-                color: #fa2d48;
-                background: rgba(250, 45, 72, 0.12);
+                color: #ffffff;
+                background: rgba(255, 255, 255, 0.16);
             }
 
             /* 居中标签组 */
@@ -221,10 +221,11 @@
             }
             .am-tab-btn:hover { color: #f4f4f5; }
             .am-tab-btn.active {
-                background: #fa2d48;
-                color: #ffffff;
+                background: linear-gradient(180deg, #ececf0 0%, #c4c4cc 100%);
+                color: #121214;
                 font-weight: 600;
-                box-shadow: 0 1px 4px rgba(250, 45, 72, 0.4);
+                box-shadow: 0 1px 4px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+                border: 1px solid rgba(255, 255, 255, 0.4);
             }
 
             /* 快速搜索栏 (完全替换顶部标签栏，共享 32px 高度) */
@@ -266,8 +267,9 @@
                 transition: border-color 0.15s, background 0.15s;
             }
             .am-search-input-wrap:focus-within {
-                border-color: rgba(250, 45, 72, 0.6);
+                border-color: rgba(228, 228, 231, 0.55);
                 background: #27272b;
+                box-shadow: 0 0 6px rgba(228, 228, 231, 0.15);
             }
             .am-search-icon {
                 font-size: 10px;
@@ -330,10 +332,11 @@
             }
             .am-scope-btn:hover { color: #ffffff; }
             .am-scope-btn.active {
-                background: #fa2d48;
-                color: #ffffff;
+                background: linear-gradient(180deg, #ececf0 0%, #c4c4cc 100%);
+                color: #121214;
                 font-weight: 600;
-                box-shadow: 0 1px 3px rgba(250, 45, 72, 0.35);
+                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+                border: 1px solid rgba(255, 255, 255, 0.35);
             }
 
             /* 主内容区域：左侧分类列表 + 右侧卡片瀑布流 */
@@ -394,10 +397,11 @@
                 background: rgba(255, 255, 255, 0.03);
             }
             .am-cat-item.active {
-                color: #fa2d48;
+                color: #ffffff;
                 font-weight: 600;
-                border-left-color: #fa2d48;
-                background: rgba(250, 45, 72, 0.08);
+                border-left-color: #e4e4e7;
+                background: rgba(255, 255, 255, 0.09);
+                box-shadow: inset 1px 0 0 rgba(255, 255, 255, 0.25);
             }
 
             /* 右侧内容面板 (Content Panel) */
@@ -483,17 +487,17 @@
                 letter-spacing: 0.2px;
             }
 
-            /* 角标色彩系统 */
-            .type-song { background: rgba(37, 99, 235, 0.9); color: #ffffff; }
-            .type-fav-song { background: rgba(225, 29, 72, 0.95); color: #ffffff; }
-            .type-album { background: rgba(147, 51, 234, 0.9); color: #ffffff; }
-            .type-playlist { background: rgba(219, 39, 119, 0.9); color: #ffffff; }
-            .type-user-playlist { background: rgba(14, 165, 233, 0.95); color: #ffffff; }
-            .type-fav-playlist { background: rgba(219, 39, 119, 0.95); color: #ffffff; }
-            .type-station { background: rgba(217, 119, 6, 0.95); color: #ffffff; }
-            .type-editorial { background: rgba(22, 163, 74, 0.9); color: #ffffff; }
-            .type-artist { background: rgba(13, 148, 136, 0.9); color: #ffffff; }
-            .type-default { background: rgba(82, 82, 91, 0.9); color: #ffffff; }
+            /* 角标色彩系统 (银灰玻璃微光规范) */
+            .type-song { background: rgba(71, 85, 105, 0.88); color: #f8fafc; border: 1px solid rgba(255, 255, 255, 0.15); }
+            .type-fav-song { background: rgba(100, 116, 139, 0.88); color: #f8fafc; border: 1px solid rgba(255, 255, 255, 0.15); }
+            .type-album { background: rgba(82, 82, 91, 0.88); color: #f8fafc; border: 1px solid rgba(255, 255, 255, 0.15); }
+            .type-playlist { background: rgba(63, 63, 70, 0.88); color: #f8fafc; border: 1px solid rgba(255, 255, 255, 0.15); }
+            .type-user-playlist { background: rgba(75, 85, 99, 0.88); color: #f8fafc; border: 1px solid rgba(255, 255, 255, 0.15); }
+            .type-fav-playlist { background: rgba(63, 63, 70, 0.88); color: #f8fafc; border: 1px solid rgba(255, 255, 255, 0.15); }
+            .type-station { background: rgba(87, 83, 78, 0.88); color: #f8fafc; border: 1px solid rgba(255, 255, 255, 0.15); }
+            .type-editorial { background: rgba(68, 64, 60, 0.88); color: #f8fafc; border: 1px solid rgba(255, 255, 255, 0.15); }
+            .type-artist { background: rgba(71, 85, 105, 0.88); color: #f8fafc; border: 1px solid rgba(255, 255, 255, 0.15); }
+            .type-default { background: rgba(82, 82, 91, 0.88); color: #f8fafc; border: 1px solid rgba(255, 255, 255, 0.15); }
 
             .am-item-body {
                 flex: 1;
@@ -628,8 +632,18 @@
                 cursor: pointer;
             }
             .am-detail-btn:hover { background: #3f3f46; }
-            .am-detail-btn.play-all { background: #fa2d48; color: #fff; font-weight: 600; }
-            .am-detail-btn.play-all:hover { background: #e0263f; }
+            .am-detail-btn.play-all {
+                background: linear-gradient(180deg, #ececf0 0%, #c4c4cc 100%);
+                color: #121214;
+                font-weight: 600;
+                border: 1px solid rgba(255, 255, 255, 0.45);
+                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+            }
+            .am-detail-btn.play-all:hover {
+                background: linear-gradient(180deg, #ffffff 0%, #d4d4d8 100%);
+                color: #000000;
+                box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5), inset 0 1px 0 #ffffff;
+            }
             .am-detail-title {
                 font-size: 11px;
                 font-weight: 600;
@@ -649,6 +663,23 @@
                 transition: background 0.12s;
             }
             .am-track-row:hover { background: #222226; }
+            .am-track-row.active {
+                background: rgba(255, 255, 255, 0.10);
+                border-left: 2px solid #e4e4e7;
+            }
+            .am-track-row.active .am-track-idx {
+                color: #ffffff;
+                font-weight: 700;
+                text-shadow: 0 0 6px rgba(255, 255, 255, 0.4);
+            }
+            .am-track-row.active .am-track-name {
+                color: #ffffff;
+                font-weight: 600;
+                text-shadow: 0 0 6px rgba(255, 255, 255, 0.3);
+            }
+            .am-track-row.active .am-track-artist {
+                color: #c4c4cc;
+            }
             .am-track-idx { font-size: 9.5px; color: #71717a; width: 16px; text-align: center; }
             .am-track-body { flex: 1; min-width: 0; display: flex; flex-direction: column; }
             .am-track-name { font-size: 10.5px; color: #f4f4f5; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -745,13 +776,13 @@
                     </div>
                     <div class="am-top-right">
                         <button class="am-icon-btn" id="amLayoutBtn" title="切换单栏/双栏">⚏</button>
-                        <button class="am-icon-btn" id="amSearchBtn" title="搜索 (替换顶部栏)">🔍</button>
+                        <button class="am-icon-btn" id="amSearchBtn" title="搜索 (替换顶部栏)"><svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle;"><circle cx="6.5" cy="6.5" r="4.5"/><line x1="10" y1="10" x2="14.5" y2="14.5"/></svg></button>
                     </div>
                 </div>
                 <div class="am-search-bar" id="amSearchBar" style="display: none;">
                     <button class="am-icon-btn am-search-back-btn" id="amSearchBackBtn" title="返回标签栏 (Esc)">‹</button>
                     <div class="am-search-input-wrap">
-                        <span class="am-search-icon">🔍</span>
+                        <span class="am-search-icon"><svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle;"><circle cx="6.5" cy="6.5" r="4.5"/><line x1="10" y1="10" x2="14.5" y2="14.5"/></svg></span>
                         <input type="text" class="am-search-input" id="amSearchInput" placeholder="搜索..." autocomplete="off" />
                         <button class="am-search-clear" id="amSearchClear" style="display: none;" title="清空">✕</button>
                     </div>
@@ -1314,6 +1345,8 @@
                     }
 
                     row.onclick = async () => {
+                        this.dom.detailScroll.querySelectorAll('.am-track-row.active').forEach(r => r.classList.remove('active'));
+                        row.classList.add('active');
                         await this.provider.playItem(t, item, idx);
                     };
 
@@ -1371,6 +1404,17 @@
                             type: 'nowPlaying',
                             ...np
                         }));
+                    }
+                    if (this.dom.detailScroll && np && np.title) {
+                        const rows = this.dom.detailScroll.querySelectorAll('.am-track-row');
+                        rows.forEach(r => {
+                            const nameEl = r.querySelector('.am-track-name');
+                            if (nameEl && nameEl.innerText === np.title) {
+                                r.classList.add('active');
+                            } else {
+                                r.classList.remove('active');
+                            }
+                        });
                     }
                 });
 
@@ -1976,23 +2020,52 @@
             const mk = window.MusicKit && window.MusicKit.getInstance ? window.MusicKit.getInstance() : null;
             if (!mk) return;
 
+            // 1. [0ms 极速响应] 立即向 UI 和 C++ 发送乐观播放状态，完全跳过网络握手延迟，曲名/歌手/进度瞬间更新
+            const title = item.name || item.title || '';
+            const artist = item.artistName || item.subtitle || '';
+            const durationMs = item.durationMs || 0;
+            const albumName = (category && (category.title || category.name)) || item.albumName || '';
+            this._notifyOptimisticNowPlaying({
+                title,
+                artist,
+                album: albumName,
+                contextTitle: albumName,
+                durationMs,
+                isPlaying: true
+            });
+
             try {
+                // 2. [队列复用极速优化] 若当前点击的曲目属于同一个歌单/专辑，直接切索引，避免重新向苹果云端全量拉取歌单
+                const colId = category ? (category.id || null) : null;
+                const isSameCollection = colId && (this._currentCollectionId === colId);
+                const hasValidQueue = mk.queue && mk.queue.items && mk.queue.items.length > 0;
+
+                if (isSameCollection && hasValidQueue && typeof index === 'number' && index >= 0 && index < mk.queue.items.length) {
+                    if (typeof mk.changeToMediaAtIndex === 'function') {
+                        await mk.changeToMediaAtIndex(index);
+                        mk.play();
+                        return;
+                    }
+                }
+
+                // 3. 记录当前歌单/专辑 ID，供下次同歌单切歌时零延迟复用
+                if (colId) {
+                    this._currentCollectionId = colId;
+                }
+
+                // 4. 并行非阻塞发起队列与播放请求
                 if (item.type === 'station') {
                     await mk.setQueue({ station: item.id });
-                    await mk.play();
                 } else if (item.type === 'song' || item.type === 'fav-song') {
                     await mk.setQueue({ song: item.id });
-                    await mk.play();
                 } else if (category && category.type && category.type.includes('playlist')) {
                     await mk.setQueue({ playlist: category.id, startWith: index });
-                    await mk.play();
                 } else if (category && category.type === 'album') {
                     await mk.setQueue({ album: category.id, startWith: index });
-                    await mk.play();
                 } else {
                     await mk.setQueue({ song: item.id });
-                    await mk.play();
                 }
+                mk.play();
             } catch (_) {}
             this._notifyNowPlaying();
         }
@@ -2000,6 +2073,10 @@
         async playCollection(item, tracks = null, startIndex = 0) {
             const mk = window.MusicKit && window.MusicKit.getInstance ? window.MusicKit.getInstance() : null;
             if (!mk) return;
+
+            if (item && item.id) {
+                this._currentCollectionId = item.id;
+            }
 
             try {
                 if (item.type.includes('playlist')) {
@@ -2015,6 +2092,17 @@
         playByNative(kind, collectionId, trackIdx, trackId) {
             const mk = window.MusicKit && window.MusicKit.getInstance ? window.MusicKit.getInstance() : null;
             if (!mk) return;
+
+            // 队列复用优化
+            if (collectionId && this._currentCollectionId === collectionId && mk.queue && mk.queue.items && trackIdx >= 0) {
+                if (typeof mk.changeToMediaAtIndex === 'function') {
+                    mk.changeToMediaAtIndex(trackIdx).then(() => mk.play());
+                    return;
+                }
+            }
+
+            if (collectionId) this._currentCollectionId = collectionId;
+
             try {
                 if (kind === 'playlist' && collectionId) {
                     mk.setQueue({ playlist: collectionId, startWith: trackIdx }).then(() => mk.play());
@@ -2046,6 +2134,22 @@
 
         onUserChange(callback) {
             this._userCallback = callback;
+        }
+
+        _notifyOptimisticNowPlaying(meta) {
+            if (!this._nowPlayingCallback) return;
+            try {
+                this._nowPlayingCallback({
+                    source: 'Apple Music',
+                    title: meta.title || '',
+                    artist: meta.artist || '',
+                    album: meta.album || '',
+                    contextTitle: meta.contextTitle || meta.album || '',
+                    isPlaying: true,
+                    positionMs: 0,
+                    durationMs: meta.durationMs || 0
+                });
+            } catch (_) {}
         }
 
         _notifyNowPlaying() {
@@ -2104,11 +2208,39 @@
             } catch (_) {}
         }
 
+        _attachNativeEvents() {
+            // 接入 MusicKit 原生状态变更事件与 audio 元素直通事件，彻底消除 350ms 轮询等待
+            try {
+                const mk = window.MusicKit && window.MusicKit.getInstance ? window.MusicKit.getInstance() : null;
+                if (mk && typeof mk.addEventListener === 'function') {
+                    mk.addEventListener('playbackStateDidChange', () => this._notifyNowPlaying());
+                    mk.addEventListener('nowPlayingItemDidChange', () => this._notifyNowPlaying());
+                    mk.addEventListener('playbackTimeDidChange', () => this._notifyNowPlaying());
+                }
+            } catch (_) {}
+
+            const hookAudio = () => {
+                const audios = document.querySelectorAll('audio, video');
+                audios.forEach(a => {
+                    if (a.__airmuseHooked) return;
+                    a.__airmuseHooked = true;
+                    a.preload = 'auto';
+                    a.addEventListener('play', () => this._notifyNowPlaying());
+                    a.addEventListener('playing', () => this._notifyNowPlaying());
+                    a.addEventListener('pause', () => this._notifyNowPlaying());
+                    a.addEventListener('seeked', () => this._notifyNowPlaying());
+                });
+            };
+            hookAudio();
+            setInterval(hookAudio, 2500);
+        }
+
         _startMonitor() {
+            this._attachNativeEvents();
             setInterval(() => {
                 this._notifyNowPlaying();
                 this._detectUser();
-            }, 350);
+            }, 500);
         }
     }
 
