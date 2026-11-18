@@ -12,6 +12,9 @@ namespace airmuse {
 
 class LibraryWindow : public IMotionClient {
 public:
+    static constexpr int DEFAULT_WIDTH_DIP  = 330;
+    static constexpr int DEFAULT_HEIGHT_DIP = 334;
+
     LibraryWindow(HINSTANCE hInst, AppController& controller, DockManager& dockMgr);
     ~LibraryWindow() override;
 

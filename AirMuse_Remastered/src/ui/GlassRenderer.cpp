@@ -4,6 +4,8 @@
 #include <shlwapi.h>
 #include <algorithm>
 #include <cstdio>
+#include "../resource.h"
+#include "GlassAssets.inl"
 
 using namespace Gdiplus;
 
@@ -142,9 +144,92 @@ void GlassRenderer::DrawImageAlpha(Graphics& g, Bitmap* src, RectF const& dst, i
     g.DrawImage(src, dst, static_cast<REAL>(sx), static_cast<REAL>(sy), static_cast<REAL>(sw), static_cast<REAL>(sh), UnitPixel, &ia);
 }
 
+static Gdiplus::Bitmap* GetFocusGlassBitmap() {
+    static Gdiplus::Bitmap* bmp = nullptr;
+    if (!bmp) {
+        auto loaded = GlassRenderer::LoadPngResource(GetModuleHandleW(nullptr), IDR_PNG_WINDOWGLASS_FCS);
+        if (loaded) {
+            bmp = loaded.release();
+        } else {
+            bmp = new Gdiplus::Bitmap(30, 40, 30 * sizeof(uint32_t), PixelFormat32bppARGB, (BYTE*)s_airplayGlassFocusPixels);
+        }
+    }
+    return bmp;
+}
+
+static Gdiplus::Bitmap* GetUnfocusGlassBitmap() {
+    static Gdiplus::Bitmap* bmp = nullptr;
+    if (!bmp) {
+        auto loaded = GlassRenderer::LoadPngResource(GetModuleHandleW(nullptr), IDR_PNG_WINDOWGLASS);
+        if (loaded) {
+            bmp = loaded.release();
+        } else {
+            bmp = new Gdiplus::Bitmap(30, 40, 30 * sizeof(uint32_t), PixelFormat32bppARGB, (BYTE*)s_airplayGlassUnfocusPixels);
+        }
+    }
+    return bmp;
+}
+
+static void DrawAirPlay9Slice(Graphics& g, Bitmap* bmp, int dstW, int dstH, float opacity) {
+    if (!bmp || dstW <= 0 || dstH <= 0 || opacity <= 0.001f) return;
+
+    ImageAttributes* pAttr = nullptr;
+    ImageAttributes attr;
+    if (opacity < 0.999f) {
+        ColorMatrix matrix = {{
+            {1.0f, 0.0f, 0.0f, 0.0f, 0.0f},
+            {0.0f, 1.0f, 0.0f, 0.0f, 0.0f},
+            {0.0f, 0.0f, 1.0f, 0.0f, 0.0f},
+            {0.0f, 0.0f, 0.0f, opacity, 0.0f},
+            {0.0f, 0.0f, 0.0f, 0.0f, 1.0f}
+        }};
+        attr.SetColorMatrix(&matrix, ColorMatrixFlagsDefault, ColorAdjustTypeBitmap);
+        pAttr = &attr;
+    }
+
+    const float s = static_cast<float>(bmp->GetWidth()) / 30.0f;
+    const float dstCW = 15.0f;
+    const float dstCH = 20.0f;
+    const float srcCW = 15.0f * s;
+    const float srcCH = 20.0f * s;
+    const float srcW  = static_cast<float>(bmp->GetWidth());
+    const float srcH  = static_cast<float>(bmp->GetHeight());
+    const float fDstW = static_cast<float>(dstW);
+    const float fDstH = static_cast<float>(dstH);
+
+    // 4 Corners (Logical 15x20 DIP, source scaled by s)
+    g.DrawImage(bmp, RectF(0.0f, 0.0f, dstCW, dstCH), 0.0f, 0.0f, srcCW, srcCH, UnitPixel, pAttr);
+    g.DrawImage(bmp, RectF(fDstW - dstCW, 0.0f, dstCW, dstCH), srcW - srcCW, 0.0f, srcCW, srcCH, UnitPixel, pAttr);
+    g.DrawImage(bmp, RectF(0.0f, fDstH - dstCH, dstCW, dstCH), 0.0f, srcH - srcCH, srcCW, srcCH, UnitPixel, pAttr);
+    g.DrawImage(bmp, RectF(fDstW - dstCW, fDstH - dstCH, dstCW, dstCH), srcW - srcCW, srcH - srcCH, srcCW, srcCH, UnitPixel, pAttr);
+
+    // Horizontal edges:
+    if (fDstW > dstCW * 2.0f) {
+        float edgeDstW = fDstW - dstCW * 2.0f;
+        float edgeSrcX = 14.0f * s;
+        float edgeSrcW = 2.0f * s;
+        g.DrawImage(bmp, RectF(dstCW, 0.0f, edgeDstW, dstCH), edgeSrcX, 0.0f, edgeSrcW, srcCH, UnitPixel, pAttr);
+        g.DrawImage(bmp, RectF(dstCW, fDstH - dstCH, edgeDstW, dstCH), edgeSrcX, srcH - srcCH, edgeSrcW, srcCH, UnitPixel, pAttr);
+    }
+    // Vertical edges (only 5 DIP wide border, avoiding thick pillar bleed into body):
+    if (fDstH > dstCH * 2.0f) {
+        float edgeDstH = fDstH - dstCH * 2.0f;
+        const float edgeW = 5.0f;
+        const float srcEdgeW = 5.0f * s;
+        float edgeSrcY = 19.0f * s;
+        float edgeSrcH = 2.0f * s;
+        g.DrawImage(bmp, RectF(0.0f, dstCH, edgeW, edgeDstH), 0.0f, edgeSrcY, srcEdgeW, edgeSrcH, UnitPixel, pAttr);
+        g.DrawImage(bmp, RectF(fDstW - edgeW, dstCH, edgeW, edgeDstH), srcW - srcEdgeW, edgeSrcY, srcEdgeW, edgeSrcH, UnitPixel, pAttr);
+    }
+}
+
 void GlassRenderer::DrawAirPlayGlassFrame(Graphics& g, int dstW, int dstH, float hoverGloss, float focusRatio, Bitmap* ambientArtwork) {
+    DrawAirPlayGlassFrame(g, dstW, dstH, hoverGloss, focusRatio, ambientArtwork, false);
+}
+
+void GlassRenderer::DrawAirPlayGlassFrame(Graphics& g, int dstW, int dstH, float hoverGloss, float focusRatio, Bitmap* ambientArtwork, bool hasMainGloss) {
     focusRatio = std::clamp(focusRatio, 0.0f, 1.0f);
-    const float padX = 2.0f, padY = 2.0f;
+    const float padX = 2.5f, padY = 2.5f;
     const float fw = static_cast<float>(dstW) - padX * 2.0f;
     const float fh = static_cast<float>(dstH) - padY * 2.0f;
 
@@ -152,7 +237,7 @@ void GlassRenderer::DrawAirPlayGlassFrame(Graphics& g, int dstW, int dstH, float
         const float mPadX = 4.0f, mPadY = 3.0f;
         const float mW = static_cast<float>(dstW) - mPadX * 2.0f;
         const float mH = static_cast<float>(dstH) - mPadY * 2.0f;
-        const float r = 2.5f;
+        const float r = 3.2f;
 
         for (int i = 3; i >= 1; --i) {
             float exp = static_cast<float>(i) * 0.9f;
@@ -184,7 +269,7 @@ void GlassRenderer::DrawAirPlayGlassFrame(Graphics& g, int dstW, int dstH, float
         g.DrawLine(&topSheen, mPadX + 1.0f, mPadY + 1.0f, mPadX + mW - 1.0f, mPadY + 1.0f);
         g.Restore(saved);
 
-        Pen outerRimDark(Color(115, 20, 22, 26), 1.0f);
+        Pen outerRimDark(Color(95, 22, 25, 30), 1.0f);
         g.DrawPath(&outerRimDark, &outer);
 
         GraphicsPath innerWhite;
@@ -194,92 +279,74 @@ void GlassRenderer::DrawAirPlayGlassFrame(Graphics& g, int dstW, int dstH, float
         return;
     }
 
-    const float barH = 18.0f;
-    const float gx = padX;
-    const float gw = fw;
+    // 1. 中间主显示区域底色 (Middle Main Body: 纯粹深炭灰基底，去除主面板高光)
+    const float midY = 20.0f;
+    const float midH = static_cast<float>(dstH) - 40.0f;
+    const float midX = 5.0f;
+    const float midW = static_cast<float>(dstW) - 10.0f;
 
-    // 顶部水晶玻璃条 (失焦时沉静微暗，激活时晶莹通透带有高光反射)
-    {
-        GraphicsPath topPath;
-        AddRoundedRectPath(topPath, gx, padY, gw, barH + 2.0f, 4.5f);
-        BYTE topA = static_cast<BYTE>(60 + 42 * focusRatio);
-        BYTE botA = static_cast<BYTE>(32 + 24 * focusRatio);
-        LinearGradientBrush topGlass(PointF(0, padY), PointF(0, padY + barH),
-                                     Color(topA, 224, 228, 236), Color(botA, 152, 158, 166));
-        g.FillPath(&topGlass, &topPath);
+    if (midH > 0.0f && midW > 0.0f) {
+        SolidBrush bodyBaseBrush(Color(255, 30, 31, 34));
+        g.FillRectangle(&bodyBaseBrush, RectF(midX, midY, midW, midH));
 
-        // 顶边 1px 晶体折射高光线 (AirPlay 经典标志)
-        Pen topSheen(Color(static_cast<BYTE>(30 + 85 * focusRatio), 255, 255, 255), 1.0f);
-        g.DrawLine(&topSheen, gx + 3.0f, padY + 1.0f, gx + gw - 3.0f, padY + 1.0f);
-
-        Pen topBorder(Color(static_cast<BYTE>(110 + 40 * focusRatio), 14, 15, 18), 1.0f);
-        g.DrawPath(&topBorder, &topPath);
-    }
-
-    float botY = padY + fh - barH;
-    // 底部水晶玻璃条
-    {
-        GraphicsPath botPath;
-        AddRoundedRectPath(botPath, gx, botY - 2.0f, gw, barH + 2.0f, 4.5f);
-        BYTE botTopA = static_cast<BYTE>(32 + 24 * focusRatio);
-        BYTE botBotA = static_cast<BYTE>(54 + 40 * focusRatio);
-        LinearGradientBrush botGlass(PointF(0, botY), PointF(0, padY + fh),
-                                     Color(botTopA, 152, 158, 166), Color(botBotA, 214, 218, 226));
-        g.FillPath(&botGlass, &botPath);
-        Pen botBorder(Color(static_cast<BYTE>(110 + 40 * focusRatio), 14, 15, 18), 1.0f);
-        g.DrawPath(&botBorder, &botPath);
-    }
-
-    float midY = padY + barH;
-    float midH = fh - barH * 2.0f;
-    if (midH > 0.0f) {
-        GraphicsPath midPath;
-        AddRoundedRectPath(midPath, padX, midY, fw, midH, 5.5f);
-        GraphicsState saved = g.Save();
-        g.SetClip(&midPath);
-
-        LinearGradientBrush bodyBrush(PointF(0, midY), PointF(0, midY + midH), Color(240, 36, 38, 42), Color(246, 20, 22, 26));
-        g.FillRectangle(&bodyBrush, padX, midY, fw, midH);
-
+        // 专辑背景微漫反射 (如有)
         if (ambientArtwork && ambientArtwork->GetWidth() > 0) {
-            DrawImageAlpha(g, ambientArtwork, RectF(padX, midY - 40.0f, fw, fw),
-                           0, 0, ambientArtwork->GetWidth(), ambientArtwork->GetHeight(), 0.16f, 0.85f);
+            GraphicsState s = g.Save();
+            g.SetClip(RectF(midX, midY, midW, midH));
+            DrawImageAlpha(g, ambientArtwork, RectF(midX, midY - 30.0f, midW, midW),
+                           0, 0, ambientArtwork->GetWidth(), ambientArtwork->GetHeight(), 0.15f, 0.85f);
+            g.Restore(s);
         }
-        g.Restore(saved);
+    }
 
-        Pen midDark(Color(175, 10, 11, 14), 1.0f);
-        Pen midRim(Color(static_cast<BYTE>(26 + 32 * focusRatio), 255, 255, 255), 1.0f);
-        g.DrawPath(&midDark, &midPath);
+    // 2. 原版 9-宫格水晶玻璃外框绘制 (1:1 视网膜级 4x 资产超采样)
+    Bitmap* bmpFocus = GetFocusGlassBitmap();
+    Bitmap* bmpUnfocus = GetUnfocusGlassBitmap();
 
-        GraphicsPath midInner;
-        AddRoundedRectPath(midInner, padX + 1.0f, midY + 1.0f, fw - 2.0f, midH - 2.0f, 4.5f);
-        g.DrawPath(&midRim, &midInner);
+    InterpolationMode oldInterp = g.GetInterpolationMode();
+    g.SetInterpolationMode(InterpolationModeHighQualityBicubic);
 
-        // 焦点态微弱青色水晶漫反射内轮廓 (AirPlay 经典高光)
-        if (focusRatio > 0.05f) {
-            Pen crystalGlow(Color(static_cast<BYTE>(32 * focusRatio), 120, 220, 255), 1.0f);
-            g.DrawPath(&crystalGlow, &midInner);
-        }
+    if (focusRatio >= 0.99f) {
+        DrawAirPlay9Slice(g, bmpFocus, dstW, dstH, 1.0f);
+    } else if (focusRatio <= 0.01f) {
+        DrawAirPlay9Slice(g, bmpUnfocus, dstW, dstH, 1.0f);
+    } else {
+        DrawAirPlay9Slice(g, bmpUnfocus, dstW, dstH, 1.0f);
+        DrawAirPlay9Slice(g, bmpFocus, dstW, dstH, focusRatio);
+    }
+
+    g.SetInterpolationMode(oldInterp);
+
+    // 3. 原版物理咬合卡槽接缝 (Groove Seams) - 必须在 9-宫格后绘制，确保玻璃与暗色之间的分界线清晰锐利！
+    if (midH > 0.0f && midW > 0.0f) {
+        // 顶部接缝 (y=20): 玻璃底深色咬合暗槽线 + 下方 1px 亚像素微光反光亮线
+        Pen grooveDarkTop(Color(static_cast<BYTE>(190 + 35 * focusRatio), 12, 13, 16), 1.0f);
+        Pen grooveWhiteTop(Color(static_cast<BYTE>(45 + 35 * focusRatio), 255, 255, 255), 1.0f);
+        g.DrawLine(&grooveDarkTop, midX, 20.0f, midX + midW, 20.0f);
+        g.DrawLine(&grooveWhiteTop, midX, 21.0f, midX + midW, 21.0f);
+
+        // 底部接缝 (y=dstH-20): 玻璃顶深色咬合暗槽线 + 下方 1px 亚像素微光反光亮线
+        float botY = static_cast<float>(dstH - 20);
+        Pen grooveDarkBot(Color(static_cast<BYTE>(190 + 35 * focusRatio), 12, 13, 16), 1.0f);
+        Pen grooveWhiteBot(Color(static_cast<BYTE>(45 + 35 * focusRatio), 255, 255, 255), 1.0f);
+        g.DrawLine(&grooveDarkBot, midX, botY - 1.0f, midX + midW, botY - 1.0f);
+        g.DrawLine(&grooveWhiteBot, midX, botY, midX + midW, botY);
     }
 }
 
 void GlassRenderer::DrawSpecularSweep(Graphics& g, int dstW, int dstH, float sweepRatio, float intensity, float /*sweepRatioX*/) {
     if (intensity <= 0.005f) return;
-    const float padX = 2.0f, padY = 2.0f;
+    const float padX = 5.0f;
     const float fw = static_cast<float>(dstW) - padX * 2.0f;
-    const float fh = static_cast<float>(dstH) - padY * 2.0f;
-    const float barH = 18.0f;
-
-    float midY = padY + barH;
-    float midH = fh - barH * 2.0f;
+    const float midY = 20.0f;
+    const float midH = static_cast<float>(dstH) - 40.0f;
     if (fw <= 10.0f || midH <= 10.0f) return;
 
     // 严格限制在两个玻璃条中间的主面板区域 (midClip)
-    GraphicsPath midClip;
-    AddRoundedRectPath(midClip, padX, midY, fw, midH, 5.5f);
+    RectF midClip(padX, midY, fw, midH);
 
     GraphicsState saved = g.Save();
-    g.SetClip(&midClip, CombineModeIntersect);
+    g.SetClip(midClip, CombineModeIntersect);
 
     // 计算相机镜头炫光/光晕中心Y轴位置
     float cy = midY + sweepRatio * midH;

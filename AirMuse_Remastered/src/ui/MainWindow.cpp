@@ -70,7 +70,7 @@ HWND MainWindow::Create() {
     m_hwnd = CreateWindowExW(
         WS_EX_LAYERED | WS_EX_TOPMOST | WS_EX_TOOLWINDOW,
         wc.lpszClassName, L"AirMuse", WS_POPUP,
-        120, 120, 320, 104,
+        120, 120, DEFAULT_WIDTH_DIP, DEFAULT_HEIGHT_DIP,
         nullptr, nullptr, m_hInst, this
     );
     return m_hwnd;
@@ -138,7 +138,7 @@ void MainWindow::UpdateLayout(float w, float h) {
             else if (b.id == BTN_MINI_TOGGLE) b.bounds = RectF(w - 77, 8, 13, 13);
             else if (b.id == BTN_TOPMOST)     b.bounds = RectF(w - 61, 4, 13, 13);
             else if (b.id == BTN_CLOSE)       b.bounds = RectF(w - 45, 8, 13, 13);
-            else if (b.id == BTN_PROGRESS)    b.bounds = RectF(68, 63, w - 136, 14);
+            else if (b.id == BTN_PROGRESS)    b.bounds = RectF(68, 64, w - 136, 14);
             else if (b.id == BTN_VOL_BAR)     b.bounds = RectF(w - 25, 42, 16, 38);
             else if (b.id == BTN_LIBRARY)     b.bounds = RectF(w - 63, h - 17, 13, 13);
             else if (b.id == BTN_LYRICS)      b.bounds = RectF(w - 45, h - 17, 13, 13);
@@ -166,8 +166,8 @@ void MainWindow::ToggleMiniMode() {
     }
     m_miniMode = nextMini;
     m_dockMgr.SetMiniMode(m_miniMode);
-    m_winWidth.target  = 320.0f;
-    m_winHeight.target = m_miniMode ? 30.0f : 104.0f;
+    m_winWidth.target  = static_cast<float>(DEFAULT_WIDTH_DIP);
+    m_winHeight.target = m_miniMode ? 30.0f : static_cast<float>(DEFAULT_HEIGHT_DIP);
     if (m_miniMode) {
         m_miniFieldIdx = 0;
         m_miniCycleTick = GetTickCount64();
@@ -260,6 +260,7 @@ bool MainWindow::StepMotion(float dt) {
     GetWindowRect(m_hwnd, &rc);
     if ((rc.right - rc.left) != wPx || (rc.bottom - rc.top) != hPx) {
         SetWindowPos(m_hwnd, nullptr, 0, 0, wPx, hPx, SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
+        m_dockMgr.SyncAllDocked();
     }
 
     if (!active) {
@@ -350,7 +351,7 @@ void MainWindow::Render() {
             g.SetClip(&expandClip, CombineModeIntersect);
 
             if (p > 0.05f) {
-                GlassRenderer::DrawAirPlayGlassFrame(g, w, h, 0.0f, m_focusAnim.current, m_artworkBmp.get());
+                GlassRenderer::DrawAirPlayGlassFrame(g, w, h, 0.0f, m_focusAnim.current, m_artworkBmp.get(), true);
             }
 
             float logoAlpha = std::clamp(1.0f - p * 1.6f, 0.0f, 1.0f);
@@ -377,7 +378,7 @@ void MainWindow::Render() {
             bool focusSettled = m_focusAnim.IsSettled();
             if (!focusSettled) {
                 InvalidateBgCache();
-                GlassRenderer::DrawAirPlayGlassFrame(g, w, h, 0.0f, focusRatio, m_artworkBmp.get());
+                GlassRenderer::DrawAirPlayGlassFrame(g, w, h, 0.0f, focusRatio, m_artworkBmp.get(), true);
             } else {
                 if (!m_bgCacheBmp || m_bgCacheW != wPx || m_bgCacheH != hPx || m_bgCacheFocused != m_focused || m_bgCacheArtKey != m_cachedArtKey) {
                     m_bgCacheBmp = std::make_unique<Bitmap>(wPx, hPx, PixelFormat32bppPARGB);
@@ -386,7 +387,7 @@ void MainWindow::Render() {
                     bg.ScaleTransform(scale, scale);
                     bg.SetSmoothingMode(SmoothingModeHighQuality);
                     bg.SetInterpolationMode(InterpolationModeHighQualityBicubic);
-                    GlassRenderer::DrawAirPlayGlassFrame(bg, w, h, 0.0f, focusRatio, m_artworkBmp.get());
+                    GlassRenderer::DrawAirPlayGlassFrame(bg, w, h, 0.0f, focusRatio, m_artworkBmp.get(), true);
                     m_bgCacheW = wPx;
                     m_bgCacheH = hPx;
                     m_bgCacheFocused = m_focused;
@@ -396,7 +397,7 @@ void MainWindow::Render() {
                             0.0f, 0.0f, static_cast<REAL>(wPx), static_cast<REAL>(hPx), UnitPixel);
             }
         } else {
-            GlassRenderer::DrawAirPlayGlassFrame(g, w, h, m_miniMode ? hoverAlpha : 0.0f, focusRatio, nullptr);
+            GlassRenderer::DrawAirPlayGlassFrame(g, w, h, m_miniMode ? hoverAlpha : 0.0f, focusRatio, nullptr, true);
         }
 
         // AirPlay Zion 经典光学动效：相机镜头炫光/光晕 (横向贯穿底层渲染，位于文字与页面元素之下)
@@ -530,13 +531,13 @@ void MainWindow::Render() {
 
             if (bodyFade > 0.25f) {
                 auto* bProg = findBtn(BTN_PROGRESS);
-                RectF pr = bProg ? bProg->bounds : RectF(68, 63, static_cast<REAL>(w - 136), 14);
+                RectF pr = bProg ? bProg->bounds : RectF(68, 64, static_cast<REAL>(w - 136), 14);
                 bool hl = (bProg && bProg->hoverAnim.current > 0.1f);
-                GlassRenderer::DrawCapsuleProgress(g, RectF(pr.X, 67.0f, pr.Width, 6.0f), ratio, hl, m_scrubbing, FormatMs(livePosMs));
+                GlassRenderer::DrawCapsuleProgress(g, RectF(pr.X, pr.Y + 4.0f, pr.Width, 6.0f), ratio, hl, m_scrubbing, FormatMs(livePosMs));
 
                 SolidBrush timeBrush(Color(static_cast<BYTE>(210.0f * bodyFade), 205, 216, 230));
-                g.DrawString(FormatMs(livePosMs).c_str(), -1, &timeFont, RectF(26.0f, 64.0f, 38.0f, 13.0f), &rightSf, &timeBrush);
-                g.DrawString(FormatMs(info.durationMs).c_str(), -1, &timeFont, RectF(static_cast<REAL>(w - 64), 64.0f, 38.0f, 13.0f), &leftSf, &timeBrush);
+                g.DrawString(FormatMs(livePosMs).c_str(), -1, &timeFont, RectF(26.0f, pr.Y + 1.0f, 38.0f, 13.0f), &rightSf, &timeBrush);
+                g.DrawString(FormatMs(info.durationMs).c_str(), -1, &timeFont, RectF(static_cast<REAL>(w - 64), pr.Y + 1.0f, 38.0f, 13.0f), &leftSf, &timeBrush);
             }
         } else {
             RectF miniGlassClip(4.5f, 3.5f, static_cast<float>(w - 9), static_cast<float>(h - 7));
@@ -623,13 +624,13 @@ LRESULT MainWindow::HandleMessage(UINT msg, WPARAM wParam, LPARAM lParam) {
         if (m_dpi == 0) m_dpi = 96;
         m_dockMgr.SetDpi(m_dpi);
 
-        int wPx = GlassRenderer::ToPx(320, m_dpi);
-        int hPx = GlassRenderer::ToPx(104, m_dpi);
+        int wPx = GlassRenderer::ToPx(DEFAULT_WIDTH_DIP, m_dpi);
+        int hPx = GlassRenderer::ToPx(DEFAULT_HEIGHT_DIP, m_dpi);
 
         RECT rcWork{};
         SystemParametersInfoW(SPI_GETWORKAREA, 0, &rcWork, 0);
         int margin = GlassRenderer::ToPx(16, m_dpi);
-        int totalW = GlassRenderer::ToPx(638, m_dpi);
+        int totalW = GlassRenderer::ToPx(DEFAULT_WIDTH_DIP + 330, m_dpi);
         int startX = rcWork.right - totalW - margin;
         int startY = rcWork.top + margin;
         SetWindowPos(m_hwnd, nullptr, startX, startY, wPx, hPx, SWP_NOZORDER | SWP_NOACTIVATE);

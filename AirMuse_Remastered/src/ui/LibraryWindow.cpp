@@ -35,18 +35,26 @@ HWND LibraryWindow::Create(HWND parentMain) {
     wcHost.lpszClassName = L"AirMuseWebHost";
     RegisterClassExW(&wcHost);
 
+    int startX = 120 + DEFAULT_WIDTH_DIP, startY = 120;
+    if (parentMain) {
+        RECT rcMain{};
+        GetWindowRect(parentMain, &rcMain);
+        startX = rcMain.right;
+        startY = rcMain.top;
+    }
+
     m_hwnd = CreateWindowExW(
         WS_EX_LAYERED | WS_EX_TOPMOST | WS_EX_TOOLWINDOW,
         wc.lpszClassName, L"AirMuse Library", WS_POPUP,
-        438, 120, 320, 318,
+        startX, startY, DEFAULT_WIDTH_DIP, DEFAULT_HEIGHT_DIP,
         parentMain, nullptr, m_hInst, this
     );
 
-    // WebView2 前台视口：严格嵌入在中间内容区 (宽 312 x 高 276 DIP)
+    // WebView2 前台视口：严格嵌入在中间内容区
     m_webHostHwnd = CreateWindowExW(
         WS_EX_TOPMOST | WS_EX_TOOLWINDOW,
         wcHost.lpszClassName, L"AirMuse WebHost", WS_POPUP,
-        442, 144, 312, 276,
+        startX + 5, startY + 20, DEFAULT_WIDTH_DIP - 10, DEFAULT_HEIGHT_DIP - 40,
         m_hwnd, nullptr, m_hInst, nullptr
     );
 
@@ -112,7 +120,7 @@ void LibraryWindow::OnMotionRender() {
 
 void LibraryWindow::Render() {
     if (!m_hwnd || !IsWindowVisible(m_hwnd)) return;
-    int w = 320, h = 318;
+    int w = DEFAULT_WIDTH_DIP, h = DEFAULT_HEIGHT_DIP;
     int wPx = GlassRenderer::ToPx(w, m_dpi);
     int hPx = GlassRenderer::ToPx(h, m_dpi);
     float scale = static_cast<float>(m_dpi) / 96.0f;
@@ -139,8 +147,8 @@ void LibraryWindow::Render() {
             leftSf.SetTrimming(StringTrimmingEllipsisCharacter);
             leftSf.SetFormatFlags(StringFormatFlagsNoWrap);
 
-            // 2. 顶部玻璃条 (Y: 0 ~ 24 DIP)
-            RectF topGlassClip(3.0f, 2.0f, static_cast<float>(w - 6), 18.0f);
+            // 2. 顶部玻璃条 (Y: 0 ~ 20 DIP)
+            RectF topGlassClip(5.0f, 2.0f, static_cast<float>(w - 10), 18.0f);
 
             WebPlatform cur = m_controller.CurrentWebPlatform();
             std::wstring svcName = (cur == WebPlatform::Spotify) ? L"Spotify" : (cur == WebPlatform::QQMusic ? L"QQ 音乐" : L"Apple Music");
@@ -151,7 +159,7 @@ void LibraryWindow::Render() {
             // 标题光晕与文字 (随 focus 平滑呼吸)
             BYTE topFogAlpha = static_cast<BYTE>(std::round(195.0f * focus));
             GlassRenderer::DrawBarSpillFog(g, topGlassClip, 42.0f, 26.0f, 165.0f, true, topFogAlpha);
-            GlassRenderer::DrawGlyphHaloText(g, headerTitle, ff, 10.5f, RectF(32.0f, 3.0f, 210.0f, 16.0f), leftSf, Color(245, 240, 246, 255), focus);
+            GlassRenderer::DrawGlyphHaloText(g, headerTitle, ff, 10.5f, RectF(32.0f, 3.0f, static_cast<float>(w - 75), 16.0f), leftSf, Color(245, 240, 246, 255), focus);
 
             // 右上角关闭按钮 (悬停高亮 + 平滑淡入淡出)
             bool hoverClose = (m_hoverTab == 3);
@@ -159,7 +167,7 @@ void LibraryWindow::Render() {
             GlassRenderer::DrawBarSpillFog(g, topGlassClip, static_cast<float>(w - 38), 65.0f, 24.0f, true, closeFogAlpha);
             GlassRenderer::DrawImageAlpha(g, m_winBtnsBmp.get(), RectF(static_cast<REAL>(w - 45), 4.0f, 13.0f, 13.0f), 2 * 52, 0, 52, 52, (hoverClose ? 1.0f : 0.88f) * focus, 1.18f);
 
-            // 3. 底部玻璃条 (Y: 298 ~ 318 DIP)
+            // 3. 底部玻璃条 (Y: 290 ~ 310 DIP)
             auto info = m_controller.Store().GetPlayback();
             std::wstring sourceLabel = L"Apple Music 就绪";
             if (!info.contextTitle.empty()) {
@@ -168,12 +176,12 @@ void LibraryWindow::Render() {
                 sourceLabel = L"正在播放 · " + info.title + (info.artist.empty() ? L"" : (L" - " + info.artist));
             }
 
-            RectF botGlassClip(4.0f, static_cast<float>(h - 20), static_cast<float>(w - 8), 18.0f);
+            RectF botGlassClip(5.0f, static_cast<float>(h - 20), static_cast<float>(w - 10), 18.0f);
             bool hoverBot = (m_hoverTab == 4);
             BYTE botFogAlpha = static_cast<BYTE>(std::round((hoverBot ? 235.0f : 195.0f) * focus));
             GlassRenderer::DrawBarSpillFog(g, botGlassClip, 42.0f, 26.0f, 180.0f, false, botFogAlpha);
 
-            RectF botRect(16.0f, static_cast<float>(h - 19), static_cast<float>(w - 32), 16.0f);
+            RectF botRect(16.0f, static_cast<float>(h - 18), static_cast<float>(w - 32), 16.0f);
             Color botColor = hoverBot ? Color(255, 185, 232, 255) : Color(245, 242, 246, 252);
             GlassRenderer::DrawGlyphHaloText(g, sourceLabel, ff, 9.5f, botRect, leftSf, botColor, focus);
         }
@@ -201,7 +209,7 @@ LRESULT LibraryWindow::HandleMessage(UINT msg, WPARAM wParam, LPARAM lParam) {
         m_dpi = GetDpiForWindow(m_hwnd);
         if (m_dpi == 0) m_dpi = 96;
         m_winBtnsBmp = GlassRenderer::LoadPngResource(m_hInst, IDR_PNG_WINDOWBUTTON);
-        GlassRenderer::EnableFrostedBlur(m_hwnd, GlassRenderer::ToPx(320, m_dpi), GlassRenderer::ToPx(318, m_dpi), m_dpi, false);
+        GlassRenderer::EnableFrostedBlur(m_hwnd, GlassRenderer::ToPx(DEFAULT_WIDTH_DIP, m_dpi), GlassRenderer::ToPx(DEFAULT_HEIGHT_DIP, m_dpi), m_dpi, false);
         return 0;
 
     case WM_ACTIVATE:
@@ -211,7 +219,7 @@ LRESULT LibraryWindow::HandleMessage(UINT msg, WPARAM wParam, LPARAM lParam) {
 
     case WM_WINDOWPOSCHANGED:
         m_dockMgr.SyncWebHostBounds();
-        m_controller.ResizeWebHost(GlassRenderer::ToPx(312, m_dpi), GlassRenderer::ToPx(276, m_dpi));
+        m_controller.ResizeWebHost(GlassRenderer::ToPx(DEFAULT_WIDTH_DIP - 10, m_dpi), GlassRenderer::ToPx(DEFAULT_HEIGHT_DIP - 40, m_dpi));
         return DefWindowProcW(m_hwnd, msg, wParam, lParam);
 
     case WM_MOUSEMOVE: {
@@ -219,8 +227,8 @@ LRESULT LibraryWindow::HandleMessage(UINT msg, WPARAM wParam, LPARAM lParam) {
         int x = GlassRenderer::ToDip(GET_X_LPARAM(lParam), m_dpi);
         int y = GlassRenderer::ToDip(GET_Y_LPARAM(lParam), m_dpi);
         int hit = -1;
-        if (x >= 320 - 48 && x <= 320 - 24 && y >= 0 && y <= 24) hit = 3; // 关闭按钮
-        if (y >= 298 && y <= 318) hit = 4;                                // 底部播放条
+        if (x >= DEFAULT_WIDTH_DIP - 48 && x <= DEFAULT_WIDTH_DIP - 24 && y >= 0 && y <= 20) hit = 3; // 关闭按钮
+        if (y >= DEFAULT_HEIGHT_DIP - 20 && y <= DEFAULT_HEIGHT_DIP) hit = 4;                           // 底部播放条
         bool stateChanged = (hit != m_hoverTab || !m_lastActiveOrHover);
         m_hoverTab = hit;
         m_lastActiveOrHover = true;

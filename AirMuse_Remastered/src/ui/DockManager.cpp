@@ -5,8 +5,8 @@
 namespace airmuse {
 
 namespace {
-constexpr int SNAP_DIST_PX     = 16;
-constexpr int DOCK_OVERLAP_DIP = 2;
+constexpr int SNAP_DIST_PX     = 24;
+constexpr int DOCK_OVERLAP_DIP = 11;
 } // namespace
 
 void DockManager::AttachWindows(HWND mainWnd, HWND lyricsWnd, HWND libraryWnd, HWND webHostWnd) {
@@ -14,6 +14,9 @@ void DockManager::AttachWindows(HWND mainWnd, HWND lyricsWnd, HWND libraryWnd, H
     m_lyrics = lyricsWnd;
     m_library = libraryWnd;
     m_webHost = webHostWnd;
+    m_lyricsSide = DockSide::Bottom;
+    m_libDocked = true;
+    SyncAllDocked();
 }
 
 POINT DockManager::ComputeLibraryDockPos(RECT const& rcMain, int libW, int libH, RevealDir* outDir) const {
@@ -145,9 +148,9 @@ void DockManager::SyncWebHostBounds() {
     GetWindowRect(m_library, &rcLib);
     int w = rcLib.right - rcLib.left;
     int h = rcLib.bottom - rcLib.top;
-    int padX = GlassRenderer::ToPx(4, m_dpi);
-    int topY = GlassRenderer::ToPx(24, m_dpi);
-    int botY = GlassRenderer::ToPx(18, m_dpi);
+    int padX = GlassRenderer::ToPx(5, m_dpi);
+    int topY = GlassRenderer::ToPx(20, m_dpi);
+    int botY = GlassRenderer::ToPx(20, m_dpi);
     SetWindowPos(m_webHost, nullptr, rcLib.left + padX, rcLib.top + topY, w - padX * 2, h - topY - botY, SWP_NOZORDER | SWP_NOACTIVATE);
 }
 

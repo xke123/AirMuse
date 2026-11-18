@@ -17,6 +17,9 @@ class LibraryWindow;
 
 class MainWindow : public IMotionClient {
 public:
+    static constexpr int DEFAULT_WIDTH_DIP  = 330;
+    static constexpr int DEFAULT_HEIGHT_DIP = 106;
+
     MainWindow(HINSTANCE hInst, AppController& controller, DockManager& dockMgr);
     ~MainWindow() override;
 
@@ -79,8 +82,8 @@ private:
     bool m_lyricsVisible = false;
     bool m_libVisible = false;
 
-    SpringValue m_winWidth{ 320.0f, 320.0f, 0.0f, 280.0f, 24.0f };
-    SpringValue m_winHeight{ 104.0f, 104.0f, 0.0f, 280.0f, 24.0f };
+    SpringValue m_winWidth{ static_cast<float>(DEFAULT_WIDTH_DIP), static_cast<float>(DEFAULT_WIDTH_DIP), 0.0f, 280.0f, 24.0f };
+    SpringValue m_winHeight{ static_cast<float>(DEFAULT_HEIGHT_DIP), static_cast<float>(DEFAULT_HEIGHT_DIP), 0.0f, 280.0f, 24.0f };
     SpringValue m_hoverPanel{ 0.0f, 0.0f, 0.0f, 300.0f, 26.0f };
     SpringValue m_miniTextSlide{ 1.0f, 1.0f, 0.0f, 260.0f, 34.0f };
     SpringValue m_startupAnim{ 0.0f, 0.0f, 0.0f, 210.0f, 28.0f };

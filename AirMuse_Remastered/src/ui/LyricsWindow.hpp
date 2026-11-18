@@ -11,6 +11,9 @@ namespace airmuse {
 
 class LyricsWindow : public IMotionClient {
 public:
+    static constexpr int DEFAULT_WIDTH_DIP  = 330;
+    static constexpr int DEFAULT_HEIGHT_DIP = 239;
+
     LyricsWindow(HINSTANCE hInst, AppController& controller, DockManager& dockMgr);
     ~LyricsWindow() override;
     HWND Create(HWND parentMain);
@@ -50,7 +53,7 @@ private:
     ULONGLONG m_lastFrameTick = 0;
 
     SpringValue m_scrollY{ 0.0f, 0.0f, 0.0f, 220.0f, 30.0f };
-    SpringValue m_winHeight{ 216.0f, 216.0f, 0.0f, 280.0f, 24.0f };
+    SpringValue m_winHeight{ static_cast<float>(DEFAULT_HEIGHT_DIP), static_cast<float>(DEFAULT_HEIGHT_DIP), 0.0f, 280.0f, 24.0f };
     SpringValue m_miniLyricSlide{ 1.0f, 1.0f, 0.0f, 260.0f, 34.0f };
     SpringValue m_revealAnim{ 0.0f, 0.0f, 0.0f, 260.0f, 34.0f };
     SpringValue m_focusAnim{ 1.0f, MotionPreset::Gentle };

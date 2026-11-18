@@ -33,10 +33,18 @@ HWND LyricsWindow::Create(HWND parentMain) {
     wc.lpszClassName = L"AirMuseLyricsWindow";
     RegisterClassExW(&wc);
 
+    int startX = 120, startY = 120 + 106;
+    if (parentMain) {
+        RECT rcMain{};
+        GetWindowRect(parentMain, &rcMain);
+        startX = rcMain.left;
+        startY = rcMain.bottom;
+    }
+
     m_hwnd = CreateWindowExW(
         WS_EX_LAYERED | WS_EX_TOPMOST | WS_EX_TOOLWINDOW,
         wc.lpszClassName, L"AirMuse Lyrics", WS_POPUP,
-        120, 222, 320, 216,
+        startX, startY, DEFAULT_WIDTH_DIP, DEFAULT_HEIGHT_DIP,
         parentMain, nullptr, m_hInst, this
     );
     return m_hwnd;
@@ -49,6 +57,7 @@ void LyricsWindow::SetVisible(bool visible) {
         }
         m_hiding = false;
         m_revealAnim.target = 1.0f;
+        m_dockMgr.SyncAllDocked();
         ShowWindow(m_hwnd, SW_SHOWNOACTIVATE);
         OnPlaybackOrLyricsChanged();
         EnsureFrameTimer();
@@ -62,7 +71,7 @@ void LyricsWindow::SetVisible(bool visible) {
 
 void LyricsWindow::SetMiniMode(bool mini) {
     m_mini = mini;
-    m_winHeight.target = mini ? 30.0f : 216.0f;
+    m_winHeight.target = mini ? 30.0f : static_cast<float>(DEFAULT_HEIGHT_DIP);
     EnsureFrameTimer();
 }
 
@@ -159,7 +168,7 @@ bool LyricsWindow::StepMotion(float dt) {
     active |= m_revealAnim.Step(dt);
     active |= m_focusAnim.Step(dt);
 
-    int w = 320;
+    int w = DEFAULT_WIDTH_DIP;
     int h = static_cast<int>(std::round(m_winHeight.current));
     int wPx = GlassRenderer::ToPx(w, m_dpi);
     int hPx = GlassRenderer::ToPx(h, m_dpi);
@@ -194,7 +203,7 @@ void LyricsWindow::StepAnimations(float dt) {
 void LyricsWindow::Render() {
     if (!m_hwnd || !IsWindowVisible(m_hwnd)) return;
 
-    int w = 320;
+    int w = DEFAULT_WIDTH_DIP;
     int h = static_cast<int>(std::round(m_winHeight.current));
     int wPx = GlassRenderer::ToPx(w, m_dpi);
     int hPx = GlassRenderer::ToPx(h, m_dpi);
@@ -353,7 +362,7 @@ LRESULT LyricsWindow::HandleMessage(UINT msg, WPARAM wParam, LPARAM lParam) {
         m_dpi = GetDpiForWindow(m_hwnd);
         if (m_dpi == 0) m_dpi = 96;
         m_winBtnsBmp = GlassRenderer::LoadPngResource(m_hInst, IDR_PNG_WINDOWBUTTON);
-        GlassRenderer::EnableFrostedBlur(m_hwnd, GlassRenderer::ToPx(320, m_dpi), GlassRenderer::ToPx(216, m_dpi), m_dpi, false);
+        GlassRenderer::EnableFrostedBlur(m_hwnd, GlassRenderer::ToPx(DEFAULT_WIDTH_DIP, m_dpi), GlassRenderer::ToPx(DEFAULT_HEIGHT_DIP, m_dpi), m_dpi, false);
         return 0;
     case WM_ACTIVATE:
         m_focusAnim.target = (LOWORD(wParam) != WA_INACTIVE) ? 1.0f : 0.0f;
@@ -373,7 +382,7 @@ LRESULT LyricsWindow::HandleMessage(UINT msg, WPARAM wParam, LPARAM lParam) {
         m_hovering = true;
         int x = GlassRenderer::ToDip(GET_X_LPARAM(lParam), m_dpi);
         int y = GlassRenderer::ToDip(GET_Y_LPARAM(lParam), m_dpi);
-        m_hoverBtn = Rect(320 - 63, 4, 13, 13).Contains(x, y) ? 0 : (Rect(320 - 45, 4, 13, 13).Contains(x, y) ? 1 : -1);
+        m_hoverBtn = Rect(DEFAULT_WIDTH_DIP - 63, 4, 13, 13).Contains(x, y) ? 0 : (Rect(DEFAULT_WIDTH_DIP - 45, 4, 13, 13).Contains(x, y) ? 1 : -1);
         TRACKMOUSEEVENT tme{ sizeof(tme), TME_LEAVE, m_hwnd, 0 };
         TrackMouseEvent(&tme);
         if (!wasHovering || prevBtn != m_hoverBtn) Render();
