@@ -1,6 +1,7 @@
 import AppKit
 import Domain
 import DesignSystem
+import Infrastructure
 
 // MARK: - LyricsView
 
@@ -66,6 +67,7 @@ open class LyricsView: NSView {
         minusButton.onClick = { [weak self] in
             guard let self else { return }
             self.currentOffsetMs -= 500
+            AppLogger.shared.log(category: .userAction, level: .info, message: "用户点击歌词微调 [-0.5s] (当前偏移: \(self.currentOffsetMs)ms)")
             self.updateOffsetLabel()
             self.onAdjustOffset?(-500)
         }
@@ -74,6 +76,7 @@ open class LyricsView: NSView {
         plusButton.onClick = { [weak self] in
             guard let self else { return }
             self.currentOffsetMs += 500
+            AppLogger.shared.log(category: .userAction, level: .info, message: "用户点击歌词微调 [+0.5s] (当前偏移: \(self.currentOffsetMs)ms)")
             self.updateOffsetLabel()
             self.onAdjustOffset?(500)
         }

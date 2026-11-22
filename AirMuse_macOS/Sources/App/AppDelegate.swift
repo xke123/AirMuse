@@ -75,7 +75,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         )
         let lyricsWnd = LyricsWindow(frame: lyricsFrame)
 
-        // Automatically advance queue when track ends in WebKit Player or AVPlayer
+        // Automatically advance queue when track ends in WebKit Player
         let advanceAction: @Sendable () -> Void = { [weak coordinator] in
             Task {
                 AppLogger.shared.log(category: .playback, level: .info, message: "Apple Music 曲目播放完毕，自动切播下一首")
@@ -85,6 +85,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         AppleMusicSessionManager.shared.webPlayer.onPlaybackEnded = advanceAction
         Task {
             await appleMusic.setOnPlaybackEnded(advanceAction)
+        }
+
+        // Observe authentication requirement notifications and guide user to log in
+        NotificationCenter.default.addObserver(
+            forName: .appleMusicRequiresAuthentication,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            MainActor.assumeIsolated {
+                guard let self, let auth = self.appleMusicAuthWindowController else { return }
+                if auth.window?.isVisible != true {
+                    auth.showAuthWindow()
+                }
+            }
         }
 
         // Wire lyrics offset adjust

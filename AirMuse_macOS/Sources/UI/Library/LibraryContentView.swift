@@ -88,7 +88,7 @@ final class ItemBadgeView: NSView {
 
     override func draw(_ dirtyRect: NSRect) {
         super.draw(dirtyRect)
-        let path = NSBezierPath(roundedRect: bounds, xRadius: 2.5, yRadius: 2.5)
+        let path = NSBezierPath(roundedRect: bounds, xRadius: 3.5, yRadius: 3.5)
         bgColor.setFill()
         path.fill()
 
@@ -96,7 +96,7 @@ final class ItemBadgeView: NSView {
         path.lineWidth = 0.5
         path.stroke()
 
-        let font = NSFont.systemFont(ofSize: 7, weight: .bold)
+        let font = NSFont.systemFont(ofSize: 10, weight: .bold)
         let attrs: [NSAttributedString.Key: Any] = [
             .font: font,
             .foregroundColor: NSColor(calibratedRed: 0.97, green: 0.98, blue: 0.99, alpha: 1.0)
@@ -113,12 +113,12 @@ final class ItemBadgeView: NSView {
     }
 }
 
-// MARK: - MediaCardRowView (1-Column: 44px height)
+// MARK: - MediaCardRowView (1-Column: 66px height)
 
 final class MediaCardRowView: NSView {
     override var isFlipped: Bool { true }
     override var intrinsicContentSize: NSSize {
-        NSSize(width: NSView.noIntrinsicMetric, height: 44)
+        NSSize(width: NSView.noIntrinsicMetric, height: 66)
     }
 
     public var onClick: (() -> Void)?
@@ -139,7 +139,7 @@ final class MediaCardRowView: NSView {
 
     init(item: MediaCardItem) {
         self.item = item
-        super.init(frame: NSRect(x: 0, y: 0, width: 200, height: 44))
+        super.init(frame: NSRect(x: 0, y: 0, width: 200, height: 66))
         setupCard()
     }
 
@@ -150,23 +150,23 @@ final class MediaCardRowView: NSView {
     private func setupCard() {
         wantsLayer = true
 
-        // Thumbnail Wrap (38x38)
+        // Thumbnail Wrap (57x57)
         thumbWrap.wantsLayer = true
-        thumbWrap.layer?.cornerRadius = 4
+        thumbWrap.layer?.cornerRadius = 6
         thumbWrap.layer?.masksToBounds = true
         addSubview(thumbWrap)
 
         artView.imageScaling = .scaleProportionallyUpOrDown
         artView.image = NSImage(systemSymbolName: "music.note", accessibilityDescription: item.title)
         artView.wantsLayer = true
-        artView.layer?.cornerRadius = 4
+        artView.layer?.cornerRadius = 6
         artView.layer?.masksToBounds = true
         thumbWrap.addSubview(artView)
 
         // Corner badge
-        let badgeW: CGFloat = CGFloat(item.type.rawValue.count * 8 + 6)
+        let badgeW: CGFloat = CGFloat(item.type.rawValue.count * 11 + 8)
         let badge = ItemBadgeView(text: item.type.rawValue, bgColor: item.type.badgeColor)
-        badge.frame = NSRect(x: 38 - badgeW - 2, y: 2, width: badgeW, height: 11)
+        badge.frame = NSRect(x: 57 - badgeW - 3, y: 3, width: badgeW, height: 16)
         thumbWrap.addSubview(badge)
 
         // Load artwork asynchronously
@@ -183,19 +183,19 @@ final class MediaCardRowView: NSView {
 
         // Labels
         titleLabel.stringValue = item.title
-        titleLabel.font = NSFont.systemFont(ofSize: 10.5, weight: .semibold)
+        titleLabel.font = NSFont.systemFont(ofSize: 14.5, weight: .semibold)
         titleLabel.textColor = NSColor(calibratedRed: 0.96, green: 0.96, blue: 0.96, alpha: 1.0)
         titleLabel.lineBreakMode = .byTruncatingTail
         addSubview(titleLabel)
 
         subtitleLabel.stringValue = item.subtitle
-        subtitleLabel.font = NSFont.systemFont(ofSize: 9.5, weight: .regular)
+        subtitleLabel.font = NSFont.systemFont(ofSize: 13, weight: .regular)
         subtitleLabel.textColor = NSColor(calibratedRed: 0.63, green: 0.63, blue: 0.67, alpha: 1.0)
         subtitleLabel.lineBreakMode = .byTruncatingTail
         addSubview(subtitleLabel)
 
         durationLabel.stringValue = item.duration ?? ""
-        durationLabel.font = NSFont.monospacedDigitSystemFont(ofSize: 9, weight: .regular)
+        durationLabel.font = NSFont.monospacedDigitSystemFont(ofSize: 12.5, weight: .regular)
         durationLabel.textColor = NSColor(white: 0.45, alpha: 1.0)
         durationLabel.alignment = .right
         addSubview(durationLabel)
@@ -204,17 +204,17 @@ final class MediaCardRowView: NSView {
     override func layout() {
         super.layout()
         let w = bounds.width
-        thumbWrap.frame = NSRect(x: 3, y: 3, width: 38, height: 38)
-        artView.frame = NSRect(x: 0, y: 0, width: 38, height: 38)
+        thumbWrap.frame = NSRect(x: 4.5, y: 4.5, width: 57, height: 57)
+        artView.frame = NSRect(x: 0, y: 0, width: 57, height: 57)
 
-        let durW: CGFloat = (item.duration?.isEmpty == false) ? 38 : 0
-        let textW = max(10, w - 46 - durW - 4)
+        let durW: CGFloat = (item.duration?.isEmpty == false) ? 55 : 0
+        let textW = max(10, w - 69 - durW - 6)
 
-        titleLabel.frame = NSRect(x: 46, y: 5, width: textW, height: 16)
-        subtitleLabel.frame = NSRect(x: 46, y: 23, width: textW, height: 14)
+        titleLabel.frame = NSRect(x: 69, y: 8, width: textW, height: 22)
+        subtitleLabel.frame = NSRect(x: 69, y: 34, width: textW, height: 20)
 
         if durW > 0 {
-            durationLabel.frame = NSRect(x: w - durW - 4, y: 14, width: durW, height: 14)
+            durationLabel.frame = NSRect(x: w - durW - 6, y: 22, width: durW, height: 20)
             durationLabel.isHidden = false
         } else {
             durationLabel.isHidden = true
@@ -249,7 +249,7 @@ final class MediaCardRowView: NSView {
     override func draw(_ dirtyRect: NSRect) {
         super.draw(dirtyRect)
         let rect = bounds.insetBy(dx: 1, dy: 1)
-        let path = NSBezierPath(roundedRect: rect, xRadius: 5, yRadius: 5)
+        let path = NSBezierPath(roundedRect: rect, xRadius: 7.5, yRadius: 7.5)
 
         if isHovered {
             NSColor(calibratedWhite: 0.16, alpha: 0.70).setFill()
@@ -291,7 +291,7 @@ final class MediaGridCardView: NSView {
 
     init(item: MediaCardItem) {
         self.item = item
-        super.init(frame: NSRect(x: 0, y: 0, width: 100, height: 140))
+        super.init(frame: NSRect(x: 0, y: 0, width: 150, height: 210))
         setupGridCard()
     }
 
@@ -303,7 +303,7 @@ final class MediaGridCardView: NSView {
         wantsLayer = true
 
         thumbWrap.wantsLayer = true
-        thumbWrap.layer?.cornerRadius = 6
+        thumbWrap.layer?.cornerRadius = 9
         thumbWrap.layer?.masksToBounds = true
         addSubview(thumbWrap)
 
@@ -319,9 +319,9 @@ final class MediaGridCardView: NSView {
         thumbWrap.addSubview(playHoverOverlay)
 
         // Corner Badge
-        let badgeW: CGFloat = CGFloat(item.type.rawValue.count * 8 + 6)
+        let badgeW: CGFloat = CGFloat(item.type.rawValue.count * 11 + 8)
         let badge = ItemBadgeView(text: item.type.rawValue, bgColor: item.type.badgeColor)
-        badge.frame = NSRect(x: 4, y: 4, width: badgeW, height: 11)
+        badge.frame = NSRect(x: 6, y: 6, width: badgeW, height: 16)
         thumbWrap.addSubview(badge)
 
         // Load artwork
@@ -338,13 +338,13 @@ final class MediaGridCardView: NSView {
 
         // Labels
         titleLabel.stringValue = item.title
-        titleLabel.font = NSFont.systemFont(ofSize: 10, weight: .semibold)
+        titleLabel.font = NSFont.systemFont(ofSize: 14, weight: .semibold)
         titleLabel.textColor = NSColor(calibratedRed: 0.95, green: 0.95, blue: 0.95, alpha: 1.0)
         titleLabel.lineBreakMode = .byTruncatingTail
         addSubview(titleLabel)
 
         subtitleLabel.stringValue = item.subtitle
-        subtitleLabel.font = NSFont.systemFont(ofSize: 9, weight: .regular)
+        subtitleLabel.font = NSFont.systemFont(ofSize: 12.5, weight: .regular)
         subtitleLabel.textColor = NSColor(calibratedRed: 0.60, green: 0.60, blue: 0.65, alpha: 1.0)
         subtitleLabel.lineBreakMode = .byTruncatingTail
         addSubview(subtitleLabel)
@@ -353,15 +353,15 @@ final class MediaGridCardView: NSView {
     override func layout() {
         super.layout()
         let w = bounds.width
-        let artSize = max(40, w - 8)
+        let artSize = max(50, w - 12)
 
-        thumbWrap.frame = NSRect(x: 4, y: 4, width: artSize, height: artSize)
+        thumbWrap.frame = NSRect(x: 6, y: 6, width: artSize, height: artSize)
         artView.frame = NSRect(x: 0, y: 0, width: artSize, height: artSize)
-        playHoverOverlay.frame = NSRect(x: (artSize - 28) / 2, y: (artSize - 28) / 2, width: 28, height: 28)
+        playHoverOverlay.frame = NSRect(x: (artSize - 42) / 2, y: (artSize - 42) / 2, width: 42, height: 42)
 
-        let textY = 4 + artSize + 3
-        titleLabel.frame = NSRect(x: 4, y: textY, width: artSize, height: 14)
-        subtitleLabel.frame = NSRect(x: 4, y: textY + 14, width: artSize, height: 13)
+        let textY = 6 + artSize + 4
+        titleLabel.frame = NSRect(x: 6, y: textY, width: artSize, height: 20)
+        subtitleLabel.frame = NSRect(x: 6, y: textY + 20, width: artSize, height: 18)
     }
 
     override func updateTrackingAreas() {
@@ -392,7 +392,7 @@ final class MediaGridCardView: NSView {
     override func draw(_ dirtyRect: NSRect) {
         super.draw(dirtyRect)
         let rect = bounds.insetBy(dx: 1, dy: 1)
-        let path = NSBezierPath(roundedRect: rect, xRadius: 6, yRadius: 6)
+        let path = NSBezierPath(roundedRect: rect, xRadius: 9, yRadius: 9)
 
         if isHovered {
             NSColor(calibratedWhite: 0.18, alpha: 0.65).setFill()
@@ -415,7 +415,7 @@ final class MediaGridCardView: NSView {
 final class DetailTrackRowView: NSView {
     override var isFlipped: Bool { true }
     override var intrinsicContentSize: NSSize {
-        NSSize(width: NSView.noIntrinsicMetric, height: 28)
+        NSSize(width: NSView.noIntrinsicMetric, height: 42)
     }
 
     public var onClick: (() -> Void)?
@@ -433,23 +433,23 @@ final class DetailTrackRowView: NSView {
     private let durLabel = NSTextField(labelWithString: "")
 
     init(index: Int, track: MusicTrack) {
-        super.init(frame: NSRect(x: 0, y: 0, width: 200, height: 28))
+        super.init(frame: NSRect(x: 0, y: 0, width: 200, height: 42))
         wantsLayer = true
 
         indexLabel.stringValue = "\(index)"
-        indexLabel.font = NSFont.monospacedDigitSystemFont(ofSize: 9.5, weight: .regular)
+        indexLabel.font = NSFont.monospacedDigitSystemFont(ofSize: 13.5, weight: .regular)
         indexLabel.textColor = NSColor(white: 0.45, alpha: 1.0)
         indexLabel.alignment = .center
         addSubview(indexLabel)
 
         titleLabel.stringValue = track.title
-        titleLabel.font = NSFont.systemFont(ofSize: 10.5, weight: .medium)
+        titleLabel.font = NSFont.systemFont(ofSize: 14.5, weight: .medium)
         titleLabel.textColor = NSColor(calibratedWhite: 0.90, alpha: 1.0)
         titleLabel.lineBreakMode = .byTruncatingTail
         addSubview(titleLabel)
 
         artistLabel.stringValue = track.artistName
-        artistLabel.font = NSFont.systemFont(ofSize: 9, weight: .regular)
+        artistLabel.font = NSFont.systemFont(ofSize: 12.5, weight: .regular)
         artistLabel.textColor = NSColor(calibratedWhite: 0.56, alpha: 1.0)
         artistLabel.lineBreakMode = .byTruncatingTail
         addSubview(artistLabel)
@@ -462,7 +462,7 @@ final class DetailTrackRowView: NSView {
         } else {
             durLabel.stringValue = ""
         }
-        durLabel.font = NSFont.monospacedDigitSystemFont(ofSize: 9, weight: .regular)
+        durLabel.font = NSFont.monospacedDigitSystemFont(ofSize: 12.5, weight: .regular)
         durLabel.textColor = NSColor(white: 0.45, alpha: 1.0)
         durLabel.alignment = .right
         addSubview(durLabel)
@@ -475,12 +475,12 @@ final class DetailTrackRowView: NSView {
     override func layout() {
         super.layout()
         let w = bounds.width
-        indexLabel.frame = NSRect(x: 2, y: 6, width: 20, height: 16)
-        durLabel.frame = NSRect(x: w - 38, y: 6, width: 34, height: 16)
+        indexLabel.frame = NSRect(x: 3, y: 9, width: 30, height: 24)
+        durLabel.frame = NSRect(x: w - 57, y: 9, width: 51, height: 24)
 
-        let bodyW = max(10, w - 24 - 40)
-        titleLabel.frame = NSRect(x: 24, y: 2, width: bodyW, height: 14)
-        artistLabel.frame = NSRect(x: 24, y: 15, width: bodyW, height: 12)
+        let bodyW = max(10, w - 36 - 60)
+        titleLabel.frame = NSRect(x: 36, y: 3, width: bodyW, height: 20)
+        artistLabel.frame = NSRect(x: 36, y: 22, width: bodyW, height: 18)
     }
 
     override func updateTrackingAreas() {
@@ -511,7 +511,7 @@ final class DetailTrackRowView: NSView {
     override func draw(_ dirtyRect: NSRect) {
         super.draw(dirtyRect)
         if isHovered {
-            let path = NSBezierPath(roundedRect: bounds.insetBy(dx: 1, dy: 1), xRadius: 4, yRadius: 4)
+            let path = NSBezierPath(roundedRect: bounds.insetBy(dx: 1, dy: 1), xRadius: 6, yRadius: 6)
             NSColor(calibratedRed: 0.79, green: 0.79, blue: 0.79, alpha: 0.08).setFill()
             path.fill()
         }
@@ -556,7 +556,7 @@ final class DetailOverlayView: NSView {
         addSubview(headerView)
 
         backButton.title = "← 返回"
-        backButton.font = NSFont.systemFont(ofSize: 10, weight: .medium)
+        backButton.font = NSFont.systemFont(ofSize: 14, weight: .medium)
         backButton.bezelStyle = .recessed
         backButton.isBordered = false
         backButton.contentTintColor = NSColor(calibratedWhite: 0.70, alpha: 1.0)
@@ -564,7 +564,7 @@ final class DetailOverlayView: NSView {
         backButton.action = #selector(backClicked)
         headerView.addSubview(backButton)
 
-        titleLabel.font = NSFont.systemFont(ofSize: 11, weight: .semibold)
+        titleLabel.font = NSFont.systemFont(ofSize: 15.5, weight: .semibold)
         titleLabel.textColor = NSColor(calibratedWhite: 0.90, alpha: 1.0)
         titleLabel.lineBreakMode = .byTruncatingTail
         headerView.addSubview(titleLabel)
@@ -573,11 +573,11 @@ final class DetailOverlayView: NSView {
         playAllButton.isBordered = false
         playAllButton.wantsLayer = true
         playAllButton.layer?.backgroundColor = NSColor(red: 0.98, green: 0.22, blue: 0.35, alpha: 0.95).cgColor
-        playAllButton.layer?.cornerRadius = 11
+        playAllButton.layer?.cornerRadius = 16.5
         let pstyle = NSMutableParagraphStyle()
         pstyle.alignment = .center
         let btnAttrs: [NSAttributedString.Key: Any] = [
-            .font: NSFont.systemFont(ofSize: 10, weight: .bold),
+            .font: NSFont.systemFont(ofSize: 13.5, weight: .bold),
             .foregroundColor: NSColor.white,
             .paragraphStyle: pstyle
         ]
@@ -596,8 +596,8 @@ final class DetailOverlayView: NSView {
 
         trackStack.orientation = .vertical
         trackStack.alignment = .leading
-        trackStack.spacing = 1
-        trackStack.edgeInsets = NSEdgeInsets(top: 2, left: 2, bottom: 4, right: 2)
+        trackStack.spacing = 2
+        trackStack.edgeInsets = NSEdgeInsets(top: 3, left: 3, bottom: 6, right: 3)
         trackStack.translatesAutoresizingMaskIntoConstraints = false
         scrollView.documentView = trackStack
         addSubview(scrollView)
@@ -613,7 +613,7 @@ final class DetailOverlayView: NSView {
         loadingIndicator.isDisplayedWhenStopped = false
         addSubview(loadingIndicator)
 
-        emptyLabel.font = NSFont.systemFont(ofSize: 10, weight: .regular)
+        emptyLabel.font = NSFont.systemFont(ofSize: 14, weight: .regular)
         emptyLabel.textColor = NSColor(white: 0.5, alpha: 1.0)
         emptyLabel.alignment = .center
         emptyLabel.isHidden = true
@@ -625,17 +625,17 @@ final class DetailOverlayView: NSView {
         let w = bounds.width
         let h = bounds.height
 
-        headerView.frame = NSRect(x: 0, y: 0, width: w, height: 30)
-        backButton.frame = NSRect(x: 2, y: 3, width: 48, height: 24)
-        playAllButton.frame = NSRect(x: w - 86, y: 4, width: 82, height: 22)
-        titleLabel.frame = NSRect(x: 52, y: 6, width: max(10, w - 52 - 90), height: 18)
+        headerView.frame = NSRect(x: 0, y: 0, width: w, height: 45)
+        backButton.frame = NSRect(x: 3, y: 4.5, width: 72, height: 36)
+        playAllButton.frame = NSRect(x: w - 126, y: 6, width: 120, height: 33)
+        titleLabel.frame = NSRect(x: 78, y: 9, width: max(10, w - 78 - 132), height: 27)
 
-        scrollView.frame = NSRect(x: 0, y: 30, width: w, height: max(10, h - 30))
-        loadingIndicator.frame = NSRect(x: (w - 20) / 2, y: (h - 20) / 2, width: 20, height: 20)
-        emptyLabel.frame = NSRect(x: 0, y: (h - 20) / 2, width: w, height: 20)
+        scrollView.frame = NSRect(x: 0, y: 45, width: w, height: max(10, h - 45))
+        loadingIndicator.frame = NSRect(x: (w - 28) / 2, y: (h - 28) / 2, width: 28, height: 28)
+        emptyLabel.frame = NSRect(x: 0, y: (h - 28) / 2, width: w, height: 28)
 
         for sub in trackStack.arrangedSubviews {
-            sub.widthAnchor.constraint(equalToConstant: max(100, w - 8)).isActive = true
+            sub.widthAnchor.constraint(equalToConstant: max(100, w - 12)).isActive = true
         }
     }
 
@@ -659,8 +659,8 @@ final class DetailOverlayView: NSView {
             for (idx, track) in tracks.enumerated() {
                 let row = DetailTrackRowView(index: idx + 1, track: track)
                 row.translatesAutoresizingMaskIntoConstraints = false
-                row.heightAnchor.constraint(equalToConstant: 28).isActive = true
-                row.widthAnchor.constraint(equalToConstant: max(100, bounds.width - 8)).isActive = true
+                row.heightAnchor.constraint(equalToConstant: 42).isActive = true
+                row.widthAnchor.constraint(equalToConstant: max(100, bounds.width - 12)).isActive = true
                 row.onClick = { [weak self] in
                     self?.onTrackSelected?(track)
                 }
@@ -670,6 +670,7 @@ final class DetailOverlayView: NSView {
     }
 
     @objc private func backClicked() {
+        AppLogger.shared.log(category: .userAction, level: .info, message: "用户点击详情抽屉 [← 返回] 按钮")
         onBack?()
     }
 
@@ -718,7 +719,7 @@ open class LibraryContentView: NSView {
     private func setupViews() {
         wantsLayer = true
 
-        titleLabel.font = DesignTokens.Typography.titleFont
+        titleLabel.font = NSFont.systemFont(ofSize: 16.5, weight: .bold)
         titleLabel.textColor = DesignTokens.Colors.primaryText
         addSubview(titleLabel)
 
@@ -732,8 +733,8 @@ open class LibraryContentView: NSView {
 
         stackView.orientation = .vertical
         stackView.alignment = .leading
-        stackView.spacing = 4
-        stackView.edgeInsets = NSEdgeInsets(top: 2, left: 2, bottom: 8, right: 2)
+        stackView.spacing = 6
+        stackView.edgeInsets = NSEdgeInsets(top: 3, left: 3, bottom: 12, right: 3)
         stackView.translatesAutoresizingMaskIntoConstraints = false
         scrollView.documentView = stackView
         addSubview(scrollView)
@@ -749,7 +750,7 @@ open class LibraryContentView: NSView {
         loadingIndicator.isDisplayedWhenStopped = false
         addSubview(loadingIndicator)
 
-        emptyLabel.font = DesignTokens.Typography.artistFont
+        emptyLabel.font = NSFont.systemFont(ofSize: 14, weight: .regular)
         emptyLabel.textColor = DesignTokens.Colors.tertiaryText
         emptyLabel.alignment = .center
         emptyLabel.isHidden = true
@@ -772,10 +773,10 @@ open class LibraryContentView: NSView {
 
     open override func layout() {
         super.layout()
-        titleLabel.frame = NSRect(x: 4, y: 2, width: bounds.width - 8, height: 18)
-        scrollView.frame = NSRect(x: 0, y: 22, width: bounds.width, height: max(10, bounds.height - 22))
-        loadingIndicator.frame = NSRect(x: (bounds.width - 20) / 2, y: (bounds.height - 20) / 2, width: 20, height: 20)
-        emptyLabel.frame = NSRect(x: 0, y: (bounds.height - 20) / 2, width: bounds.width, height: 20)
+        titleLabel.frame = NSRect(x: 6, y: 3, width: bounds.width - 12, height: 27)
+        scrollView.frame = NSRect(x: 0, y: 33, width: bounds.width, height: max(10, bounds.height - 33))
+        loadingIndicator.frame = NSRect(x: (bounds.width - 28) / 2, y: (bounds.height - 28) / 2, width: 28, height: 28)
+        emptyLabel.frame = NSRect(x: 0, y: (bounds.height - 28) / 2, width: bounds.width, height: 28)
         detailOverlay.frame = bounds
     }
 
@@ -810,18 +811,18 @@ open class LibraryContentView: NSView {
             details: items.first.map { "首项: [\($0.type.rawValue)] \($0.title) - \($0.subtitle)" }
         )
 
-        let availableWidth = max(100, bounds.width - 10)
+        let availableWidth = max(100, bounds.width - 14)
 
         if is2Col {
             // 2-Column Grid Layout
-            let cardWidth = (availableWidth - 6) / 2
-            let cardHeight = cardWidth + 36
+            let cardWidth = (availableWidth - 9) / 2
+            let cardHeight = cardWidth + 54
 
             var i = 0
             while i < items.count {
                 let rowStack = NSStackView()
                 rowStack.orientation = .horizontal
-                rowStack.spacing = 6
+                rowStack.spacing = 9
                 rowStack.distribution = .fillEqually
                 rowStack.translatesAutoresizingMaskIntoConstraints = false
                 rowStack.heightAnchor.constraint(equalToConstant: cardHeight).isActive = true
@@ -852,11 +853,11 @@ open class LibraryContentView: NSView {
                 i += 2
             }
         } else {
-            // 1-Column Row Layout (44px)
+            // 1-Column Row Layout (66px)
             for item in items {
                 let row = MediaCardRowView(item: item)
                 row.translatesAutoresizingMaskIntoConstraints = false
-                row.heightAnchor.constraint(equalToConstant: 44).isActive = true
+                row.heightAnchor.constraint(equalToConstant: 66).isActive = true
                 row.widthAnchor.constraint(equalToConstant: availableWidth).isActive = true
                 row.onClick = { [weak self] in
                     self?.onItemClicked?(item)

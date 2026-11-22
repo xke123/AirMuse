@@ -10,7 +10,6 @@ public struct MusicTrack: Sendable, Identifiable, Hashable, Codable {
     public var albumTitle: String
     public var durationMs: Int64
     public var artworkURL: URL?
-    public var previewURL: URL?
     public var isExplicit: Bool
     public var trackNumber: Int?
     public var discNumber: Int?
@@ -30,7 +29,6 @@ public struct MusicTrack: Sendable, Identifiable, Hashable, Codable {
         albumTitle: String,
         durationMs: Int64,
         artworkURL: URL? = nil,
-        previewURL: URL? = nil,
         isExplicit: Bool = false,
         trackNumber: Int? = nil,
         discNumber: Int? = nil,
@@ -45,7 +43,6 @@ public struct MusicTrack: Sendable, Identifiable, Hashable, Codable {
         self.albumTitle = albumTitle
         self.durationMs = durationMs
         self.artworkURL = artworkURL
-        self.previewURL = previewURL
         self.isExplicit = isExplicit
         self.trackNumber = trackNumber
         self.discNumber = discNumber
@@ -71,7 +68,6 @@ public struct MusicTrack: Sendable, Identifiable, Hashable, Codable {
         self.albumTitle = albumTitle ?? ""
         self.durationMs = Int64((durationSeconds ?? 0) * 1000)
         self.artworkURL = artworkURL
-        self.previewURL = nil
         self.isExplicit = isExplicit
         self.trackNumber = nil
         self.discNumber = nil
@@ -96,7 +92,6 @@ public struct MusicTrack: Sendable, Identifiable, Hashable, Codable {
         self.albumTitle = album
         self.durationMs = 0
         self.artworkURL = nil
-        self.previewURL = nil
         self.isExplicit = false
         self.trackNumber = nil
         self.discNumber = nil

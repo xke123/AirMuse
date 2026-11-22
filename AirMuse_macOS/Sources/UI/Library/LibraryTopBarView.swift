@@ -74,7 +74,7 @@ open class LibraryTopBarView: NSVisualEffectView {
         blendingMode = .withinWindow
         state = .active
         wantsLayer = true
-        layer?.cornerRadius = 8
+        layer?.cornerRadius = 12
         layer?.masksToBounds = true
         layer?.borderWidth = 0.5
         layer?.borderColor = NSColor(white: 1.0, alpha: 0.12).cgColor
@@ -100,7 +100,7 @@ open class LibraryTopBarView: NSVisualEffectView {
         tabSegment.segmentStyle = .capsule
         tabSegment.target = self
         tabSegment.action = #selector(tabChanged(_:))
-        tabSegment.font = NSFont.systemFont(ofSize: 10, weight: .medium)
+        tabSegment.font = NSFont.systemFont(ofSize: 13.5, weight: .medium)
         navContainer.addSubview(tabSegment)
 
         // Layout Toggle (⚏ / ☰)
@@ -140,7 +140,7 @@ open class LibraryTopBarView: NSVisualEffectView {
         searchField.focusRingType = .none
         searchField.isBordered = false
         searchField.drawsBackground = false
-        searchField.font = NSFont.systemFont(ofSize: 11, weight: .regular)
+        searchField.font = NSFont.systemFont(ofSize: 14.5, weight: .regular)
         searchField.target = self
         searchField.action = #selector(searchQueryChanged(_:))
         searchContainer.addSubview(searchField)
@@ -151,7 +151,7 @@ open class LibraryTopBarView: NSVisualEffectView {
         scopeSegment.setLabel("资料库", forSegment: 1)
         scopeSegment.selectedSegment = 0
         scopeSegment.segmentStyle = .capsule
-        scopeSegment.font = NSFont.systemFont(ofSize: 9.5, weight: .regular)
+        scopeSegment.font = NSFont.systemFont(ofSize: 13, weight: .regular)
         scopeSegment.target = self
         scopeSegment.action = #selector(scopeChanged(_:))
         searchContainer.addSubview(scopeSegment)
@@ -172,7 +172,7 @@ open class LibraryTopBarView: NSVisualEffectView {
         btn.target = self
         btn.action = action
 
-        let cfg = NSImage.SymbolConfiguration(pointSize: 10.5, weight: .medium)
+        let cfg = NSImage.SymbolConfiguration(pointSize: 15, weight: .medium)
         if let img = NSImage(systemSymbolName: symbolName, accessibilityDescription: tooltip) {
             btn.image = img.withSymbolConfiguration(cfg)
         }
@@ -190,8 +190,8 @@ open class LibraryTopBarView: NSVisualEffectView {
         searchContainer.frame = bounds
 
         // Nav Mode Layout
-        let btnSize: CGFloat = 20
-        let padding: CGFloat = 4
+        let btnSize: CGFloat = 30
+        let padding: CGFloat = 6
 
         // Refresh Button
         refreshButton.frame = NSRect(x: padding, y: (h - btnSize) / 2, width: btnSize, height: btnSize)
@@ -199,44 +199,44 @@ open class LibraryTopBarView: NSVisualEffectView {
         // Right side buttons
         var rx = w - padding - btnSize
         closeButton.frame = NSRect(x: rx, y: (h - btnSize) / 2, width: btnSize, height: btnSize)
-        rx -= (btnSize + 3)
+        rx -= (btnSize + 4)
 
         accountButton.frame = NSRect(x: rx, y: (h - btnSize) / 2, width: btnSize, height: btnSize)
-        rx -= (btnSize + 3)
+        rx -= (btnSize + 4)
 
         logButton.frame = NSRect(x: rx, y: (h - btnSize) / 2, width: btnSize, height: btnSize)
-        rx -= (btnSize + 3)
+        rx -= (btnSize + 4)
 
         searchButton.frame = NSRect(x: rx, y: (h - btnSize) / 2, width: btnSize, height: btnSize)
-        rx -= (btnSize + 3)
+        rx -= (btnSize + 4)
 
         layoutButton.frame = NSRect(x: rx, y: (h - btnSize) / 2, width: btnSize, height: btnSize)
 
         // Center Tab Group: fit strictly between refresh and right buttons
-        let leftLimit = refreshButton.frame.maxX + 6
-        let rightLimit = layoutButton.frame.minX - 6
+        let leftLimit = refreshButton.frame.maxX + 8
+        let rightLimit = layoutButton.frame.minX - 8
         let availableCenterW = max(50, rightLimit - leftLimit)
-        let tabW = min(190, availableCenterW)
+        let tabW = min(285, availableCenterW)
         let tabX = leftLimit + (availableCenterW - tabW) / 2
-        tabSegment.frame = NSRect(x: tabX, y: (h - 22) / 2, width: tabW, height: 22)
+        tabSegment.frame = NSRect(x: tabX, y: (h - 32) / 2, width: tabW, height: 32)
 
         // Search Mode Layout
         searchBackButton.frame = NSRect(x: padding, y: (h - btnSize) / 2, width: btnSize, height: btnSize)
 
         var srx = w - padding - btnSize
         searchCloseButton.frame = NSRect(x: srx, y: (h - btnSize) / 2, width: btnSize, height: btnSize)
-        srx -= (btnSize + 2)
+        srx -= (btnSize + 4)
 
         searchLayoutButton.frame = NSRect(x: srx, y: (h - btnSize) / 2, width: btnSize, height: btnSize)
-        srx -= 4
+        srx -= 6
 
-        let scopeW: CGFloat = 86
+        let scopeW: CGFloat = 128
         srx -= scopeW
-        scopeSegment.frame = NSRect(x: srx, y: (h - 20) / 2, width: scopeW, height: 20)
+        scopeSegment.frame = NSRect(x: srx, y: (h - 28) / 2, width: scopeW, height: 28)
 
-        let fieldX = padding + btnSize + 4
-        let fieldW = max(50, srx - fieldX - 4)
-        searchField.frame = NSRect(x: fieldX, y: (h - 20) / 2, width: fieldW, height: 20)
+        let fieldX = padding + btnSize + 6
+        let fieldW = max(50, srx - fieldX - 6)
+        searchField.frame = NSRect(x: fieldX, y: (h - 28) / 2, width: fieldW, height: 28)
     }
 
     // MARK: - Public State Controls

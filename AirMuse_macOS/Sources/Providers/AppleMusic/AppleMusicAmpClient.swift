@@ -284,11 +284,13 @@ public actor AppleMusicAmpClient {
 
             let start = CFAbsoluteTimeGetCurrent()
             if attempt == 0 {
+                let devSnippet = currentDevToken.prefix(12)
+                let userSnippet = userToken.map { $0.prefix(12) + "..." } ?? "未登录"
                 AppLogger.shared.log(
                     category: .ampAPI,
                     level: .info,
                     message: "发起 Amp-API 请求: GET \(url.path)",
-                    details: "URL: \(url.absoluteString)\nNeedAuth: \(needAuth), UserToken: \(userToken != nil)"
+                    details: "URL: \(url.absoluteString)\nNeedAuth: \(needAuth), UserToken: \(userToken != nil) [\(userSnippet)], DevToken: \(devSnippet)..."
                 )
             }
 
@@ -304,19 +306,38 @@ public actor AppleMusicAmpClient {
                 let statusCode = http?.statusCode ?? 0
 
                 if statusCode == 200 {
+                    var summary = "路径: \(url.path)"
+                    if let contentType = http?.value(forHTTPHeaderField: "Content-Type") {
+                        summary += "\n类型: \(contentType)"
+                    }
+                    if let cacheControl = http?.value(forHTTPHeaderField: "Cache-Control") {
+                        summary += "\n缓存头: \(cacheControl)"
+                    }
+                    if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
+                        if let dataArr = json["data"] as? [[String: Any]] {
+                            summary += "\n返回数据项: 共 \(dataArr.count) 条"
+                            if let first = dataArr.first, let attrs = first["attributes"] as? [String: Any] {
+                                let name = (attrs["name"] as? String) ?? (attrs["title"] as? String) ?? ""
+                                summary += " (首项: \(name.isEmpty ? (first["id"] as? String ?? "") : name))"
+                            }
+                        } else if let results = json["results"] as? [String: Any] {
+                            summary += "\n检索结果模块: \(results.keys.joined(separator: ", "))"
+                        }
+                    }
                     AppLogger.shared.log(
                         category: .ampAPI,
                         level: .info,
                         message: "Amp-API 请求成功 [HTTP 200 OK] (耗时: \(durationMs)ms, 大小: \(data.count) 字节)",
-                        details: "路径: \(url.path)"
+                        details: summary
                     )
                     return data
                 } else if statusCode == 401 || statusCode == 403 {
+                    let bodySnippet = String(data: data.prefix(500), encoding: .utf8) ?? "(binary)"
                     AppLogger.shared.log(
                         category: .auth,
                         level: .warn,
                         message: "Amp-API 鉴权失效 [HTTP \(statusCode)] (耗时: \(durationMs)ms)",
-                        details: "路径: \(url.path)"
+                        details: "路径: \(url.path)\n响应内容: \(bodySnippet)"
                     )
                     if needAuth {
                         onSessionExpired?()
@@ -335,12 +356,12 @@ public actor AppleMusicAmpClient {
                     try await Task.sleep(nanoseconds: UInt64(waitSeconds * 1_000_000_000))
                     continue
                 } else {
-                    let bodySnippet = String(data: data.prefix(300), encoding: .utf8) ?? "(binary)"
+                    let bodySnippet = String(data: data.prefix(500), encoding: .utf8) ?? "(binary)"
                     AppLogger.shared.log(
                         category: .error,
                         level: .error,
                         message: "Amp-API 状态码异常 [HTTP \(statusCode)] (耗时: \(durationMs)ms)",
-                        details: "响应体: \(bodySnippet)"
+                        details: "路径: \(url.path)\n响应内容: \(bodySnippet)"
                     )
                     throw AppleMusicSessionError.tokenVerificationFailed(statusCode: statusCode, message: "HTTP \(statusCode)")
                 }
@@ -462,7 +483,7 @@ public actor AppleMusicAmpClient {
         return parseRecentlyAdded(data: data)
     }
 
-    // MARK: - Public API: Song Preview & Lyrics & Catalog Resolution
+    // MARK: - Public API: Lyrics & Catalog Resolution
 
     public func resolveCatalogSongID(librarySongID: String, generation: Int? = nil) async -> String? {
         if let cached = resolvedCatalogIDs[librarySongID] { return cached }
@@ -484,35 +505,6 @@ public actor AppleMusicAmpClient {
         }
         resolvedCatalogIDs[librarySongID] = cid
         return cid
-    }
-
-    public func fetchSongPreviewURL(songID: String, generation: Int? = nil) async throws -> URL? {
-        if songID.hasPrefix("ra.") { return nil }
-        var effectiveID = songID
-        if songID.hasPrefix("a.") || songID.hasPrefix("i.") {
-            if let resolved = await resolveCatalogSongID(librarySongID: songID, generation: generation) {
-                effectiveID = resolved
-            } else {
-                let stripped = songID.dropFirst(2)
-                if CharacterSet.decimalDigits.isSuperset(of: CharacterSet(charactersIn: String(stripped))) {
-                    effectiveID = String(stripped)
-                }
-            }
-        }
-        guard let url = URL(string: "https://amp-api.music.apple.com/v1/catalog/\(storefront)/songs/\(effectiveID)?platform=web&l=zh-Hans-CN") else {
-            return nil
-        }
-        let data = try await execute(url: url, needAuth: false, generation: generation)
-        guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-              let dataArr = json["data"] as? [[String: Any]],
-              let first = dataArr.first,
-              let attrs = first["attributes"] as? [String: Any],
-              let previews = attrs["previews"] as? [[String: Any]],
-              let firstPreview = previews.first,
-              let previewStr = firstPreview["url"] as? String else {
-            return nil
-        }
-        return URL(string: previewStr)
     }
 
     public func fetchSongLyricsTTML(songID: String, generation: Int? = nil) async throws -> String? {
@@ -538,8 +530,10 @@ public actor AppleMusicAmpClient {
               let first = dataArr.first,
               let attrs = first["attributes"] as? [String: Any],
               let ttml = attrs["ttml"] as? String else {
+            AppLogger.shared.log(category: .ampAPI, level: .info, message: "Amp-API 响应中无可用 TTML 歌词 (ID: \(effectiveID))")
             return nil
         }
+        AppLogger.shared.log(category: .ampAPI, level: .info, message: "Amp-API 成功提取曲目 [\(effectiveID)] 官方 TTML 歌词 (长度: \(ttml.count) 字符)")
         return ttml
     }
 
@@ -1164,9 +1158,6 @@ public actor AppleMusicAmpClient {
            let firstCat = catData.first {
             catalogID = firstCat["id"] as? String
             if let catAttrs = firstCat["attributes"] as? [String: Any] {
-                if attrs["previews"] == nil, catAttrs["previews"] != nil {
-                    attrs["previews"] = catAttrs["previews"]
-                }
                 if attrs["artwork"] == nil, catAttrs["artwork"] != nil {
                     attrs["artwork"] = catAttrs["artwork"]
                 }
@@ -1185,13 +1176,6 @@ public actor AppleMusicAmpClient {
         let durationMs = (attrs["durationInMillis"] as? NSNumber)?.int64Value ?? 0
         let rawArt = (attrs["artwork"] as? [String: Any])?["url"] as? String
 
-        var previewURL: URL? = nil
-        if let previews = attrs["previews"] as? [[String: Any]],
-           let first = previews.first,
-           let pUrl = first["url"] as? String {
-            previewURL = URL(string: pUrl)
-        }
-
         let effectiveTrackID = catalogID ?? id
         return MusicTrack(
             id: id,
@@ -1200,7 +1184,6 @@ public actor AppleMusicAmpClient {
             albumTitle: album,
             durationMs: durationMs,
             artworkURL: formatArtworkURL(rawArt),
-            previewURL: previewURL,
             providerID: "apple_music",
             providerTrackID: effectiveTrackID
         )

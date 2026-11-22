@@ -92,7 +92,14 @@ public final class ImageCache: Sendable {
 
         let task = Task<NSImage?, Never> {
             do {
+                let start = CFAbsoluteTimeGetCurrent()
                 let (data, _) = try await session.data(from: url)
+                let durMs = Int((CFAbsoluteTimeGetCurrent() - start) * 1000)
+                AppLogger.shared.log(
+                    category: .cache,
+                    level: .debug,
+                    message: "【封面下载】已获取网络封面 (\(durMs)ms, \(data.count) 字节): \(url.lastPathComponent)"
+                )
                 return NSImage(data: data)
             } catch {
                 return nil
@@ -114,6 +121,7 @@ public final class ImageCache: Sendable {
         memoryCache.removeAllObjects()
         try? FileManager.default.removeItem(at: diskCacheURL)
         try? FileManager.default.createDirectory(at: diskCacheURL, withIntermediateDirectories: true)
+        AppLogger.shared.log(category: .cache, level: .info, message: "【图片缓存清除】已清空封面内存与磁盘缓存")
     }
 
     // MARK: - Private Helpers

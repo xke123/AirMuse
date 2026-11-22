@@ -74,9 +74,9 @@ open class LibraryWindowController: NSWindowController {
         let bounds = panel.contentView.bounds
         guard bounds.width > 20 && bounds.height > 20 else { return }
 
-        let topBarH: CGFloat = 32
-        let sidebarW: CGFloat = 84
-        let padding: CGFloat = 4
+        let topBarH: CGFloat = 48
+        let sidebarW: CGFloat = 126
+        let padding: CGFloat = 6
 
         topBar.frame = NSRect(x: padding, y: padding, width: bounds.width - padding * 2, height: topBarH)
 
@@ -96,35 +96,42 @@ open class LibraryWindowController: NSWindowController {
     private func wireCallbacks() {
         // Top Bar Events
         topBar.onTabSelected = { [weak self] tabIndex in
-            self?.handleTabSelected(tabIndex)
+            guard let self else { return }
+            AppLogger.shared.log(category: .userAction, level: .info, message: "用户切换主标签页: [\(self.tabTitle(tabIndex))] (索引: \(tabIndex))")
+            self.handleTabSelected(tabIndex)
         }
 
         topBar.onRefresh = { [weak self] in
             guard let self else { return }
-            AppLogger.shared.log(category: .ampAPI, level: .info, message: "用户点击顶部刷新按钮")
+            AppLogger.shared.log(category: .userAction, level: .info, message: "用户点击顶部刷新按钮")
             self.loadCurrentCategory(forceRefresh: true)
         }
 
         topBar.onToggleLayout = { [weak self] in
             guard let self else { return }
             let is2Col = self.topBar.is2Col
-            AppLogger.shared.log(category: .render, level: .info, message: "切换视图排版模式: \(is2Col ? "双栏卡片 (⚏)" : "单栏列表 (☰)")")
+            AppLogger.shared.log(category: .userAction, level: .info, message: "用户切换排版布局: \(is2Col ? "双栏卡片 (⚏)" : "单栏列表 (☰)")")
             self.contentView.setLayout2Col(is2Col)
         }
 
         topBar.onSearchQuery = { [weak self] query, scope in
+            let scopeName = (scope == 0) ? "Apple Music 全球曲库" : "个人资料库"
+            AppLogger.shared.log(category: .userAction, level: .info, message: "用户提交搜索: \"\(query)\" (检索范围: \(scopeName))")
             self?.performSearch(query: query, scope: scope)
         }
 
         topBar.onToggleLog = { [weak self] in
+            AppLogger.shared.log(category: .userAction, level: .info, message: "用户打开运行诊断日志视窗")
             self?.onToggleLog?()
         }
 
         topBar.onToggleAccount = { [weak self] in
+            AppLogger.shared.log(category: .userAction, level: .info, message: "用户打开 Apple Music 账户管理窗口")
             self?.onToggleAccount?()
         }
 
         topBar.onClose = { [weak self] in
+            AppLogger.shared.log(category: .userAction, level: .info, message: "用户关闭音乐资料库窗口")
             self?.window?.orderOut(nil)
         }
 
@@ -143,28 +150,42 @@ open class LibraryWindowController: NSWindowController {
 
         // Sidebar Events
         sidebar.onCategorySelected = { [weak self] categoryIndex in
-            self?.handleCategorySelected(categoryIndex)
+            guard let self else { return }
+            AppLogger.shared.log(category: .userAction, level: .info, message: "用户切换左侧专区: 索引 \(categoryIndex)")
+            self.handleCategorySelected(categoryIndex)
         }
 
         // Content View Events
         contentView.onItemClicked = { [weak self] item in
-            self?.handleItemClicked(item)
+            guard let self else { return }
+            AppLogger.shared.log(category: .userAction, level: .info, message: "用户点击卡片项: [\(item.type.rawValue)] \(item.title) - \(item.subtitle) (ID: \(item.id))")
+            self.handleItemClicked(item)
         }
 
         contentView.onTrackSelected = { [weak self] track in
             guard let self else { return }
+            AppLogger.shared.log(category: .userAction, level: .info, message: "用户在曲目列表中选中播放: \(track.title) - \(track.artistName) (ID: \(track.id))")
             let allTracks = self.contentView.currentDetailTracksList
             let index = allTracks.firstIndex(where: { $0.id == track.id }) ?? 0
             let queue = PlaybackQueue(items: allTracks.isEmpty ? [track] : allTracks, currentIndex: index)
             Task {
-                try? await self.coordinator.playTrack(track, in: queue)
+                do {
+                    try await self.coordinator.playTrack(track, in: queue)
+                } catch {
+                    self.handlePlaybackError(error)
+                }
             }
         }
 
         contentView.onPlayAll = { [weak self] tracks in
             guard let self, let first = tracks.first else { return }
+            AppLogger.shared.log(category: .userAction, level: .info, message: "用户点击 [全部播放] (共 \(tracks.count) 首歌曲，首曲: \(first.title))")
             Task {
-                try? await self.coordinator.playTrack(first, in: PlaybackQueue(items: tracks, currentIndex: 0))
+                do {
+                    try await self.coordinator.playTrack(first, in: PlaybackQueue(items: tracks, currentIndex: 0))
+                } catch {
+                    self.handlePlaybackError(error)
+                }
             }
         }
 
@@ -929,9 +950,40 @@ open class LibraryWindowController: NSWindowController {
             let index = tracks.firstIndex(where: { $0.id == clickedTrack.id }) ?? 0
             let queue = PlaybackQueue(items: tracks.isEmpty ? [clickedTrack] : tracks, currentIndex: index)
             Task {
-                try? await self.coordinator.playTrack(clickedTrack, in: queue)
+                do {
+                    try await self.coordinator.playTrack(clickedTrack, in: queue)
+                } catch {
+                    self.handlePlaybackError(error)
+                }
             }
         }
+    }
+
+    @MainActor
+    private func handlePlaybackError(_ error: Error) {
+        let isAlreadyLoggedIn = AppleMusicSessionManager.shared.webSessionState.isLoggedIn
+        if let amErr = error as? AppleMusicError {
+            switch amErr {
+            case .notAuthorized, .requiresSubscription:
+                if !isAlreadyLoggedIn {
+                    AppLogger.shared.log(category: .playback, level: .warn, message: "播放需登录 Apple 官方账号，已调出登录引导窗口")
+                    self.onToggleAccount?()
+                } else {
+                    AppLogger.shared.log(category: .playback, level: .warn, message: "当前账号暂无此曲目播放权限或播放器正在就绪中")
+                }
+                return
+            default:
+                break
+            }
+        }
+        if case .requiresAuthorization = error as? AuthenticationError {
+            if !isAlreadyLoggedIn {
+                AppLogger.shared.log(category: .playback, level: .warn, message: "此操作需登录 Apple 官方账号，已调出登录引导窗口")
+                self.onToggleAccount?()
+            }
+            return
+        }
+        AppLogger.shared.log(category: .playback, level: .error, message: "曲目播放失败: \(error.localizedDescription)")
     }
 
     // MARK: - Utilities & Sample Fallbacks

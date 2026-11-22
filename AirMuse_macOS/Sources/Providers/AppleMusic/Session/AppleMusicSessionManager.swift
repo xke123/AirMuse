@@ -384,25 +384,45 @@ public final class AppleMusicSessionManager: NSObject {
     private func syncTokenToCookieStore(token: String) async {
         let cookieStore = dataStore.httpCookieStore
         let existing = await cookieStore.allCookies()
-        var hasExactMatch = false
-        for c in existing where c.name == "media-user-token" && c.domain.contains("apple.com") {
-            if c.value == token {
-                hasExactMatch = true
-            } else if c.value.contains("%") {
+        var hasMusicCookie = false
+        var hasAppleCookie = false
+
+        for c in existing where c.name == "media-user-token" {
+            if c.value.contains("%") {
                 await cookieStore.deleteCookie(c)
+                continue
+            }
+            if c.value == token {
+                if c.domain == ".music.apple.com" || c.domain == "music.apple.com" {
+                    hasMusicCookie = true
+                }
+                if c.domain == ".apple.com" || c.domain == "apple.com" {
+                    hasAppleCookie = true
+                }
             }
         }
-        guard !hasExactMatch else { return }
-        guard let cookie = HTTPCookie(properties: [
+
+        if !hasMusicCookie, let cookie = HTTPCookie(properties: [
             .domain: ".music.apple.com",
             .path: "/",
             .name: "media-user-token",
             .value: token,
             .secure: "TRUE",
             .expires: Date().addingTimeInterval(31536000)
-        ]) else { return }
-        await cookieStore.setCookie(cookie)
-        AppLogger.shared.log(category: .auth, level: .info, message: "已将用户 media-user-token 同步至 WebKit Cookie 存储")
+        ]) {
+            await cookieStore.setCookie(cookie)
+        }
+        if !hasAppleCookie, let cookieApple = HTTPCookie(properties: [
+            .domain: ".apple.com",
+            .path: "/",
+            .name: "media-user-token",
+            .value: token,
+            .secure: "TRUE",
+            .expires: Date().addingTimeInterval(31536000)
+        ]) {
+            await cookieStore.setCookie(cookieApple)
+        }
+        AppLogger.shared.log(category: .auth, level: .info, message: "已将用户 media-user-token 同步至 WebKit Cookie 存储 (.music.apple.com & .apple.com)")
     }
 
     /// Cleans ONLY Apple Music domain cookies and website data, leaving Spotify and QQ Music untouched.

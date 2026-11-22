@@ -63,7 +63,7 @@ let package = Package(
         // ─── Lyrics engine ────────────────────────────────────────────
         .target(
             name: "Lyrics",
-            dependencies: ["Domain", "Playback"],
+            dependencies: ["Domain", "Playback", "Infrastructure"],
             path: "Sources/Lyrics",
             swiftSettings: sharedSwiftSettings
         ),

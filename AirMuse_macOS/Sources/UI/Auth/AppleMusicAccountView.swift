@@ -41,8 +41,8 @@ open class AppleMusicAccountView: GlassSurface {
     // Card 2: API Authorization Card
     private let apiCard = GlassPanel()
     private let apiCardTitle = NSTextField(labelWithString: "MusicKit API 授权状态")
-    private let apiStatusBadge = NSTextField(labelWithString: "无付费开发者凭据 (降级运行)")
-    private let apiDescLabel = NSTextField(wrappingLabelWithString: "当前运行在无付费开发者账号的官方 Web 会话模式下。\n• 全球公共曲库检索 & 高清试听: 完全可用\n• 广播电台与精选专区: 完全可用\n• 完整自建歌单与无损完整播放: 需 Apple Developer 授权")
+    private let apiStatusBadge = NSTextField(labelWithString: "官方 Web 会话模式")
+    private let apiDescLabel = NSTextField(wrappingLabelWithString: "当前运行在官方 Web 会话模式下。\n• 全球公共曲库检索: 完全可用\n• 广播电台与精选专区: 完全可用\n• 完整曲库与自建歌单高保真播放: 登录官方账号即可畅享")
 
     // Notice Box
     private let noticeBox = NSView()
@@ -153,7 +153,7 @@ open class AppleMusicAccountView: GlassSurface {
         apiCardTitle.textColor = NSColor(white: 0.92, alpha: 1.0)
         c.addSubview(apiCardTitle)
 
-        configureBadge(apiStatusBadge, text: "无开发者凭据 · Web 降级模式", color: .systemOrange)
+        configureBadge(apiStatusBadge, text: "Web 官方会话模式", color: .systemBlue)
         c.addSubview(apiStatusBadge)
 
         apiDescLabel.font = NSFont.systemFont(ofSize: 9.5, weight: .regular)
@@ -385,7 +385,7 @@ open class AppleMusicAccountView: GlassSurface {
         case .restricted:
             configureBadge(apiStatusBadge, text: "MusicKit 受限", color: .systemRed)
         case .developerCredentialsMissing:
-            configureBadge(apiStatusBadge, text: "无付费开发者凭据 · Web 降级模式", color: .systemOrange)
+            configureBadge(apiStatusBadge, text: "Web 官方会话模式", color: .systemBlue)
         case .notDetermined:
             configureBadge(apiStatusBadge, text: "未检测", color: .systemGray)
         }
@@ -443,12 +443,28 @@ open class AppleMusicAccountView: GlassSurface {
 
     // MARK: - Action Handlers
 
-    @objc private func loginClicked() { onLoginClicked?() }
-    @objc private func signOutClicked() { onSignOutClicked?() }
-    @objc private func switchAccountClicked() { onSwitchAccountClicked?() }
-    @objc private func reverifyClicked() { onReverifyClicked?() }
-    @objc private func resetClicked() { onResetSessionClicked?() }
+    @objc private func loginClicked() {
+        AppLogger.shared.log(category: .userAction, level: .info, message: "用户点击 [登录 Apple 官方账号] 按钮")
+        onLoginClicked?()
+    }
+    @objc private func signOutClicked() {
+        AppLogger.shared.log(category: .userAction, level: .info, message: "用户点击 [退出登录] 按钮")
+        onSignOutClicked?()
+    }
+    @objc private func switchAccountClicked() {
+        AppLogger.shared.log(category: .userAction, level: .info, message: "用户点击 [切换账号] 按钮")
+        onSwitchAccountClicked?()
+    }
+    @objc private func reverifyClicked() {
+        AppLogger.shared.log(category: .userAction, level: .info, message: "用户点击 [刷新验证] 按钮")
+        onReverifyClicked?()
+    }
+    @objc private func resetClicked() {
+        AppLogger.shared.log(category: .userAction, level: .info, message: "用户点击 [重置会话] 按钮")
+        onResetSessionClicked?()
+    }
     @objc private func cancelWebLoginClicked() {
+        AppLogger.shared.log(category: .userAction, level: .info, message: "用户取消网页登录流程")
         dismissWebLogin()
         onCancelWebLogin?()
     }

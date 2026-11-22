@@ -182,9 +182,6 @@ open class PlayerView: GlassSurface {
             if state.status == .failed, let err = state.errorMessage, !err.isEmpty {
                 artistLabel.stringValue = err
                 artistLabel.textColor = .systemRed
-            } else if state.sourceName.contains("试听预览") {
-                artistLabel.stringValue = "\(track.artistName) · 试听预览 (请登录会员)"
-                artistLabel.textColor = DesignTokens.Colors.secondaryText
             } else {
                 artistLabel.stringValue = track.artistName
                 artistLabel.textColor = DesignTokens.Colors.secondaryText

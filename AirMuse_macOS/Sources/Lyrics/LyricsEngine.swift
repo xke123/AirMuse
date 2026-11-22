@@ -1,6 +1,7 @@
 import Foundation
 import Domain
 import Playback
+import Infrastructure
 
 // MARK: - LyricsEngine
 
@@ -49,6 +50,7 @@ public actor LyricsEngine {
         // Return cache immediately if available.
         if var cached = cache[key] {
             cached.offsetMs = offsets[key] ?? 0
+            AppLogger.shared.log(category: .cache, level: .info, message: "【歌词缓存命中】使用内存缓存歌词: \(track.title) (\(cached.lines.count) 行)")
             Task { await self.store.update(lyrics: cached) }
             return
         }
@@ -70,9 +72,11 @@ public actor LyricsEngine {
 
     public func adjustOffset(trackKey: String, deltaMs: Int64) async {
         let current = offsets[trackKey] ?? 0
-        offsets[trackKey] = current + deltaMs
+        let newOffset = current + deltaMs
+        offsets[trackKey] = newOffset
+        AppLogger.shared.log(category: .userAction, level: .info, message: "用户调整歌词同步偏移: 增量 \(deltaMs)ms -> 总偏移 \(newOffset)ms (\(trackKey))")
         if var doc = cache[trackKey] {
-            doc.offsetMs = offsets[trackKey]!
+            doc.offsetMs = newOffset
             await store.update(lyrics: doc)
         }
     }

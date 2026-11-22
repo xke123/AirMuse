@@ -76,19 +76,53 @@ open class PlayerWindowController: NSWindowController {
 
     private func wireActions() {
         // PlayerView Actions
-        playerView.onPlayPause = { [weak self] in self?.executeCommand { try await self?.coordinator.playPause() } }
-        playerView.onNext = { [weak self] in self?.executeCommand { try await self?.coordinator.skipToNext() } }
-        playerView.onPrevious = { [weak self] in self?.executeCommand { try await self?.coordinator.skipToPrevious() } }
-        playerView.onSeek = { [weak self] targetMs in self?.executeCommand { try await self?.coordinator.seek(toMs: targetMs) } }
-        playerView.onToggleMiniMode = { [weak self] in self?.toggleMiniMode() }
-        playerView.onToggleLyrics = { [weak self] in self?.onToggleLyrics?() }
-        playerView.onToggleLibrary = { [weak self] in self?.onToggleLibrary?() }
+        playerView.onPlayPause = { [weak self] in
+            AppLogger.shared.log(category: .userAction, level: .info, message: "用户点击主界面 [播放/暂停] 按钮")
+            self?.executeCommand { try await self?.coordinator.playPause() }
+        }
+        playerView.onNext = { [weak self] in
+            AppLogger.shared.log(category: .userAction, level: .info, message: "用户点击主界面 [下一首] 按钮")
+            self?.executeCommand { try await self?.coordinator.skipToNext() }
+        }
+        playerView.onPrevious = { [weak self] in
+            AppLogger.shared.log(category: .userAction, level: .info, message: "用户点击主界面 [上一首] 按钮")
+            self?.executeCommand { try await self?.coordinator.skipToPrevious() }
+        }
+        playerView.onSeek = { [weak self] targetMs in
+            let sec = String(format: "%.1f", Double(targetMs) / 1000.0)
+            AppLogger.shared.log(category: .userAction, level: .info, message: "用户拖动进度条跳转至: \(sec)s (\(targetMs)ms)")
+            self?.executeCommand { try await self?.coordinator.seek(toMs: targetMs) }
+        }
+        playerView.onToggleMiniMode = { [weak self] in
+            AppLogger.shared.log(category: .userAction, level: .info, message: "用户点击切换 [迷你播放器] 模式")
+            self?.toggleMiniMode()
+        }
+        playerView.onToggleLyrics = { [weak self] in
+            AppLogger.shared.log(category: .userAction, level: .info, message: "用户点击 [歌词面板] 按钮")
+            self?.onToggleLyrics?()
+        }
+        playerView.onToggleLibrary = { [weak self] in
+            AppLogger.shared.log(category: .userAction, level: .info, message: "用户点击 [音乐资料库] 按钮")
+            self?.onToggleLibrary?()
+        }
 
         // MiniPlayerView Actions
-        miniPlayerView.onPlayPause = { [weak self] in self?.executeCommand { try await self?.coordinator.playPause() } }
-        miniPlayerView.onNext = { [weak self] in self?.executeCommand { try await self?.coordinator.skipToNext() } }
-        miniPlayerView.onPrevious = { [weak self] in self?.executeCommand { try await self?.coordinator.skipToPrevious() } }
-        miniPlayerView.onExpand = { [weak self] in self?.toggleMiniMode() }
+        miniPlayerView.onPlayPause = { [weak self] in
+            AppLogger.shared.log(category: .userAction, level: .info, message: "用户点击迷你栏 [播放/暂停] 按钮")
+            self?.executeCommand { try await self?.coordinator.playPause() }
+        }
+        miniPlayerView.onNext = { [weak self] in
+            AppLogger.shared.log(category: .userAction, level: .info, message: "用户点击迷你栏 [下一首] 按钮")
+            self?.executeCommand { try await self?.coordinator.skipToNext() }
+        }
+        miniPlayerView.onPrevious = { [weak self] in
+            AppLogger.shared.log(category: .userAction, level: .info, message: "用户点击迷你栏 [上一首] 按钮")
+            self?.executeCommand { try await self?.coordinator.skipToPrevious() }
+        }
+        miniPlayerView.onExpand = { [weak self] in
+            AppLogger.shared.log(category: .userAction, level: .info, message: "用户点击迷你栏 [还原展开] 按钮")
+            self?.toggleMiniMode()
+        }
     }
 
     public func toggleMiniMode() {

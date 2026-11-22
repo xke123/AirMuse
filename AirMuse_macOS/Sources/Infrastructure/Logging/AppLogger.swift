@@ -12,15 +12,19 @@ public enum LogLevel: String, Sendable, CaseIterable {
 // MARK: - LogCategory
 
 public enum LogCategory: String, Sendable, CaseIterable {
-    case lifecycle = "LIFECYCLE"
-    case auth      = "AUTH"
-    case injection = "INJECTION"
-    case ampAPI    = "AMP_API"
-    case musicKit  = "MUSICKIT"
-    case render    = "RENDER"
-    case playback  = "PLAYBACK"
-    case network   = "NETWORK"
-    case error     = "ERROR"
+    case lifecycle  = "LIFECYCLE"
+    case userAction = "USER_ACTION"
+    case auth       = "AUTH"
+    case injection  = "INJECTION"
+    case ampAPI     = "AMP_API"
+    case musicKit   = "MUSICKIT"
+    case render     = "RENDER"
+    case playback   = "PLAYBACK"
+    case lyrics     = "LYRICS"
+    case cache      = "CACHE"
+    case database   = "DATABASE"
+    case network    = "NETWORK"
+    case error      = "ERROR"
 }
 
 // MARK: - LogEntry
@@ -72,7 +76,7 @@ public final class AppLogger: @unchecked Sendable {
 
     private let lock = NSLock()
     private var entries: [LogEntry] = []
-    private let maxEntries: Int = 2000
+    private let maxEntries: Int = 5000
 
     public var onNewEntry: ((LogEntry) -> Void)?
 

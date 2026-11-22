@@ -19,8 +19,8 @@ public enum DesignTokens {
         public static let lyricsWindowWidth: CGFloat  = 330
         public static let lyricsWindowHeight: CGFloat = 240
 
-        public static let libraryWindowWidth: CGFloat = 360
-        public static let libraryWindowHeight: CGFloat = 380
+        public static let libraryWindowWidth: CGFloat = 540
+        public static let libraryWindowHeight: CGFloat = 570
 
         public static let glassBorderWidth: CGFloat   = 1.0
         public static let snapDistance: CGFloat       = 16.0

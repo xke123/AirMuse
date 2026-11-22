@@ -4,7 +4,6 @@
 
 import Foundation
 import MusicKit
-import AVFoundation
 import Domain
 import Infrastructure
 
@@ -39,14 +38,11 @@ public actor AppleMusicProvider:
 
     public let sessionAdapter: any AppleMusicSessionAdapter
     private let ampClient: AppleMusicAmpClient
-    private var avPlayer: AVPlayer?
-    private var avPlayerEndObserver: (any NSObjectProtocol)?
     private var currentPlayingTrack: MusicTrack?
 
     private enum ActiveEngine: Sendable {
         case none
         case webPlayer
-        case avPlayer
         case musicKit
     }
 
@@ -116,7 +112,7 @@ public actor AppleMusicProvider:
                 return MusicProviderCapabilities(
                     catalogSearch:  .supported,
                     libraryAccess:  .requiresSubscription,
-                    playback:       .supported,  // High quality audio preview / web playback
+                    playback:       .supported,  // Full web playback
                     lyricsAccess:   .supported,  // Native Apple Music TTML synced lyrics
                     radioStations:  .supported,
                     requiresAuthentication: true
@@ -127,7 +123,7 @@ public actor AppleMusicProvider:
             return MusicProviderCapabilities(
                 catalogSearch:  .supported,
                 libraryAccess:  .requiresAuthorization,
-                playback:       .supported,  // Public preview playback
+                playback:       .requiresAuthorization,  // 严禁降级试听，未登录必须要求授权/登录
                 lyricsAccess:   .unsupported,
                 radioStations:  .unsupported,
                 requiresAuthentication: true
@@ -416,16 +412,11 @@ public actor AppleMusicProvider:
             }
             if success {
                 self.activeEngine = .webPlayer
-                if let obs = avPlayerEndObserver {
-                    NotificationCenter.default.removeObserver(obs)
-                    avPlayerEndObserver = nil
-                }
-                avPlayer?.pause()
                 await emitCurrentState()
                 return
             }
-            AppLogger.shared.log(category: .playback, level: .error, message: "Web 播放器未就绪或调度失败，已按 Fail-Fast 策略拦截试听降级")
-            throw AppleMusicError.playbackFailed("Web 播放器未能启动全曲播放，已拦截试听降级")
+            AppLogger.shared.log(category: .playback, level: .error, message: "Web 播放器调度播放失败: \(track.title)")
+            throw AppleMusicError.playbackFailed("Web 播放器未能启动播放")
         }
 
         // 2. 尝试系统原生 MusicKit 开发者框架授权 (若具备付费开发者凭据)
@@ -446,70 +437,21 @@ public actor AppleMusicProvider:
                 player.queue = [song]
                 try await player.play()
                 self.activeEngine = .musicKit
-                if let obs = avPlayerEndObserver {
-                    NotificationCenter.default.removeObserver(obs)
-                    avPlayerEndObserver = nil
-                }
-                avPlayer?.pause()
                 AppLogger.shared.log(category: .playback, level: .info, message: "MusicKit 播放成功: \(track.title) - \(track.artistName)")
                 return
             } catch {}
         }
 
-        // 3. 访客试听流或降级回退 (AVPlayer 播放 30-90s 官方预览音频)
-        if isStation {
-            AppLogger.shared.log(category: .playback, level: .warn, message: "广播电台需登录 Apple Music 会员方可收听")
-            throw AppleMusicError.playbackFailed("广播电台需要登录 Apple Music 会员")
-        }
-
-        var preview = track.previewURL
-        if preview == nil {
-            let cleanID = rawID.hasPrefix("i.") ? String(rawID.dropFirst(2)) : rawID
-            preview = try? await ampClient.fetchSongPreviewURL(songID: cleanID)
-        }
-
-        if let pUrl = preview {
-            let item = AVPlayerItem(url: pUrl)
-            if let obs = avPlayerEndObserver {
-                NotificationCenter.default.removeObserver(obs)
-                avPlayerEndObserver = nil
-            }
-            if avPlayer == nil {
-                avPlayer = AVPlayer(playerItem: item)
-            } else {
-                avPlayer?.replaceCurrentItem(with: item)
-            }
-            self.activeEngine = .avPlayer
-            avPlayer?.play()
-
-            avPlayerEndObserver = NotificationCenter.default.addObserver(
-                forName: .AVPlayerItemDidPlayToEndTime,
-                object: item,
-                queue: .main
-            ) { [weak self] _ in
-                Task { [weak self] in
-                    await self?.handleAVPlayerEnded()
-                }
-            }
-            AppLogger.shared.log(category: .playback, level: .info, message: "AVPlayer 音频预览流播放中 (30-90s 试听): \(track.title) - \(track.artistName)")
-        } else {
-            AppLogger.shared.log(category: .playback, level: .warn, message: "未能获取到可用音频流 (Track: \(track.title))")
-            throw AppleMusicError.playbackFailed("未能获取到可用音频流")
-        }
-    }
-
-    private func handleAVPlayerEnded() {
-        guard activeEngine == .avPlayer else { return }
-        AppLogger.shared.log(category: .playback, level: .info, message: "AVPlayer 试听音频播放结束，准备切换下一首")
-        onPlaybackEnded?()
+        // 3. 未登录或无会员：严禁降级试听或提供劣质音频，直接阻断并主动引导用户去登录
+        AppLogger.shared.log(category: .playback, level: .warn, message: "未登录 Apple Music 官方账号，已拦截播放并引导登录: \(track.title)")
+        NotificationCenter.default.post(name: .appleMusicRequiresAuthentication, object: nil)
+        throw AppleMusicError.notAuthorized
     }
 
     public func pause() async throws {
         switch activeEngine {
         case .webPlayer:
             _ = try? await sessionAdapter.pause()
-        case .avPlayer:
-            avPlayer?.pause()
         case .musicKit:
             try? requireAuthorization()
             ApplicationMusicPlayer.shared.pause()
@@ -522,8 +464,6 @@ public actor AppleMusicProvider:
         switch activeEngine {
         case .webPlayer:
             _ = try? await sessionAdapter.play()
-        case .avPlayer:
-            avPlayer?.play()
         case .musicKit:
             try requireAuthorization()
             try await ApplicationMusicPlayer.shared.play()
@@ -545,13 +485,6 @@ public actor AppleMusicProvider:
         switch activeEngine {
         case .webPlayer:
             try? await sessionAdapter.stop()
-        case .avPlayer:
-            avPlayer?.pause()
-            if let obs = avPlayerEndObserver {
-                NotificationCenter.default.removeObserver(obs)
-                avPlayerEndObserver = nil
-            }
-            avPlayer = nil
         case .musicKit:
             try? requireAuthorization()
             ApplicationMusicPlayer.shared.stop()
@@ -565,9 +498,6 @@ public actor AppleMusicProvider:
         switch activeEngine {
         case .webPlayer:
             try? await sessionAdapter.skipToNext()
-        case .avPlayer:
-            // Handled at coordinator level through queue advance
-            break
         case .musicKit:
             try requireAuthorization()
             try await ApplicationMusicPlayer.shared.skipToNextEntry()
@@ -580,9 +510,6 @@ public actor AppleMusicProvider:
         switch activeEngine {
         case .webPlayer:
             try? await sessionAdapter.skipToPrevious()
-        case .avPlayer:
-            // Handled at coordinator level through queue retreat
-            break
         case .musicKit:
             try requireAuthorization()
             try await ApplicationMusicPlayer.shared.skipToPreviousEntry()
@@ -595,11 +522,6 @@ public actor AppleMusicProvider:
         switch activeEngine {
         case .webPlayer:
             try? await sessionAdapter.seek(to: seconds)
-        case .avPlayer:
-            if let avp = avPlayer, avp.currentItem != nil {
-                let time = CMTime(seconds: seconds, preferredTimescale: 600)
-                await avp.seek(to: time)
-            }
         case .musicKit:
             try requireAuthorization()
             ApplicationMusicPlayer.shared.playbackTime = seconds
@@ -610,7 +532,6 @@ public actor AppleMusicProvider:
 
     public func setVolume(_ volume: Float) async throws {
         try? await sessionAdapter.setVolume(volume)
-        avPlayer?.volume = volume
     }
 
     public func getState() async -> PlaybackState {
@@ -637,33 +558,6 @@ public actor AppleMusicProvider:
                 currentTrack: currentPlayingTrack,
                 providerID: providerID,
                 sourceName: source.displayName,
-                artworkData: nil,
-                timestampDate: .now
-            )
-
-        case .avPlayer:
-            guard let avp = avPlayer, let item = avp.currentItem else {
-                return .idle
-            }
-            let isPlaying = (avp.timeControlStatus == .playing)
-            let curSec = avp.currentTime().seconds
-            let posMs = Int64(max(0, curSec.isFinite ? curSec : 0) * 1000)
-            let durSec = item.duration.seconds
-            let itemDurMs = (durSec.isFinite && durSec > 0) ? Int64(durSec * 1000) : 30_000
-            let durMs = (currentPlayingTrack?.durationMs ?? 0) > 0 ? (currentPlayingTrack?.durationMs ?? itemDurMs) : itemDurMs
-
-            return PlaybackState(
-                status: isPlaying ? .playing : .paused,
-                isPlaying: isPlaying,
-                positionMs: posMs,
-                durationMs: durMs,
-                volume: avp.volume,
-                isMuted: avp.isMuted,
-                repeatMode: .off,
-                shuffleEnabled: false,
-                currentTrack: currentPlayingTrack,
-                providerID: providerID,
-                sourceName: "Apple Music (试听预览)",
                 artworkData: nil,
                 timestampDate: .now
             )
@@ -705,19 +599,6 @@ public actor AppleMusicProvider:
                 queue: PlaybackQueue(items: currentPlayingTrack.map { [$0] } ?? [], currentIndex: 0),
                 positionSeconds: pos
             )
-        case .avPlayer:
-            if let avp = avPlayer, avp.currentItem != nil {
-                let isPlaying = (avp.timeControlStatus == .playing)
-                let pos = avp.currentTime().seconds
-                return PlaybackSession(
-                    currentTrack: currentPlayingTrack,
-                    source: .appleMusic,
-                    state: isPlaying ? .playing : .paused,
-                    queue: PlaybackQueue(items: currentPlayingTrack.map { [$0] } ?? [], currentIndex: 0),
-                    positionSeconds: pos.isFinite ? pos : 0
-                )
-            }
-            return PlaybackSession.idle
         case .musicKit:
             let player = ApplicationMusicPlayer.shared
             let status = player.state.playbackStatus
@@ -747,57 +628,149 @@ public actor AppleMusicProvider:
 
         // 0. 电台无歌词
         if songID.hasPrefix("ra.") || track.id.hasPrefix("ra.") {
+            AppLogger.shared.log(category: .lyrics, level: .info, message: "广播电台曲目，跳过歌词检索: \(track.title)")
             return LyricsDocument(trackKey: track.trackKey, lines: [], statusText: "广播电台（无歌词）")
         }
 
-        let cleanID = songID.hasPrefix("i.") ? String(songID.dropFirst(2)) : (songID.hasPrefix("a.") ? String(songID.dropFirst(2)) : songID)
+        AppLogger.shared.log(
+            category: .lyrics,
+            level: .info,
+            message: "开始检索全量同步歌词: [\(track.title) - \(track.artistName)] (ID: \(songID))"
+        )
 
         // 1. 优先尝试 Apple Music 官方 Web 端原生 TTML 逐句同步歌词 (若已登录 Web 会话)
         if await sessionAdapter.webSessionState.isLoggedIn {
-            if let ttml = try? await ampClient.fetchSongLyricsTTML(songID: cleanID, generation: gen), !ttml.isEmpty {
-                let doc = parseTTMLLyrics(ttml: ttml, trackKey: track.trackKey)
-                if !doc.lines.isEmpty {
-                    AppLogger.shared.log(category: .ampAPI, level: .info, message: "获取到 Apple Music 官方原版逐句同步歌词: \(doc.lines.count) 行 (\(track.title))")
-                    return doc
+            do {
+                if let ttml = try await ampClient.fetchSongLyricsTTML(songID: songID, generation: gen), !ttml.isEmpty {
+                    let doc = parseTTMLLyrics(ttml: ttml, trackKey: track.trackKey)
+                    if !doc.lines.isEmpty {
+                        let firstLineStr = doc.lines.first.map { "[\(String(format: "%.1f", $0.startTime))s] \($0.text)" } ?? "无"
+                        let lastLineStr = doc.lines.last.map { "[\(String(format: "%.1f", $0.startTime))s] \($0.text)" } ?? "无"
+                        AppLogger.shared.log(
+                            category: .lyrics,
+                            level: .info,
+                            message: "获取到 Apple Music 官方原版全量同步歌词: 共 \(doc.lines.count) 行 (\(track.title))",
+                            details: "首句: \(firstLineStr)\n末句: \(lastLineStr)\nTTML 原始大小: \(ttml.count) 字符"
+                        )
+                        return doc
+                    }
                 }
+            } catch {
+                AppLogger.shared.log(
+                    category: .lyrics,
+                    level: .info,
+                    message: "Apple Music 官方未收录该曲目 TTML 原生歌词 (\(error.localizedDescription))，启动外部引擎检索..."
+                )
             }
         }
 
         // 2. 外部高精度同步歌词引擎回退 (LRCLIB 同步源)
         if let doc = await fetchPublicSyncedLyrics(track: track) {
-            AppLogger.shared.log(category: .ampAPI, level: .info, message: "获取到公共同步歌词源: \(doc.lines.count) 行 (\(track.title))")
+            let firstLineStr = doc.lines.first.map { "[\(String(format: "%.1f", $0.startTime))s] \($0.text)" } ?? "无"
+            let lastLineStr = doc.lines.last.map { "[\(String(format: "%.1f", $0.startTime))s] \($0.text)" } ?? "无"
+            AppLogger.shared.log(
+                category: .lyrics,
+                level: .info,
+                message: "获取到 LRCLIB 同步歌词: 共 \(doc.lines.count) 行 (\(track.title))",
+                details: "首句: \(firstLineStr)\n末句: \(lastLineStr)"
+            )
             return doc
         }
 
         // 3. 网易云音乐歌词备用引擎 (针对纯音乐、华语及小众音乐的高覆盖率回退)
         if let doc = await fetchNetEaseLyrics(track: track) {
-            AppLogger.shared.log(category: .ampAPI, level: .info, message: "获取到网易云备用歌词源: \(doc.lines.count) 行 (\(track.title))")
+            let firstLineStr = doc.lines.first.map { "[\(String(format: "%.1f", $0.startTime))s] \($0.text)" } ?? "无"
+            let lastLineStr = doc.lines.last.map { "[\(String(format: "%.1f", $0.startTime))s] \($0.text)" } ?? "无"
+            let translationCount = doc.lines.filter { $0.translation != nil }.count
+            AppLogger.shared.log(
+                category: .lyrics,
+                level: .info,
+                message: "获取到网易云备用同步歌词: 共 \(doc.lines.count) 行 (含双语翻译: \(translationCount) 行) (\(track.title))",
+                details: "首句: \(firstLineStr)\n末句: \(lastLineStr)"
+            )
             return doc
         }
 
+        AppLogger.shared.log(category: .lyrics, level: .warn, message: "未能从任何歌词库检索到可用歌词 (纯音乐或暂无收录): \(track.title)")
         return LyricsDocument(trackKey: track.trackKey, lines: [], statusText: "纯音乐或暂无歌词")
     }
 
-    private func parseTTMLLyrics(ttml: String, trackKey: String) -> LyricsDocument {
+    package static func unescapeXMLEntities(_ str: String) -> String {
+        var res = str
+        res = res.replacingOccurrences(of: "&apos;", with: "'")
+        res = res.replacingOccurrences(of: "&#39;", with: "'")
+        res = res.replacingOccurrences(of: "&quot;", with: "\"")
+        res = res.replacingOccurrences(of: "&amp;", with: "&")
+        res = res.replacingOccurrences(of: "&lt;", with: "<")
+        res = res.replacingOccurrences(of: "&gt;", with: ">")
+        res = res.replacingOccurrences(of: "&nbsp;", with: " ")
+        return res
+    }
+
+    nonisolated package func parseTTMLLyrics(ttml: String, trackKey: String) -> LyricsDocument {
         var lines: [LyricsLine] = []
-        let pattern = #"<p\s+[^>]*begin="([^"]+)"[^>]*>(.*?)</p>"#
-        guard let regex = try? NSRegularExpression(pattern: pattern, options: [.dotMatchesLineSeparators]) else {
+        // Match both <p ...> tags and attributes with double or single quotes
+        let pPattern = #"<p(\s+[^>]*)?>(.*?)</p>"#
+        guard let pRegex = try? NSRegularExpression(pattern: pPattern, options: [.dotMatchesLineSeparators]) else {
             return LyricsDocument(trackKey: trackKey, lines: [], statusText: "歌词解析错误")
         }
 
+        let beginAttrRegex = try? NSRegularExpression(pattern: #"begin=["']([^"']+)["']"#, options: [])
+        let roleAttrRegex = try? NSRegularExpression(pattern: #"(?:role|itunes:key)=["']([^"']+)["']"#, options: [])
+        let spanBeginRegex = try? NSRegularExpression(pattern: #"<span\s+[^>]*begin=["']([^"']+)["'][^>]*>(.*?)</span>"#, options: [.dotMatchesLineSeparators])
+
         let nsString = ttml as NSString
-        let matches = regex.matches(in: ttml, range: NSRange(location: 0, length: nsString.length))
+        let matches = pRegex.matches(in: ttml, range: NSRange(location: 0, length: nsString.length))
 
         for match in matches {
             guard match.numberOfRanges >= 3 else { continue }
-            let timeStr = nsString.substring(with: match.range(at: 1))
-            let textRaw = nsString.substring(with: match.range(at: 2))
+            let attrsStr = match.range(at: 1).location != NSNotFound ? nsString.substring(with: match.range(at: 1)) : ""
+            let innerContent = nsString.substring(with: match.range(at: 2))
 
-            let textClean = textRaw.replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression)
-                .trimmingCharacters(in: .whitespacesAndNewlines)
+            // 1. Resolve begin timestamp from <p> attributes or from the first child <span>
+            var resolvedBegin: String? = nil
+            let attrsNS = attrsStr as NSString
+            if let beginMatch = beginAttrRegex?.firstMatch(in: attrsStr, range: NSRange(location: 0, length: attrsNS.length)),
+               beginMatch.numberOfRanges >= 2 {
+                resolvedBegin = attrsNS.substring(with: beginMatch.range(at: 1))
+            } else {
+                let innerNS = innerContent as NSString
+                if let spanMatch = spanBeginRegex?.firstMatch(in: innerContent, range: NSRange(location: 0, length: innerNS.length)),
+                   spanMatch.numberOfRanges >= 2 {
+                    resolvedBegin = innerNS.substring(with: spanMatch.range(at: 1))
+                }
+            }
 
-            if let ms = parseTimestampToMs(timeStr), !textClean.isEmpty {
-                lines.append(LyricsLine(timeMs: ms, text: textClean))
+            guard let timeStr = resolvedBegin, let ms = Self.parseTimestampToMs(timeStr) else { continue }
+
+            // 2. Extract clean text
+            let textStripped = innerContent.replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression)
+            let textClean = Self.unescapeXMLEntities(textStripped).trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !textClean.isEmpty else { continue }
+
+            // 3. Check for translation role
+            var isTranslation = false
+            if let roleMatch = roleAttrRegex?.firstMatch(in: attrsStr, range: NSRange(location: 0, length: attrsNS.length)),
+               roleMatch.numberOfRanges >= 2 {
+                let roleVal = attrsNS.substring(with: roleMatch.range(at: 1)).lowercased()
+                isTranslation = (roleVal == "translation" || roleVal == "transcription")
+            }
+
+            if isTranslation {
+                if let idx = lines.firstIndex(where: { abs($0.timeMs - ms) < 500 }) {
+                    lines[idx].translation = textClean
+                } else {
+                    lines.append(LyricsLine(timeMs: ms, text: textClean))
+                }
+            } else {
+                // If a line with exact same timestamp already exists, merge as translation
+                if let idx = lines.firstIndex(where: { $0.timeMs == ms }) {
+                    if lines[idx].translation == nil && lines[idx].text != textClean {
+                        lines[idx].translation = textClean
+                    }
+                } else {
+                    lines.append(LyricsLine(timeMs: ms, text: textClean))
+                }
             }
         }
 
@@ -805,12 +778,15 @@ public actor AppleMusicProvider:
         return LyricsDocument(trackKey: trackKey, lines: lines, statusText: lines.isEmpty ? "暂无歌词" : "歌词同步中")
     }
 
-    private func parseTimestampToMs(_ str: String) -> Int64? {
-        if str.hasSuffix("s") {
-            let sVal = Double(str.dropLast()) ?? 0
-            return Int64(sVal * 1000.0)
+    private static func parseTimestampToMs(_ str: String) -> Int64? {
+        var clean = str.trimmingCharacters(in: .whitespacesAndNewlines)
+        if clean.hasSuffix("s") {
+            clean = String(clean.dropLast())
         }
-        let parts = str.components(separatedBy: ":")
+        if let directVal = Double(clean) {
+            return Int64(directVal * 1000.0)
+        }
+        let parts = clean.components(separatedBy: ":")
         if parts.count == 2 {
             let m = Double(parts[0]) ?? 0
             let s = Double(parts[1]) ?? 0
@@ -839,6 +815,7 @@ public actor AppleMusicProvider:
         req.timeoutInterval = 4.0
         req.setValue("AirMuse/2.0 (macOS)", forHTTPHeaderField: "User-Agent")
 
+        AppLogger.shared.log(category: .network, level: .debug, message: "发起 LRCLIB 歌词请求: \(urlStr)")
         guard let (data, resp) = try? await URLSession.shared.data(for: req),
               let http = resp as? HTTPURLResponse, http.statusCode == 200,
               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
@@ -858,7 +835,8 @@ public actor AppleMusicProvider:
             if let match = matches.first, match.numberOfRanges >= 4 {
                 let min = Double(ns.substring(with: match.range(at: 1))) ?? 0
                 let sec = Double(ns.substring(with: match.range(at: 2))) ?? 0
-                let text = ns.substring(with: match.range(at: 3)).trimmingCharacters(in: .whitespaces)
+                let rawText = ns.substring(with: match.range(at: 3)).trimmingCharacters(in: .whitespaces)
+                let text = Self.unescapeXMLEntities(rawText)
                 let ms = Int64((min * 60.0 + sec) * 1000.0)
                 if !text.isEmpty {
                     lines.append(LyricsLine(timeMs: ms, text: text))
@@ -882,6 +860,7 @@ public actor AppleMusicProvider:
         searchReq.setValue("https://music.163.com/", forHTTPHeaderField: "Referer")
         searchReq.setValue("Mozilla/5.0", forHTTPHeaderField: "User-Agent")
 
+        AppLogger.shared.log(category: .network, level: .debug, message: "发起网易云歌词搜索请求: \(track.title)")
         guard let (sData, sResp) = try? await URLSession.shared.data(for: searchReq),
               let sHttp = sResp as? HTTPURLResponse, sHttp.statusCode == 200,
               let sJson = try? JSONSerialization.jsonObject(with: sData) as? [String: Any],
@@ -920,13 +899,37 @@ public actor AppleMusicProvider:
             if let match = matches.first, match.numberOfRanges >= 4 {
                 let min = Double(ns.substring(with: match.range(at: 1))) ?? 0
                 let sec = Double(ns.substring(with: match.range(at: 2))) ?? 0
-                let text = ns.substring(with: match.range(at: 3)).trimmingCharacters(in: .whitespaces)
+                let rawText = ns.substring(with: match.range(at: 3)).trimmingCharacters(in: .whitespaces)
+                let text = Self.unescapeXMLEntities(rawText)
                 let ms = Int64((min * 60.0 + sec) * 1000.0)
                 if !text.isEmpty {
                     lines.append(LyricsLine(timeMs: ms, text: text))
                 }
             }
         }
+
+        // Parse optional translation lyrics (tlyric) from NetEase
+        if let tlyricObj = lJson["tlyric"] as? [String: Any],
+           let tlyricText = tlyricObj["lyric"] as? String, !tlyricText.isEmpty {
+            let tLines = tlyricText.components(separatedBy: "\n")
+            for tline in tLines {
+                let trimmed = tline.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard let regex = lrcRegex else { continue }
+                let ns = trimmed as NSString
+                let matches = regex.matches(in: trimmed, range: NSRange(location: 0, length: ns.length))
+                if let match = matches.first, match.numberOfRanges >= 4 {
+                    let min = Double(ns.substring(with: match.range(at: 1))) ?? 0
+                    let sec = Double(ns.substring(with: match.range(at: 2))) ?? 0
+                    let tRaw = ns.substring(with: match.range(at: 3)).trimmingCharacters(in: .whitespaces)
+                    let tText = Self.unescapeXMLEntities(tRaw)
+                    let ms = Int64((min * 60.0 + sec) * 1000.0)
+                    if !tText.isEmpty, let idx = lines.firstIndex(where: { abs($0.timeMs - ms) < 500 }) {
+                        lines[idx].translation = tText
+                    }
+                }
+            }
+        }
+
         lines.sort(by: { $0.timeMs < $1.timeMs })
         return lines.isEmpty ? nil : LyricsDocument(trackKey: track.trackKey, lines: lines, statusText: "歌词同步中")
     }
@@ -991,4 +994,8 @@ private extension Artist {
             artworkURL: artwork?.url(width: 300, height: 300)
         )
     }
+}
+
+public extension Notification.Name {
+    static let appleMusicRequiresAuthentication = Notification.Name("AirMuseAppleMusicRequiresAuthenticationNotification")
 }

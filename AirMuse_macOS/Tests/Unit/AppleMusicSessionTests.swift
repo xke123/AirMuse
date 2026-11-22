@@ -158,7 +158,7 @@ struct AppleMusicSessionTests {
 
         #expect(guestCaps.catalogSearch == .supported)
         #expect(guestCaps.libraryAccess == .requiresAuthorization)
-        #expect(guestCaps.playback == .supported)
+        #expect(guestCaps.playback == .requiresAuthorization)
         #expect(guestCaps.lyricsAccess == .unsupported)
         #expect(guestCaps.radioStations == .unsupported)
         #expect(guestCaps.requiresAuthentication == true)
@@ -172,6 +172,47 @@ struct AppleMusicSessionTests {
         } else {
             #expect(Bool(false), "Must report developerCredentialsMissing")
         }
+    }
+
+    @Test @MainActor func testUnauthenticatedPlaybackRejectsAndPostsNotification() async {
+        let guestAdapter = AppleMusicWebSessionAdapter(manager: .shared)
+        let guestProvider = AppleMusicProvider(sessionAdapter: guestAdapter)
+        let track = MusicTrack(
+            id: "123456",
+            title: "Test Song",
+            artistName: "Test Artist",
+            albumTitle: "Test Album",
+            durationMs: 180000,
+            providerID: "apple_music",
+            providerTrackID: "123456"
+        )
+
+        final class FlagBox: @unchecked Sendable { var fired = false }
+        let flag = FlagBox()
+
+        let observer = NotificationCenter.default.addObserver(
+            forName: .appleMusicRequiresAuthentication,
+            object: nil,
+            queue: .main
+        ) { _ in
+            flag.fired = true
+        }
+
+        do {
+            try await guestProvider.play(track: track)
+            #expect(Bool(false), "Unauthenticated playback must fail without fallback")
+        } catch let err as AppleMusicError {
+            if case .notAuthorized = err {
+                #expect(true)
+            } else {
+                #expect(Bool(false), "Expected notAuthorized error")
+            }
+        } catch {
+            #expect(Bool(false), "Unexpected error type: \(error)")
+        }
+
+        NotificationCenter.default.removeObserver(observer)
+        #expect(flag.fired, "Must post .appleMusicRequiresAuthentication to guide user to log in")
     }
 
     // MARK: - 7. Account & Platform Isolation
@@ -337,6 +378,60 @@ struct AppleMusicSessionTests {
         // Must remain loggedOut; the stale token application was dropped!
         #expect(manager.webSessionState == .loggedOut)
         #expect(manager.currentUserToken == nil)
+    }
+
+    @Test @MainActor func testParseTTMLLyricsFeatures() async {
+        let provider = AppleMusicProvider()
+        let ttml = """
+        <tt xmlns="http://www.w3.org/ns/ttml">
+          <body>
+            <div>
+              <p begin="00:00:17.400" end="00:00:21.000">还没来得及习惯</p>
+              <p begin="00:00:17.400" role="translation">Haven't had time to get used to it</p>
+              <p begin='00:00:21.090' end='00:00:24.000'>独自入睡的不安</p>
+              <p><span begin="00:00:25.500">你外套味道还没散</span></p>
+              <p begin="00:00:30.000">Don&apos;t say &quot;goodbye&quot; &amp; cry</p>
+            </div>
+          </body>
+        </tt>
+        """
+        let doc = provider.parseTTMLLyrics(ttml: ttml, trackKey: "testKey")
+        #expect(doc.lines.count == 4)
+        #expect(doc.lines[0].timeMs == 17400)
+        #expect(doc.lines[0].text == "还没来得及习惯")
+        #expect(doc.lines[0].translation == "Haven't had time to get used to it")
+        #expect(doc.lines[1].timeMs == 21090)
+        #expect(doc.lines[1].text == "独自入睡的不安")
+        #expect(doc.lines[2].timeMs == 25500)
+        #expect(doc.lines[2].text == "你外套味道还没散")
+        #expect(doc.lines[3].timeMs == 30000)
+        #expect(doc.lines[3].text == "Don't say \"goodbye\" & cry")
+    }
+
+    @Test @MainActor func testParseTTMLLyricsBareFloatTimestamps() async {
+        let provider = AppleMusicProvider()
+        let ttml = """
+        <tt xmlns="http://www.w3.org/ns/ttml" xmlns:itunes="http://music.apple.com/lyric-ttml-internal">
+          <body>
+            <div>
+              <p begin="17.391" end="20.570">還沒來得及習慣</p>
+              <p begin="21.077" end="24.357">獨自入睡的不安</p>
+              <p begin="59.856" end="1:03.202">你我 怎麼兩清 怎麼忍心</p>
+              <p begin="1:03.332" end="1:06.992">怎麼做回甲乙丙丁</p>
+            </div>
+          </body>
+        </tt>
+        """
+        let doc = provider.parseTTMLLyrics(ttml: ttml, trackKey: "6785801848")
+        #expect(doc.lines.count == 4)
+        #expect(doc.lines[0].timeMs == 17391)
+        #expect(doc.lines[0].text == "還沒來得及習慣")
+        #expect(doc.lines[1].timeMs == 21077)
+        #expect(doc.lines[1].text == "獨自入睡的不安")
+        #expect(doc.lines[2].timeMs == 59856)
+        #expect(doc.lines[2].text == "你我 怎麼兩清 怎麼忍心")
+        #expect(doc.lines[3].timeMs == 63332)
+        #expect(doc.lines[3].text == "怎麼做回甲乙丙丁")
     }
 
     // MARK: - 12. Full-Data Retrieval & Endpoint Routing Tests

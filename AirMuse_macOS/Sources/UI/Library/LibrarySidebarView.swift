@@ -50,20 +50,20 @@ final class SidebarCategoryButton: NSButton {
         isBordered = false
         imagePosition = .imageLeft
         alignment = .left
-        font = NSFont.systemFont(ofSize: 9.5, weight: .regular)
+        font = NSFont.systemFont(ofSize: 13.5, weight: .regular)
         cell?.lineBreakMode = .byTruncatingTail
     }
 
     private func updateColors() {
         if isSelected {
             contentTintColor = NSColor.white
-            font = NSFont.systemFont(ofSize: 9.5, weight: .semibold)
+            font = NSFont.systemFont(ofSize: 13.5, weight: .semibold)
         } else if isHovered {
             contentTintColor = NSColor(white: 0.92, alpha: 1.0)
-            font = NSFont.systemFont(ofSize: 9.5, weight: .regular)
+            font = NSFont.systemFont(ofSize: 13.5, weight: .regular)
         } else {
             contentTintColor = NSColor(white: 0.65, alpha: 1.0)
-            font = NSFont.systemFont(ofSize: 9.5, weight: .regular)
+            font = NSFont.systemFont(ofSize: 13.5, weight: .regular)
         }
     }
 
@@ -88,17 +88,17 @@ final class SidebarCategoryButton: NSButton {
 
     override func draw(_ dirtyRect: NSRect) {
         if isSelected {
-            let bgPath = NSBezierPath(roundedRect: bounds.insetBy(dx: 1, dy: 1), xRadius: 4, yRadius: 4)
+            let bgPath = NSBezierPath(roundedRect: bounds.insetBy(dx: 1.5, dy: 1.5), xRadius: 6, yRadius: 6)
             NSColor(white: 1.0, alpha: 0.14).setFill()
             bgPath.fill()
 
-            // Left silver accent indicator (2.5px wide)
-            let barRect = NSRect(x: 1.5, y: 3, width: 2.5, height: bounds.height - 6)
-            let barPath = NSBezierPath(roundedRect: barRect, xRadius: 1.25, yRadius: 1.25)
+            // Left silver accent indicator (3.5px wide)
+            let barRect = NSRect(x: 2, y: 4, width: 3.5, height: bounds.height - 8)
+            let barPath = NSBezierPath(roundedRect: barRect, xRadius: 1.75, yRadius: 1.75)
             NSColor(calibratedRed: 0.85, green: 0.85, blue: 0.85, alpha: 0.95).setFill()
             barPath.fill()
         } else if isHovered {
-            let bgPath = NSBezierPath(roundedRect: bounds.insetBy(dx: 1, dy: 1), xRadius: 4, yRadius: 4)
+            let bgPath = NSBezierPath(roundedRect: bounds.insetBy(dx: 1.5, dy: 1.5), xRadius: 6, yRadius: 6)
             NSColor(white: 1.0, alpha: 0.07).setFill()
             bgPath.fill()
         }
@@ -137,7 +137,7 @@ open class LibrarySidebarView: NSVisualEffectView {
         blendingMode = .withinWindow
         state = .active
         wantsLayer = true
-        layer?.cornerRadius = 8
+        layer?.cornerRadius = 12
         layer?.masksToBounds = true
         layer?.borderWidth = 0.5
         layer?.borderColor = NSColor(white: 1.0, alpha: 0.10).cgColor
@@ -152,8 +152,8 @@ open class LibrarySidebarView: NSVisualEffectView {
 
         stackView.orientation = .vertical
         stackView.alignment = .leading
-        stackView.spacing = 2
-        stackView.edgeInsets = NSEdgeInsets(top: 4, left: 3, bottom: 4, right: 3)
+        stackView.spacing = 3
+        stackView.edgeInsets = NSEdgeInsets(top: 6, left: 4.5, bottom: 6, right: 4.5)
         stackView.translatesAutoresizingMaskIntoConstraints = false
 
         scrollView.documentView = stackView
@@ -169,7 +169,7 @@ open class LibrarySidebarView: NSVisualEffectView {
     open override func layout() {
         super.layout()
         scrollView.frame = bounds
-        let btnW = max(50, bounds.width - 6)
+        let btnW = max(60, bounds.width - 9)
         for btn in categoryButtons {
             btn.widthAnchor.constraint(equalToConstant: btnW).isActive = true
         }
@@ -181,7 +181,7 @@ open class LibrarySidebarView: NSVisualEffectView {
         stackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
         categoryButtons.removeAll()
 
-        let btnW = max(50, bounds.width - 6)
+        let btnW = max(60, bounds.width - 9)
         for (idx, cat) in categories.enumerated() {
             let btn = SidebarCategoryButton(frame: .zero)
             btn.title = cat.title
@@ -190,14 +190,14 @@ open class LibrarySidebarView: NSVisualEffectView {
             btn.action = #selector(categoryClicked(_:))
 
             if let icon = cat.iconName {
-                let config = NSImage.SymbolConfiguration(pointSize: 9.5, weight: .regular)
+                let config = NSImage.SymbolConfiguration(pointSize: 13.5, weight: .regular)
                 if let img = NSImage(systemSymbolName: icon, accessibilityDescription: cat.title) {
                     btn.image = img.withSymbolConfiguration(config)
                 }
             }
 
             btn.translatesAutoresizingMaskIntoConstraints = false
-            btn.heightAnchor.constraint(equalToConstant: 26).isActive = true
+            btn.heightAnchor.constraint(equalToConstant: 39).isActive = true
             btn.widthAnchor.constraint(equalToConstant: btnW).isActive = true
             stackView.addArrangedSubview(btn)
             categoryButtons.append(btn)

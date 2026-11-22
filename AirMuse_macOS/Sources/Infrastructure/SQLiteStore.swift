@@ -43,6 +43,7 @@ public actor SQLiteStore {
         sqlite3_exec(h, "PRAGMA journal_mode=WAL;", nil, nil, nil)
         sqlite3_exec(h, "PRAGMA foreign_keys=ON;", nil, nil, nil)
         try createSchema()
+        AppLogger.shared.log(category: .database, level: .info, message: "SQLite 数据库引擎就绪 (WAL模式): \(dbURL.lastPathComponent)")
     }
 
     /// Close the database.

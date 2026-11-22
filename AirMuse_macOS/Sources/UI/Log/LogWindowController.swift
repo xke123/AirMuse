@@ -214,15 +214,19 @@ open class LogWindowController: NSWindowController {
 
         // Category
         let catColor: NSColor = switch entry.category {
-        case .lifecycle: NSColor(calibratedRed: 0.75, green: 0.45, blue: 0.95, alpha: 1.0) // purple
-        case .auth:      NSColor(calibratedRed: 0.95, green: 0.40, blue: 0.65, alpha: 1.0) // pink
-        case .injection: NSColor(calibratedRed: 0.95, green: 0.65, blue: 0.20, alpha: 1.0) // amber
-        case .ampAPI:    NSColor(calibratedRed: 0.15, green: 0.80, blue: 0.90, alpha: 1.0) // cyan
-        case .musicKit:  NSColor(calibratedRed: 0.30, green: 0.65, blue: 1.00, alpha: 1.0) // blue
-        case .render:    NSColor(calibratedRed: 0.25, green: 0.85, blue: 0.55, alpha: 1.0) // emerald
-        case .playback:  NSColor(calibratedRed: 0.85, green: 0.50, blue: 0.95, alpha: 1.0)
-        case .network:   NSColor(calibratedRed: 0.40, green: 0.85, blue: 0.85, alpha: 1.0)
-        case .error:     NSColor(calibratedRed: 0.95, green: 0.25, blue: 0.25, alpha: 1.0)
+        case .lifecycle:  NSColor(calibratedRed: 0.75, green: 0.45, blue: 0.95, alpha: 1.0) // purple
+        case .userAction: NSColor(calibratedRed: 0.98, green: 0.70, blue: 0.20, alpha: 1.0) // gold/yellow
+        case .auth:       NSColor(calibratedRed: 0.95, green: 0.40, blue: 0.65, alpha: 1.0) // pink
+        case .injection:  NSColor(calibratedRed: 0.95, green: 0.65, blue: 0.20, alpha: 1.0) // amber
+        case .ampAPI:     NSColor(calibratedRed: 0.15, green: 0.80, blue: 0.90, alpha: 1.0) // cyan
+        case .musicKit:   NSColor(calibratedRed: 0.30, green: 0.65, blue: 1.00, alpha: 1.0) // blue
+        case .render:     NSColor(calibratedRed: 0.25, green: 0.85, blue: 0.55, alpha: 1.0) // emerald
+        case .playback:   NSColor(calibratedRed: 0.85, green: 0.50, blue: 0.95, alpha: 1.0) // violet
+        case .lyrics:     NSColor(calibratedRed: 0.40, green: 0.85, blue: 0.65, alpha: 1.0) // mint
+        case .cache:      NSColor(calibratedRed: 0.60, green: 0.75, blue: 0.95, alpha: 1.0) // sky blue
+        case .database:   NSColor(calibratedRed: 0.80, green: 0.60, blue: 0.90, alpha: 1.0) // lavender
+        case .network:    NSColor(calibratedRed: 0.40, green: 0.85, blue: 0.85, alpha: 1.0) // teal
+        case .error:      NSColor(calibratedRed: 0.95, green: 0.25, blue: 0.25, alpha: 1.0) // red
         }
         let catAttrs: [NSAttributedString.Key: Any] = [
             .font: NSFont.monospacedSystemFont(ofSize: 9.5, weight: .bold),
