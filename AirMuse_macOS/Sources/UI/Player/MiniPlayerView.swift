@@ -17,14 +17,14 @@ open class MiniPlayerView: GlassMiniPlayer {
     public var onPrevious: (() -> Void)?
     public var onExpand: (() -> Void)?
 
-    private let prevButton = GlassButton(image: NSImage(systemSymbolName: "backward.fill", accessibilityDescription: "Prev"), size: CGSize(width: 16, height: 16))
-    private let playPauseButton = GlassButton(image: NSImage(systemSymbolName: "play.fill", accessibilityDescription: "Play/Pause"), size: CGSize(width: 16, height: 16))
-    private let nextButton = GlassButton(image: NSImage(systemSymbolName: "forward.fill", accessibilityDescription: "Next"), size: CGSize(width: 16, height: 16))
+    private let prevButton = GlassButton(image: NSImage(systemSymbolName: "backward.fill", accessibilityDescription: "Prev"), size: CGSize(width: 24, height: 24))
+    private let playPauseButton = GlassButton(image: NSImage(systemSymbolName: "play.fill", accessibilityDescription: "Play/Pause"), size: CGSize(width: 24, height: 24))
+    private let nextButton = GlassButton(image: NSImage(systemSymbolName: "forward.fill", accessibilityDescription: "Next"), size: CGSize(width: 24, height: 24))
 
     private let titleLabel = NSTextField(labelWithString: "AirMuse Ready")
     private let timeLabel = NSTextField(labelWithString: "00:00")
-    private let expandButton = GlassButton(image: NSImage(systemSymbolName: "arrow.up.left.and.arrow.down.right", accessibilityDescription: "Expand"), size: CGSize(width: 14, height: 14))
-    private let quitButton = GlassButton(image: NSImage(systemSymbolName: "xmark", accessibilityDescription: "Quit"), size: CGSize(width: 12, height: 12))
+    private let expandButton = GlassButton(image: NSImage(systemSymbolName: "arrow.up.left.and.arrow.down.right", accessibilityDescription: "Expand"), size: CGSize(width: 21, height: 21))
+    private let quitButton = GlassButton(image: NSImage(systemSymbolName: "xmark", accessibilityDescription: "Quit"), size: CGSize(width: 18, height: 18))
 
     public override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
@@ -74,21 +74,21 @@ open class MiniPlayerView: GlassMiniPlayer {
 
     open override func layout() {
         super.layout()
-        let btnY: CGFloat = (bounds.height - 16) / 2
-        let margin: CGFloat = 9 // Zion specification: 9px from left edge
+        let btnY: CGFloat = (bounds.height - 24) / 2
+        let margin: CGFloat = 13.5
 
-        prevButton.frame = NSRect(x: margin, y: btnY, width: 16, height: 16)
-        playPauseButton.frame = NSRect(x: prevButton.frame.maxX + 4, y: btnY, width: 16, height: 16)
-        nextButton.frame = NSRect(x: playPauseButton.frame.maxX + 4, y: btnY, width: 16, height: 16)
+        prevButton.frame = NSRect(x: margin, y: btnY, width: 24, height: 24)
+        playPauseButton.frame = NSRect(x: prevButton.frame.maxX + 6, y: btnY, width: 24, height: 24)
+        nextButton.frame = NSRect(x: playPauseButton.frame.maxX + 6, y: btnY, width: 24, height: 24)
 
-        let rightMargin: CGFloat = 8
-        quitButton.frame = NSRect(x: bounds.width - 14 - rightMargin, y: (bounds.height - 12) / 2, width: 12, height: 12)
-        expandButton.frame = NSRect(x: quitButton.frame.minX - 18, y: (bounds.height - 14) / 2, width: 14, height: 14)
-        timeLabel.frame = NSRect(x: expandButton.frame.minX - 45, y: btnY, width: 42, height: 16)
+        let rightMargin: CGFloat = 12
+        quitButton.frame = NSRect(x: bounds.width - 21 - rightMargin, y: (bounds.height - 18) / 2, width: 18, height: 18)
+        expandButton.frame = NSRect(x: quitButton.frame.minX - 27, y: (bounds.height - 21) / 2, width: 21, height: 21)
+        timeLabel.frame = NSRect(x: expandButton.frame.minX - 66, y: (bounds.height - 22) / 2, width: 60, height: 22)
 
-        let textLeft = nextButton.frame.maxX + 8
-        let textRight = timeLabel.frame.minX - 6
-        titleLabel.frame = NSRect(x: textLeft, y: btnY, width: max(0, textRight - textLeft), height: 16)
+        let textLeft = nextButton.frame.maxX + 12
+        let textRight = timeLabel.frame.minX - 9
+        titleLabel.frame = NSRect(x: textLeft, y: (bounds.height - 24) / 2, width: max(0, textRight - textLeft), height: 24)
     }
 
     public func updateState(_ state: PlaybackState) {

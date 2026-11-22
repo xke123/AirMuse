@@ -39,14 +39,14 @@ open class PlayerView: GlassSurface {
     private let timeLabel = NSTextField(labelWithString: "00:00 / 00:00")
     private let progressSlider = ScrubbableSlider()
 
-    private let prevButton = GlassButton(image: NSImage(systemSymbolName: "backward.fill", accessibilityDescription: "Previous"), size: CGSize(width: 22, height: 22))
-    private let playPauseButton = GlassButton(image: NSImage(systemSymbolName: "play.fill", accessibilityDescription: "Play/Pause"), size: CGSize(width: 28, height: 28))
-    private let nextButton = GlassButton(image: NSImage(systemSymbolName: "forward.fill", accessibilityDescription: "Next"), size: CGSize(width: 22, height: 22))
+    private let prevButton = GlassButton(image: NSImage(systemSymbolName: "backward.fill", accessibilityDescription: "Previous"), size: CGSize(width: 33, height: 33))
+    private let playPauseButton = GlassButton(image: NSImage(systemSymbolName: "play.fill", accessibilityDescription: "Play/Pause"), size: CGSize(width: 42, height: 42))
+    private let nextButton = GlassButton(image: NSImage(systemSymbolName: "forward.fill", accessibilityDescription: "Next"), size: CGSize(width: 33, height: 33))
 
-    private let lyricsButton = GlassButton(image: NSImage(systemSymbolName: "quote.bubble", accessibilityDescription: "Lyrics"), size: CGSize(width: 18, height: 18))
-    private let libraryButton = GlassButton(image: NSImage(systemSymbolName: "music.note.list", accessibilityDescription: "Library"), size: CGSize(width: 18, height: 18))
-    private let miniModeButton = GlassButton(image: NSImage(systemSymbolName: "arrow.down.right.and.arrow.up.left", accessibilityDescription: "Mini Mode"), size: CGSize(width: 16, height: 16))
-    private let quitButton = GlassButton(image: NSImage(systemSymbolName: "xmark", accessibilityDescription: "Quit AirMuse"), size: CGSize(width: 14, height: 14))
+    private let lyricsButton = GlassButton(image: NSImage(systemSymbolName: "quote.bubble", accessibilityDescription: "Lyrics"), size: CGSize(width: 27, height: 27))
+    private let libraryButton = GlassButton(image: NSImage(systemSymbolName: "music.note.list", accessibilityDescription: "Library"), size: CGSize(width: 27, height: 27))
+    private let miniModeButton = GlassButton(image: NSImage(systemSymbolName: "arrow.down.right.and.arrow.up.left", accessibilityDescription: "Mini Mode"), size: CGSize(width: 24, height: 24))
+    private let quitButton = GlassButton(image: NSImage(systemSymbolName: "xmark", accessibilityDescription: "Quit AirMuse"), size: CGSize(width: 21, height: 21))
 
     private var currentDurationMs: Int64 = 0
     private var isScrubbing: Bool = false
@@ -142,7 +142,7 @@ open class PlayerView: GlassSurface {
     open override func layout() {
         super.layout()
         let pad: CGFloat = DesignTokens.Spacing.md
-        let artSize: CGFloat = 74
+        let artSize: CGFloat = 111
 
         // Left artwork
         artworkView.frame = NSRect(x: pad, y: (bounds.height - artSize) / 2, width: artSize, height: artSize)
@@ -152,26 +152,26 @@ open class PlayerView: GlassSurface {
         let contentW = contentRight - contentLeft
 
         // Window controls at top-right: Quit (xmark) and Mini mode
-        quitButton.frame = NSRect(x: bounds.width - 22, y: bounds.height - 22, width: 14, height: 14)
-        miniModeButton.frame = NSRect(x: quitButton.frame.minX - 20, y: bounds.height - 23, width: 16, height: 16)
+        quitButton.frame = NSRect(x: bounds.width - 33, y: bounds.height - 33, width: 21, height: 21)
+        miniModeButton.frame = NSRect(x: quitButton.frame.minX - 30, y: bounds.height - 34.5, width: 24, height: 24)
 
         // Title & Artist
-        titleLabel.frame = NSRect(x: contentLeft, y: bounds.height - 30, width: contentW - 44, height: 16)
-        artistLabel.frame = NSRect(x: contentLeft, y: bounds.height - 46, width: contentW - 44, height: 14)
+        titleLabel.frame = NSRect(x: contentLeft, y: bounds.height - 45, width: contentW - 66, height: 24)
+        artistLabel.frame = NSRect(x: contentLeft, y: bounds.height - 69, width: contentW - 66, height: 21)
 
         // Progress slider
-        progressSlider.frame = NSRect(x: contentLeft, y: bounds.height - 66, width: contentW - 75, height: 14)
-        timeLabel.frame = NSRect(x: progressSlider.frame.maxX + 4, y: bounds.height - 66, width: 70, height: 14)
+        progressSlider.frame = NSRect(x: contentLeft, y: bounds.height - 99, width: contentW - 110, height: 20)
+        timeLabel.frame = NSRect(x: progressSlider.frame.maxX + 6, y: bounds.height - 99, width: 105, height: 20)
 
         // Transport buttons
-        let btnY: CGFloat = 12
-        prevButton.frame = NSRect(x: contentLeft, y: btnY + 3, width: 22, height: 22)
-        playPauseButton.frame = NSRect(x: prevButton.frame.maxX + 10, y: btnY, width: 28, height: 28)
-        nextButton.frame = NSRect(x: playPauseButton.frame.maxX + 10, y: btnY + 3, width: 22, height: 22)
+        let btnY: CGFloat = 18
+        prevButton.frame = NSRect(x: contentLeft, y: btnY + 4.5, width: 33, height: 33)
+        playPauseButton.frame = NSRect(x: prevButton.frame.maxX + 15, y: btnY, width: 42, height: 42)
+        nextButton.frame = NSRect(x: playPauseButton.frame.maxX + 15, y: btnY + 4.5, width: 33, height: 33)
 
         // Right side utility buttons
-        libraryButton.frame = NSRect(x: bounds.width - pad - 20, y: btnY + 4, width: 18, height: 18)
-        lyricsButton.frame = NSRect(x: libraryButton.frame.minX - 24, y: btnY + 4, width: 18, height: 18)
+        libraryButton.frame = NSRect(x: bounds.width - pad - 30, y: btnY + 6, width: 27, height: 27)
+        lyricsButton.frame = NSRect(x: libraryButton.frame.minX - 36, y: btnY + 6, width: 27, height: 27)
     }
 
     public func updateState(_ state: PlaybackState) {
@@ -216,7 +216,7 @@ open class PlayerView: GlassSurface {
                 artworkView.image = NSImage(systemSymbolName: "music.note", accessibilityDescription: "Album Art")
                 let expectedKey = track.trackKey
                 artworkLoadTask = Task { [weak self] in
-                    let img = await ImageCache.shared.image(for: url, size: CGSize(width: 148, height: 148))
+                    let img = await ImageCache.shared.image(for: url, size: CGSize(width: 222, height: 222))
                     guard !Task.isCancelled, let self, self.currentArtworkTrackKey == expectedKey else { return }
                     if let img {
                         self.artworkView.image = img

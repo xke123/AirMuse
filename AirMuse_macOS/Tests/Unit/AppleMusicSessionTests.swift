@@ -327,9 +327,10 @@ struct AppleMusicSessionTests {
     // MARK: - 11. Session Manager Sign Out & Reset
 
     @Test @MainActor func testSignOutClearsStateAndBumpsGeneration() async {
+        let testDataStore = WKWebsiteDataStore.nonPersistent()
         let testKeychain = KeychainStore(service: "com.airmuse.test.apple_music.\(UUID().uuidString)")
         let testAmp = AppleMusicAmpClient()
-        let manager = AppleMusicSessionManager(ampClient: testAmp, keychain: testKeychain)
+        let manager = AppleMusicSessionManager(ampClient: testAmp, keychain: testKeychain, dataStore: testDataStore)
 
         let initialGen = manager.generation
         await manager.signOut()
@@ -341,9 +342,10 @@ struct AppleMusicSessionTests {
     }
 
     @Test @MainActor func testResetSessionClearsCapturedDevToken() async {
+        let testDataStore = WKWebsiteDataStore.nonPersistent()
         let testKeychain = KeychainStore(service: "com.airmuse.test.apple_music.\(UUID().uuidString)")
         let testAmp = AppleMusicAmpClient(devToken: "custom-dev", userToken: "custom-user")
-        let manager = AppleMusicSessionManager(ampClient: testAmp, keychain: testKeychain)
+        let manager = AppleMusicSessionManager(ampClient: testAmp, keychain: testKeychain, dataStore: testDataStore)
 
         await manager.resetSession()
         #expect(manager.webSessionState == .loggedOut)
@@ -353,18 +355,20 @@ struct AppleMusicSessionTests {
     }
 
     @Test @MainActor func testRestoreSessionFromStorageLoggedOutWhenNoToken() async {
+        let testDataStore = WKWebsiteDataStore.nonPersistent()
         let testKeychain = KeychainStore(service: "com.airmuse.test.apple_music.\(UUID().uuidString)")
         let testAmp = AppleMusicAmpClient()
-        let manager = AppleMusicSessionManager(ampClient: testAmp, keychain: testKeychain)
+        let manager = AppleMusicSessionManager(ampClient: testAmp, keychain: testKeychain, dataStore: testDataStore)
 
         await manager.restoreSessionFromStorage()
         #expect(manager.webSessionState == .loggedOut)
     }
 
     @Test @MainActor func testVerifyAndApplyTokenMismatchGenerationIsDropped() async {
+        let testDataStore = WKWebsiteDataStore.nonPersistent()
         let testKeychain = KeychainStore(service: "com.airmuse.test.apple_music.\(UUID().uuidString)")
         let testAmp = AppleMusicAmpClient()
-        let manager = AppleMusicSessionManager(ampClient: testAmp, keychain: testKeychain)
+        let manager = AppleMusicSessionManager(ampClient: testAmp, keychain: testKeychain, dataStore: testDataStore)
 
         // Snapshot is taken under generation 0
         let staleGen = manager.generation
@@ -494,5 +498,56 @@ struct AppleMusicSessionTests {
         let category = AmpCategory(id: "pl-all", title: "全部歌单", items: [item], nextURL: nextURL)
         #expect(category.items.count == 1)
         #expect(category.nextURL == nextURL)
+    }
+
+    // MARK: - 15. AppPrivateStore Vault & Permissions Tests
+
+    @Test func testAppPrivateStoreSaveLoadDelete() throws {
+        let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        let store = AppPrivateStore(directoryURL: tempDir, fileName: "test_vault.json")
+
+        #expect(!store.exists(key: "test_token"))
+        #expect(throws: KeychainError.self) {
+            try store.load(key: "test_token")
+        }
+
+        try store.save("token_12345", forKey: "test_token")
+        #expect(store.exists(key: "test_token"))
+        #expect(try store.load(key: "test_token") == "token_12345")
+
+        // Reload from disk with fresh store instance
+        let store2 = AppPrivateStore(directoryURL: tempDir, fileName: "test_vault.json")
+        #expect(store2.exists(key: "test_token"))
+        #expect(try store2.load(key: "test_token") == "token_12345")
+
+        // Verify POSIX file permissions
+        let fileURL = tempDir.appendingPathComponent("test_vault.json")
+        let attrs = try FileManager.default.attributesOfItem(atPath: fileURL.path)
+        if let perms = attrs[.posixPermissions] as? NSNumber {
+            #expect(perms.intValue == 0o600)
+        }
+
+        // Delete
+        try store.delete(key: "test_token")
+        #expect(!store.exists(key: "test_token"))
+
+        try? FileManager.default.removeItem(at: tempDir)
+    }
+
+    @Test @MainActor func testSessionManagerRestoresFromAppPrivateStore() async throws {
+        let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        let store = AppPrivateStore(directoryURL: tempDir, fileName: "test_vault.json")
+        try store.save("mock_persisted_token", forKey: "media_user_token")
+        try store.save("us", forKey: "storefront_id")
+
+        let testDataStore = WKWebsiteDataStore.nonPersistent()
+        let testAmp = AppleMusicAmpClient()
+        let _ = AppleMusicSessionManager(ampClient: testAmp, sessionStore: store, dataStore: testDataStore)
+
+        #expect(try store.load(key: "media_user_token") == "mock_persisted_token")
+        #expect(try store.load(key: "storefront_id") == "us")
+        #expect(store.exists(key: "media_user_token"))
+
+        try? FileManager.default.removeItem(at: tempDir)
     }
 }

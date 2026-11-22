@@ -97,3 +97,8 @@ public struct KeychainStore: Sendable {
         ]
     }
 }
+
+// MARK: - SecureKeyValueStore Conformance
+
+extension KeychainStore: SecureKeyValueStore {}
+

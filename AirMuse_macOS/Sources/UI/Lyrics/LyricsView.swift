@@ -20,8 +20,8 @@ open class LyricsView: NSView {
 
     private let offsetControlBar = NSView()
     private let offsetLabel = NSTextField(labelWithString: "偏移: 0.0s")
-    private let minusButton = GlassButton(image: NSImage(systemSymbolName: "minus", accessibilityDescription: "-0.5s"), size: CGSize(width: 16, height: 16))
-    private let plusButton = GlassButton(image: NSImage(systemSymbolName: "plus", accessibilityDescription: "+0.5s"), size: CGSize(width: 16, height: 16))
+    private let minusButton = GlassButton(image: NSImage(systemSymbolName: "minus", accessibilityDescription: "-0.5s"), size: CGSize(width: 24, height: 24))
+    private let plusButton = GlassButton(image: NSImage(systemSymbolName: "plus", accessibilityDescription: "+0.5s"), size: CGSize(width: 24, height: 24))
 
     private var currentDocument: LyricsDocument = .empty
     private var activeLineIndex: Int = -1
@@ -47,8 +47,8 @@ open class LyricsView: NSView {
 
         documentView.orientation = .vertical
         documentView.alignment = .centerX
-        documentView.spacing = 14
-        documentView.edgeInsets = NSEdgeInsets(top: 80, left: 16, bottom: 80, right: 16)
+        documentView.spacing = 21
+        documentView.edgeInsets = NSEdgeInsets(top: 120, left: 24, bottom: 120, right: 24)
         scrollView.documentView = documentView
         addSubview(scrollView)
 
@@ -86,14 +86,14 @@ open class LyricsView: NSView {
 
     open override func layout() {
         super.layout()
-        let barH: CGFloat = 24
+        let barH: CGFloat = 36
         offsetControlBar.frame = NSRect(x: 0, y: 0, width: bounds.width, height: barH)
         scrollView.frame = NSRect(x: 0, y: barH, width: bounds.width, height: max(10, bounds.height - barH))
-        statusLabel.frame = NSRect(x: 0, y: (bounds.height - 30) / 2, width: bounds.width, height: 30)
+        statusLabel.frame = NSRect(x: 0, y: (bounds.height - 45) / 2, width: bounds.width, height: 45)
 
-        minusButton.frame = NSRect(x: 12, y: 4, width: 16, height: 16)
-        plusButton.frame = NSRect(x: 32, y: 4, width: 16, height: 16)
-        offsetLabel.frame = NSRect(x: 54, y: 2, width: 100, height: 18)
+        minusButton.frame = NSRect(x: 18, y: 6, width: 24, height: 24)
+        plusButton.frame = NSRect(x: 48, y: 6, width: 24, height: 24)
+        offsetLabel.frame = NSRect(x: 80, y: 3, width: 150, height: 27)
 
         updateDocumentFrame()
     }
@@ -176,7 +176,7 @@ open class LyricsView: NSView {
         let container = NSStackView()
         container.orientation = .vertical
         container.alignment = .centerX
-        container.spacing = 3
+        container.spacing = 4.5
 
         let mainLabel = NSTextField(labelWithString: line.text)
         mainLabel.font = DesignTokens.Typography.lyricsNormal

@@ -10,14 +10,14 @@ public enum DesignTokens {
     // MARK: - Dimensions
 
     public enum Metrics {
-        public static let mainPlayerWidth: CGFloat    = 330
-        public static let mainPlayerHeight: CGFloat   = 106
+        public static let mainPlayerWidth: CGFloat    = 495
+        public static let mainPlayerHeight: CGFloat   = 159
 
-        public static let miniPlayerWidth: CGFloat    = 330
-        public static let miniPlayerHeight: CGFloat   = 40
+        public static let miniPlayerWidth: CGFloat    = 495
+        public static let miniPlayerHeight: CGFloat   = 60
 
-        public static let lyricsWindowWidth: CGFloat  = 330
-        public static let lyricsWindowHeight: CGFloat = 240
+        public static let lyricsWindowWidth: CGFloat  = 495
+        public static let lyricsWindowHeight: CGFloat = 360
 
         public static let libraryWindowWidth: CGFloat = 540
         public static let libraryWindowHeight: CGFloat = 570
@@ -30,22 +30,22 @@ public enum DesignTokens {
 
     public enum CornerRadius {
         public static let capsule: CGFloat = 999.0
-        public static let panel: CGFloat   = 16.0
-        public static let window: CGFloat  = 12.0
-        public static let control: CGFloat = 8.0
-        public static let artwork: CGFloat = 6.0
-        public static let mini: CGFloat    = 4.0   // Classic AirPlay 4px radius
+        public static let panel: CGFloat   = 24.0
+        public static let window: CGFloat  = 18.0
+        public static let control: CGFloat = 12.0
+        public static let artwork: CGFloat = 9.0
+        public static let mini: CGFloat    = 6.0   // Classic AirPlay scaled radius
     }
 
     // MARK: - Spacing
 
     public enum Spacing {
-        public static let xxs: CGFloat = 2.0
-        public static let xs: CGFloat  = 4.0
-        public static let sm: CGFloat  = 8.0
-        public static let md: CGFloat  = 12.0
-        public static let lg: CGFloat  = 16.0
-        public static let xl: CGFloat  = 20.0
+        public static let xxs: CGFloat = 3.0
+        public static let xs: CGFloat  = 6.0
+        public static let sm: CGFloat  = 12.0
+        public static let md: CGFloat  = 18.0
+        public static let lg: CGFloat  = 24.0
+        public static let xl: CGFloat  = 30.0
     }
 
     // MARK: - Colors & Tints
@@ -75,11 +75,11 @@ public enum DesignTokens {
 
     @MainActor
     public enum Typography {
-        public static let titleFont    = NSFont.systemFont(ofSize: 12, weight: .semibold)
-        public static let artistFont   = NSFont.systemFont(ofSize: 10, weight: .regular)
-        public static let timeFont     = NSFont.monospacedDigitSystemFont(ofSize: 9, weight: .medium)
-        public static let miniFont     = NSFont.systemFont(ofSize: 9, weight: .regular)
-        public static let lyricsActive = NSFont.systemFont(ofSize: 14, weight: .bold)
-        public static let lyricsNormal = NSFont.systemFont(ofSize: 12, weight: .regular)
+        public static let titleFont    = NSFont.systemFont(ofSize: 17, weight: .bold)
+        public static let artistFont   = NSFont.systemFont(ofSize: 14.5, weight: .regular)
+        public static let timeFont     = NSFont.monospacedDigitSystemFont(ofSize: 13.5, weight: .medium)
+        public static let miniFont     = NSFont.systemFont(ofSize: 13.5, weight: .regular)
+        public static let lyricsActive = NSFont.systemFont(ofSize: 20, weight: .bold)
+        public static let lyricsNormal = NSFont.systemFont(ofSize: 16.5, weight: .regular)
     }
 }

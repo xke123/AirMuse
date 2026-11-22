@@ -11,7 +11,7 @@ open class LyricsWindow: NSPanel {
 
     public let lyricsView = LyricsView()
     private let panel = GlassPanel()
-    private let closeButton = GlassButton(image: NSImage(systemSymbolName: "xmark", accessibilityDescription: "Close"), size: CGSize(width: 14, height: 14))
+    private let closeButton = GlassButton(image: NSImage(systemSymbolName: "xmark", accessibilityDescription: "Close"), size: CGSize(width: 21, height: 21))
 
     public init(frame: NSRect) {
         super.init(
@@ -41,7 +41,7 @@ open class LyricsWindow: NSPanel {
         panel.onLayout = { [weak self] bounds in
             guard let self else { return }
             self.lyricsView.frame = bounds
-            self.closeButton.frame = NSRect(x: self.panel.bounds.width - 24, y: self.panel.bounds.height - 24, width: 14, height: 14)
+            self.closeButton.frame = NSRect(x: self.panel.bounds.width - 33, y: self.panel.bounds.height - 33, width: 21, height: 21)
         }
 
         closeButton.onClick = { [weak self] in
@@ -52,7 +52,7 @@ open class LyricsWindow: NSPanel {
 
     open override func layoutIfNeeded() {
         super.layoutIfNeeded()
-        closeButton.frame = NSRect(x: panel.bounds.width - 24, y: panel.bounds.height - 24, width: 14, height: 14)
+        closeButton.frame = NSRect(x: panel.bounds.width - 33, y: panel.bounds.height - 33, width: 21, height: 21)
     }
 }
 

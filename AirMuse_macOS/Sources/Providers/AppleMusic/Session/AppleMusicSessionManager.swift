@@ -51,7 +51,7 @@ public final class AppleMusicSessionManager: NSObject {
     public let dataStore: WKWebsiteDataStore
     public let webPlayer: AppleMusicWebPlayer
     private var loginWebView: WKWebView?
-    private let keychain: KeychainStore
+    private let sessionStore: any SecureKeyValueStore
     private let ampClient: AppleMusicAmpClient
 
     private var cookieObserverAttached: Bool = false
@@ -69,17 +69,26 @@ public final class AppleMusicSessionManager: NSObject {
 
     public init(
         ampClient: AppleMusicAmpClient = .shared,
-        keychain: KeychainStore = KeychainStore(service: "com.airmuse.apple_music"),
+        sessionStore: any SecureKeyValueStore = AppPrivateStore.shared,
         dataStore: WKWebsiteDataStore = .default()
     ) {
         self.ampClient = ampClient
-        self.keychain = keychain
+        self.sessionStore = sessionStore
         self.dataStore = dataStore
         self.webPlayer = AppleMusicWebPlayer(dataStore: dataStore)
         super.init()
 
         setupCookieObserver()
         wireClientExpirationListener()
+    }
+
+    /// Convenience initializer maintaining backwards compatibility for tests injecting custom stores.
+    public convenience init(
+        ampClient: AppleMusicAmpClient = .shared,
+        keychain: any SecureKeyValueStore,
+        dataStore: WKWebsiteDataStore = .default()
+    ) {
+        self.init(ampClient: ampClient, sessionStore: keychain, dataStore: dataStore)
     }
 
     public var currentSnapshot: AppleMusicSessionSnapshot {
@@ -96,17 +105,37 @@ public final class AppleMusicSessionManager: NSObject {
 
     // MARK: - Session Bootstrap / Restore
 
-    /// Restores previously saved session from Keychain and verifies it against Apple's live endpoint.
+    /// Restores previously saved session from private storage and verifies it against Apple's live endpoint.
     public func restoreSessionFromStorage() async {
-        // Scrub any legacy plaintext token from UserDefaults and keep token strictly in Keychain
-        var savedToken = try? keychain.load(key: Self.keychainTokenKey)
-        let savedStorefront = (try? keychain.load(key: Self.keychainStorefrontKey))
+        // 1. Try reading from private sandboxed store (POSIX 0600, no Keychain prompts)
+        var savedToken = try? sessionStore.load(key: Self.keychainTokenKey)
+        let savedStorefront = (try? sessionStore.load(key: Self.keychainStorefrontKey))
             ?? UserDefaults.standard.string(forKey: Self.userDefaultsStorefrontKey)
 
+        // 2. Seamless recovery: if private store doesn't have it yet, inspect WebKit persistent cookies
+        // WebKit stores persistent cookies in ~/Library/WebKit/... without Keychain.
+        if savedToken == nil || savedToken?.trimmingCharacters(in: .whitespaces).isEmpty == true {
+            let cookies = await dataStore.httpCookieStore.allCookies()
+            for c in cookies where c.name == "media-user-token" && c.domain.contains("apple.com") {
+                let cookieVal = c.value
+                if !cookieVal.isEmpty && !cookieVal.contains("%") {
+                    savedToken = cookieVal
+                    try? sessionStore.save(cookieVal, forKey: Self.keychainTokenKey)
+                    AppLogger.shared.log(
+                        category: .auth,
+                        level: .info,
+                        message: "从 WebKit Cookie 存储无感恢复 media-user-token 并存入私有安全存储"
+                    )
+                    break
+                }
+            }
+        }
+
+        // Clean up legacy UserDefaults
         if (savedToken == nil || savedToken!.isEmpty),
            let legacyToken = UserDefaults.standard.string(forKey: Self.userDefaultsTokenKey),
            !legacyToken.isEmpty {
-            try? keychain.save(legacyToken, forKey: Self.keychainTokenKey)
+            try? sessionStore.save(legacyToken, forKey: Self.keychainTokenKey)
             savedToken = legacyToken
         }
         UserDefaults.standard.removeObject(forKey: Self.userDefaultsTokenKey)
@@ -127,7 +156,7 @@ public final class AppleMusicSessionManager: NSObject {
         AppLogger.shared.log(
             category: .auth,
             level: .info,
-            message: "从安全存储中发现已存 Apple Music 令牌，正在向 Apple 官方验证有效性..."
+            message: "从私有安全存储中发现已存 Apple Music 令牌，正在向 Apple 官方验证有效性..."
         )
 
         // If developer token is already known, verify immediately; otherwise await page probe
@@ -236,8 +265,8 @@ public final class AppleMusicSessionManager: NSObject {
 
         UserDefaults.standard.removeObject(forKey: Self.userDefaultsTokenKey)
         UserDefaults.standard.removeObject(forKey: Self.userDefaultsStorefrontKey)
-        try? keychain.delete(key: Self.keychainTokenKey)
-        try? keychain.delete(key: Self.keychainStorefrontKey)
+        try? sessionStore.delete(key: Self.keychainTokenKey)
+        try? sessionStore.delete(key: Self.keychainStorefrontKey)
 
         await ampClient.setUserToken(nil)
 
@@ -295,14 +324,14 @@ public final class AppleMusicSessionManager: NSObject {
                 self.currentUserToken = token
                 self.currentStorefront = storefront
 
-                // Persist token strictly in Keychain (never plaintext UserDefaults)
+                // Persist token in private sandboxed store (POSIX 0600 permissions, no Keychain ACL prompts)
                 UserDefaults.standard.removeObject(forKey: Self.userDefaultsTokenKey)
                 if let sf = storefront {
                     UserDefaults.standard.set(sf, forKey: Self.userDefaultsStorefrontKey)
                 }
-                try? keychain.save(token, forKey: Self.keychainTokenKey)
+                try? sessionStore.save(token, forKey: Self.keychainTokenKey)
                 if let sf = storefront {
-                    try? keychain.save(sf, forKey: Self.keychainStorefrontKey)
+                    try? sessionStore.save(sf, forKey: Self.keychainStorefrontKey)
                 }
 
                 // Account Name rule: MUST come from trusted server data or truthful description.
@@ -370,8 +399,8 @@ public final class AppleMusicSessionManager: NSObject {
         currentAccount = nil
         UserDefaults.standard.removeObject(forKey: Self.userDefaultsTokenKey)
         UserDefaults.standard.removeObject(forKey: Self.userDefaultsStorefrontKey)
-        try? keychain.delete(key: Self.keychainTokenKey)
-        try? keychain.delete(key: Self.keychainStorefrontKey)
+        try? sessionStore.delete(key: Self.keychainTokenKey)
+        try? sessionStore.delete(key: Self.keychainStorefrontKey)
         Task {
             await ampClient.setUserToken(nil)
         }
