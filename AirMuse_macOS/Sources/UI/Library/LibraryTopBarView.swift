@@ -8,7 +8,9 @@ import Infrastructure
 /// - Navigation mode: Refresh button, capsule tab group [主页, 新发现, 广播, 资料库, 歌单], Layout toggle, Search toggle, Log button, Close button.
 /// - Search mode: Back button, search input field with clear button, scope selector [曲库 | 资料库], Layout toggle, Close button.
 @MainActor
-open class LibraryTopBarView: NSVisualEffectView {
+open class LibraryTopBarView: NSView {
+
+    private let liquidBackdrop = LiquidGlassControl()
 
     public var onTabSelected: ((Int) -> Void)?
     public var onRefresh: (() -> Void)?
@@ -70,14 +72,16 @@ open class LibraryTopBarView: NSVisualEffectView {
     // MARK: - Setup Glass
 
     private func setupGlass() {
-        material = .hudWindow
-        blendingMode = .withinWindow
-        state = .active
         wantsLayer = true
-        layer?.cornerRadius = 12
+        layer?.backgroundColor = NSColor(srgbRed: 28/255.0, green: 28/255.0, blue: 30/255.0, alpha: 0.72).cgColor
+        layer?.cornerRadius = 10
         layer?.masksToBounds = true
         layer?.borderWidth = 0.5
-        layer?.borderColor = NSColor(white: 1.0, alpha: 0.12).cgColor
+        layer?.borderColor = NSColor(white: 1.0, alpha: 0.14).cgColor
+
+        liquidBackdrop.cornerRadius = 10
+        liquidBackdrop.isActive = true
+        addSubview(liquidBackdrop, positioned: .below, relativeTo: nil)
     }
 
     // MARK: - Setup Navigation Mode
@@ -186,6 +190,7 @@ open class LibraryTopBarView: NSVisualEffectView {
         let w = bounds.width
         let h = bounds.height
 
+        liquidBackdrop.frame = bounds
         navContainer.frame = bounds
         searchContainer.frame = bounds
 

@@ -18,7 +18,7 @@ open class LibraryWindow: NSPanel {
         level = .floating
         isOpaque = false
         backgroundColor = .clear
-        hasShadow = true
+        hasShadow = false
         isMovableByWindowBackground = true
         collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
     }

@@ -591,8 +591,7 @@ final class DetailOverlayView: NSView {
         clip.drawsBackground = false
         scrollView.contentView = clip
         scrollView.drawsBackground = false
-        scrollView.hasVerticalScroller = true
-        scrollView.autohidesScrollers = true
+        scrollView.applySubtleOverlayScrollbar()
 
         trackStack.orientation = .vertical
         trackStack.alignment = .leading
@@ -728,8 +727,7 @@ open class LibraryContentView: NSView {
         clip.drawsBackground = false
         scrollView.contentView = clip
         scrollView.drawsBackground = false
-        scrollView.hasVerticalScroller = true
-        scrollView.autohidesScrollers = true
+        scrollView.applySubtleOverlayScrollbar()
 
         stackView.orientation = .vertical
         stackView.alignment = .leading

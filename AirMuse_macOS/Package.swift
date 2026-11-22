@@ -73,6 +73,9 @@ let package = Package(
             name: "DesignSystem",
             dependencies: ["Domain"],
             path: "Sources/DesignSystem",
+            resources: [
+                .copy("Resources")
+            ],
             swiftSettings: sharedSwiftSettings
         ),
 
@@ -109,6 +112,12 @@ let package = Package(
             name: "UnitTests",
             dependencies: ["Domain", "Providers", "Infrastructure"],
             path: "Tests/Unit",
+            swiftSettings: sharedSwiftSettings
+        ),
+        .testTarget(
+            name: "DesignSystemTests",
+            dependencies: ["DesignSystem", "UI", "Domain", "Playback"],
+            path: "Tests/DesignSystemTests",
             swiftSettings: sharedSwiftSettings
         ),
     ]

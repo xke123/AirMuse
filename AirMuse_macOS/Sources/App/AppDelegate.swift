@@ -168,10 +168,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         // Attach to DockManager
         if let mainWnd = playerCtrl.window {
-            dockManager.attachWindows(main: mainWnd, lyrics: lyricsWnd, library: libCtrl.window)
+            dockManager.attachWindows(main: mainWnd, mini: playerCtrl.miniWindow, lyrics: lyricsWnd, library: libCtrl.window)
+            playerCtrl.onModeDidTransition = { [weak self] in
+                self?.dockManager.syncAllDocked()
+            }
             mainWnd.makeKeyAndOrderFront(nil)
             lyricsWnd.makeKeyAndOrderFront(nil)   // show lyrics on launch
             libCtrl.window?.makeKeyAndOrderFront(nil)  // show library on launch
+            dockManager.syncAllDocked()
+            NSApp.activate()
         }
 
         // Connect Lyrics stream to LyricsWindow

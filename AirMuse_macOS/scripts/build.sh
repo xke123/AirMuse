@@ -24,14 +24,15 @@ done
 cd "$PKG_DIR"
 
 echo "🔨 Building AirMuse (${CONFIG}) …"
-swift build -c "$CONFIG" 2>&1
+swift build --disable-sandbox -c "$CONFIG" --product "$APP_NAME" 2>&1
 echo "✅ Build succeeded (${CONFIG})"
 
-# ── Locate the compiled binary ──────────────────────────────────────────────
-if [[ "$CONFIG" == "release" ]]; then
-  BIN="$PKG_DIR/.build/release/$APP_NAME"
-else
-  BIN="$PKG_DIR/.build/debug/$APP_NAME"
+# ── Locate the compiled binary & resource bundles ────────────────────────────
+BIN_DIR="$(swift build --disable-sandbox -c "$CONFIG" --show-bin-path)"
+BIN="$BIN_DIR/$APP_NAME"
+if [[ ! -x "$BIN" ]]; then
+  echo "❌ Binary not found at $BIN"
+  exit 1
 fi
 
 # ── Create .app bundle structure ─────────────────────────────────────────────
@@ -44,6 +45,14 @@ rm -rf "$APP_BUNDLE"
 mkdir -p "$MACOS_DIR" "$RESOURCES_DIR"
 
 cp "$BIN" "$MACOS_DIR/$APP_NAME"
+
+# Copy SwiftPM resource bundles (e.g., AirMuse_DesignSystem.bundle)
+for bundle in "$BIN_DIR"/*.bundle; do
+  if [[ -d "$bundle" ]]; then
+    cp -R "$bundle" "$RESOURCES_DIR/"
+    echo "📎 Bundled resource: $(basename "$bundle")"
+  fi
+done
 
 # ── Write Info.plist ──────────────────────────────────────────────────────────
 cat > "$CONTENTS/Info.plist" <<PLIST
@@ -90,6 +99,9 @@ cat > "$CONTENTS/Info.plist" <<PLIST
 </dict>
 </plist>
 PLIST
+
+# Ad-hoc sign bundle so macOS allows launching when double-clicked
+codesign --force --deep --sign - "$APP_BUNDLE" 2>/dev/null || true
 
 echo "📦 App bundle created at: $APP_BUNDLE"
 

@@ -9,7 +9,8 @@ private class FlippedStackView: NSStackView {
     override var isFlipped: Bool { true }
 }
 
-/// Synced lyrics presentation view with smooth spring auto-scrolling.
+/// Synced lyrics presentation view with smooth spring auto-scrolling, AIRPLAY palette,
+/// and dedicated single-line soft-halo mini-lyrics mode.
 open class LyricsView: NSView {
 
     public var onAdjustOffset: ((Int64) -> Void)?
@@ -17,6 +18,7 @@ open class LyricsView: NSView {
     private let scrollView = NSScrollView()
     private let documentView = FlippedStackView()
     private let statusLabel = NSTextField(labelWithString: "暂无歌词")
+    private let miniLyricView = CarouselHaloTextView()
 
     private let offsetControlBar = NSView()
     private let offsetLabel = NSTextField(labelWithString: "偏移: 0.0s")
@@ -26,6 +28,7 @@ open class LyricsView: NSView {
     private var currentDocument: LyricsDocument = .empty
     private var activeLineIndex: Int = -1
     private var currentOffsetMs: Int64 = 0
+    private var isMiniMode: Bool = false
 
     public override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
@@ -40,28 +43,27 @@ open class LyricsView: NSView {
     private func setupViews() {
         wantsLayer = true
 
-        // Scroll view
         scrollView.drawsBackground = false
-        scrollView.hasVerticalScroller = true
-        scrollView.autohidesScrollers = true
+        scrollView.applySubtleOverlayScrollbar()
 
         documentView.orientation = .vertical
         documentView.alignment = .centerX
-        documentView.spacing = 21
-        documentView.edgeInsets = NSEdgeInsets(top: 120, left: 24, bottom: 120, right: 24)
+        documentView.spacing = 18
+        documentView.edgeInsets = NSEdgeInsets(top: 100, left: 20, bottom: 100, right: 20)
         scrollView.documentView = documentView
         addSubview(scrollView)
 
-        // Status / empty label
         statusLabel.font = DesignTokens.Typography.titleFont
-        statusLabel.textColor = DesignTokens.Colors.tertiaryText
+        statusLabel.textColor = OriginalDesignTokens.Colors.subSilver
         statusLabel.alignment = .center
         addSubview(statusLabel)
 
-        // Offset control bar at bottom
+        miniLyricView.isHidden = true
+        addSubview(miniLyricView)
+
         offsetControlBar.wantsLayer = true
         offsetLabel.font = DesignTokens.Typography.timeFont
-        offsetLabel.textColor = DesignTokens.Colors.secondaryText
+        offsetLabel.textColor = OriginalDesignTokens.Colors.subSilver
         offsetControlBar.addSubview(offsetLabel)
 
         minusButton.onClick = { [weak self] in
@@ -84,16 +86,44 @@ open class LyricsView: NSView {
         addSubview(offsetControlBar)
     }
 
+    public func setMiniMode(_ mini: Bool) {
+        isMiniMode = mini
+        needsLayout = true
+        updateMiniLyricText()
+    }
+
     open override func layout() {
         super.layout()
-        let barH: CGFloat = 36
+        let s = GlassInteractionCoordinator.shared.uiScale
+        let mini = isMiniMode || bounds.height < 60 * s
+        offsetControlBar.isHidden = mini
+        miniLyricView.isHidden = !mini
+
+        if mini {
+            scrollView.isHidden = true
+            statusLabel.isHidden = true
+            let leftPad = 8.0 * s
+            let rightPad = 68.0 * s
+            miniLyricView.frame = NSRect(x: leftPad, y: 0, width: max(20, bounds.width - leftPad - rightPad), height: bounds.height)
+            return
+        }
+
+        let barH: CGFloat = 32
         offsetControlBar.frame = NSRect(x: 0, y: 0, width: bounds.width, height: barH)
         scrollView.frame = NSRect(x: 0, y: barH, width: bounds.width, height: max(10, bounds.height - barH))
-        statusLabel.frame = NSRect(x: 0, y: (bounds.height - 45) / 2, width: bounds.width, height: 45)
+        statusLabel.frame = NSRect(x: 0, y: (bounds.height - 36) / 2, width: bounds.width, height: 36)
 
-        minusButton.frame = NSRect(x: 18, y: 6, width: 24, height: 24)
-        plusButton.frame = NSRect(x: 48, y: 6, width: 24, height: 24)
-        offsetLabel.frame = NSRect(x: 80, y: 3, width: 150, height: 27)
+        if currentDocument.lines.isEmpty {
+            statusLabel.isHidden = false
+            scrollView.isHidden = true
+        } else {
+            statusLabel.isHidden = true
+            scrollView.isHidden = false
+        }
+
+        minusButton.frame = NSRect(x: 14, y: 4, width: 22, height: 22)
+        plusButton.frame = NSRect(x: 42, y: 4, width: 22, height: 22)
+        offsetLabel.frame = NSRect(x: 72, y: 2, width: 150, height: 24)
 
         updateDocumentFrame()
     }
@@ -102,6 +132,15 @@ open class LyricsView: NSView {
         let contentWidth = max(50, scrollView.contentView.bounds.width)
         let fittingH = max(scrollView.contentView.bounds.height, documentView.fittingSize.height)
         documentView.frame = NSRect(x: 0, y: 0, width: contentWidth, height: fittingH)
+    }
+
+    private func updateMiniLyricText() {
+        if !currentDocument.lines.isEmpty {
+            let idx = (activeLineIndex >= 0 && activeLineIndex < currentDocument.lines.count) ? activeLineIndex : 0
+            miniLyricView.setSingleLine(currentDocument.lines[idx].text)
+        } else {
+            miniLyricView.setSingleLine(currentDocument.statusText)
+        }
     }
 
     public func updateLyrics(_ doc: LyricsDocument) {
@@ -113,15 +152,21 @@ open class LyricsView: NSView {
         activeLineIndex = -1
         scrollView.contentView.setBoundsOrigin(NSPoint(x: 0, y: 0))
 
+        updateMiniLyricText()
+
         if doc.lines.isEmpty {
             statusLabel.stringValue = doc.statusText
-            statusLabel.isHidden = false
-            scrollView.isHidden = true
+            if !isMiniMode {
+                statusLabel.isHidden = false
+                scrollView.isHidden = true
+            }
             return
         }
 
-        statusLabel.isHidden = true
-        scrollView.isHidden = false
+        if !isMiniMode {
+            statusLabel.isHidden = true
+            scrollView.isHidden = false
+        }
 
         for line in doc.lines {
             let lineView = makeLineView(for: line)
@@ -136,13 +181,14 @@ open class LyricsView: NSView {
 
     public func resetToTop() {
         activeLineIndex = -1
+        updateMiniLyricText()
         scrollView.contentView.animator().setBoundsOrigin(NSPoint(x: 0, y: 0))
         for view in documentView.arrangedSubviews {
             guard let stack = view as? NSStackView,
                   let mainLabel = stack.arrangedSubviews.first as? NSTextField else { continue }
             mainLabel.font = DesignTokens.Typography.lyricsNormal
-            mainLabel.textColor = DesignTokens.Colors.secondaryText
-            stack.animator().alphaValue = 0.65
+            mainLabel.textColor = OriginalDesignTokens.Colors.dimSilver
+            stack.animator().alphaValue = 0.70
         }
     }
 
@@ -150,7 +196,6 @@ open class LyricsView: NSView {
         guard !currentDocument.lines.isEmpty else { return }
         let adjustedMs = ms - currentOffsetMs
 
-        // If playing the instrumental intro before the first line, stay at the top
         if let firstLine = currentDocument.lines.first, adjustedMs < firstLine.timeMs {
             if activeLineIndex != -1 {
                 resetToTop()
@@ -169,6 +214,7 @@ open class LyricsView: NSView {
 
         guard newIdx != activeLineIndex else { return }
         activeLineIndex = newIdx
+        updateMiniLyricText()
         highlightActiveLine(index: newIdx)
     }
 
@@ -176,11 +222,11 @@ open class LyricsView: NSView {
         let container = NSStackView()
         container.orientation = .vertical
         container.alignment = .centerX
-        container.spacing = 4.5
+        container.spacing = 4.0
 
         let mainLabel = NSTextField(labelWithString: line.text)
         mainLabel.font = DesignTokens.Typography.lyricsNormal
-        mainLabel.textColor = DesignTokens.Colors.secondaryText
+        mainLabel.textColor = OriginalDesignTokens.Colors.dimSilver
         mainLabel.alignment = .center
         mainLabel.lineBreakMode = .byWordWrapping
         mainLabel.maximumNumberOfLines = 0
@@ -189,7 +235,7 @@ open class LyricsView: NSView {
         if let trans = line.translation, !trans.isEmpty {
             let transLabel = NSTextField(labelWithString: trans)
             transLabel.font = DesignTokens.Typography.artistFont
-            transLabel.textColor = DesignTokens.Colors.tertiaryText
+            transLabel.textColor = OriginalDesignTokens.Colors.subSilver
             transLabel.alignment = .center
             transLabel.lineBreakMode = .byWordWrapping
             transLabel.maximumNumberOfLines = 0
@@ -213,17 +259,16 @@ open class LyricsView: NSView {
                 context.duration = 0.20
                 if isActive {
                     mainLabel.font = DesignTokens.Typography.lyricsActive
-                    mainLabel.textColor = DesignTokens.Colors.primaryText
+                    mainLabel.textColor = OriginalDesignTokens.Colors.highlightSilver
                     stack.animator().alphaValue = 1.0
                 } else {
                     mainLabel.font = DesignTokens.Typography.lyricsNormal
-                    mainLabel.textColor = DesignTokens.Colors.secondaryText
-                    stack.animator().alphaValue = 0.65
+                    mainLabel.textColor = OriginalDesignTokens.Colors.dimSilver
+                    stack.animator().alphaValue = 0.70
                 }
             }
 
             if isActive && index > 0 {
-                // Smooth scroll to active line
                 let targetY = view.frame.origin.y - (scrollView.contentView.bounds.height / 2) + (view.frame.height / 2)
                 let maxY = max(0, documentView.frame.height - scrollView.contentView.bounds.height)
                 let clampedY = max(0, min(maxY, targetY))
@@ -237,4 +282,3 @@ open class LyricsView: NSView {
         offsetLabel.stringValue = String(format: "偏移: %+.1fs", sec)
     }
 }
-

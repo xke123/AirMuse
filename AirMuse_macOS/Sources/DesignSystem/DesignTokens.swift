@@ -17,7 +17,7 @@ public enum DesignTokens {
         public static let miniPlayerHeight: CGFloat   = 60
 
         public static let lyricsWindowWidth: CGFloat  = 495
-        public static let lyricsWindowHeight: CGFloat = 360
+        public static let lyricsWindowHeight: CGFloat = 426.0
 
         public static let libraryWindowWidth: CGFloat = 540
         public static let libraryWindowHeight: CGFloat = 570

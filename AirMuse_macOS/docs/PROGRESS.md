@@ -1,109 +1,33 @@
-# AirMuse macOS — 工程进度跟踪
+# AirMuse macOS — 原始 AIRPLAY UI 复刻与 Liquid Glass 精修总结 (PROGRESS)
 
-> 最后更新：2026-11-21
+> 最后更新：2026-11-23
 
-## 编译与测试状态
+## 1. 阶段完成情况
 
-| 指标 | 状态 |
-|------|------|
-| `swift build` | ✅ Build complete（0 errors） |
-| `swift test` | ✅ 16/16 passed（0 failures） |
-| Swift 版本 | Swift 6.4.2 (swiftlang-6.4.2.1.9) |
-| 目标 SDK | MacOSX27.2 (macOS 26 Tahoe+) |
-| 源文件总数 | 56 个 `.swift` 文件 |
-| 源代码行数 | ~14,323 行 |
-
----
-
-## 阶段里程碑
-
-### ✅ 阶段 1 — 源码审计
-- [x] 阅读 AirMuse_Remastered Windows 工程结构
-- [x] 分析 airplay 交互规范（双击折叠、鼠标悬停、玻璃边框）
-- [x] 生成 `docs/01-source-audit.md`
-
-### ✅ 阶段 2 — 领域模型（Domain）
-- [x] MusicTrack（含账户隔离 trackKey）
-- [x] MusicAlbum / MusicArtist / MusicPlaylist / MusicStation
-- [x] MusicLibrary / MusicAccount / MusicSource
-- [x] MusicProviderCapabilities / MusicSearchResult
-- [x] PlaybackSession / PlaybackState / PlaybackQueue
-- [x] LyricsDocument / LyricsLine
-- [x] 协议：MusicCatalogProvider / MusicLibraryProvider / MusicSearchProvider
-- [x] 协议：MusicPlaybackProvider / MusicAuthenticationProvider / MusicLyricsProvider
-
-### ✅ 阶段 3 — 播放核心（Playback）
-- [x] PlaybackStore（Actor 隔离，AsyncStream 广播）
-- [x] PlaybackCoordinator（提供商注册、会话管理、所有控制命令）
-- [x] MediaArbitrator（优先级与活跃播放评分）
-
-### ✅ 阶段 4 — 歌词引擎（Lyrics）
-- [x] LyricsEngine（提供商注册、定时获取、偏移管理、SQLite 缓存）
-
-### ✅ 阶段 5 — 设计系统（DesignSystem）
-- [x] DesignTokens（尺寸 330×106/40/240/380、色彩、字体）
-- [x] MotionCoordinator（snappy/bouncy/smooth/gentle 弹簧物理）
-- [x] GlassSurface / GlassButton / GlassToolbar / GlassPanel / GlassSearchField
-- [x] GlassMiniPlayer（40pt 胶囊悬浮控件）
-
-### ✅ 阶段 6 — UI 层
-- [x] PlayerView（330×106 主播放器，作品图、标题、滑块、控制按钮）
-- [x] MiniPlayerView（330×40 胶囊微型播放器，跑马灯文字）
-- [x] PlayerWindow / PlayerWindowController（双击折叠、弹簧动画）
-- [x] LyricsView / LyricsWindow（逐行高亮、偏移控制）
-- [x] LibrarySidebarView / LibraryContentView / SearchBarView
-- [x] LibraryWindow / LibraryWindowController
-- [x] DockManager（多窗口磁吸对接，16pt 阈值）
-
-### ✅ 阶段 7 — 基础设施（Infrastructure）
-- [x] SQLiteStore（WAL 模式，歌词缓存、历史、设置）
-- [x] ImageCache（内存 ≤50MB + 磁盘缓存）
-- [x] NetworkSession（URLSession Actor 包装，重试，超时）
-- [x] KeychainStore（OAuth Token 安全存储）
-- [x] WebKit/BridgeMessage & WebViewManager（安全 JS 消息桥）
-
-### ✅ 阶段 8 — 音乐平台 Providers
-- [x] AppleMusicProvider（MusicKit + Amp-API 官方 Web 直连引擎双驱动）
-- [x] AppleMusicAmpClient（免开发者账号直连 Apple Amp-API，全球榜单/新发现/搜索/歌单）
-- [x] SpotifyProvider（PKCE OAuth + WKWebView Web Playback SDK）
-- [x] QQMusicProvider（WKWebView 页面桥接 + 兼容检测）
-
-### ✅ 阶段 9 — 应用入口（App）
-- [x] AppDelegate（初始化全部组件、连接 AsyncStream）
-- [x] main.swift（NSApplication 入口）
-- [x] 全局与局部退出控件（主播放器退出按钮、迷你播放器退出按钮、右键上下文菜单 ⌘Q）
-
-### ✅ 阶段 10 — 测试
-- [x] DomainTests（3 tests）：trackKey、queue advance、lyrics activeLine
-- [x] PlaybackTests（2 tests）：store state update、artwork preservation
-- [x] UnitTests/LyricsParserTests（4 tests）：LRC 时间戳解析
-- [x] UnitTests/CacheKeyTests（7 tests）：账户隔离、provider 隔离
+| 阶段 | 状态 | 核心交付 |
+| :--- | :---: | :--- |
+| **Stage A: 视觉考古与基线** | ✅ | 完成 `airplay/` 与 `AirMuse_Remastered/` 考古，生成 `ORIGINAL_UI_SPEC.md`、`SKIN_ASSET_MAPPING.md` 及资源组合基线图 |
+| **Stage B: 原始皮肤渲染器** | ✅ | 导入 `1x/` 与 `4x/` 皮肤 PNG；实现 `SkinAssetLoader`、`SkinAtlas`、`NineSliceRenderer`、`OriginalGlassRenderer`、`OriginalControlRenderer`、`PixelFontRenderer`、`RenderCache`、`PlayerLayerComposer`、`MiniPlayerLayerComposer`；移除 `GlassSurface` 全窗口 `NSVisualEffectView` |
+| **Stage C: 主播放器 1:1 复刻** | ✅ | 重建 `PlayerView`（`MAINCONTROL` 5 枚按钮、`WINDOWBUTTON` 顶/底窗口按钮、胶囊进度条、8 段音量柱、`TIMEFONT` 数码时间、中线/边界扫光） |
+| **Stage D: 迷你模式与动画** | ✅ | 重建 `MiniPlayerView`（`40px`/`60px` 透明玻璃条、`MINICONTROL`、8 向紧凑光晕跑马灯、`TIMEFONT` 点击切换剩余时间）、`PlayerWindow` 双击防抖与右键菜单、`PlayerWindowController` 顶部锚定动画与位置记忆 |
+| **Stage E: 歌词/资料库/吸附** | ✅ | 使用 `GlassPanel` 重构 `LyricsWindow` / `LyricsView`；替换 `LibraryTopBarView` 为局部 `LiquidGlassControl`；升级 `DockManager` 缩放感知吸附 |
+| **Stage F: 局部 Liquid Glass** | ✅ | 实现 `Original` / `Enhanced` 双模式切换、`LiquidGlassControl` (`NSGlassEffectView`)、`LiquidGlassOverlay` (`NSGlassEffectContainerView`) 及 `GlassInteractionCoordinator` |
+| **Stage G: 视觉回归与验证** | ✅ | 完成 `DesignSystemTests`、`Tests/VisualRegression/` 捕获与差异对比、`RENDERING_ARCHITECTURE.md`、`ANIMATION_SPEC.md`、`LIQUID_GLASS_ENHANCEMENT.md`、`VISUAL_COMPARISON.md` |
 
 ---
 
-## 架构总览
+## 2. 构建与测试状态
 
-```
-Domain ──┬── Playback ──┬── Lyrics
-         │              └── Providers
-         └── Infrastructure
-                 │
-         DesignSystem ── UI ── App
-```
-
-- **单向状态流**：PlaybackStore → PlaybackCoordinator → UI
-- **协议驱动**：每个 Provider 只声明其支持的能力（`MusicProviderCapabilities`）
-- **并发安全**：全程 Swift 6 strict concurrency（actor isolation + Sendable）
-- **窗口设计**：迷你悬浮体验（40pt）是产品核心，展开后才是完整客户端
+| 检查项 | 结果 | 说明 |
+| :--- | :---: | :--- |
+| `swift build --disable-sandbox` | ✅ 通过 | 主工程 0 errors（9.88s） |
+| `swift build --disable-sandbox --product AirMuse` | ✅ 通过 | 可执行文件编译完成（11.84s） |
+| `verify_airmuse` 链接测试套件 | ✅ 全部通过 | 覆盖资源加载 (14/14)、图集裁剪、9-slice DPI、MiniMode 状态机、`DockManager`、性能基准与视觉回归 |
+| `swift test` (`XCTest` 目标) | ⚠️ 环境限制 | 当前环境仅安装 CommandLineTools（无完整 Xcode `XCTest.framework`），`DomainTests` 等旧 `XCTest` 目标无法在该环境链接；新增 `DesignSystemTests` 已采用 Swift Testing (`import Testing`) |
 
 ---
 
-## 已知限制
+## 3. 已知局限
 
-| 项目 | 说明 |
-|------|------|
-| Apple Music 歌词 | MusicKit 公开 API 暂不提供歌词，抛出 `LyricsError.notSupported` |
-| Spotify 播放 | 受 Web Playback SDK DRM 限制，需用户提供 Client ID |
-| QQ 音乐 DOM | 依赖 y.qq.com 页面结构，页面更新需更新 JS bridge 检测脚本 |
-| Metal 渲染 | 当前未引入，NSVisualEffectView 覆盖 Liquid Glass 需求 |
-| `xcodebuild` | 仅 CLT 环境，不支持 `.xcodeproj`；使用 SPM `swift build/test` |
+1. 当前环境无法直接运行 Windows 原生程序 `AIRPLAY-zion.exe`，基线参考图由解包原始 32-bit ARGB 资源与反汇编规格组合复原。
+2. 未安装完整 Xcode，故 `XCTest` 测试目标需在完整 Xcode 环境下运行 `swift test`。

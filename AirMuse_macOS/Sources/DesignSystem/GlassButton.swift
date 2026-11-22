@@ -3,18 +3,26 @@ import QuartzCore
 
 // MARK: - GlassButton
 
-/// An interactive glass button with Normal, Hover, and Pressed states.
-/// Replicates the AirPlay Zion specification:
-/// - Normal: 70% opacity (metal silver-gray)
-/// - Hover: 100% opacity (pure silver-white highlight)
-/// - Pressed: 90% opacity, vertical offset +1pt down for tactile feedback!
+/// Interactive AIRPLAY button supporting original sprite sheets (`MAINCONTROL`, `MINICONTROL`,
+/// `WINDOWBUTTON`, `ICONBUTTON`) as well as fallback SF Symbols, with exact Normal/Hover/Pressed/Disabled
+/// state physics and optional localized `LiquidGlassControl` enhancement in Enhanced mode.
 open class GlassButton: NSControl {
 
     public var onClick: (() -> Void)?
 
     public var image: NSImage? {
         didSet {
+            spriteImage = nil
             imageView.image = image
+            needsDisplay = true
+        }
+    }
+
+    public var spriteImage: CGImage? {
+        didSet {
+            if let cg = spriteImage {
+                imageView.image = NSImage(cgImage: cg, size: bounds.size)
+            }
             needsDisplay = true
         }
     }
@@ -25,16 +33,37 @@ open class GlassButton: NSControl {
         }
     }
 
+    public var enableLiquidGlassHover: Bool = false {
+        didSet {
+            liquidOverlay.isHidden = !enableLiquidGlassHover
+        }
+    }
+
+    private let liquidOverlay = LiquidGlassControl()
     private let imageView = NSImageView()
     private var trackingArea: NSTrackingArea?
     private var isHovered: Bool = false
     private var isPressed: Bool = false
+
+    public var currentControlState: ControlState {
+        if !isEnabled { return .disabled }
+        if isPressed { return .pressed }
+        if isHovered || isHighlightedState { return .hover }
+        return .normal
+    }
 
     public init(image: NSImage? = nil, size: CGSize = CGSize(width: 24, height: 24), target: AnyObject? = nil, action: Selector? = nil) {
         super.init(frame: NSRect(origin: .zero, size: size))
         self.image = image
         self.target = target
         self.action = action
+        setupButton()
+    }
+
+    public init(sprite: CGImage?, size: CGSize, enableLiquidGlassHover: Bool = false) {
+        super.init(frame: NSRect(origin: .zero, size: size))
+        self.spriteImage = sprite
+        self.enableLiquidGlassHover = enableLiquidGlassHover
         setupButton()
     }
 
@@ -47,9 +76,17 @@ open class GlassButton: NSControl {
         wantsLayer = true
         layer?.masksToBounds = false
 
-        imageView.imageScaling = .scaleProportionallyDown
-        imageView.image = image
-        imageView.contentTintColor = DesignTokens.Colors.primaryText
+        liquidOverlay.cornerRadius = min(bounds.width, bounds.height) * 0.5
+        liquidOverlay.isHidden = !enableLiquidGlassHover
+        addSubview(liquidOverlay)
+
+        imageView.imageScaling = .scaleProportionallyUpOrDown
+        if let cg = spriteImage {
+            imageView.image = NSImage(cgImage: cg, size: bounds.size)
+        } else {
+            imageView.image = image
+            imageView.contentTintColor = DesignTokens.Colors.primaryText
+        }
         addSubview(imageView)
 
         updateVisualState()
@@ -57,6 +94,8 @@ open class GlassButton: NSControl {
 
     open override func layout() {
         super.layout()
+        liquidOverlay.frame = bounds.insetBy(dx: -2, dy: -2)
+        liquidOverlay.cornerRadius = min(liquidOverlay.bounds.width, liquidOverlay.bounds.height) * 0.5
         let offset: CGFloat = isPressed ? -1.0 : 0.0
         imageView.frame = NSRect(x: 0, y: offset, width: bounds.width, height: bounds.height)
     }
@@ -83,11 +122,13 @@ open class GlassButton: NSControl {
     }
 
     open override func mouseDown(with event: NSEvent) {
+        guard isEnabled else { return }
         isPressed = true
         updateVisualState()
     }
 
     open override func mouseUp(with event: NSEvent) {
+        guard isEnabled else { return }
         let inside = bounds.contains(convert(event.locationInWindow, from: nil))
         isPressed = false
         updateVisualState()
@@ -102,19 +143,17 @@ open class GlassButton: NSControl {
 
     private func updateVisualState() {
         needsLayout = true
-        let targetAlpha: CGFloat
-        if isPressed {
-            targetAlpha = 0.90
-        } else if isHovered || isHighlightedState {
-            targetAlpha = 1.00
-        } else {
-            targetAlpha = 0.70
-        }
+        let state = currentControlState
+        let targetAlpha = state.alpha
+        liquidOverlay.isActive = enableLiquidGlassHover && (isHovered || isPressed)
 
-        NSAnimationContext.runAnimationGroup { context in
-            context.duration = 0.15
-            self.animator().alphaValue = targetAlpha
+        if MotionCoordinator.shared.isReduceMotionEnabled {
+            alphaValue = targetAlpha
+        } else {
+            NSAnimationContext.runAnimationGroup { context in
+                context.duration = MotionTokens.Duration.buttonState
+                self.animator().alphaValue = targetAlpha
+            }
         }
     }
 }
-

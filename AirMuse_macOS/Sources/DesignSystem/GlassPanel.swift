@@ -2,7 +2,9 @@ import AppKit
 
 // MARK: - GlassPanel
 
-/// General-purpose glass panel container for popovers, drawers, and secondary panels.
+/// General-purpose AIRPLAY crystal glass panel container for Lyrics, Library, and secondary windows.
+/// Uses the exact 5px left/right border and 20px top/bottom glass cap insets (scaled by `uiScale`),
+/// and automatically switches to 4px vertical inset in 40pt Mini-Lyrics bar mode.
 open class GlassPanel: GlassSurface {
 
     open class FlippedContainerView: NSView {
@@ -23,15 +25,21 @@ open class GlassPanel: GlassSurface {
     }
 
     private func setupPanel() {
-        cornerRadius = DesignTokens.CornerRadius.panel
+        hasMainGloss = false
+        cornerRadius = OriginalDesignTokens.BaseMetrics.glassCornerRadius
         contentView.wantsLayer = true
         addSubview(contentView)
     }
 
     open override func layout() {
         super.layout()
-        contentView.frame = bounds.insetBy(dx: DesignTokens.Spacing.sm, dy: DesignTokens.Spacing.sm)
+        let s = GlassInteractionCoordinator.shared.uiScale
+        let isMiniStrip = bounds.height <= (OriginalDesignTokens.BaseMetrics.miniBarStandardHeight * s + 2.0)
+        let padX = OriginalDesignTokens.BaseMetrics.glassBorderThickness * s
+        let padY = (isMiniStrip ? 4.0 : OriginalDesignTokens.BaseMetrics.glassCapHeight) * s
+        let w = max(0, bounds.width - padX * 2.0)
+        let h = max(0, bounds.height - padY * 2.0)
+        contentView.frame = NSRect(x: padX, y: padY, width: w, height: h)
         onLayout?(contentView.bounds)
     }
 }
-

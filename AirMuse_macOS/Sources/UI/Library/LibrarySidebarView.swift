@@ -147,8 +147,7 @@ open class LibrarySidebarView: NSVisualEffectView {
         clip.drawsBackground = false
         scrollView.contentView = clip
         scrollView.drawsBackground = false
-        scrollView.hasVerticalScroller = true
-        scrollView.autohidesScrollers = true
+        scrollView.applySubtleOverlayScrollbar()
 
         stackView.orientation = .vertical
         stackView.alignment = .leading
