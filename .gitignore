@@ -45,6 +45,10 @@ Thumbs.db
 Desktop.ini
 *.cache
 
+# Swift & macOS build artifacts
+.build/
+.DS_Store
+
 # Credentials & private tokens
 AMW/auth.json
 **/auth.json

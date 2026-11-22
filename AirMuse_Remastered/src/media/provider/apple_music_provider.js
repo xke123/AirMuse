@@ -62,8 +62,9 @@
     }
 
     // ── 1. 令牌与 API 基础配置 ─────────────────────────────────────────────
-    const FALLBACK_DEV_TOKEN = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJFUzI1NiIsImtpZCI6IldlYlBsYXlLaWQifQ.eyJpc3MiOiJBTVBXZWJQbGF5IiwiaWF0IjoxNzkzOTAwNzA4LCJleHAiOjE3OTk5NDg3MDgsInJvb3RfaHR0cHNfb3JpZ2luIjpbImFwcGxlLmNvbSJdfQ.7L-PYJHjO8PpFdhKS-OSkf_snyFvg5cq-JDERUs_N_UcUX9Vk0kf1WLatgDeEvhB_Arg1b5Tl-99G1v6hUwH0A';
-    const FALLBACK_USER_TOKEN = '0.AhLguOql2yDcoV5g/aTy/eSDkhhH62HGfnutGQVywp2Sl7wUjfwH+robO39OcpfAC+MmQfsjqUytTfT9WoY8ueQYrYCU1bscJNMOHwErJDvbhYd1RlZQH8xHF/ArXIG5Gq3hX48An4eyLx01IwI+RLsbCG7QTR7dnAmPoEJYQSuYfzW057zsIvwXlt/XrviGeunNQ4BDXL0Fy5YRmb/ufLjQOHxu96gA/SjjMbNhw67Eri3B2g==';
+    // 遵守安全与鉴权规范：严禁硬编码 Developer Token 与 User Token 回退值
+    const FALLBACK_DEV_TOKEN = null;
+    const FALLBACK_USER_TOKEN = null;
 
     function formatArtworkUrl(artworkObj, size = 160) {
         if (!artworkObj?.url) return null;
@@ -259,13 +260,47 @@
         }
 
         getDeveloperToken() {
+            if (this._cachedDevToken) return this._cachedDevToken;
+            if (window.__AM_DEV_TOKEN) { this._cachedDevToken = window.__AM_DEV_TOKEN; return window.__AM_DEV_TOKEN; }
             try {
                 const mk = window.MusicKit && window.MusicKit.getInstance ? window.MusicKit.getInstance() : null;
-                if (mk && mk.developerToken) return mk.developerToken;
+                if (mk && mk.developerToken) {
+                    this._cachedDevToken = mk.developerToken;
+                    return mk.developerToken;
+                }
                 const m = document.documentElement.innerHTML.match(/eyJ0eXAiOiJKV1Qi[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+/);
-                if (m && m[0]) return m[0];
+                if (m && m[0]) {
+                    this._cachedDevToken = m[0];
+                    return m[0];
+                }
+                const s = sessionStorage.getItem('__am_dev_token');
+                if (s) { this._cachedDevToken = s; return s; }
             } catch (_) {}
             return FALLBACK_DEV_TOKEN;
+        }
+
+        async ensureDeveloperToken() {
+            const fast = this.getDeveloperToken();
+            if (fast) return fast;
+            try {
+                const scripts = Array.from(document.querySelectorAll('script[src*="/assets/index~"]')).concat(Array.from(document.scripts));
+                for (const s of scripts) {
+                    if (s.src && s.src.includes('/assets/index~')) {
+                        const res = await fetch(s.src);
+                        if (res.ok) {
+                            const txt = await res.text();
+                            const m = txt.match(/eyJ0eXAiOiJKV1Qi[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+/);
+                            if (m && m[0]) {
+                                this._cachedDevToken = m[0];
+                                window.__AM_DEV_TOKEN = m[0];
+                                try { sessionStorage.setItem('__am_dev_token', m[0]); } catch (_) {}
+                                return m[0];
+                            }
+                        }
+                    }
+                }
+            } catch (_) {}
+            return null;
         }
 
         getUserToken() {
@@ -279,7 +314,8 @@
         }
 
         async fetchAmp(url, needAuth = false) {
-            const devToken = this.getDeveloperToken();
+            let devToken = this.getDeveloperToken();
+            if (!devToken) devToken = await this.ensureDeveloperToken();
             const userToken = this.getUserToken();
             const fullUrl = url.indexOf('http') === 0 ? url : ('https://amp-api.music.apple.com' + url);
 
@@ -309,7 +345,8 @@
         }
 
         async fetchTabData(tabId, forceRefresh = false) {
-            const devToken = this.getDeveloperToken();
+            let devToken = this.getDeveloperToken();
+            if (!devToken) devToken = await this.ensureDeveloperToken();
             const userToken = this.getUserToken();
             if (!devToken) return [];
 
@@ -340,7 +377,7 @@
                 const resMap = Object.fromEntries(ENDPOINTS.map((ep, idx) => [ep.key, responses[idx]]));
 
                 // 1. 主页
-                const homeCats = (resMap.home.data || []).reduce((acc, d, idx) => {
+                let homeCats = (resMap.home.data || []).reduce((acc, d, idx) => {
                     const rec = resMap.home.resources?.['personal-recommendation']?.[d.id];
                     if (!rec) return acc;
                     const title = rec.attributes?.title?.stringForDisplay || rec.attributes?.title?.text || rec.attributes?.name || `推荐板块 ${idx + 1}`;
@@ -366,6 +403,11 @@
                 }
                 const browseCats = parseEditorial(resMap.browse);
                 const radioCats = parseEditorial(resMap.radio);
+
+                // 访客/未登录降级：若主页个人推荐为空，以精选发现内容作为主页推荐
+                if (!homeCats.length && browseCats.length) {
+                    homeCats = browseCats;
+                }
 
                 // 3. 资料库
                 const libCats = [];
@@ -521,11 +563,34 @@
             });
         }
 
-        async playItem(item, category, index = 0) {
-            const mk = window.MusicKit && window.MusicKit.getInstance ? window.MusicKit.getInstance() : null;
-            if (!mk) return;
+        async _playAudioPreviewFallback(item) {
+            try {
+                let previewUrl = item.previewURL || null;
+                const itemId = item.id ? String(item.id) : '';
+                if (!previewUrl && itemId) {
+                    const cleanId = itemId.replace(/^[ilp]\./, '');
+                    const res = await this.fetchAmp(`/v1/catalog/cn/songs/${cleanId}`, false);
+                    previewUrl = res?.data?.[0]?.attributes?.previews?.[0]?.url || null;
+                }
+                if (previewUrl) {
+                    let audio = document.getElementById('airmuse-preview-player');
+                    if (!audio) {
+                        audio = document.createElement('audio');
+                        audio.id = 'airmuse-preview-player';
+                        audio.style.display = 'none';
+                        document.body.appendChild(audio);
+                        audio.ontimeupdate = () => this._notifyNowPlaying();
+                        audio.onplay = () => this._notifyNowPlaying();
+                        audio.onpause = () => this._notifyNowPlaying();
+                        audio.onended = () => this._notifyNowPlaying();
+                    }
+                    audio.src = previewUrl;
+                    await audio.play();
+                }
+            } catch (_) {}
+        }
 
-            // 1. [0ms 极速响应] 立即向 UI 和 C++ 发送乐观播放状态，完全跳过网络握手延迟，曲名/歌手/进度瞬间更新
+        async playItem(item, category, index = 0) {
             const title = item.name || item.title || '';
             const artist = item.artistName || item.subtitle || '';
             const durationMs = item.durationMs || 0;
@@ -539,58 +604,77 @@
                 isPlaying: true
             });
 
-            try {
-                // 2. [队列复用极速优化] 若当前点击的曲目属于同一个歌单/专辑，直接切索引，避免重新向苹果云端全量拉取歌单
-                const colId = category ? (category.id || null) : null;
-                const isSameCollection = colId && (this._currentCollectionId === colId);
-                const hasValidQueue = mk.queue && mk.queue.items && mk.queue.items.length > 0;
+            const mk = window.MusicKit && window.MusicKit.getInstance ? window.MusicKit.getInstance() : null;
+            let played = false;
 
-                if (isSameCollection && hasValidQueue && typeof index === 'number' && index >= 0 && index < mk.queue.items.length) {
-                    if (typeof mk.changeToMediaAtIndex === 'function') {
-                        await mk.changeToMediaAtIndex(index);
-                        mk.play();
-                        return;
+            if (mk) {
+                try {
+                    const colId = category ? (category.id || null) : null;
+                    const isSameCollection = colId && (this._currentCollectionId === colId);
+                    const hasValidQueue = mk.queue && mk.queue.items && mk.queue.items.length > 0;
+
+                    if (isSameCollection && hasValidQueue && typeof index === 'number' && index >= 0 && index < mk.queue.items.length) {
+                        if (typeof mk.changeToMediaAtIndex === 'function') {
+                            await mk.changeToMediaAtIndex(index);
+                            mk.play();
+                            played = true;
+                            return;
+                        }
                     }
-                }
 
-                // 3. 记录当前歌单/专辑 ID，供下次同歌单切歌时零延迟复用
-                if (colId) {
-                    this._currentCollectionId = colId;
-                }
+                    if (colId) {
+                        this._currentCollectionId = colId;
+                    }
 
-                // 4. 并行非阻塞发起队列与播放请求
-                if (item.type === 'station') {
-                    await mk.setQueue({ station: item.id });
-                } else if (item.type === 'song' || item.type === 'fav-song') {
-                    await mk.setQueue({ song: item.id });
-                } else if (category && category.type && category.type.includes('playlist')) {
-                    await mk.setQueue({ playlist: category.id, startWith: index });
-                } else if (category && category.type === 'album') {
-                    await mk.setQueue({ album: category.id, startWith: index });
-                } else {
-                    await mk.setQueue({ song: item.id });
+                    if (item.type === 'station') {
+                        await mk.setQueue({ station: item.id });
+                    } else if (item.type === 'song' || item.type === 'fav-song') {
+                        await mk.setQueue({ song: item.id });
+                    } else if (category && category.type && category.type.includes('playlist')) {
+                        await mk.setQueue({ playlist: category.id, startWith: index });
+                    } else if (category && category.type === 'album') {
+                        await mk.setQueue({ album: category.id, startWith: index });
+                    } else {
+                        await mk.setQueue({ song: item.id });
+                    }
+                    await mk.play();
+                    played = true;
+                } catch (_) {
+                    played = false;
                 }
-                mk.play();
-            } catch (_) {}
+            }
+
+            // 音频预览流降级（当未登录/无订阅/MusicKit排队受阻时）
+            if (!played) {
+                await this._playAudioPreviewFallback(item);
+            }
             this._notifyNowPlaying();
         }
 
         async playCollection(item, tracks = null, startIndex = 0) {
             const mk = window.MusicKit && window.MusicKit.getInstance ? window.MusicKit.getInstance() : null;
-            if (!mk) return;
+            let played = false;
 
-            if (item && item.id) {
-                this._currentCollectionId = item.id;
+            if (mk) {
+                if (item && item.id) {
+                    this._currentCollectionId = item.id;
+                }
+                try {
+                    if (item.type && item.type.includes('playlist')) {
+                        await mk.setQueue({ playlist: item.id, startWith: startIndex });
+                    } else if (item.type === 'album') {
+                        await mk.setQueue({ album: item.id, startWith: startIndex });
+                    }
+                    await mk.play();
+                    played = true;
+                } catch (_) {
+                    played = false;
+                }
             }
 
-            try {
-                if (item.type.includes('playlist')) {
-                    await mk.setQueue({ playlist: item.id, startWith: startIndex });
-                } else if (item.type === 'album') {
-                    await mk.setQueue({ album: item.id, startWith: startIndex });
-                }
-                await mk.play();
-            } catch (_) {}
+            if (!played && tracks && tracks.length > startIndex) {
+                await this._playAudioPreviewFallback(tracks[startIndex]);
+            }
             this._notifyNowPlaying();
         }
 
@@ -708,8 +792,7 @@
                     const m = txt.match(/^(.+?)的\s*Apple\s*Music$/i);
                     if (m && m[1] && m[1] !== '你') { uname = m[1].trim(); break; }
                 }
-                if (!uname) uname = '小可';
-                this._userCallback(uname);
+                this._userCallback(uname || null);
             } catch (_) {}
         }
 

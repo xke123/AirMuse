@@ -233,7 +233,6 @@ void LibraryWindow::Render() {
             WebPlatform cur = m_controller.CurrentWebPlatform();
             std::wstring svcName = (cur == WebPlatform::Spotify) ? L"Spotify" : (cur == WebPlatform::QQMusic ? L"QQ 音乐" : L"Apple Music");
             std::wstring userName = m_controller.CurrentWebUserName();
-            if (userName.empty() && cur == WebPlatform::AppleMusic) userName = L"小可";
             std::wstring headerTitle = userName.empty() ? (L"未登录的 " + svcName) : (userName + L" 的 " + svcName);
 
             // 标题光晕与文字 (随 effAlpha 平滑呼吸)

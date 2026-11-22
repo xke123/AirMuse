@@ -597,16 +597,22 @@
             }
             .am-detail-btn:hover { background: #303030; color: #c9c9c9; }
             .am-detail-btn.play-all {
-                background: linear-gradient(180deg, #c9c9c9 0%, #a6a6a6 100%);
-                color: #171717;
-                font-weight: 600;
-                border: 1px solid rgba(255, 255, 255, 0.4);
-                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+                background: #ffffff !important;
+                color: #09090b !important;
+                font-size: 11px !important;
+                font-weight: 700 !important;
+                padding: 3px 12px !important;
+                border: none !important;
+                border-radius: 12px !important;
+                box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4) !important;
+                cursor: pointer !important;
+                letter-spacing: 0.5px !important;
             }
             .am-detail-btn.play-all:hover {
-                background: linear-gradient(180deg, #e0e0e0 0%, #c9c9c9 100%);
-                color: #171717;
-                box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5), inset 0 1px 0 #ffffff;
+                background: #f4f4f5 !important;
+                color: #000000 !important;
+                box-shadow: 0 3px 8px rgba(0, 0, 0, 0.55) !important;
+                transform: scale(1.02);
             }
             .am-detail-title {
                 font-size: 11px;
@@ -948,7 +954,7 @@
             if (this.dom.detailPlayAll) {
                 this.dom.detailPlayAll.onclick = async () => {
                     if (!this.currentDetailItem || !this.provider) return;
-                    await this.provider.playCollection(this.currentDetailItem);
+                    await this.provider.playCollection(this.currentDetailItem, this.currentDetailTracks);
                 };
             }
 
@@ -1139,7 +1145,16 @@
             this.dom.sidebar.innerHTML = '';
 
             if (!curData.categories || !curData.categories.length) {
-                this.dom.cardsScroll.innerHTML = `<div class="am-empty-tip">正在载入 ${escapeHtml(this.provider?.name || '音乐')} 数据...</div>`;
+                const isLibTab = (this.currentTab === 'library' || this.currentTab === 'playlists');
+                const hasUser = !!(this.provider && this.provider.getUserToken && this.provider.getUserToken());
+                let tip = `<div class="am-empty-tip">正在载入 ${escapeHtml(this.provider?.name || '音乐')} 数据...</div>`;
+                if (isLibTab && !hasUser) {
+                    tip = `<div class="am-empty-tip" style="line-height:1.8;">
+                        <div style="font-size:16px;font-weight:600;margin-bottom:8px;">未登录个人 Apple 账号</div>
+                        <div style="font-size:13px;opacity:0.75;">资料库与歌单需要登录后同步<br>请点击左下角或账户中心登录官方账号</div>
+                    </div>`;
+                }
+                this.dom.cardsScroll.innerHTML = tip;
                 return;
             }
 
@@ -1271,6 +1286,7 @@
             if (!this.provider) return;
             try {
                 const tracks = await this.provider.loadDetail(item);
+                this.currentDetailTracks = tracks;
                 this.dom.detailScroll.innerHTML = '';
                 if (!tracks || !tracks.length) {
                     this.dom.detailScroll.innerHTML = '<div class="am-empty-tip">暂无可播放曲目</div>';
