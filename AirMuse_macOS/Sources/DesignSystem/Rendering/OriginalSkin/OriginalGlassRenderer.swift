@@ -62,10 +62,12 @@ public enum OriginalGlassRenderer {
         }
 
         // 1. Middle Main Body (CGContext origin is bottom-left: y = capH .. h - capH)
+        // In frostedBars mode there is no 9-slice side border, so body spans full width to match the glass bars.
+        let sideInset: CGFloat = frostedBars ? 0.0 : borderW
         let midH = h - capH * 2.0
-        let midW = w - borderW * 2.0
+        let midW = w - sideInset * 2.0
         if midH > 0, midW > 0 {
-            let bodyRect = CGRect(x: borderW, y: capH, width: midW, height: midH)
+            let bodyRect = CGRect(x: sideInset, y: capH, width: midW, height: midH)
             ctx.saveGState()
             ctx.clip(to: bodyRect)
 
@@ -77,8 +79,8 @@ public enum OriginalGlassRenderer {
                 if let grad = CGGradient(colorsSpace: cs, colors: [topCol, botCol] as CFArray, locations: [0.0, 1.0]) {
                     ctx.drawLinearGradient(
                         grad,
-                        start: CGPoint(x: borderW, y: capH + midH),
-                        end: CGPoint(x: borderW, y: capH),
+                        start: CGPoint(x: sideInset, y: capH + midH),
+                        end: CGPoint(x: sideInset, y: capH),
                         options: []
                     )
                 }
@@ -91,7 +93,7 @@ public enum OriginalGlassRenderer {
             if let art = ambientArtwork {
                 ctx.saveGState()
                 ctx.setAlpha(0.15)
-                let artRect = CGRect(x: borderW, y: capH + midH - midW + 30.0 * uiScale, width: midW, height: midW)
+                let artRect = CGRect(x: sideInset, y: capH + midH - midW + 30.0 * uiScale, width: midW, height: midW)
                 ctx.draw(art, in: artRect)
                 ctx.restoreGState()
             }
@@ -136,25 +138,25 @@ public enum OriginalGlassRenderer {
             let topSeamY = h - capH
             ctx.setLineWidth(1.0)
             ctx.setStrokeColor(darkCol)
-            ctx.move(to: CGPoint(x: borderW, y: topSeamY))
-            ctx.addLine(to: CGPoint(x: borderW + midW, y: topSeamY))
+            ctx.move(to: CGPoint(x: sideInset, y: topSeamY))
+            ctx.addLine(to: CGPoint(x: sideInset + midW, y: topSeamY))
             ctx.strokePath()
 
             ctx.setStrokeColor(lightCol)
-            ctx.move(to: CGPoint(x: borderW, y: topSeamY - 1.0))
-            ctx.addLine(to: CGPoint(x: borderW + midW, y: topSeamY - 1.0))
+            ctx.move(to: CGPoint(x: sideInset, y: topSeamY - 1.0))
+            ctx.addLine(to: CGPoint(x: sideInset + midW, y: topSeamY - 1.0))
             ctx.strokePath()
 
             // Bottom seam (CG y = capH)
             let botSeamY = capH
             ctx.setStrokeColor(darkCol)
-            ctx.move(to: CGPoint(x: borderW, y: botSeamY + 1.0))
-            ctx.addLine(to: CGPoint(x: borderW + midW, y: botSeamY + 1.0))
+            ctx.move(to: CGPoint(x: sideInset, y: botSeamY + 1.0))
+            ctx.addLine(to: CGPoint(x: sideInset + midW, y: botSeamY + 1.0))
             ctx.strokePath()
 
             ctx.setStrokeColor(lightCol)
-            ctx.move(to: CGPoint(x: borderW, y: botSeamY))
-            ctx.addLine(to: CGPoint(x: borderW + midW, y: botSeamY))
+            ctx.move(to: CGPoint(x: sideInset, y: botSeamY))
+            ctx.addLine(to: CGPoint(x: sideInset + midW, y: botSeamY))
             ctx.strokePath()
         }
     }

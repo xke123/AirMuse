@@ -32,7 +32,7 @@ public enum OriginalDesignTokens {
         public static let miniBarCompactHeight: CGFloat  = 30.0
         public static let lyricsWindowWidth: CGFloat    = 330.0
         public static let lyricsWindowHeight: CGFloat   = 284.0
-        public static let libraryWindowWidth: CGFloat   = 360.0
+        public static let libraryWindowWidth: CGFloat   = 330.0
         public static let libraryWindowHeight: CGFloat  = 380.0
 
         // Dock & Snap (from DockManager.cpp)
