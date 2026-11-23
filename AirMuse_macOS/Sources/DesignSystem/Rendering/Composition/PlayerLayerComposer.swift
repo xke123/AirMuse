@@ -25,6 +25,7 @@ public final class PlayerLayerComposer {
 
         sweepLayer.masksToBounds = true
         fogLayer.masksToBounds = false
+        fogLayer.opacity = 0.0
     }
 
     public func attach(to rootLayer: CALayer) {
@@ -115,6 +116,84 @@ public final class PlayerLayerComposer {
             CATransaction.begin()
             CATransaction.setDisableActions(true)
             backgroundLayer.contents = rendered
+            CATransaction.commit()
+        }
+
+        updateFog(size: size, uiScale: uiScale, backingScale: backingScale)
+    }
+
+    public func updateFog(size: CGSize, uiScale: CGFloat, backingScale: CGFloat) {
+        guard size.width > 20, size.height > 40 * uiScale else {
+            CATransaction.begin()
+            CATransaction.setDisableActions(true)
+            fogLayer.contents = nil
+            CATransaction.commit()
+            return
+        }
+
+        let pxW = max(1, Int(round(size.width * backingScale)))
+        let pxH = max(1, Int(round(size.height * backingScale)))
+        let cs = CGColorSpaceCreateDeviceRGB()
+        guard let ctx = CGContext(
+            data: nil,
+            width: pxW,
+            height: pxH,
+            bitsPerComponent: 8,
+            bytesPerRow: pxW * 4,
+            space: cs,
+            bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+        ) else { return }
+
+        ctx.scaleBy(x: backingScale, y: backingScale)
+        ctx.clear(CGRect(origin: .zero, size: size))
+
+        let w = size.width
+        let h = size.height
+        let s = uiScale
+        let capH = OriginalDesignTokens.BaseMetrics.glassCapHeight * s
+
+        // 1. Top right window buttons aurora plume (seam at bottom connects flush with panel body)
+        let topClip = CGRect(x: 3.0 * s, y: h - capH, width: w - 6.0 * s, height: capH)
+        OriginalGlassRenderer.drawAuroraFogPlume(
+            in: ctx,
+            barBounds: topClip,
+            xMin: w - 101.0 * s,
+            xMax: w - 16.0 * s,
+            seamEdge: .bottom,
+            spreadLeft: 34.0 * s,
+            spreadRight: 14.0 * s,
+            peakAlpha: 1.0
+        )
+
+        // 2. Bottom left platform buttons aurora plume (seam at top connects flush with panel body)
+        let botClip = CGRect(x: 3.0 * s, y: 0.0, width: w - 6.0 * s, height: capH)
+        OriginalGlassRenderer.drawAuroraFogPlume(
+            in: ctx,
+            barBounds: botClip,
+            xMin: 20.0 * s,
+            xMax: 71.0 * s,
+            seamEdge: .top,
+            spreadLeft: 14.0 * s,
+            spreadRight: 34.0 * s,
+            peakAlpha: 1.0
+        )
+
+        // 3. Bottom right panel buttons aurora plume (seam at top connects flush with panel body)
+        OriginalGlassRenderer.drawAuroraFogPlume(
+            in: ctx,
+            barBounds: botClip,
+            xMin: w - 48.0 * s,
+            xMax: w - 16.0 * s,
+            seamEdge: .top,
+            spreadLeft: 30.0 * s,
+            spreadRight: 14.0 * s,
+            peakAlpha: 1.0
+        )
+
+        if let fogImg = ctx.makeImage() {
+            CATransaction.begin()
+            CATransaction.setDisableActions(true)
+            fogLayer.contents = fogImg
             CATransaction.commit()
         }
     }

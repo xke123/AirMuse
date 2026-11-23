@@ -117,28 +117,35 @@ open class AppleMusicAuthWindowController: NSWindowController {
     }
 
     private func listenToSessionChanges() {
-        sessionManager.onStateChanged = { [weak self] newState in
-            guard let self else { return }
-            self.refreshView()
-
-            // If login completed successfully, wait briefly for music.apple.com to finish persisting localStorage before dismissing
-            if newState.isLoggedIn {
-                Task { @MainActor [weak self] in
-                    try? await Task.sleep(for: .seconds(1.5))
-                    self?.accountView.dismissWebLogin()
-                }
-            }
-
-            // If unsupported flow occurred, surface warning in web view
-            if case .error(let err) = newState,
-               case .unsupportedAuthenticationFlow(let msg) = err {
-                let wv = self.sessionManager.createLoginWebView()
-                self.accountView.presentWebLogin(with: wv, warning: msg)
-            }
-        }
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleSessionStateNotification(_:)),
+            name: AppleMusicSessionManager.sessionStateDidChangeNotification,
+            object: nil
+        )
 
         sessionManager.onAPIAuthorizationChanged = { [weak self] _ in
             self?.refreshView()
+        }
+    }
+
+    @objc private func handleSessionStateNotification(_ notif: Notification) {
+        guard let newState = notif.userInfo?["state"] as? AppleMusicWebSessionState else { return }
+        self.refreshView()
+
+        // If login completed successfully, wait briefly for music.apple.com to finish persisting localStorage before dismissing
+        if newState.isLoggedIn {
+            Task { @MainActor [weak self] in
+                try? await Task.sleep(for: .seconds(1.5))
+                self?.accountView.dismissWebLogin()
+            }
+        }
+
+        // If unsupported flow occurred, surface warning in web view
+        if case .error(let err) = newState,
+           case .unsupportedAuthenticationFlow(let msg) = err {
+            let wv = self.sessionManager.createLoginWebView()
+            self.accountView.presentWebLogin(with: wv, warning: msg)
         }
     }
 

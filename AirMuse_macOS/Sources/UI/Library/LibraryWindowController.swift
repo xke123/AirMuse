@@ -21,6 +21,13 @@ open class LibraryWindowController: NSWindowController {
     private let sidebar = LibrarySidebarView()
     private let contentView = LibraryContentView()
 
+    // Top glass bar controls & aurora fog
+    private let auroraFogView = AuroraGlassFogView()
+    private let titleLabel = NSTextField()
+    private let logButton = GlassButton(sprite: nil, size: CGSize(width: 13, height: 13))
+    private let accountButton = GlassButton(sprite: nil, size: CGSize(width: 13, height: 13))
+    private let closeButton = GlassButton(sprite: nil, size: CGSize(width: 13, height: 13))
+
     private let coordinator: PlaybackCoordinator
     private var appleMusicProvider: AppleMusicProvider?
 
@@ -55,21 +62,93 @@ open class LibraryWindowController: NSWindowController {
     }
 
     private func setupPanelUI() {
+        panel.wantsLayer = true
+
+        // Top glass bar aurora fog container
+        auroraFogView.seamEdge = .bottom
+        panel.addSubview(auroraFogView)
+
+        // Top glass bar title: "<Username>的Apple Music"
+        titleLabel.isBezeled = false
+        titleLabel.isEditable = false
+        titleLabel.isSelectable = false
+        titleLabel.drawsBackground = false
+        titleLabel.lineBreakMode = .byTruncatingTail
+        auroraFogView.addSubview(titleLabel)
+
+        // Top glass bar right-side window buttons
+        logButton.enableDarkHalo = false
+        logButton.toolTip = "运行诊断日志 (⌥⌘L)"
+        logButton.onClick = { [weak self] in
+            AppLogger.shared.log(category: .userAction, level: .info, message: "用户点击顶部玻璃条日志按钮")
+            self?.onToggleLog?()
+        }
+        auroraFogView.addSubview(logButton)
+
+        accountButton.enableDarkHalo = false
+        accountButton.toolTip = "Apple Music 账户与会话 (⌥⌘A)"
+        accountButton.onClick = { [weak self] in
+            AppLogger.shared.log(category: .userAction, level: .info, message: "用户点击顶部玻璃条账户按钮")
+            self?.onToggleAccount?()
+        }
+        auroraFogView.addSubview(accountButton)
+
+        closeButton.enableDarkHalo = false
+        closeButton.toolTip = "关闭面板"
+        closeButton.onClick = { [weak self] in
+            AppLogger.shared.log(category: .userAction, level: .info, message: "用户点击顶部玻璃条关闭按钮")
+            self?.onClose?()
+        }
+        auroraFogView.addSubview(closeButton)
+
         let container = panel.contentView
         container.addSubview(topBar)
         container.addSubview(sidebar)
         container.addSubview(contentView)
 
-        // Apple Music Web Player is attached to primary Player Window to ensure continuous background playback
-
         panel.onLayout = { [weak self] _ in
             self?.layoutViews()
         }
 
+        reloadTopBarSymbols()
+        updateTopBarTitle()
         layoutViews()
+
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleSkinChange),
+            name: GlassInteractionCoordinator.modeDidChangeNotification,
+            object: nil
+        )
     }
 
     private func layoutViews() {
+        let s = GlassInteractionCoordinator.shared.uiScale
+        let pBounds = panel.bounds
+        let wb = 13.0 * s
+        let capH = OriginalDesignTokens.BaseMetrics.glassCapHeight * s
+        let topBarBtnY = (capH - wb) * 0.5
+        let btnSpacing = 5.0 * s
+
+        // Top glass bar aurora fog view spans the entire top glass bar width
+        auroraFogView.frame = NSRect(x: 0, y: pBounds.height - capH, width: pBounds.width, height: capH)
+
+        // Right side glass bar buttons
+        closeButton.frame = NSRect(x: pBounds.width - 16.0 * s - wb, y: topBarBtnY, width: wb, height: wb)
+        accountButton.frame = NSRect(x: closeButton.frame.minX - btnSpacing - wb, y: topBarBtnY, width: wb, height: wb)
+        logButton.frame = NSRect(x: accountButton.frame.minX - btnSpacing - wb, y: topBarBtnY, width: wb, height: wb)
+
+        // Left side glass bar title
+        let titleH: CGFloat = 18.0 * s
+        let titleY = (capH - titleH) * 0.5
+        let titleX = 16.0 * s
+        let maxTitleW = max(50.0 * s, logButton.frame.minX - 16.0 * s - titleX)
+        let idealTextW = titleLabel.attributedStringValue.size().width + 8.0 * s
+        let actualTitleW = min(maxTitleW, max(40.0 * s, idealTextW))
+        titleLabel.frame = NSRect(x: titleX, y: titleY, width: actualTitleW, height: titleH)
+
+        updateAuroraFog()
+
         let bounds = panel.contentView.bounds
         guard bounds.width > 20 && bounds.height > 20 else { return }
 
@@ -89,6 +168,92 @@ open class LibraryWindowController: NSWindowController {
             sidebar.isHidden = false
             sidebar.frame = NSRect(x: padding, y: contentY, width: sidebarW, height: contentH)
             contentView.frame = NSRect(x: sidebarW + padding * 2, y: contentY, width: bounds.width - sidebarW - padding * 3, height: contentH)
+        }
+    }
+
+    private func reloadTopBarSymbols() {
+        let s = GlassInteractionCoordinator.shared.uiScale
+        closeButton.setSymbol(name: "xmark", pointSize: 8.5 * s, weight: .bold)
+        accountButton.setSymbol(name: "person.crop.circle", pointSize: 9.5 * s, weight: .medium)
+        logButton.setSymbol(name: "terminal", pointSize: 9.0 * s, weight: .medium)
+    }
+
+    public func updateTopBarTitle() {
+        let s = GlassInteractionCoordinator.shared.uiScale
+        let font = NSFont.systemFont(ofSize: 11.0 * s, weight: .bold)
+        let isLogged = AppleMusicSessionManager.shared.webSessionState.isLoggedIn
+            || AppleMusicSessionManager.shared.currentUserToken != nil
+
+        let text: String
+        if isLogged {
+            let name = Self.resolveUserDisplayName()
+            text = "\(name)的Apple Music"
+        } else {
+            text = "未登录的Apple Music"
+        }
+        titleLabel.attributedStringValue = PixelFontRenderer.makeHaloAttributedString(
+            text,
+            font: font,
+            color: isLogged ? OriginalDesignTokens.Colors.titleSilver : OriginalDesignTokens.Colors.subSilver,
+            alignment: .left
+        )
+        updateAuroraFog()
+    }
+
+    /// Dynamically renders edge-adaptive aurora mist plumes based on title width and button cluster
+    private func updateAuroraFog() {
+        let s = GlassInteractionCoordinator.shared.uiScale
+        let titlePlume = AuroraGlassFogView.PlumeItem(
+            xMin: titleLabel.frame.minX,
+            xMax: titleLabel.frame.maxX,
+            spreadLeft: 14.0 * s,
+            spreadRight: 32.0 * s,
+            peakAlpha: 0.95
+        )
+        let buttonsPlume = AuroraGlassFogView.PlumeItem(
+            xMin: logButton.frame.minX,
+            xMax: closeButton.frame.maxX,
+            spreadLeft: 32.0 * s,
+            spreadRight: 14.0 * s,
+            peakAlpha: 1.0
+        )
+        auroraFogView.plumes = [titlePlume, buttonsPlume]
+    }
+
+    /// Resolves the authenticated user's display name, falling back to current macOS user if generic.
+    public static func resolveUserDisplayName() -> String {
+        if let accountName = AppleMusicSessionManager.shared.currentAccount?.displayName,
+           !accountName.isEmpty,
+           !accountName.contains("Apple Music 用户"),
+           !accountName.contains("Apple Music 会员") {
+            return accountName
+        }
+        let full = NSFullUserName()
+        if full.contains("小可") {
+            return "小可"
+        }
+        if !full.isEmpty {
+            return full
+        }
+        return "小可"
+    }
+
+    @objc private func handleSkinChange() {
+        reloadTopBarSymbols()
+        updateTopBarTitle()
+        layoutViews()
+        panel.refreshGlassSurface()
+    }
+
+    @objc private func handleSessionStateNotification(_ notif: Notification) {
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            self.updateTopBarTitle()
+            if let state = notif.userInfo?["state"] as? AppleMusicWebSessionState, case .loggedOut = state {
+                LibraryCacheStore.shared.clear()
+            }
+            self.loadedEditorialCategories.removeAll()
+            self.handleTabSelected(self.activeTabIndex)
         }
     }
 
@@ -135,9 +300,17 @@ open class LibraryWindowController: NSWindowController {
         }
 
         // Observe Apple Music Session changes (login / logout / token refreshed)
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleSessionStateNotification(_:)),
+            name: AppleMusicSessionManager.sessionStateDidChangeNotification,
+            object: nil
+        )
+
         AppleMusicSessionManager.shared.onStateChanged = { [weak self] state in
             Task { @MainActor [weak self] in
                 guard let self else { return }
+                self.updateTopBarTitle()
                 AppLogger.shared.log(category: .auth, level: .info, message: "Apple Music 会话状态变更，重置缓存并刷新当前页面")
                 if case .loggedOut = state {
                     LibraryCacheStore.shared.clear()

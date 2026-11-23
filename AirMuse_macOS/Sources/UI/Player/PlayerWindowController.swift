@@ -119,6 +119,18 @@ open class PlayerWindowController: NSWindowController {
             AppLogger.shared.log(category: .userAction, level: .info, message: "用户点击 [音乐资料库] 按钮")
             self?.onToggleLibrary?()
         }
+        playerView.onSelectAppleMusic = { [weak self] in
+            AppLogger.shared.log(category: .userAction, level: .info, message: "用户点击 [Apple Music] 平台切换")
+            self?.playerView.currentPlatform = 0
+        }
+        playerView.onSelectSpotify = { [weak self] in
+            AppLogger.shared.log(category: .userAction, level: .info, message: "用户点击 [Spotify] 平台切换")
+            self?.playerView.currentPlatform = 1
+        }
+        playerView.onSelectQQMusic = { [weak self] in
+            AppLogger.shared.log(category: .userAction, level: .info, message: "用户点击 [QQ 音乐] 平台切换")
+            self?.playerView.currentPlatform = 2
+        }
 
         miniPlayerView.onPlayPause = { [weak self] in
             AppLogger.shared.log(category: .userAction, level: .info, message: "用户点击迷你栏 [播放/暂停] 按钮")
@@ -144,6 +156,9 @@ open class PlayerWindowController: NSWindowController {
             self?.onToggleLyrics?()
         }
         miniPlayerView.onToggleLibrary = { [weak self] in
+            self?.onToggleLibrary?()
+        }
+        miniPlayerView.onToggleSource = { [weak self] in
             self?.onToggleLibrary?()
         }
     }

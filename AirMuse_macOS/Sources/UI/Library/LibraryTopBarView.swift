@@ -122,18 +122,6 @@ open class LibraryTopBarView: NSView {
         // Search Button (🔍)
         configureIconButton(searchButton, symbolName: "magnifyingglass", tooltip: "搜索音乐 (替换顶部栏)", action: #selector(searchOpenClicked))
         navContainer.addSubview(searchButton)
-
-        // Log Button (terminal)
-        configureIconButton(logButton, symbolName: "terminal", tooltip: "运行诊断日志 (⌥⌘L)", action: #selector(logClicked))
-        navContainer.addSubview(logButton)
-
-        // Account / Auth Button (person.crop.circle)
-        configureIconButton(accountButton, symbolName: "person.crop.circle", tooltip: "Apple Music 账户与会话 (⌥⌘A)", action: #selector(accountClicked))
-        navContainer.addSubview(accountButton)
-
-        // Close Button (✕)
-        configureIconButton(closeButton, symbolName: "xmark", tooltip: "关闭面板", action: #selector(closeClicked))
-        navContainer.addSubview(closeButton)
     }
 
     // MARK: - Setup Search Mode
@@ -202,53 +190,36 @@ open class LibraryTopBarView: NSView {
         navContainer.frame = bounds
         searchContainer.frame = bounds
 
-        // Nav Mode Layout
+        // Nav Mode Layout: Two ends aligned, tab group centered
         let btnSize: CGFloat = 30
-        let padding: CGFloat = 6
+        let padding: CGFloat = 8
 
-        // Refresh Button
+        // Left end: Refresh Button
         refreshButton.frame = NSRect(x: padding, y: (h - btnSize) / 2, width: btnSize, height: btnSize)
 
-        // Right side buttons
-        var rx = w - padding - btnSize
-        closeButton.frame = NSRect(x: rx, y: (h - btnSize) / 2, width: btnSize, height: btnSize)
-        rx -= (btnSize + 4)
+        // Right end: Search Button & Layout Button
+        let searchX = w - padding - btnSize
+        searchButton.frame = NSRect(x: searchX, y: (h - btnSize) / 2, width: btnSize, height: btnSize)
+        let layoutX = searchButton.frame.minX - 6 - btnSize
+        layoutButton.frame = NSRect(x: layoutX, y: (h - btnSize) / 2, width: btnSize, height: btnSize)
 
-        accountButton.frame = NSRect(x: rx, y: (h - btnSize) / 2, width: btnSize, height: btnSize)
-        rx -= (btnSize + 4)
-
-        logButton.frame = NSRect(x: rx, y: (h - btnSize) / 2, width: btnSize, height: btnSize)
-        rx -= (btnSize + 4)
-
-        searchButton.frame = NSRect(x: rx, y: (h - btnSize) / 2, width: btnSize, height: btnSize)
-        rx -= (btnSize + 4)
-
-        layoutButton.frame = NSRect(x: rx, y: (h - btnSize) / 2, width: btnSize, height: btnSize)
-
-        // Center Tab Group: fit strictly between refresh and right buttons
-        let leftLimit = refreshButton.frame.maxX + 8
-        let rightLimit = layoutButton.frame.minX - 8
-        let availableCenterW = max(50, rightLimit - leftLimit)
-        let tabW = min(285, availableCenterW)
-        let tabX = leftLimit + (availableCenterW - tabW) / 2
+        // Center: Tab Segment strictly centered between the window edges
+        let tabW = min(285.0, max(50.0, w - (padding + btnSize * 2 + 16) * 2))
+        let tabX = (w - tabW) / 2
         tabSegment.frame = NSRect(x: tabX, y: (h - 32) / 2, width: tabW, height: 32)
 
         // Search Mode Layout
         searchBackButton.frame = NSRect(x: padding, y: (h - btnSize) / 2, width: btnSize, height: btnSize)
 
-        var srx = w - padding - btnSize
-        searchCloseButton.frame = NSRect(x: srx, y: (h - btnSize) / 2, width: btnSize, height: btnSize)
-        srx -= (btnSize + 4)
-
+        let srx = w - padding - btnSize
         searchLayoutButton.frame = NSRect(x: srx, y: (h - btnSize) / 2, width: btnSize, height: btnSize)
-        srx -= 6
 
         let scopeW: CGFloat = 128
-        srx -= scopeW
-        scopeSegment.frame = NSRect(x: srx, y: (h - 28) / 2, width: scopeW, height: 28)
+        let scopeX = searchLayoutButton.frame.minX - 8 - scopeW
+        scopeSegment.frame = NSRect(x: scopeX, y: (h - 28) / 2, width: scopeW, height: 28)
 
-        let fieldX = padding + btnSize + 6
-        let fieldW = max(50, srx - fieldX - 6)
+        let fieldX = padding + btnSize + 8
+        let fieldW = max(50, scopeX - 8 - fieldX)
         searchField.frame = NSRect(x: fieldX, y: (h - 28) / 2, width: fieldW, height: 28)
     }
 

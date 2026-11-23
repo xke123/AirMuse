@@ -42,6 +42,7 @@ open class LyricsModuleView: NSView {
     public let lyricsView = LyricsView()
     private let panel = GlassPanel()
     private let hoverTracker = LyricsModuleHoverTrackerView()
+    private let auroraFogView = AuroraGlassFogView()
     private let closeButton = GlassButton(sprite: nil, size: CGSize(width: 13, height: 13))
     private let miniToggleButton = GlassButton(sprite: nil, size: CGSize(width: 13, height: 13))
 
@@ -87,17 +88,23 @@ open class LyricsModuleView: NSView {
         }
         panel.addSubview(hoverTracker)
 
+        auroraFogView.seamEdge = .bottom
+        auroraFogView.alphaValue = 0.0
+        panel.addSubview(auroraFogView)
+
+        closeButton.enableDarkHalo = false
         closeButton.toolTip = "关闭歌词"
         closeButton.onClick = { [weak self] in
             self?.onClose?()
         }
-        panel.addSubview(closeButton)
+        auroraFogView.addSubview(closeButton)
 
+        miniToggleButton.enableDarkHalo = false
         miniToggleButton.toolTip = "切换迷你歌词条"
         miniToggleButton.onClick = { [weak self] in
             self?.toggleMiniLyricsMode()
         }
-        panel.addSubview(miniToggleButton)
+        auroraFogView.addSubview(miniToggleButton)
 
         panel.onLayout = { [weak self] bounds in
             guard let self else { return }
@@ -129,15 +136,13 @@ open class LyricsModuleView: NSView {
     }
 
     private func updateButtonVisibility(animated: Bool) {
-        let targetAlpha: CGFloat = (!isMiniLyricsMode || isHovering) ? 1.0 : 0.0
+        let targetAlpha: CGFloat = isHovering ? 1.0 : 0.0
         if !animated || MotionCoordinator.shared.isReduceMotionEnabled {
-            closeButton.alphaValue = targetAlpha
-            miniToggleButton.alphaValue = targetAlpha
+            auroraFogView.alphaValue = targetAlpha
         } else {
             NSAnimationContext.runAnimationGroup { ctx in
                 ctx.duration = MotionTokens.Duration.hoverFade
-                closeButton.animator().alphaValue = targetAlpha
-                miniToggleButton.animator().alphaValue = targetAlpha
+                auroraFogView.animator().alphaValue = targetAlpha
             }
         }
     }
@@ -149,22 +154,37 @@ open class LyricsModuleView: NSView {
     }
 
     private func reloadSprites() {
-        let res = GlassInteractionCoordinator.shared.resolutionMode
-        closeButton.spriteImage = SkinAtlas.shared.windowButton(.close, resolution: res)
-        miniToggleButton.spriteImage = SkinAtlas.shared.windowButton(.miniToggle, resolution: res)
+        let s = GlassInteractionCoordinator.shared.uiScale
+        closeButton.setSymbol(name: "xmark", pointSize: 8.5 * s, weight: .bold)
+        let toggleIcon = isMiniLyricsMode ? "rectangle.expand.vertical" : "rectangle.compress.vertical"
+        miniToggleButton.setSymbol(name: toggleIcon, pointSize: 8.5 * s, weight: .bold)
     }
 
     private func layoutTopBarButtons() {
         let s = GlassInteractionCoordinator.shared.uiScale
         let wb = 13.0 * s
-        let topY = isMiniLyricsMode ? (panel.bounds.height - wb) * 0.5 : (panel.bounds.height - 4.0 * s - wb)
-        closeButton.frame = NSRect(x: panel.bounds.width - 45.0 * s, y: topY, width: wb, height: wb)
-        miniToggleButton.frame = NSRect(x: panel.bounds.width - 63.0 * s, y: topY, width: wb, height: wb)
+        let capH = (isMiniLyricsMode ? 4.0 : OriginalDesignTokens.BaseMetrics.glassCapHeight) * s
+        let btnY = (capH - wb) * 0.5
+
+        auroraFogView.frame = NSRect(x: 0, y: panel.bounds.height - capH, width: panel.bounds.width, height: capH)
+        closeButton.frame = NSRect(x: panel.bounds.width - 16.0 * s - wb, y: btnY, width: wb, height: wb)
+        miniToggleButton.frame = NSRect(x: closeButton.frame.minX - 5.0 * s - wb, y: btnY, width: wb, height: wb)
+
+        auroraFogView.plumes = [
+            AuroraGlassFogView.PlumeItem(
+                xMin: miniToggleButton.frame.minX,
+                xMax: closeButton.frame.maxX,
+                spreadLeft: 28.0 * s,
+                spreadRight: 14.0 * s,
+                peakAlpha: 1.0
+            )
+        ]
     }
 
     public func toggleMiniLyricsMode() {
         isMiniLyricsMode.toggle()
         lyricsView.setMiniMode(isMiniLyricsMode)
+        reloadSprites()
         updateButtonVisibility(animated: false)
         onMiniModeDidChange?()
     }

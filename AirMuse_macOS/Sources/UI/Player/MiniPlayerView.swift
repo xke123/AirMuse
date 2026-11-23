@@ -158,6 +158,7 @@ open class MiniPlayerView: GlassMiniPlayer {
     public var onExpand: (() -> Void)?
     public var onToggleLyrics: (() -> Void)?
     public var onToggleLibrary: (() -> Void)?
+    public var onToggleSource: (() -> Void)?
     public var onQuit: (() -> Void)?
 
     // Idle state views
@@ -166,17 +167,19 @@ open class MiniPlayerView: GlassMiniPlayer {
     private let timeView = TimeFontDisplayView()
 
     // Hover state views
+    private let haloHostLayer = CALayer()
     private let controlsContainer = NSView()
-    private let stopButton = GlassButton(sprite: nil, size: CGSize(width: 16, height: 16), enableLiquidGlassHover: true)
-    private let prevButton = GlassButton(sprite: nil, size: CGSize(width: 16, height: 16), enableLiquidGlassHover: true)
-    private let playPauseButton = GlassButton(sprite: nil, size: CGSize(width: 16, height: 16), enableLiquidGlassHover: true)
-    private let nextButton = GlassButton(sprite: nil, size: CGSize(width: 16, height: 16), enableLiquidGlassHover: true)
-    private let ejectButton = GlassButton(sprite: nil, size: CGSize(width: 16, height: 16), enableLiquidGlassHover: true)
+    private let stopButton = GlassButton(image: nil, size: CGSize(width: 16, height: 16), enableLiquidGlassHover: true)
+    private let prevButton = GlassButton(image: nil, size: CGSize(width: 16, height: 16), enableLiquidGlassHover: true)
+    private let playPauseButton = GlassButton(image: nil, size: CGSize(width: 16, height: 16), enableLiquidGlassHover: true)
+    private let nextButton = GlassButton(image: nil, size: CGSize(width: 16, height: 16), enableLiquidGlassHover: true)
+    private let ejectButton = GlassButton(image: nil, size: CGSize(width: 16, height: 16), enableLiquidGlassHover: true)
 
-    private let libraryButton = GlassButton(sprite: nil, size: CGSize(width: 13, height: 13))
-    private let lyricsButton = GlassButton(sprite: nil, size: CGSize(width: 13, height: 13))
-    private let expandButton = GlassButton(sprite: nil, size: CGSize(width: 13, height: 13))
-    private let quitButton = GlassButton(sprite: nil, size: CGSize(width: 13, height: 13))
+    private let miniSourceButton = GlassButton(image: nil, size: CGSize(width: 13, height: 13))
+    private let libraryButton = GlassButton(image: nil, size: CGSize(width: 13, height: 13))
+    private let lyricsButton = GlassButton(image: nil, size: CGSize(width: 13, height: 13))
+    private let expandButton = GlassButton(image: nil, size: CGSize(width: 13, height: 13))
+    private let quitButton = GlassButton(image: nil, size: CGSize(width: 13, height: 13))
 
     private var isPlayingState: Bool = false
     private var showRemainingTime: Bool = false
@@ -184,6 +187,7 @@ open class MiniPlayerView: GlassMiniPlayer {
     private var lastDurationMs: Int64 = 0
     private var isHovering: Bool = false
     private var trackingArea: NSTrackingArea?
+    private var cachedHaloSize: CGSize = .zero
 
     public override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
@@ -208,6 +212,10 @@ open class MiniPlayerView: GlassMiniPlayer {
         timeView.addGestureRecognizer(click)
         idleContainer.addSubview(timeView)
 
+        haloHostLayer.masksToBounds = false
+        haloHostLayer.opacity = 0.0
+        layer?.insertSublayer(haloHostLayer, at: 0)
+
         controlsContainer.wantsLayer = true
         controlsContainer.alphaValue = 0.0
         addSubview(controlsContainer)
@@ -223,6 +231,16 @@ open class MiniPlayerView: GlassMiniPlayer {
         controlsContainer.addSubview(playPauseButton)
         controlsContainer.addSubview(nextButton)
         controlsContainer.addSubview(ejectButton)
+
+        miniSourceButton.toolTip = "当前播放源 (点击切换或查看资料库)"
+        miniSourceButton.onClick = { [weak self] in
+            if let onToggleSource = self?.onToggleSource {
+                onToggleSource()
+            } else {
+                self?.onToggleLibrary?()
+            }
+        }
+        controlsContainer.addSubview(miniSourceButton)
 
         libraryButton.toolTip = "显示/隐藏音乐来源面板"
         libraryButton.onClick = { [weak self] in self?.onToggleLibrary?() }
@@ -261,18 +279,19 @@ open class MiniPlayerView: GlassMiniPlayer {
     }
 
     private func reloadSprites() {
-        let res = GlassInteractionCoordinator.shared.resolutionMode
-        let atlas = SkinAtlas.shared
-        stopButton.spriteImage = atlas.miniControl(.stop, resolution: res)
-        prevButton.spriteImage = atlas.miniControl(.previous, resolution: res)
-        playPauseButton.spriteImage = atlas.miniControl(isPlayingState ? .pause : .play, resolution: res)
-        nextButton.spriteImage = atlas.miniControl(.next, resolution: res)
-        ejectButton.spriteImage = atlas.miniControl(.eject, resolution: res)
+        let s = GlassInteractionCoordinator.shared.uiScale
 
-        libraryButton.spriteImage = atlas.windowButton(.maximize, resolution: res)
-        lyricsButton.spriteImage = atlas.windowButton(.lyricsNote, resolution: res)
-        expandButton.spriteImage = atlas.windowButton(.expandDown, resolution: res)
-        quitButton.spriteImage = atlas.windowButton(.close, resolution: res)
+        stopButton.setSymbol(name: "square.fill", pointSize: 8.5 * s, weight: .bold)
+        prevButton.setSymbol(name: "backward.fill", pointSize: 9.0 * s, weight: .bold)
+        playPauseButton.setSymbol(name: isPlayingState ? "pause.fill" : "play.fill", pointSize: 10.5 * s, weight: .bold)
+        nextButton.setSymbol(name: "forward.fill", pointSize: 9.0 * s, weight: .bold)
+        ejectButton.setSymbol(name: "eject.fill", pointSize: 8.5 * s, weight: .bold)
+
+        miniSourceButton.setSymbol(name: "apple.logo", pointSize: 9.5 * s, weight: .bold)
+        libraryButton.setSymbol(name: "books.vertical.fill", pointSize: 8.5 * s, weight: .semibold)
+        lyricsButton.setSymbol(name: "text.quote", pointSize: 8.5 * s, weight: .bold)
+        expandButton.setSymbol(name: "rectangle.expand.vertical", pointSize: 8.0 * s, weight: .bold)
+        quitButton.setSymbol(name: "xmark", pointSize: 8.0 * s, weight: .bold)
     }
 
     open override func updateTrackingAreas() {
@@ -296,16 +315,22 @@ open class MiniPlayerView: GlassMiniPlayer {
         isHovering = hovering
         let targetIdle: CGFloat = hovering ? 0.0 : 1.0
         let targetCtrl: CGFloat = hovering ? 1.0 : 0.0
+        let targetHalo: Float = hovering ? 1.0 : 0.0
 
         if MotionCoordinator.shared.isReduceMotionEnabled {
             idleContainer.alphaValue = targetIdle
             controlsContainer.alphaValue = targetCtrl
+            haloHostLayer.opacity = targetHalo
         } else {
             NSAnimationContext.runAnimationGroup { ctx in
                 ctx.duration = MotionTokens.Duration.hoverFade
                 idleContainer.animator().alphaValue = targetIdle
                 controlsContainer.animator().alphaValue = targetCtrl
             }
+            CATransaction.begin()
+            CATransaction.setAnimationDuration(MotionTokens.Duration.hoverFade)
+            haloHostLayer.opacity = targetHalo
+            CATransaction.commit()
         }
     }
 
@@ -317,13 +342,19 @@ open class MiniPlayerView: GlassMiniPlayer {
 
         idleContainer.frame = bounds
         controlsContainer.frame = bounds
+        haloHostLayer.frame = bounds
+
+        if cachedHaloSize != bounds.size {
+            cachedHaloSize = bounds.size
+            updateHaloLayer(w: w, h: h, s: s)
+        }
 
         // Idle: centered 10s carousel [Title, Artist, Album] across full bar without time display
         timeView.isHidden = true
         let textLeft = 14.0 * s
         carouselView.frame = NSRect(x: textLeft, y: 0, width: max(20, w - textLeft * 2.0), height: h)
 
-        // Hover: centered 5 MINICONTROL buttons (16×16 @ 1x) + right window buttons (13×13 @ 1x)
+        // Hover: centered 5 buttons (16×16 @ 1x) + left source button + right window buttons (13×13 @ 1x)
         let btnSize = 16.0 * s
         let btnY = (h - btnSize) * 0.5
         let startX = (w - 92.0 * s) * 0.5
@@ -335,10 +366,65 @@ open class MiniPlayerView: GlassMiniPlayer {
 
         let wbSize = 13.0 * s
         let wbY = (h - wbSize) * 0.5
+        miniSourceButton.frame = NSRect(x: 45.0 * s, y: wbY, width: wbSize, height: wbSize)
+
         libraryButton.frame = NSRect(x: w - 93.0 * s, y: wbY, width: wbSize, height: wbSize)
-        expandButton.frame = NSRect(x: w - 77.0 * s, y: wbY, width: wbSize, height: wbSize)
-        lyricsButton.frame = NSRect(x: w - 61.0 * s, y: wbY, width: wbSize, height: wbSize)
+        lyricsButton.frame = NSRect(x: w - 77.0 * s, y: wbY, width: wbSize, height: wbSize)
+        expandButton.frame = NSRect(x: w - 61.0 * s, y: wbY, width: wbSize, height: wbSize)
         quitButton.frame = NSRect(x: w - 45.0 * s, y: wbY, width: wbSize, height: wbSize)
+    }
+
+    private func updateHaloLayer(w: CGFloat, h: CGFloat, s: CGFloat) {
+        guard w > 20, h > 10 else { return }
+        let scale = window?.backingScaleFactor ?? 2.0
+        let pxW = max(1, Int(round(w * scale)))
+        let pxH = max(1, Int(round(h * scale)))
+        let cs = CGColorSpaceCreateDeviceRGB()
+        guard let ctx = CGContext(
+            data: nil,
+            width: pxW,
+            height: pxH,
+            bitsPerComponent: 8,
+            bytesPerRow: pxW * 4,
+            space: cs,
+            bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+        ) else { return }
+
+        ctx.scaleBy(x: scale, y: scale)
+        ctx.clear(CGRect(x: 0, y: 0, width: w, height: h))
+
+        // 3 lens halos replicating Remastered MainWindow.cpp:
+        // 1) Center playback controls
+        OriginalGlassRenderer.drawTextHalo(
+            in: ctx,
+            center: CGPoint(x: w * 0.5, y: h * 0.5),
+            rx: 68.0 * s,
+            ry: 14.0 * s,
+            centerAlpha: 135.0 / 255.0
+        )
+        // 2) Right window buttons
+        OriginalGlassRenderer.drawTextHalo(
+            in: ctx,
+            center: CGPoint(x: w - 61.0 * s, y: h * 0.5),
+            rx: 38.0 * s,
+            ry: 14.0 * s,
+            centerAlpha: 135.0 / 255.0
+        )
+        // 3) Left source indicator button
+        OriginalGlassRenderer.drawTextHalo(
+            in: ctx,
+            center: CGPoint(x: 51.5 * s, y: h * 0.5),
+            rx: 20.0 * s,
+            ry: 14.0 * s,
+            centerAlpha: 135.0 / 255.0
+        )
+
+        if let haloImg = ctx.makeImage() {
+            CATransaction.begin()
+            CATransaction.setDisableActions(true)
+            haloHostLayer.contents = haloImg
+            CATransaction.commit()
+        }
     }
 
     public func updateState(_ state: PlaybackState) {
@@ -346,8 +432,8 @@ open class MiniPlayerView: GlassMiniPlayer {
         lastPositionMs = state.estimatedPositionMs
         lastDurationMs = state.durationMs
 
-        let res = GlassInteractionCoordinator.shared.resolutionMode
-        playPauseButton.spriteImage = SkinAtlas.shared.miniControl(state.isPlaying ? .pause : .play, resolution: res)
+        let s = GlassInteractionCoordinator.shared.uiScale
+        playPauseButton.setSymbol(name: state.isPlaying ? "pause.fill" : "play.fill", pointSize: 10.5 * s, weight: .bold)
 
         if let track = state.currentTrack {
             carouselView.setItems([track.title, track.artistName, track.albumTitle])

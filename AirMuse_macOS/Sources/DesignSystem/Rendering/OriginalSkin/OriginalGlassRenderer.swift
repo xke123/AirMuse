@@ -98,6 +98,30 @@ public enum OriginalGlassRenderer {
                 ctx.restoreGState()
             }
 
+            // Roll shadows at top and bottom of middle body (gives physical depth where glass overlaps body)
+            let shadowDepth = min(10.0 * uiScale, midH * 0.45)
+            if shadowDepth > 1.0 {
+                let cs = CGColorSpaceCreateDeviceRGB()
+                let rollDark = CGColor(srgbRed: 0, green: 0, blue: 0, alpha: 90.0 / 255.0)
+                let rollClear = CGColor(srgbRed: 0, green: 0, blue: 0, alpha: 0.0)
+                if let rollGrad = CGGradient(colorsSpace: cs, colors: [rollDark, rollClear] as CFArray, locations: [0.0, 1.0]) {
+                    // Top roll shadow (fades downward from capH + midH)
+                    ctx.drawLinearGradient(
+                        rollGrad,
+                        start: CGPoint(x: sideInset, y: capH + midH),
+                        end: CGPoint(x: sideInset, y: capH + midH - shadowDepth),
+                        options: []
+                    )
+                    // Bottom roll shadow (fades upward from capH)
+                    ctx.drawLinearGradient(
+                        rollGrad,
+                        start: CGPoint(x: sideInset, y: capH),
+                        end: CGPoint(x: sideInset, y: capH + shadowDepth),
+                        options: []
+                    )
+                }
+            }
+
             ctx.restoreGState()
         }
 
@@ -161,34 +185,174 @@ public enum OriginalGlassRenderer {
         }
     }
 
-    /// Draws the subtle dark fog spill behind top/bottom glass bar icons & labels so silver sprites stay legible.
+    /// Directional edge of the body seam from which the aurora fog spills into the crystal glass bar.
+    public enum BarSeamEdge: Sendable {
+        /// Seam is at the bottom of the bar (e.g. Top Glass Bar). Spills upward from bar's bottom edge into glass.
+        case bottom
+        /// Seam is at the top of the bar (e.g. Bottom Glass Bar). Spills downward from bar's top edge into glass.
+        case top
+    }
+
+    /// Draws an edge-adaptive aurora mist plume extending directly from the dark body seam into the crystal glass bar.
+    /// - At the body seam: 100% solid dark tone (alpha 1.0) connecting flush with the dark panel body.
+    /// - Away from the seam: smoothly feathers and decays to 0.0 before reaching 88% of bar height (leaving crystal glass margin).
+    /// - Horizontally: full intensity between `xMin` and `xMax`, with smooth elliptical wings fanning out on both sides.
+    public static func drawAuroraFogPlume(
+        in ctx: CGContext,
+        barBounds: CGRect,
+        xMin: CGFloat,
+        xMax: CGFloat,
+        seamEdge: BarSeamEdge,
+        spreadLeft: CGFloat? = nil,
+        spreadRight: CGFloat? = nil,
+        peakAlpha: CGFloat = 1.0
+    ) {
+        guard peakAlpha > 0.015, barBounds.width > 2, barBounds.height > 2 else { return }
+
+        ctx.saveGState()
+        ctx.clip(to: barBounds)
+
+        let cs = CGColorSpaceCreateDeviceRGB()
+
+        let reachH = barBounds.height * 0.88
+        let seamY: CGFloat = (seamEdge == .bottom) ? barBounds.minY : barBounds.maxY
+        let outerY: CGFloat = (seamEdge == .bottom) ? (seamY + reachH) : (seamY - reachH)
+
+        let sL = max(1.0, spreadLeft ?? max(24.0, barBounds.height * 1.2))
+        let sR = max(1.0, spreadRight ?? max(24.0, barBounds.height * 1.2))
+
+        let darkR: CGFloat = 10.0 / 255.0
+        let darkG: CGFloat = 12.0 / 255.0
+        let darkB: CGFloat = 16.0 / 255.0
+
+        // Vertical decay colors: solid 1.0 at seam to 0.0 at 88% height
+        let colors = [
+            CGColor(srgbRed: darkR, green: darkG, blue: darkB, alpha: peakAlpha),
+            CGColor(srgbRed: darkR, green: darkG, blue: darkB, alpha: peakAlpha * 0.90),
+            CGColor(srgbRed: darkR, green: darkG, blue: darkB, alpha: peakAlpha * 0.58),
+            CGColor(srgbRed: darkR, green: darkG, blue: darkB, alpha: peakAlpha * 0.20),
+            CGColor(srgbRed: darkR, green: darkG, blue: darkB, alpha: peakAlpha * 0.04),
+            CGColor(srgbRed: darkR, green: darkG, blue: darkB, alpha: 0.0)
+        ]
+        let locations: [CGFloat] = [0.0, 0.30, 0.58, 0.78, 0.92, 1.0]
+
+        guard let grad = CGGradient(colorsSpace: cs, colors: colors as CFArray, locations: locations) else {
+            ctx.restoreGState()
+            return
+        }
+
+        let clampedXMin = max(barBounds.minX, min(xMin, xMax))
+        let clampedXMax = min(barBounds.maxX, max(xMin, xMax))
+        let centerW = max(0, clampedXMax - clampedXMin)
+
+        // 1. Center rectangular section [clampedXMin, clampedXMax] with purely vertical linear gradient
+        if centerW > 0.5 {
+            let centerRect = CGRect(
+                x: clampedXMin,
+                y: min(seamY, outerY),
+                width: centerW,
+                height: reachH
+            )
+            ctx.saveGState()
+            ctx.clip(to: centerRect)
+            ctx.drawLinearGradient(
+                grad,
+                start: CGPoint(x: clampedXMin, y: seamY),
+                end: CGPoint(x: clampedXMin, y: outerY),
+                options: []
+            )
+            ctx.restoreGState()
+        }
+
+        // 2. Left elliptical fan [clampedXMin - sL, clampedXMin]
+        if sL > 1.0 {
+            let leftRect = CGRect(
+                x: clampedXMin - sL,
+                y: min(seamY, outerY),
+                width: sL,
+                height: reachH
+            )
+            ctx.saveGState()
+            ctx.clip(to: leftRect)
+            ctx.translateBy(x: clampedXMin, y: seamY)
+            ctx.scaleBy(x: 1.0, y: reachH / sL)
+            ctx.drawRadialGradient(
+                grad,
+                startCenter: .zero,
+                startRadius: 0,
+                endCenter: .zero,
+                endRadius: sL,
+                options: []
+            )
+            ctx.restoreGState()
+        }
+
+        // 3. Right elliptical fan [clampedXMax, clampedXMax + sR]
+        if sR > 1.0 {
+            let rightRect = CGRect(
+                x: clampedXMax,
+                y: min(seamY, outerY),
+                width: sR,
+                height: reachH
+            )
+            ctx.saveGState()
+            ctx.clip(to: rightRect)
+            ctx.translateBy(x: clampedXMax, y: seamY)
+            ctx.scaleBy(x: 1.0, y: reachH / sR)
+            ctx.drawRadialGradient(
+                grad,
+                startCenter: .zero,
+                startRadius: 0,
+                endCenter: .zero,
+                endRadius: sR,
+                options: []
+            )
+            ctx.restoreGState()
+        }
+
+        ctx.restoreGState()
+    }
+
+    /// Legacy bridge method maintaining backwards compatibility.
     public static func drawBarSpillFog(
         in ctx: CGContext,
         barClip: CGRect,
         anchorX: CGFloat,
         leftSpan: CGFloat,
         rightSpan: CGFloat,
+        fromBottom: Bool = true,
         peakAlpha: CGFloat
     ) {
-        guard peakAlpha > 0.015, (leftSpan + rightSpan) > 4.0, barClip.width > 2, barClip.height > 2 else { return }
+        drawAuroraFogPlume(
+            in: ctx,
+            barBounds: barClip,
+            xMin: anchorX - leftSpan,
+            xMax: anchorX + rightSpan,
+            seamEdge: fromBottom ? .bottom : .top,
+            spreadLeft: leftSpan * 0.45,
+            spreadRight: rightSpan * 0.45,
+            peakAlpha: peakAlpha
+        )
+    }
 
+    /// Draws an elliptical dark halo behind button clusters or text to ensure contrast against glass highlights.
+    public static func drawTextHalo(
+        in ctx: CGContext,
+        center: CGPoint,
+        rx: CGFloat,
+        ry: CGFloat,
+        centerAlpha: CGFloat
+    ) {
+        guard centerAlpha > 0.015, rx > 2.0, ry > 2.0 else { return }
         ctx.saveGState()
-        ctx.clip(to: barClip)
-
         let cs = CGColorSpaceCreateDeviceRGB()
-        let centerPt = CGPoint(x: anchorX, y: barClip.midY)
-        let radius = max(leftSpan, rightSpan)
-        let centerColor = CGColor(srgbRed: 14/255.0, green: 16/255.0, blue: 20/255.0, alpha: peakAlpha * 0.65)
-        let edgeColor = CGColor(srgbRed: 14/255.0, green: 16/255.0, blue: 20/255.0, alpha: 0.0)
-
-        if let grad = CGGradient(colorsSpace: cs, colors: [centerColor, edgeColor] as CFArray, locations: [0.0, 1.0]) {
-            ctx.saveGState()
-            ctx.translateBy(x: centerPt.x, y: centerPt.y)
-            ctx.scaleBy(x: 1.0, y: max(0.25, barClip.height / max(1.0, radius)))
-            ctx.drawRadialGradient(grad, startCenter: .zero, startRadius: 0, endCenter: .zero, endRadius: radius, options: [])
-            ctx.restoreGState()
+        let cColor = CGColor(srgbRed: 12/255.0, green: 14/255.0, blue: 18/255.0, alpha: centerAlpha)
+        let edgeColor = CGColor(srgbRed: 12/255.0, green: 14/255.0, blue: 18/255.0, alpha: 0.0)
+        if let grad = CGGradient(colorsSpace: cs, colors: [cColor, edgeColor] as CFArray, locations: [0.0, 1.0]) {
+            ctx.translateBy(x: center.x, y: center.y)
+            ctx.scaleBy(x: 1.0, y: ry / max(1.0, rx))
+            ctx.drawRadialGradient(grad, startCenter: .zero, startRadius: 0, endCenter: .zero, endRadius: rx, options: [])
         }
-
         ctx.restoreGState()
     }
 

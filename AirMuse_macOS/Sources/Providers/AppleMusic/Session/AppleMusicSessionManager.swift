@@ -13,6 +13,7 @@ import Infrastructure
 public final class AppleMusicSessionManager: NSObject {
 
     public static let shared = AppleMusicSessionManager()
+    public static let sessionStateDidChangeNotification = Notification.Name("com.airmuse.sessionStateDidChange")
 
     // MARK: - State
 
@@ -23,6 +24,11 @@ public final class AppleMusicSessionManager: NSObject {
                 category: .auth,
                 level: .info,
                 message: "Apple Music Web 会话状态流转: \(oldValue.displayName) -> \(webSessionState.displayName)"
+            )
+            NotificationCenter.default.post(
+                name: Self.sessionStateDidChangeNotification,
+                object: self,
+                userInfo: ["state": webSessionState]
             )
             onStateChanged?(webSessionState)
         }

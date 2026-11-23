@@ -205,11 +205,20 @@ open class PlayerView: GlassSurface {
     public var onToggleLibrary: (() -> Void)?
     public var onMinimize: (() -> Void)?
     public var onQuit: (() -> Void)?
+    public var onSelectAppleMusic: (() -> Void)?
+    public var onSelectSpotify: (() -> Void)?
+    public var onSelectQQMusic: (() -> Void)?
+
+    public var currentPlatform: Int = 0 {
+        didSet {
+            updatePlatformHighlight()
+        }
+    }
 
     public var isTopMost: Bool = true {
         didSet {
-            let res = GlassInteractionCoordinator.shared.resolutionMode
-            topMostButton.spriteImage = SkinAtlas.shared.windowButton(isTopMost ? .pinned : .unpinned, resolution: res)
+            let s = GlassInteractionCoordinator.shared.uiScale
+            topMostButton.setSymbol(name: isTopMost ? "pin.fill" : "pin", pointSize: 9.0 * s, weight: .semibold)
         }
     }
 
@@ -225,22 +234,25 @@ open class PlayerView: GlassSurface {
 
     // Hover control views
     private let controlsContainer = NSView()
-    private let stopButton = GlassButton(sprite: nil, size: CGSize(width: 32, height: 32), enableLiquidGlassHover: true)
-    private let prevButton = GlassButton(sprite: nil, size: CGSize(width: 32, height: 32), enableLiquidGlassHover: true)
-    private let playPauseButton = GlassButton(sprite: nil, size: CGSize(width: 32, height: 32), enableLiquidGlassHover: true)
-    private let nextButton = GlassButton(sprite: nil, size: CGSize(width: 32, height: 32), enableLiquidGlassHover: true)
-    private let ejectButton = GlassButton(sprite: nil, size: CGSize(width: 32, height: 32), enableLiquidGlassHover: true)
+    private let stopButton = GlassButton(image: nil, size: CGSize(width: 32, height: 32), enableLiquidGlassHover: true)
+    private let prevButton = GlassButton(image: nil, size: CGSize(width: 32, height: 32), enableLiquidGlassHover: true)
+    private let playPauseButton = GlassButton(image: nil, size: CGSize(width: 32, height: 32), enableLiquidGlassHover: true)
+    private let nextButton = GlassButton(image: nil, size: CGSize(width: 32, height: 32), enableLiquidGlassHover: true)
+    private let ejectButton = GlassButton(image: nil, size: CGSize(width: 32, height: 32), enableLiquidGlassHover: true)
 
     // Window buttons (Top Glass Bar)
     private let glassStyleButton = GlassButton(image: nil, size: CGSize(width: 13, height: 13))
-    private let minimizeButton = GlassButton(sprite: nil, size: CGSize(width: 13, height: 13))
-    private let miniModeButton = GlassButton(sprite: nil, size: CGSize(width: 13, height: 13))
-    private let topMostButton = GlassButton(sprite: nil, size: CGSize(width: 13, height: 13))
-    private let quitButton = GlassButton(sprite: nil, size: CGSize(width: 13, height: 13))
+    private let minimizeButton = GlassButton(image: nil, size: CGSize(width: 13, height: 13))
+    private let miniModeButton = GlassButton(image: nil, size: CGSize(width: 13, height: 13))
+    private let topMostButton = GlassButton(image: nil, size: CGSize(width: 13, height: 13))
+    private let quitButton = GlassButton(image: nil, size: CGSize(width: 13, height: 13))
 
-    // Panel buttons (Bottom Glass Bar)
-    private let libraryButton = GlassButton(sprite: nil, size: CGSize(width: 13, height: 13))
-    private let lyricsButton = GlassButton(sprite: nil, size: CGSize(width: 13, height: 13))
+    // Panel & Source buttons (Bottom Glass Bar)
+    private let appleMusicButton = GlassButton(image: nil, size: CGSize(width: 13, height: 13))
+    private let spotifyButton = GlassButton(image: nil, size: CGSize(width: 13, height: 13))
+    private let qqMusicButton = GlassButton(image: nil, size: CGSize(width: 13, height: 13))
+    private let libraryButton = GlassButton(image: nil, size: CGSize(width: 13, height: 13))
+    private let lyricsButton = GlassButton(image: nil, size: CGSize(width: 13, height: 13))
 
     // Always-visible body progress & time
     private let progressView = CapsuleProgressView()
@@ -317,6 +329,12 @@ open class PlayerView: GlassSurface {
         controlsContainer.alphaValue = 0.0
         addSubview(controlsContainer)
 
+        stopButton.enableDarkHalo = true
+        prevButton.enableDarkHalo = true
+        playPauseButton.enableDarkHalo = true
+        nextButton.enableDarkHalo = true
+        ejectButton.enableDarkHalo = true
+
         stopButton.onClick = { [weak self] in self?.onStop?() }
         prevButton.onClick = { [weak self] in self?.onPrevious?() }
         playPauseButton.onClick = { [weak self] in self?.onPlayPause?() }
@@ -333,19 +351,24 @@ open class PlayerView: GlassSurface {
         controlsContainer.addSubview(volumeView)
 
         // Top glass bar buttons
+        glassStyleButton.enableDarkHalo = false
         glassStyleButton.onClick = {
             GlassInteractionCoordinator.shared.useFrostedBarsInNormalMode.toggle()
         }
         controlsContainer.addSubview(glassStyleButton)
 
+        minimizeButton.enableDarkHalo = false
         minimizeButton.toolTip = "最小化"
         minimizeButton.onClick = { [weak self] in
             if let onMinimize = self?.onMinimize { onMinimize() } else { self?.window?.miniaturize(nil) }
         }
+        miniModeButton.enableDarkHalo = false
         miniModeButton.toolTip = "切换迷你模式"
         miniModeButton.onClick = { [weak self] in self?.onToggleMiniMode?() }
+        topMostButton.enableDarkHalo = false
         topMostButton.toolTip = "总在最前"
         topMostButton.onClick = { [weak self] in self?.onToggleTopMost?() }
+        quitButton.enableDarkHalo = false
         quitButton.toolTip = "退出 AirMuse"
         quitButton.onClick = { [weak self] in
             if let onQuit = self?.onQuit { onQuit() } else { NSApp.terminate(nil) }
@@ -357,8 +380,34 @@ open class PlayerView: GlassSurface {
         controlsContainer.addSubview(quitButton)
 
         // Bottom glass bar buttons
+        appleMusicButton.enableDarkHalo = false
+        appleMusicButton.toolTip = "Apple Music"
+        appleMusicButton.onClick = { [weak self] in
+            self?.currentPlatform = 0
+            self?.onSelectAppleMusic?()
+        }
+        controlsContainer.addSubview(appleMusicButton)
+
+        spotifyButton.enableDarkHalo = false
+        spotifyButton.toolTip = "Spotify"
+        spotifyButton.onClick = { [weak self] in
+            self?.currentPlatform = 1
+            self?.onSelectSpotify?()
+        }
+        controlsContainer.addSubview(spotifyButton)
+
+        qqMusicButton.enableDarkHalo = false
+        qqMusicButton.toolTip = "QQ 音乐"
+        qqMusicButton.onClick = { [weak self] in
+            self?.currentPlatform = 2
+            self?.onSelectQQMusic?()
+        }
+        controlsContainer.addSubview(qqMusicButton)
+
+        libraryButton.enableDarkHalo = false
         libraryButton.toolTip = "音乐资料库"
         libraryButton.onClick = { [weak self] in self?.onToggleLibrary?() }
+        lyricsButton.enableDarkHalo = false
         lyricsButton.toolTip = "桌面歌词"
         lyricsButton.onClick = { [weak self] in self?.onToggleLyrics?() }
         controlsContainer.addSubview(libraryButton)
@@ -401,27 +450,38 @@ open class PlayerView: GlassSurface {
     }
 
     private func reloadSprites() {
-        let res = GlassInteractionCoordinator.shared.resolutionMode
-        let atlas = SkinAtlas.shared
-        stopButton.spriteImage = atlas.mainControl(.stop, resolution: res)
-        prevButton.spriteImage = atlas.mainControl(.previous, resolution: res)
-        playPauseButton.spriteImage = atlas.mainControl(isPlayingState ? .pause : .play, resolution: res)
-        nextButton.spriteImage = atlas.mainControl(.next, resolution: res)
-        ejectButton.spriteImage = atlas.mainControl(.eject, resolution: res)
+        let s = GlassInteractionCoordinator.shared.uiScale
+
+        stopButton.setSymbol(name: "square.fill", pointSize: 13.0 * s, weight: .bold)
+        prevButton.setSymbol(name: "backward.fill", pointSize: 13.5 * s, weight: .bold)
+        playPauseButton.setSymbol(name: isPlayingState ? "pause.fill" : "play.fill", pointSize: 16.5 * s, weight: .bold)
+        nextButton.setSymbol(name: "forward.fill", pointSize: 13.5 * s, weight: .bold)
+        ejectButton.setSymbol(name: "eject.fill", pointSize: 12.0 * s, weight: .bold)
 
         let frosted = GlassInteractionCoordinator.shared.useFrostedBarsInNormalMode
         let styleSymbol = frosted ? "sparkles.rectangle.stack" : "square.on.square"
-        let cfg = NSImage.SymbolConfiguration(pointSize: 10.5, weight: .medium)
-        glassStyleButton.image = NSImage(systemSymbolName: styleSymbol, accessibilityDescription: "切换玻璃条样式")?.withSymbolConfiguration(cfg)
+        glassStyleButton.setSymbol(name: styleSymbol, pointSize: 9.0 * s, weight: .medium)
         glassStyleButton.toolTip = frosted ? "切换玻璃条样式（当前：磨砂模糊 / 点击切回原版）" : "切换玻璃条样式（当前：原版玻璃 / 点击切为磨砂）"
 
-        minimizeButton.spriteImage = atlas.windowButton(.minimize, resolution: res)
-        miniModeButton.spriteImage = atlas.windowButton(.miniToggle, resolution: res)
-        topMostButton.spriteImage = atlas.windowButton(isTopMost ? .pinned : .unpinned, resolution: res)
-        quitButton.spriteImage = atlas.windowButton(.close, resolution: res)
+        minimizeButton.setSymbol(name: "minus", pointSize: 9.0 * s, weight: .bold)
+        miniModeButton.setSymbol(name: "rectangle.compress.vertical", pointSize: 8.5 * s, weight: .bold)
+        topMostButton.setSymbol(name: isTopMost ? "pin.fill" : "pin", pointSize: 9.0 * s, weight: .semibold)
+        quitButton.setSymbol(name: "xmark", pointSize: 8.5 * s, weight: .bold)
 
-        libraryButton.spriteImage = atlas.windowButton(.maximize, resolution: res)
-        lyricsButton.spriteImage = atlas.windowButton(.lyricsNote, resolution: res)
+        appleMusicButton.setSymbol(name: "apple.logo", pointSize: 10.0 * s, weight: .bold)
+        spotifyButton.setSymbol(name: "dot.radiowaves.left.and.right", pointSize: 9.0 * s, weight: .semibold)
+        qqMusicButton.setSymbol(name: "waveform", pointSize: 9.0 * s, weight: .semibold)
+
+        libraryButton.setSymbol(name: "books.vertical.fill", pointSize: 9.0 * s, weight: .semibold)
+        lyricsButton.setSymbol(name: "text.quote", pointSize: 9.0 * s, weight: .bold)
+
+        updatePlatformHighlight()
+    }
+
+    private func updatePlatformHighlight() {
+        appleMusicButton.isHighlightedState = (currentPlatform == 0)
+        spotifyButton.isHighlightedState = (currentPlatform == 1)
+        qqMusicButton.isHighlightedState = (currentPlatform == 2)
     }
 
     open override func updateTrackingAreas() {
@@ -504,11 +564,13 @@ open class PlayerView: GlassSurface {
         isHoveringPanel = hovering
         let targetIdle: CGFloat = hovering ? 0.0 : 1.0
         let targetCtrl: CGFloat = hovering ? 1.0 : 0.0
+        let targetFogOpacity: Float = hovering ? 1.0 : 0.0
         artworkHoverGlass.isActive = hovering
 
         if MotionCoordinator.shared.isReduceMotionEnabled {
             idleContainer.alphaValue = targetIdle
             controlsContainer.alphaValue = targetCtrl
+            composer.fogLayer.opacity = targetFogOpacity
             artworkView.layer?.borderColor = NSColor(white: 1.0, alpha: hovering ? 0.36 : 0.16).cgColor
         } else {
             NSAnimationContext.runAnimationGroup { ctx in
@@ -516,6 +578,10 @@ open class PlayerView: GlassSurface {
                 idleContainer.animator().alphaValue = targetIdle
                 controlsContainer.animator().alphaValue = targetCtrl
             }
+            CATransaction.begin()
+            CATransaction.setAnimationDuration(MotionTokens.Duration.hoverFade)
+            composer.fogLayer.opacity = targetFogOpacity
+            CATransaction.commit()
             artworkView.layer?.borderColor = NSColor(white: 1.0, alpha: hovering ? 0.36 : 0.16).cgColor
         }
     }
@@ -555,7 +621,7 @@ open class PlayerView: GlassSurface {
         titleLabel.frame = NSRect(x: rightColLeft, y: appKitY(topY: 26.0 * s, height: 19.0 * s), width: rightColW, height: 19.0 * s)
         artistLabel.frame = NSRect(x: rightColLeft, y: appKitY(topY: 46.0 * s, height: 16.0 * s), width: rightColW, height: 16.0 * s)
 
-        // Right Column Upper (Hover): 5 MAINCONTROL sprite buttons (32×32 @ 1x)
+        // Right Column Upper (Hover): 5 playback control buttons (32×32 @ 1x)
         let ctrlSize = 32.0 * s
         let groupW = 164.0 * s
         let startX = rightColLeft + max(0, (rightColW - groupW) * 0.5)
@@ -566,17 +632,26 @@ open class PlayerView: GlassSurface {
         nextButton.frame = NSRect(x: startX + 100.0 * s, y: ctrlY, width: ctrlSize, height: ctrlSize)
         ejectButton.frame = NSRect(x: startX + 132.0 * s, y: ctrlY, width: ctrlSize, height: ctrlSize)
 
-        // 3. Top glass bar window buttons (13×13 @ 1x)
+        // 3. Top glass bar window buttons (13×13 @ 1x), perfectly aligned horizontally
         let wbSize = 13.0 * s
-        glassStyleButton.frame = NSRect(x: w - 109.0 * s, y: appKitY(topY: 4.0 * s, height: wbSize), width: wbSize, height: wbSize)
-        minimizeButton.frame = NSRect(x: w - 93.0 * s, y: appKitY(topY: 4.0 * s, height: wbSize), width: wbSize, height: wbSize)
-        miniModeButton.frame = NSRect(x: w - 77.0 * s, y: appKitY(topY: 8.0 * s, height: wbSize), width: wbSize, height: wbSize)
-        topMostButton.frame = NSRect(x: w - 61.0 * s, y: appKitY(topY: 4.0 * s, height: wbSize), width: wbSize, height: wbSize)
-        quitButton.frame = NSRect(x: w - 45.0 * s, y: appKitY(topY: 8.0 * s, height: wbSize), width: wbSize, height: wbSize)
+        let capH = OriginalDesignTokens.BaseMetrics.glassCapHeight * s
+        let topBarBtnY = (h - capH) + (capH - wbSize) * 0.5
+        let btnSpacing = 5.0 * s
 
-        // 4. Bottom glass bar panel buttons (13×13 @ 1x)
-        libraryButton.frame = NSRect(x: w - 63.0 * s, y: appKitY(topY: h - 17.0 * s, height: wbSize), width: wbSize, height: wbSize)
-        lyricsButton.frame = NSRect(x: w - 45.0 * s, y: appKitY(topY: h - 17.0 * s, height: wbSize), width: wbSize, height: wbSize)
+        quitButton.frame = NSRect(x: w - 16.0 * s - wbSize, y: topBarBtnY, width: wbSize, height: wbSize)
+        topMostButton.frame = NSRect(x: quitButton.frame.minX - btnSpacing - wbSize, y: topBarBtnY, width: wbSize, height: wbSize)
+        miniModeButton.frame = NSRect(x: topMostButton.frame.minX - btnSpacing - wbSize, y: topBarBtnY, width: wbSize, height: wbSize)
+        minimizeButton.frame = NSRect(x: miniModeButton.frame.minX - btnSpacing - wbSize, y: topBarBtnY, width: wbSize, height: wbSize)
+        glassStyleButton.frame = NSRect(x: minimizeButton.frame.minX - btnSpacing - wbSize, y: topBarBtnY, width: wbSize, height: wbSize)
+
+        // 4. Bottom glass bar panel & source buttons (13×13 @ 1x), perfectly aligned horizontally
+        let botBarBtnY = (capH - wbSize) * 0.5
+        appleMusicButton.frame = NSRect(x: 20.0 * s, y: botBarBtnY, width: wbSize, height: wbSize)
+        spotifyButton.frame = NSRect(x: appleMusicButton.frame.maxX + 6.0 * s, y: botBarBtnY, width: wbSize, height: wbSize)
+        qqMusicButton.frame = NSRect(x: spotifyButton.frame.maxX + 6.0 * s, y: botBarBtnY, width: wbSize, height: wbSize)
+
+        lyricsButton.frame = NSRect(x: w - 16.0 * s - wbSize, y: botBarBtnY, width: wbSize, height: wbSize)
+        libraryButton.frame = NSRect(x: lyricsButton.frame.minX - 6.0 * s - wbSize, y: botBarBtnY, width: wbSize, height: wbSize)
 
         // 5. Volume segments (far right of right column)
         volumeView.frame = NSRect(x: w - 23.0 * s, y: appKitY(topY: 32.0 * s, height: 38.0 * s), width: 14.0 * s, height: 38.0 * s)
@@ -595,10 +670,9 @@ open class PlayerView: GlassSurface {
         currentDurationMs = state.durationMs
         isPlayingState = state.isPlaying
 
-        let res = GlassInteractionCoordinator.shared.resolutionMode
-        playPauseButton.spriteImage = SkinAtlas.shared.mainControl(state.isPlaying ? .pause : .play, resolution: res)
-
         let s = GlassInteractionCoordinator.shared.uiScale
+        playPauseButton.setSymbol(name: state.isPlaying ? "pause.fill" : "play.fill", pointSize: 16.5 * s, weight: .bold)
+
         let titleFont = NSFont.systemFont(ofSize: 13.0 * s, weight: .bold)
         let subFont = NSFont.systemFont(ofSize: 11.0 * s, weight: .regular)
 
