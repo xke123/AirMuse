@@ -11,7 +11,7 @@ import QuartzCore
 @MainActor
 open class LiquidGlassControl: NSView {
 
-    private var glassEffectView: NSView?
+    private var glassEffectView: NSGlassEffectView?
     private var cornerRadiusValue: CGFloat = 8.0
     private var isEnhancementActive: Bool = false
 
@@ -46,15 +46,13 @@ open class LiquidGlassControl: NSView {
         wantsLayer = true
         layer?.masksToBounds = true
 
-        if #available(macOS 26.0, *) {
-            let effect = NSGlassEffectView(frame: bounds)
-            effect.autoresizingMask = [.width, .height]
-            effect.style = .clear
-            effect.cornerRadius = cornerRadiusValue
-            effect.alphaValue = 0.0
-            addSubview(effect)
-            self.glassEffectView = effect
-        }
+        let effect = NSGlassEffectView(frame: bounds)
+        effect.autoresizingMask = [.width, .height]
+        effect.style = .clear
+        effect.cornerRadius = cornerRadiusValue
+        effect.alphaValue = 0.0
+        addSubview(effect)
+        self.glassEffectView = effect
 
         NotificationCenter.default.addObserver(
             self,
@@ -78,11 +76,7 @@ open class LiquidGlassControl: NSView {
         let enhanced = GlassInteractionCoordinator.shared.isEnhancedMode
         let targetAlpha: CGFloat = (enhanced && isEnhancementActive) ? 1.0 : 0.0
 
-        if #available(macOS 26.0, *), let effect = glassEffectView as? NSGlassEffectView {
-            effect.cornerRadius = cornerRadiusValue
-        } else {
-            layer?.cornerRadius = cornerRadiusValue
-        }
+        glassEffectView?.cornerRadius = cornerRadiusValue
 
         if MotionCoordinator.shared.isReduceMotionEnabled {
             glassEffectView?.alphaValue = targetAlpha

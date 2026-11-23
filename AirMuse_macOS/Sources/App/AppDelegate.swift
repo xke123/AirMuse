@@ -16,11 +16,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var playbackStore: PlaybackStore?
     private var lyricsEngine: LyricsEngine?
     private var playerWindowController: PlayerWindowController?
-    private var lyricsWindow: LyricsWindow?
+    private var lyricsModuleView: LyricsModuleView?
     private var libraryWindowController: LibraryWindowController?
     private var logWindowController: LogWindowController?
     private var appleMusicAuthWindowController: AppleMusicAuthWindowController?
-    private let dockManager = DockManager()
+    private var stageController: UnifiedStageController?
 
     private var appleMusicProvider: AppleMusicProvider?
 
@@ -62,18 +62,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let logCtrl = LogWindowController(appleMusicProvider: appleMusic)
         let authCtrl = AppleMusicAuthWindowController(sessionManager: .shared)
 
-        // Attach Web Player to active Player Window content view for keep-alive without preloading before auth barrier
-        if let contentView = playerCtrl.window?.contentView {
-            AppleMusicSessionManager.shared.webPlayer.attach(to: contentView, preloadImmediately: false)
-        }
+        let lyricsView = LyricsModuleView(frame: .zero)
+        let stage = UnifiedStageController(playerCtrl: playerCtrl, lyricsView: lyricsView, libraryCtrl: libCtrl)
 
-        let lyricsFrame = NSRect(
-            x: playerCtrl.window?.frame.minX ?? 200,
-            y: (playerCtrl.window?.frame.minY ?? 500) - DesignTokens.Metrics.lyricsWindowHeight,
-            width: DesignTokens.Metrics.lyricsWindowWidth,
-            height: DesignTokens.Metrics.lyricsWindowHeight
-        )
-        let lyricsWnd = LyricsWindow(frame: lyricsFrame)
+        // Attach Web Player to player slot view for keep-alive inside player bounds
+        AppleMusicSessionManager.shared.webPlayer.attach(to: playerCtrl.playerSlotView, preloadImmediately: false)
 
         // Automatically advance queue when track ends in WebKit Player
         let advanceAction: @Sendable () -> Void = { [weak coordinator] in
@@ -102,7 +95,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         // Wire lyrics offset adjust
-        lyricsWnd.lyricsView.onAdjustOffset = { [weak lyrics, weak store] delta in
+        lyricsView.lyricsView.onAdjustOffset = { [weak lyrics, weak store] delta in
             Task {
                 guard let lyrics, let store else { return }
                 let state = await store.state
@@ -114,29 +107,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         self.playerWindowController = playerCtrl
         self.libraryWindowController = libCtrl
-        self.lyricsWindow = lyricsWnd
+        self.lyricsModuleView = lyricsView
+        self.stageController = stage
         self.logWindowController = logCtrl
         self.appleMusicAuthWindowController = authCtrl
 
-        // Window toggles
+        // Module toggles inside UnifiedStageController
         playerCtrl.onToggleLyrics = { [weak self] in
-            guard let self, let wnd = self.lyricsWindow else { return }
-            if wnd.isVisible {
-                wnd.orderOut(nil)
-            } else {
-                wnd.makeKeyAndOrderFront(nil)
-                self.dockManager.syncAllDocked()
-            }
+            self?.stageController?.toggleLyrics()
         }
 
         playerCtrl.onToggleLibrary = { [weak self] in
-            guard let self, let wnd = self.libraryWindowController?.window else { return }
-            if wnd.isVisible {
-                wnd.orderOut(nil)
-            } else {
-                wnd.makeKeyAndOrderFront(nil)
-                self.dockManager.syncAllDocked()
-            }
+            self?.stageController?.toggleLibrary()
         }
 
         playerCtrl.onToggleLog = { [weak self] in
@@ -166,40 +148,30 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
         }
 
-        // Attach to DockManager
-        if let mainWnd = playerCtrl.window {
-            dockManager.attachWindows(main: mainWnd, mini: playerCtrl.miniWindow, lyrics: lyricsWnd, library: libCtrl.window)
-            playerCtrl.onModeDidTransition = { [weak self] in
-                self?.dockManager.syncAllDocked()
-            }
-            mainWnd.makeKeyAndOrderFront(nil)
-            lyricsWnd.makeKeyAndOrderFront(nil)   // show lyrics on launch
-            libCtrl.window?.makeKeyAndOrderFront(nil)  // show library on launch
-            dockManager.syncAllDocked()
-            NSApp.activate()
-        }
+        // Show unified single host window
+        stage.showAndFocus()
 
-        // Connect Lyrics stream to LyricsWindow
-        Task { [weak lyricsWnd] in
+        // Connect Lyrics stream to LyricsModuleView
+        Task { [weak lyricsView] in
             let stream = await store.lyricsStream()
             for await doc in stream {
                 guard !Task.isCancelled else { break }
                 await MainActor.run {
-                    lyricsWnd?.lyricsView.updateLyrics(doc)
+                    lyricsView?.lyricsView.updateLyrics(doc)
                 }
             }
         }
 
         // High-frequency smooth position synchronization for synced lyrics
-        Task { [weak lyricsWnd, weak store] in
+        Task { [weak lyricsView, weak store] in
             while !Task.isCancelled {
                 try? await Task.sleep(for: .milliseconds(100))
-                guard let lyricsWnd, let store else { break }
+                guard let lyricsView, let store else { break }
                 let state = await store.state
                 if state.isPlaying || state.estimatedPositionMs > 0 {
                     let est = state.estimatedPositionMs
                     await MainActor.run {
-                        lyricsWnd.lyricsView.updatePlaybackPosition(ms: est)
+                        lyricsView.lyricsView.updatePlaybackPosition(ms: est)
                     }
                 }
             }

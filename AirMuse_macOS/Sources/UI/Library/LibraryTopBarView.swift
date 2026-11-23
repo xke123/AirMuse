@@ -76,23 +76,14 @@ open class LibraryTopBarView: NSView {
     private func setupGlass() {
         wantsLayer = true
 
-        if #available(macOS 26.0, *) {
-            // macOS 26+: use native Liquid Glass as the entire top-bar backdrop.
-            // NSGlassEffectView(.clear) gives the frosted-glass material;
-            // the controls sit on top of it without any manual background colour.
-            let glass = NSGlassEffectView(frame: bounds)
-            glass.style = .clear
-            glass.cornerRadius = 10
-            glass.autoresizingMask = [.width, .height]
-            addSubview(glass, positioned: .below, relativeTo: nil)
-        } else {
-            // Older macOS: opaque dark frosted backdrop.
-            layer?.backgroundColor = NSColor(srgbRed: 28/255.0, green: 28/255.0, blue: 30/255.0, alpha: 0.72).cgColor
-            layer?.cornerRadius = 10
-            layer?.masksToBounds = true
-            layer?.borderWidth = 0.5
-            layer?.borderColor = NSColor(white: 1.0, alpha: 0.14).cgColor
-        }
+        // Use native Liquid Glass as the entire top-bar backdrop.
+        // NSGlassEffectView(.clear) gives the frosted-glass material;
+        // the controls sit on top of it without any manual background colour.
+        let glass = NSGlassEffectView(frame: bounds)
+        glass.style = .clear
+        glass.cornerRadius = 10
+        glass.autoresizingMask = [.width, .height]
+        addSubview(glass, positioned: .below, relativeTo: nil)
 
         // LiquidGlassControl provides per-element hover capsules in Enhanced mode;
         // it is kept for button hover feedback on both OS versions.

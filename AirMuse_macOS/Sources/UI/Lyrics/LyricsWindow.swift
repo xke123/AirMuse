@@ -62,12 +62,8 @@ open class LyricsWindow: NSPanel {
         // macOS 26+ Liquid Glass requires the system compositor to participate in
         // window shadow/material blending. Keep shadow on for normal lyrics mode so
         // the GlassPanel's NSGlassEffectView bars render correctly.
-        if #available(macOS 26.0, *) {
-            hasShadow = true
-            invalidateShadow()
-        } else {
-            hasShadow = false
-        }
+        hasShadow = true
+        invalidateShadow()
         isMovableByWindowBackground = true
         collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         animationBehavior = .none
@@ -162,13 +158,8 @@ open class LyricsWindow: NSPanel {
     public func toggleMiniLyricsMode() {
         isMiniLyricsMode.toggle()
         lyricsView.setMiniMode(isMiniLyricsMode)
-        // macOS 26+: shadow is always on (Liquid Glass manages it).
-        // Earlier: only enable shadow in mini mode (matches original behaviour).
-        if #available(macOS 26.0, *) {
-            hasShadow = true
-        } else {
-            hasShadow = isMiniLyricsMode
-        }
+        // Shadow is always on (Liquid Glass manages it).
+        hasShadow = true
         updateButtonVisibility(animated: false)
         let s = GlassInteractionCoordinator.shared.uiScale
         let targetH = (isMiniLyricsMode ? OriginalDesignTokens.BaseMetrics.miniBarStandardHeight : OriginalDesignTokens.BaseMetrics.lyricsWindowHeight) * s

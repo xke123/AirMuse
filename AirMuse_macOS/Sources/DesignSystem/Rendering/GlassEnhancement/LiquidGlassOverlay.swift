@@ -9,8 +9,8 @@ import QuartzCore
 @MainActor
 open class LiquidGlassOverlay: NSView {
 
-    private var containerView: NSView?
-    private var pillGlassView: NSView?
+    private var containerView: NSGlassEffectContainerView?
+    private var pillGlassView: NSGlassEffectView?
 
     public var pillCornerRadius: CGFloat = 10.0 {
         didSet { updateCorner() }
@@ -29,21 +29,19 @@ open class LiquidGlassOverlay: NSView {
     private func setup() {
         wantsLayer = true
 
-        if #available(macOS 26.0, *) {
-            let container = NSGlassEffectContainerView(frame: bounds)
-            container.autoresizingMask = [.width, .height]
-            container.spacing = 6.0
+        let container = NSGlassEffectContainerView(frame: bounds)
+        container.autoresizingMask = [.width, .height]
+        container.spacing = 6.0
 
-            let glass = NSGlassEffectView(frame: bounds)
-            glass.autoresizingMask = [.width, .height]
-            glass.style = .regular
-            glass.cornerRadius = pillCornerRadius
-            container.contentView = glass
+        let glass = NSGlassEffectView(frame: bounds)
+        glass.autoresizingMask = [.width, .height]
+        glass.style = .regular
+        glass.cornerRadius = pillCornerRadius
+        container.contentView = glass
 
-            addSubview(container)
-            self.containerView = container
-            self.pillGlassView = glass
-        }
+        addSubview(container)
+        self.containerView = container
+        self.pillGlassView = glass
 
         NotificationCenter.default.addObserver(
             self,
@@ -61,9 +59,7 @@ open class LiquidGlassOverlay: NSView {
     }
 
     private func updateCorner() {
-        if #available(macOS 26.0, *), let g = pillGlassView as? NSGlassEffectView {
-            g.cornerRadius = pillCornerRadius
-        }
+        pillGlassView?.cornerRadius = pillCornerRadius
     }
 
     @objc private func modeChanged() {

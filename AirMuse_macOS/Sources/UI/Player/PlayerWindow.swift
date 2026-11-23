@@ -11,6 +11,7 @@ open class PlayerWindow: NSPanel {
     public var onDoubleClicked: (() -> Void)?
     public var onToggleLog: (() -> Void)?
     public var onToggleTopMost: (() -> Void)?
+    public var doubleClickHitFilter: ((NSPoint) -> Bool)?
 
     private var lastDoubleClickTime: TimeInterval = 0
 
@@ -133,7 +134,7 @@ open class PlayerWindow: NSPanel {
 
     open override func mouseUp(with event: NSEvent) {
         super.mouseUp(with: event)
-        if event.clickCount == 2 {
+        if event.clickCount == 2, (doubleClickHitFilter?(event.locationInWindow) ?? true) {
             let now = ProcessInfo.processInfo.systemUptime
             if now - lastDoubleClickTime >= MotionTokens.Thresholds.doubleClickDebounce {
                 lastDoubleClickTime = now

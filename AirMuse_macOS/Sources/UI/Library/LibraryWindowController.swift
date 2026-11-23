@@ -13,8 +13,10 @@ open class LibraryWindowController: NSWindowController {
 
     public var onToggleLog: (() -> Void)?
     public var onToggleAccount: (() -> Void)?
+    public var onClose: (() -> Void)?
 
     private let panel = GlassPanel()
+    public var moduleView: GlassPanel { panel }
     private let topBar = LibraryTopBarView()
     private let sidebar = LibrarySidebarView()
     private let contentView = LibraryContentView()
@@ -35,16 +37,9 @@ open class LibraryWindowController: NSWindowController {
         self.coordinator = coordinator
         self.appleMusicProvider = appleMusicProvider
 
-        let initialRect = NSRect(
-            x: 200 + DesignTokens.Metrics.mainPlayerWidth + 10,
-            y: (NSScreen.main?.visibleFrame.maxY ?? 800) - DesignTokens.Metrics.libraryWindowHeight - 50,
-            width: DesignTokens.Metrics.libraryWindowWidth,
-            height: DesignTokens.Metrics.libraryWindowHeight
-        )
-        let window = LibraryWindow(contentRect: initialRect, styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
-        super.init(window: window)
+        super.init(window: nil)
 
-        setupUI(window)
+        setupPanelUI()
         wireCallbacks()
     }
 
@@ -52,9 +47,14 @@ open class LibraryWindowController: NSWindowController {
         fatalError("init(coder:) has not been implemented")
     }
 
-    private func setupUI(_ window: LibraryWindow) {
-        window.contentView = panel
+    public func preferredSize(for scale: CGFloat) -> NSSize {
+        NSSize(
+            width: OriginalDesignTokens.BaseMetrics.libraryWindowWidth * scale,
+            height: OriginalDesignTokens.BaseMetrics.libraryWindowHeight * scale
+        )
+    }
 
+    private func setupPanelUI() {
         let container = panel.contentView
         container.addSubview(topBar)
         container.addSubview(sidebar)
@@ -70,7 +70,6 @@ open class LibraryWindowController: NSWindowController {
     }
 
     private func layoutViews() {
-        guard window != nil else { return }
         let bounds = panel.contentView.bounds
         guard bounds.width > 20 && bounds.height > 20 else { return }
 
@@ -132,7 +131,7 @@ open class LibraryWindowController: NSWindowController {
 
         topBar.onClose = { [weak self] in
             AppLogger.shared.log(category: .userAction, level: .info, message: "用户关闭音乐资料库窗口")
-            self?.window?.orderOut(nil)
+            self?.onClose?()
         }
 
         // Observe Apple Music Session changes (login / logout / token refreshed)

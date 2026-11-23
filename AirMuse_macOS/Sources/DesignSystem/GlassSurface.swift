@@ -72,39 +72,25 @@ open class GlassSurface: NSView {
 
     // MARK: - Glass Setup
 
-    /// Creates a single `NSGlassEffectView` (macOS 26+) or `NSVisualEffectView` (older).
-    /// `maskedCorners` only applies to the `NSVisualEffectView` fallback path.
-    private func makeGlassView(maskedCorners: CACornerMask? = nil) -> NSView {
-        let r = OriginalDesignTokens.BaseMetrics.glassCornerRadius
-        if #available(macOS 26.0, *) {
-            let v = NSGlassEffectView(frame: .zero)
-            v.style = .clear
-            v.cornerRadius = r
-            return v
-        } else {
-            let v = NSVisualEffectView(frame: .zero)
-            v.blendingMode = .behindWindow
-            v.material = .hudWindow
-            v.state = .active
-            v.wantsLayer = true
-            v.layer?.masksToBounds = true
-            v.layer?.cornerRadius = r
-            if let mask = maskedCorners { v.layer?.maskedCorners = mask }
-            return v
-        }
+    /// Creates a single `NSGlassEffectView` for a glass bar or full-strip surface.
+    private func makeGlassView() -> NSGlassEffectView {
+        let v = NSGlassEffectView(frame: .zero)
+        v.style = .clear
+        v.cornerRadius = OriginalDesignTokens.BaseMetrics.glassCornerRadius
+        return v
     }
 
     private func setupGlass() {
         wantsLayer = true
         layer?.masksToBounds = false
 
-        // Top cap glass strip — rounded on the top two corners only (fallback path).
-        topBarGlass = makeGlassView(maskedCorners: [.layerMinXMaxYCorner, .layerMaxXMaxYCorner])
+        // Top cap glass strip.
+        topBarGlass = makeGlassView()
         topBarGlass.isHidden = true
         addSubview(topBarGlass)
 
-        // Bottom cap glass strip — rounded on the bottom two corners only (fallback path).
-        bottomBarGlass = makeGlassView(maskedCorners: [.layerMinXMinYCorner, .layerMaxXMinYCorner])
+        // Bottom cap glass strip.
+        bottomBarGlass = makeGlassView()
         bottomBarGlass.isHidden = true
         addSubview(bottomBarGlass)
 
@@ -168,23 +154,9 @@ open class GlassSurface: NSView {
         if showBars {
             topBarGlass.frame = NSRect(x: 0, y: bounds.height - capH, width: bounds.width, height: capH)
             bottomBarGlass.frame = NSRect(x: 0, y: 0, width: bounds.width, height: capH)
-            // Fallback: update border colour on focus change.
-            if #unavailable(macOS 26.0) {
-                let alpha: CGFloat = isFocusedSurface ? 0.55 : 0.32
-                let border = NSColor(white: 1.0, alpha: alpha).cgColor
-                topBarGlass.layer?.borderWidth = 1.0
-                topBarGlass.layer?.borderColor = border
-                bottomBarGlass.layer?.borderWidth = 1.0
-                bottomBarGlass.layer?.borderColor = border
-            }
         }
         if showFull {
             fullStripGlass.frame = bounds
-            if #unavailable(macOS 26.0) {
-                let alpha: CGFloat = isFocusedSurface ? 0.55 : 0.32
-                fullStripGlass.layer?.borderWidth = 1.0
-                fullStripGlass.layer?.borderColor = NSColor(white: 1.0, alpha: alpha).cgColor
-            }
         }
 
         composerHostView.frame = bounds
@@ -218,15 +190,6 @@ open class GlassSurface: NSView {
         let coord = GlassInteractionCoordinator.shared
         let s = coord.uiScale
         let isMiniStrip = bounds.height <= (OriginalDesignTokens.BaseMetrics.miniBarStandardHeight * s + 2.0)
-
-        // Update fallback border colours on focus change.
-        if #unavailable(macOS 26.0) {
-            let alpha: CGFloat = isFocusedSurface ? 0.55 : 0.32
-            let border = NSColor(white: 1.0, alpha: alpha).cgColor
-            if !topBarGlass.isHidden { topBarGlass.layer?.borderColor = border }
-            if !bottomBarGlass.isHidden { bottomBarGlass.layer?.borderColor = border }
-            if !fullStripGlass.isHidden { fullStripGlass.layer?.borderColor = border }
-        }
 
         if isMiniStrip { return }
 

@@ -18,13 +18,9 @@ open class LibraryWindow: NSPanel {
         level = .floating
         isOpaque = false
         backgroundColor = .clear
-        // macOS 26+ Liquid Glass requires window compositor participation.
-        if #available(macOS 26.0, *) {
-            hasShadow = true
-            invalidateShadow()
-        } else {
-            hasShadow = false
-        }
+        // Liquid Glass requires window compositor participation.
+        hasShadow = true
+        invalidateShadow()
         isMovableByWindowBackground = true
         collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
     }

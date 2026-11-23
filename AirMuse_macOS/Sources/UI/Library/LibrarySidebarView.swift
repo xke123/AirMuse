@@ -105,7 +105,6 @@ final class SidebarCategoryItemView: NSView {
         let overflow = fullTextWidth() - availableTextWidth
         guard overflow > 2.0 else { return }
 
-        let maxScroll = overflow + 6.0
         marqueeTask = Task { @MainActor [weak self] in
             // Wait 5 seconds after clicking before scrolling
             try? await Task.sleep(for: .seconds(5))

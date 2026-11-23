@@ -1,93 +1,42 @@
 import AppKit
 import Domain
-import DesignSystem
 import Playback
+import DesignSystem
 import Infrastructure
 
 // MARK: - PlayerWindowController
 
-/// Controls independent Main and Mini `PlayerWindow` instances,
-/// matching original AIRPLAY's two-window hide/show switching model.
+/// Controls Main (`PlayerView`) and Mini (`MiniPlayerView`) player views inside a shared `playerSlotView`
+/// hosted by `UnifiedStageController`.
 @MainActor
 open class PlayerWindowController: NSWindowController {
 
     public private(set) var isMiniMode: Bool = false
     public private(set) var isTopMost: Bool = true
 
-    public let mainWindow: PlayerWindow
-    public let miniWindow: PlayerWindow
-
-    public var activeWindow: PlayerWindow {
-        isMiniMode ? miniWindow : mainWindow
-    }
+    public let playerSlotView = NSView()
+    private let playerView = PlayerView()
+    private let miniPlayerView = MiniPlayerView()
 
     public var onToggleLyrics: (() -> Void)?
     public var onToggleLibrary: (() -> Void)?
     public var onToggleLog: (() -> Void)?
     public var onModeDidTransition: (() -> Void)?
+    public var onTopMostDidChange: (() -> Void)?
 
     private let coordinator: PlaybackCoordinator
     private let store: PlaybackStore
-
-    private let playerView = PlayerView()
-    private let miniPlayerView = MiniPlayerView()
     private var observationTask: Task<Void, Never>?
     private var progressTask: Task<Void, Never>?
-    private var isTransitioning: Bool = false
-
-    private enum Keys {
-        static let originX = "airmuse.window.main.x"
-        static let originY = "airmuse.window.main.y"
-        static let hasOrigin = "airmuse.window.main.hasOrigin"
-    }
 
     public init(coordinator: PlaybackCoordinator, store: PlaybackStore) {
         self.coordinator = coordinator
         self.store = store
+        super.init(window: nil)
 
-        let s = GlassInteractionCoordinator.shared.uiScale
-        let mainW = OriginalDesignTokens.BaseMetrics.mainPlayerWidth * s
-        let mainH = OriginalDesignTokens.BaseMetrics.mainPlayerHeight * s
-        let miniH = OriginalDesignTokens.BaseMetrics.miniBarStandardHeight * s
-
-        var initialX: CGFloat = 200
-        var initialY: CGFloat = (NSScreen.main?.visibleFrame.maxY ?? 800) - mainH - 50
-        if UserDefaults.standard.bool(forKey: Keys.hasOrigin) {
-            initialX = CGFloat(UserDefaults.standard.double(forKey: Keys.originX))
-            initialY = CGFloat(UserDefaults.standard.double(forKey: Keys.originY))
-        }
-
-        let clampedOrigin = Self.clampOriginToScreens(NSPoint(x: initialX, y: initialY), size: NSSize(width: mainW, height: mainH))
-        let mainRect = NSRect(origin: clampedOrigin, size: NSSize(width: mainW, height: mainH))
-        let miniRect = NSRect(x: mainRect.minX, y: mainRect.maxY - miniH, width: mainW, height: miniH)
-
-        self.mainWindow = PlayerWindow(contentRect: mainRect)
-        self.miniWindow = PlayerWindow(contentRect: miniRect)
-
-        super.init(window: mainWindow)
-
-        setupWindows()
+        setupSlotViews()
         wireActions()
         startObservingStore()
-
-        NotificationCenter.default.addObserver(
-            self,
-            selector: #selector(handleScaleOrModeChange),
-            name: GlassInteractionCoordinator.modeDidChangeNotification,
-            object: nil
-        )
-        NotificationCenter.default.addObserver(
-            self,
-            selector: #selector(windowDidMove(_:)),
-            name: NSWindow.didMoveNotification,
-            object: mainWindow
-        )
-        NotificationCenter.default.addObserver(
-            self,
-            selector: #selector(windowDidMove(_:)),
-            name: NSWindow.didMoveNotification,
-            object: miniWindow
-        )
     }
 
     public required init?(coder: NSCoder) {
@@ -99,29 +48,35 @@ open class PlayerWindowController: NSWindowController {
         progressTask?.cancel()
     }
 
-    private func setupWindows() {
-        mainWindow.onDoubleClicked = { [weak self] in self?.toggleMiniMode() }
-        mainWindow.onToggleLog = { [weak self] in self?.onToggleLog?() }
-        mainWindow.onToggleTopMost = { [weak self] in self?.toggleTopMost() }
+    public func preferredPlayerSize(for scale: CGFloat) -> NSSize {
+        let w = OriginalDesignTokens.BaseMetrics.mainPlayerWidth * scale
+        let h = (isMiniMode
+            ? OriginalDesignTokens.BaseMetrics.miniBarStandardHeight
+            : OriginalDesignTokens.BaseMetrics.mainPlayerHeight) * scale
+        return NSSize(width: w, height: h)
+    }
 
-        let mainContainer = NSView(frame: mainWindow.contentView?.bounds ?? .zero)
-        mainContainer.wantsLayer = true
-        mainWindow.contentView = mainContainer
-        playerView.frame = mainContainer.bounds
+    public func layoutSlot(frame: NSRect) {
+        playerSlotView.frame = frame
+        playerView.frame = playerSlotView.bounds
+        miniPlayerView.frame = playerSlotView.bounds
+        playerView.needsLayout = true
+        miniPlayerView.needsLayout = true
+        if !isMiniMode {
+            playerView.refreshGlassSurface()
+        }
+    }
+
+    private func setupSlotViews() {
+        playerSlotView.wantsLayer = true
+        playerSlotView.layer?.masksToBounds = false
+
         playerView.autoresizingMask = [.width, .height]
-        mainContainer.addSubview(playerView)
+        playerSlotView.addSubview(playerView)
 
-        miniWindow.onDoubleClicked = { [weak self] in self?.toggleMiniMode() }
-        miniWindow.onToggleLog = { [weak self] in self?.onToggleLog?() }
-        miniWindow.onToggleTopMost = { [weak self] in self?.toggleTopMost() }
-
-        let miniContainer = NSView(frame: miniWindow.contentView?.bounds ?? .zero)
-        miniContainer.wantsLayer = true
-        miniWindow.contentView = miniContainer
-        miniPlayerView.frame = miniContainer.bounds
         miniPlayerView.autoresizingMask = [.width, .height]
-        miniContainer.addSubview(miniPlayerView)
-        miniWindow.orderOut(nil)
+        miniPlayerView.isHidden = true
+        playerSlotView.addSubview(miniPlayerView)
     }
 
     private func wireActions() {
@@ -150,7 +105,7 @@ open class PlayerWindowController: NSWindowController {
             self?.executeCommand { try await self?.coordinator.setVolume(vol) }
         }
         playerView.onToggleMiniMode = { [weak self] in
-            AppLogger.shared.log(category: .userAction, level: .info, message: "用户点击切换 [迷你播放器] 独立窗口")
+            AppLogger.shared.log(category: .userAction, level: .info, message: "用户点击切换 [迷你播放器] 模式")
             self?.toggleMiniMode()
         }
         playerView.onToggleTopMost = { [weak self] in
@@ -195,96 +150,15 @@ open class PlayerWindowController: NSWindowController {
 
     public func toggleTopMost() {
         isTopMost.toggle()
-        let level: NSWindow.Level = isTopMost ? .floating : .normal
-        mainWindow.level = level
-        miniWindow.level = level
         playerView.isTopMost = isTopMost
-        mainWindow.refreshMenuStates()
-        miniWindow.refreshMenuStates()
+        onTopMostDidChange?()
     }
 
     public func toggleMiniMode() {
-        let outgoing = activeWindow
         isMiniMode.toggle()
-        let incoming = activeWindow
-
-        let s = GlassInteractionCoordinator.shared.uiScale
-        let targetW = OriginalDesignTokens.BaseMetrics.mainPlayerWidth * s
-        let targetH = (isMiniMode ? OriginalDesignTokens.BaseMetrics.miniBarStandardHeight : OriginalDesignTokens.BaseMetrics.mainPlayerHeight) * s
-
-        let anchor = outgoing.frame
-        let targetFrame = NSRect(x: anchor.minX, y: anchor.maxY - targetH, width: targetW, height: targetH)
-
-        incoming.setFrame(targetFrame, display: true, animate: false)
-        incoming.level = isTopMost ? .floating : .normal
-        incoming.alphaValue = 0.0
-        incoming.makeKeyAndOrderFront(nil)
+        playerView.isHidden = isMiniMode
+        miniPlayerView.isHidden = !isMiniMode
         onModeDidTransition?()
-
-        if MotionCoordinator.shared.isReduceMotionEnabled {
-            incoming.alphaValue = 1.0
-            outgoing.orderOut(nil)
-            outgoing.alphaValue = 1.0
-            return
-        }
-
-        isTransitioning = true
-        NSAnimationContext.runAnimationGroup({ ctx in
-            ctx.duration = 0.18
-            ctx.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
-            incoming.animator().alphaValue = 1.0
-            outgoing.animator().alphaValue = 0.0
-        }, completionHandler: { [weak self] in
-            Task { @MainActor [weak self] in
-                guard let self else { return }
-                self.isTransitioning = false
-                if outgoing !== self.activeWindow {
-                    outgoing.orderOut(nil)
-                }
-                outgoing.alphaValue = 1.0
-                self.onModeDidTransition?()
-            }
-        })
-    }
-
-    @objc private func handleScaleOrModeChange() {
-        let s = GlassInteractionCoordinator.shared.uiScale
-        let mainW = OriginalDesignTokens.BaseMetrics.mainPlayerWidth * s
-        let mainH = OriginalDesignTokens.BaseMetrics.mainPlayerHeight * s
-        let miniH = OriginalDesignTokens.BaseMetrics.miniBarStandardHeight * s
-
-        let cur = activeWindow.frame
-        mainWindow.setFrame(NSRect(x: cur.minX, y: cur.maxY - mainH, width: mainW, height: mainH), display: true, animate: false)
-        miniWindow.setFrame(NSRect(x: cur.minX, y: cur.maxY - miniH, width: mainW, height: miniH), display: true, animate: false)
-
-        mainWindow.refreshMenuStates()
-        miniWindow.refreshMenuStates()
-        onModeDidTransition?()
-    }
-
-    @objc private func windowDidMove(_ notification: Notification) {
-        guard let moved = notification.object as? NSWindow, moved === activeWindow else { return }
-        let f = moved.frame
-        UserDefaults.standard.set(true, forKey: Keys.hasOrigin)
-        UserDefaults.standard.set(Double(f.origin.x), forKey: Keys.originX)
-        UserDefaults.standard.set(Double(f.origin.y), forKey: Keys.originY)
-    }
-
-    private static func clampOriginToScreens(_ origin: NSPoint, size: NSSize) -> NSPoint {
-        for screen in NSScreen.screens {
-            let vf = screen.visibleFrame
-            if vf.intersects(NSRect(origin: origin, size: size)) {
-                let x = min(max(origin.x, vf.minX), vf.maxX - size.width)
-                let y = min(max(origin.y, vf.minY), vf.maxY - size.height)
-                return NSPoint(x: x, y: y)
-            }
-        }
-        if let mainVF = NSScreen.main?.visibleFrame {
-            let x = min(max(origin.x, mainVF.minX), mainVF.maxX - size.width)
-            let y = min(max(origin.y, mainVF.minY), mainVF.maxY - size.height)
-            return NSPoint(x: x, y: y)
-        }
-        return origin
     }
 
     private func executeCommand(_ block: @escaping () async throws -> Void) {
