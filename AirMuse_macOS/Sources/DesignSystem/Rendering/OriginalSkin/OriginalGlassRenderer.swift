@@ -21,6 +21,7 @@ public enum OriginalGlassRenderer {
         resolution: SkinResolutionMode = .retina4x,
         focusRatio: CGFloat = 1.0,
         hasMainGloss: Bool = false,
+        frostedBars: Bool = false,
         ambientArtwork: CGImage? = nil
     ) {
         let w = size.width
@@ -98,29 +99,31 @@ public enum OriginalGlassRenderer {
             ctx.restoreGState()
         }
 
-        // 2. 9-slice Crystal Glass Border (smooth anti-aliased rounded clip to prevent jagged outer alpha fringe)
-        let fullRect = CGRect(origin: .zero, size: size)
-        let outerCornerR = OriginalDesignTokens.BaseMetrics.glassCornerRadius * uiScale
-        ctx.saveGState()
-        ctx.setAllowsAntialiasing(true)
-        ctx.setShouldAntialias(true)
-        let outerClip = CGPath(roundedRect: fullRect.insetBy(dx: 0.5, dy: 0.5), cornerWidth: outerCornerR, cornerHeight: outerCornerR, transform: nil)
-        ctx.addPath(outerClip)
-        ctx.clip()
+        if !frostedBars {
+            // 2. 9-slice Crystal Glass Border (smooth anti-aliased rounded clip to prevent jagged outer alpha fringe)
+            let fullRect = CGRect(origin: .zero, size: size)
+            let outerCornerR = OriginalDesignTokens.BaseMetrics.glassCornerRadius * uiScale
+            ctx.saveGState()
+            ctx.setAllowsAntialiasing(true)
+            ctx.setShouldAntialias(true)
+            let outerClip = CGPath(roundedRect: fullRect.insetBy(dx: 0.5, dy: 0.5), cornerWidth: outerCornerR, cornerHeight: outerCornerR, transform: nil)
+            ctx.addPath(outerClip)
+            ctx.clip()
 
-        if clampedFocus >= 0.99, let gf = glassFocus {
-            NineSliceRenderer.drawGlass9Slice(in: ctx, glass: gf, rect: fullRect, uiScale: uiScale, alpha: 1.0, crisp1x: crisp1x)
-        } else if clampedFocus <= 0.01, let gn = glassNormal {
-            NineSliceRenderer.drawGlass9Slice(in: ctx, glass: gn, rect: fullRect, uiScale: uiScale, alpha: 1.0, crisp1x: crisp1x)
-        } else {
-            if let gn = glassNormal {
+            if clampedFocus >= 0.99, let gf = glassFocus {
+                NineSliceRenderer.drawGlass9Slice(in: ctx, glass: gf, rect: fullRect, uiScale: uiScale, alpha: 1.0, crisp1x: crisp1x)
+            } else if clampedFocus <= 0.01, let gn = glassNormal {
                 NineSliceRenderer.drawGlass9Slice(in: ctx, glass: gn, rect: fullRect, uiScale: uiScale, alpha: 1.0, crisp1x: crisp1x)
+            } else {
+                if let gn = glassNormal {
+                    NineSliceRenderer.drawGlass9Slice(in: ctx, glass: gn, rect: fullRect, uiScale: uiScale, alpha: 1.0, crisp1x: crisp1x)
+                }
+                if let gf = glassFocus {
+                    NineSliceRenderer.drawGlass9Slice(in: ctx, glass: gf, rect: fullRect, uiScale: uiScale, alpha: clampedFocus, crisp1x: crisp1x)
+                }
             }
-            if let gf = glassFocus {
-                NineSliceRenderer.drawGlass9Slice(in: ctx, glass: gf, rect: fullRect, uiScale: uiScale, alpha: clampedFocus, crisp1x: crisp1x)
-            }
+            ctx.restoreGState()
         }
-        ctx.restoreGState()
 
         // 3. Groove Seams (drawn AFTER 9-slice so the glass-to-body boundary is razor sharp)
         if midH > 0, midW > 0 {

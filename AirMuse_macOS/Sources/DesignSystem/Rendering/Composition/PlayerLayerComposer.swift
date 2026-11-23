@@ -58,6 +58,7 @@ public final class PlayerLayerComposer {
         resolution: SkinResolutionMode,
         focusRatio: CGFloat,
         hasMainGloss: Bool,
+        frostedBars: Bool = false,
         artworkKey: String,
         artworkImage: CGImage?
     ) {
@@ -71,6 +72,7 @@ public final class PlayerLayerComposer {
             resolution: resolution,
             focusRatio: focusRatio,
             hasMainGloss: hasMainGloss,
+            frostedBars: frostedBars,
             artworkKey: artworkKey
         )
 
@@ -104,6 +106,7 @@ public final class PlayerLayerComposer {
             resolution: resolution,
             focusRatio: focusRatio,
             hasMainGloss: hasMainGloss,
+            frostedBars: frostedBars,
             ambientArtwork: artworkImage
         )
 

@@ -173,6 +173,7 @@ open class MiniPlayerView: GlassMiniPlayer {
     private let nextButton = GlassButton(sprite: nil, size: CGSize(width: 16, height: 16), enableLiquidGlassHover: true)
     private let ejectButton = GlassButton(sprite: nil, size: CGSize(width: 16, height: 16), enableLiquidGlassHover: true)
 
+    private let libraryButton = GlassButton(sprite: nil, size: CGSize(width: 13, height: 13))
     private let lyricsButton = GlassButton(sprite: nil, size: CGSize(width: 13, height: 13))
     private let expandButton = GlassButton(sprite: nil, size: CGSize(width: 13, height: 13))
     private let quitButton = GlassButton(sprite: nil, size: CGSize(width: 13, height: 13))
@@ -223,6 +224,10 @@ open class MiniPlayerView: GlassMiniPlayer {
         controlsContainer.addSubview(nextButton)
         controlsContainer.addSubview(ejectButton)
 
+        libraryButton.toolTip = "显示/隐藏音乐来源面板"
+        libraryButton.onClick = { [weak self] in self?.onToggleLibrary?() }
+        controlsContainer.addSubview(libraryButton)
+
         lyricsButton.toolTip = "桌面歌词"
         lyricsButton.onClick = { [weak self] in self?.onToggleLyrics?() }
         expandButton.toolTip = "展开主界面"
@@ -253,7 +258,6 @@ open class MiniPlayerView: GlassMiniPlayer {
     @objc private func skinSettingsChanged() {
         reloadSprites()
         needsLayout = true
-        refreshMiniGlass()
     }
 
     private func reloadSprites() {
@@ -265,6 +269,7 @@ open class MiniPlayerView: GlassMiniPlayer {
         nextButton.spriteImage = atlas.miniControl(.next, resolution: res)
         ejectButton.spriteImage = atlas.miniControl(.eject, resolution: res)
 
+        libraryButton.spriteImage = atlas.windowButton(.maximize, resolution: res)
         lyricsButton.spriteImage = atlas.windowButton(.lyricsNote, resolution: res)
         expandButton.spriteImage = atlas.windowButton(.expandDown, resolution: res)
         quitButton.spriteImage = atlas.windowButton(.close, resolution: res)
@@ -313,13 +318,10 @@ open class MiniPlayerView: GlassMiniPlayer {
         idleContainer.frame = bounds
         controlsContainer.frame = bounds
 
-        // Idle: centered 10s carousel [Title, Artist, Album] + right TIMEFONT
-        let timeW = 44.0 * s
-        let rightPad = 14.0 * s
-        timeView.frame = NSRect(x: w - rightPad - timeW, y: (h - 14.0 * s) * 0.5, width: timeW, height: 14.0 * s)
+        // Idle: centered 10s carousel [Title, Artist, Album] across full bar without time display
+        timeView.isHidden = true
         let textLeft = 14.0 * s
-        let textW = max(20, timeView.frame.minX - textLeft - 8.0 * s)
-        carouselView.frame = NSRect(x: textLeft, y: 0, width: textW, height: h)
+        carouselView.frame = NSRect(x: textLeft, y: 0, width: max(20, w - textLeft * 2.0), height: h)
 
         // Hover: centered 5 MINICONTROL buttons (16×16 @ 1x) + right window buttons (13×13 @ 1x)
         let btnSize = 16.0 * s
@@ -333,6 +335,7 @@ open class MiniPlayerView: GlassMiniPlayer {
 
         let wbSize = 13.0 * s
         let wbY = (h - wbSize) * 0.5
+        libraryButton.frame = NSRect(x: w - 93.0 * s, y: wbY, width: wbSize, height: wbSize)
         expandButton.frame = NSRect(x: w - 77.0 * s, y: wbY, width: wbSize, height: wbSize)
         lyricsButton.frame = NSRect(x: w - 61.0 * s, y: wbY, width: wbSize, height: wbSize)
         quitButton.frame = NSRect(x: w - 45.0 * s, y: wbY, width: wbSize, height: wbSize)

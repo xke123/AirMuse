@@ -6,16 +6,46 @@ import Lyrics
 
 // MARK: - LyricsWindow
 
+private final class LyricsHoverTrackerView: NSView {
+    var onHoverChanged: ((Bool) -> Void)?
+    private var trackingArea: NSTrackingArea?
+
+    override func hitTest(_ point: NSPoint) -> NSView? { nil }
+
+    override func updateTrackingAreas() {
+        super.updateTrackingAreas()
+        if let existing = trackingArea { removeTrackingArea(existing) }
+        let area = NSTrackingArea(
+            rect: bounds,
+            options: [.mouseEnteredAndExited, .activeAlways, .inVisibleRect],
+            owner: self,
+            userInfo: nil
+        )
+        addTrackingArea(area)
+        trackingArea = area
+    }
+
+    override func mouseEntered(with event: NSEvent) {
+        onHoverChanged?(true)
+    }
+
+    override func mouseExited(with event: NSEvent) {
+        onHoverChanged?(false)
+    }
+}
+
 /// Floating AIRPLAY crystal glass window for synced lyrics overlay.
 /// Top glass bar hosts the close & mini-lyrics toggle buttons using original `WINDOWBUTTON` sprites.
 open class LyricsWindow: NSPanel {
 
     public let lyricsView = LyricsView()
     private let panel = GlassPanel()
+    private let hoverTracker = LyricsHoverTrackerView()
     private let closeButton = GlassButton(sprite: nil, size: CGSize(width: 13, height: 13))
     private let miniToggleButton = GlassButton(sprite: nil, size: CGSize(width: 13, height: 13))
 
     public private(set) var isMiniLyricsMode: Bool = false
+    private var isHovering: Bool = false
 
     public init(frame: NSRect) {
         super.init(
@@ -29,7 +59,15 @@ open class LyricsWindow: NSPanel {
         level = .floating
         isOpaque = false
         backgroundColor = .clear
-        hasShadow = false
+        // macOS 26+ Liquid Glass requires the system compositor to participate in
+        // window shadow/material blending. Keep shadow on for normal lyrics mode so
+        // the GlassPanel's NSGlassEffectView bars render correctly.
+        if #available(macOS 26.0, *) {
+            hasShadow = true
+            invalidateShadow()
+        } else {
+            hasShadow = false
+        }
         isMovableByWindowBackground = true
         collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         animationBehavior = .none
@@ -40,8 +78,17 @@ open class LyricsWindow: NSPanel {
     private func setupContent() {
         contentView = panel
 
+        // Always show glass bars in the lyrics panel (normal + mini mode).
+        panel.alwaysShowGlassBars = true
+
         lyricsView.autoresizingMask = [.width, .height]
         panel.contentView.addSubview(lyricsView)
+
+        hoverTracker.autoresizingMask = [.width, .height]
+        hoverTracker.onHoverChanged = { [weak self] hovering in
+            self?.setHovering(hovering)
+        }
+        panel.addSubview(hoverTracker)
 
         closeButton.toolTip = "关闭歌词"
         closeButton.onClick = { [weak self] in
@@ -58,16 +105,38 @@ open class LyricsWindow: NSPanel {
         panel.onLayout = { [weak self] bounds in
             guard let self else { return }
             self.lyricsView.frame = bounds
+            self.hoverTracker.frame = bounds
             self.layoutTopBarButtons()
         }
 
         reloadSprites()
+        updateButtonVisibility(animated: false)
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(handleSkinChange),
             name: GlassInteractionCoordinator.modeDidChangeNotification,
             object: nil
         )
+    }
+
+    private func setHovering(_ hovering: Bool) {
+        guard isHovering != hovering else { return }
+        isHovering = hovering
+        updateButtonVisibility(animated: true)
+    }
+
+    private func updateButtonVisibility(animated: Bool) {
+        let targetAlpha: CGFloat = (!isMiniLyricsMode || isHovering) ? 1.0 : 0.0
+        if !animated || MotionCoordinator.shared.isReduceMotionEnabled {
+            closeButton.alphaValue = targetAlpha
+            miniToggleButton.alphaValue = targetAlpha
+        } else {
+            NSAnimationContext.runAnimationGroup { ctx in
+                ctx.duration = MotionTokens.Duration.hoverFade
+                closeButton.animator().alphaValue = targetAlpha
+                miniToggleButton.animator().alphaValue = targetAlpha
+            }
+        }
     }
 
     @objc private func handleSkinChange() {
@@ -93,6 +162,14 @@ open class LyricsWindow: NSPanel {
     public func toggleMiniLyricsMode() {
         isMiniLyricsMode.toggle()
         lyricsView.setMiniMode(isMiniLyricsMode)
+        // macOS 26+: shadow is always on (Liquid Glass manages it).
+        // Earlier: only enable shadow in mini mode (matches original behaviour).
+        if #available(macOS 26.0, *) {
+            hasShadow = true
+        } else {
+            hasShadow = isMiniLyricsMode
+        }
+        updateButtonVisibility(animated: false)
         let s = GlassInteractionCoordinator.shared.uiScale
         let targetH = (isMiniLyricsMode ? OriginalDesignTokens.BaseMetrics.miniBarStandardHeight : OriginalDesignTokens.BaseMetrics.lyricsWindowHeight) * s
         let f = frame
@@ -100,10 +177,18 @@ open class LyricsWindow: NSPanel {
         MotionCoordinator.shared.animate(duration: MotionTokens.Duration.miniToggle) {
             self.setFrame(newFrame, display: true, animate: false)
         }
+        invalidateShadow()
     }
 
     open override func layoutIfNeeded() {
         super.layoutIfNeeded()
         layoutTopBarButtons()
     }
+
+    // MARK: - Key Window
+
+    // Allow this panel to become the key window so that NSGlassEffectView always
+    // renders at full "active" intensity regardless of which other window is focused.
+    open override var canBecomeKey: Bool { true }
+    open override var canBecomeMain: Bool { false }
 }

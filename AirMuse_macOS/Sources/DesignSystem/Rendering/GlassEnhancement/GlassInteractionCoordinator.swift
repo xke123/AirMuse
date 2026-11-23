@@ -3,7 +3,7 @@ import Foundation
 
 // MARK: - GlassInteractionCoordinator
 
-/// Coordinates global rendering preferences (`Original` vs `Enhanced`, `1×` vs `Retina 4×`, `uiScale`)
+/// Coordinates global rendering preferences (`Original` vs `Enhanced`, `1×` vs `Retina 4×`, `uiScale`, frosted normal bars)
 /// and notifies subscribed views when the user switches modes.
 @MainActor
 public final class GlassInteractionCoordinator {
@@ -16,6 +16,7 @@ public final class GlassInteractionCoordinator {
         static let renderMode = "airmuse.ui.renderMode"
         static let resolutionMode = "airmuse.ui.resolutionMode"
         static let uiScale = "airmuse.ui.scale"
+        static let frostedNormalBars = "airmuse.ui.frostedNormalBars"
     }
 
     public var renderMode: AirMuseRenderMode {
@@ -49,6 +50,15 @@ public final class GlassInteractionCoordinator {
         }
     }
 
+    public var useFrostedBarsInNormalMode: Bool {
+        didSet {
+            guard oldValue != useFrostedBarsInNormalMode else { return }
+            UserDefaults.standard.set(useFrostedBarsInNormalMode, forKey: Keys.frostedNormalBars)
+            RenderCache.shared.invalidateAll()
+            NotificationCenter.default.post(name: Self.modeDidChangeNotification, object: self)
+        }
+    }
+
     public var isEnhancedMode: Bool {
         renderMode == .enhanced
     }
@@ -70,5 +80,11 @@ public final class GlassInteractionCoordinator {
 
         let storedScale = UserDefaults.standard.double(forKey: Keys.uiScale)
         self.uiScale = storedScale >= 1.0 ? CGFloat(storedScale) : OriginalDesignTokens.Scale.macDefault
+
+        if UserDefaults.standard.object(forKey: Keys.frostedNormalBars) != nil {
+            self.useFrostedBarsInNormalMode = UserDefaults.standard.bool(forKey: Keys.frostedNormalBars)
+        } else {
+            self.useFrostedBarsInNormalMode = true
+        }
     }
 }

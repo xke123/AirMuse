@@ -28,7 +28,7 @@ public enum OriginalDesignTokens {
         // Window Dimensions (1×)
         public static let mainPlayerWidth: CGFloat      = 330.0
         public static let mainPlayerHeight: CGFloat     = 106.0
-        public static let miniBarStandardHeight: CGFloat = 40.0
+        public static let miniBarStandardHeight: CGFloat = 30.0
         public static let miniBarCompactHeight: CGFloat  = 30.0
         public static let lyricsWindowWidth: CGFloat    = 330.0
         public static let lyricsWindowHeight: CGFloat   = 284.0

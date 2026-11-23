@@ -102,9 +102,8 @@ open class LyricsView: NSView {
         if mini {
             scrollView.isHidden = true
             statusLabel.isHidden = true
-            let leftPad = 8.0 * s
-            let rightPad = 68.0 * s
-            miniLyricView.frame = NSRect(x: leftPad, y: 0, width: max(20, bounds.width - leftPad - rightPad), height: bounds.height)
+            let leftPad = 14.0 * s
+            miniLyricView.frame = NSRect(x: leftPad, y: 0, width: max(20, bounds.width - leftPad * 2.0), height: bounds.height)
             return
         }
 

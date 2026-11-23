@@ -232,6 +232,7 @@ open class PlayerView: GlassSurface {
     private let ejectButton = GlassButton(sprite: nil, size: CGSize(width: 32, height: 32), enableLiquidGlassHover: true)
 
     // Window buttons (Top Glass Bar)
+    private let glassStyleButton = GlassButton(image: nil, size: CGSize(width: 13, height: 13))
     private let minimizeButton = GlassButton(sprite: nil, size: CGSize(width: 13, height: 13))
     private let miniModeButton = GlassButton(sprite: nil, size: CGSize(width: 13, height: 13))
     private let topMostButton = GlassButton(sprite: nil, size: CGSize(width: 13, height: 13))
@@ -332,6 +333,11 @@ open class PlayerView: GlassSurface {
         controlsContainer.addSubview(volumeView)
 
         // Top glass bar buttons
+        glassStyleButton.onClick = {
+            GlassInteractionCoordinator.shared.useFrostedBarsInNormalMode.toggle()
+        }
+        controlsContainer.addSubview(glassStyleButton)
+
         minimizeButton.toolTip = "最小化"
         minimizeButton.onClick = { [weak self] in
             if let onMinimize = self?.onMinimize { onMinimize() } else { self?.window?.miniaturize(nil) }
@@ -402,6 +408,12 @@ open class PlayerView: GlassSurface {
         playPauseButton.spriteImage = atlas.mainControl(isPlayingState ? .pause : .play, resolution: res)
         nextButton.spriteImage = atlas.mainControl(.next, resolution: res)
         ejectButton.spriteImage = atlas.mainControl(.eject, resolution: res)
+
+        let frosted = GlassInteractionCoordinator.shared.useFrostedBarsInNormalMode
+        let styleSymbol = frosted ? "sparkles.rectangle.stack" : "square.on.square"
+        let cfg = NSImage.SymbolConfiguration(pointSize: 10.5, weight: .medium)
+        glassStyleButton.image = NSImage(systemSymbolName: styleSymbol, accessibilityDescription: "切换玻璃条样式")?.withSymbolConfiguration(cfg)
+        glassStyleButton.toolTip = frosted ? "切换玻璃条样式（当前：磨砂模糊 / 点击切回原版）" : "切换玻璃条样式（当前：原版玻璃 / 点击切为磨砂）"
 
         minimizeButton.spriteImage = atlas.windowButton(.minimize, resolution: res)
         miniModeButton.spriteImage = atlas.windowButton(.miniToggle, resolution: res)
@@ -556,6 +568,7 @@ open class PlayerView: GlassSurface {
 
         // 3. Top glass bar window buttons (13×13 @ 1x)
         let wbSize = 13.0 * s
+        glassStyleButton.frame = NSRect(x: w - 109.0 * s, y: appKitY(topY: 4.0 * s, height: wbSize), width: wbSize, height: wbSize)
         minimizeButton.frame = NSRect(x: w - 93.0 * s, y: appKitY(topY: 4.0 * s, height: wbSize), width: wbSize, height: wbSize)
         miniModeButton.frame = NSRect(x: w - 77.0 * s, y: appKitY(topY: 8.0 * s, height: wbSize), width: wbSize, height: wbSize)
         topMostButton.frame = NSRect(x: w - 61.0 * s, y: appKitY(topY: 4.0 * s, height: wbSize), width: wbSize, height: wbSize)

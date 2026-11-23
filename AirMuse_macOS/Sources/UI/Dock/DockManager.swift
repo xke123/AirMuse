@@ -34,7 +34,9 @@ public final class DockManager {
     }
 
     private var overlap: CGFloat {
-        OriginalDesignTokens.BaseMetrics.dockOverlap * GlassInteractionCoordinator.shared.uiScale
+        let s = GlassInteractionCoordinator.shared.uiScale
+        let miniActive = (miniWindow?.isVisible == true) || ((lyricsWindow?.frame.height ?? 999) <= 70)
+        return miniActive ? 0.0 : (OriginalDesignTokens.BaseMetrics.dockOverlap * s)
     }
 
     private var activeAnchorWindow: NSWindow? {

@@ -18,9 +18,19 @@ open class LibraryWindow: NSPanel {
         level = .floating
         isOpaque = false
         backgroundColor = .clear
-        hasShadow = false
+        // macOS 26+ Liquid Glass requires window compositor participation.
+        if #available(macOS 26.0, *) {
+            hasShadow = true
+            invalidateShadow()
+        } else {
+            hasShadow = false
+        }
         isMovableByWindowBackground = true
         collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
     }
+
+    // Allow becoming key so NSGlassEffectView always renders at active intensity.
+    public override var canBecomeKey: Bool { true }
+    public override var canBecomeMain: Bool { false }
 }
 

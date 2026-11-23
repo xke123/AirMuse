@@ -17,6 +17,7 @@ public final class RenderCache {
         public let resolution: SkinResolutionMode
         public let focusQ: Int
         public let hasMainGloss: Bool
+        public let frostedBars: Bool
         public let artworkKey: String
 
         public init(
@@ -27,6 +28,7 @@ public final class RenderCache {
             resolution: SkinResolutionMode,
             focusRatio: CGFloat,
             hasMainGloss: Bool,
+            frostedBars: Bool = false,
             artworkKey: String
         ) {
             self.widthPx = Int(round(width * backingScale))
@@ -35,6 +37,7 @@ public final class RenderCache {
             self.resolution = resolution
             self.focusQ = Int(round(min(max(focusRatio, 0), 1) * 100))
             self.hasMainGloss = hasMainGloss
+            self.frostedBars = frostedBars
             self.artworkKey = artworkKey
         }
     }

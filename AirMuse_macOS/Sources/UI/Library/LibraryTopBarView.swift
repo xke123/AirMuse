@@ -22,7 +22,7 @@ open class LibraryTopBarView: NSView {
 
     public private(set) var selectedTabIndex: Int = 0
     public private(set) var isSearchMode: Bool = false
-    public private(set) var is2Col: Bool = false
+    public private(set) var is2Col: Bool = true
 
     // MARK: - Subviews: Navigation Mode
 
@@ -55,6 +55,7 @@ open class LibraryTopBarView: NSView {
         setupNavMode()
         setupSearchMode()
         setSearchMode(false, animated: false)
+        updateLayoutIcon(is2Col: true)
     }
 
     public required init?(coder: NSCoder) {
@@ -63,6 +64,7 @@ open class LibraryTopBarView: NSView {
         setupNavMode()
         setupSearchMode()
         setSearchMode(false, animated: false)
+        updateLayoutIcon(is2Col: true)
     }
 
     deinit {
@@ -73,12 +75,27 @@ open class LibraryTopBarView: NSView {
 
     private func setupGlass() {
         wantsLayer = true
-        layer?.backgroundColor = NSColor(srgbRed: 28/255.0, green: 28/255.0, blue: 30/255.0, alpha: 0.72).cgColor
-        layer?.cornerRadius = 10
-        layer?.masksToBounds = true
-        layer?.borderWidth = 0.5
-        layer?.borderColor = NSColor(white: 1.0, alpha: 0.14).cgColor
 
+        if #available(macOS 26.0, *) {
+            // macOS 26+: use native Liquid Glass as the entire top-bar backdrop.
+            // NSGlassEffectView(.clear) gives the frosted-glass material;
+            // the controls sit on top of it without any manual background colour.
+            let glass = NSGlassEffectView(frame: bounds)
+            glass.style = .clear
+            glass.cornerRadius = 10
+            glass.autoresizingMask = [.width, .height]
+            addSubview(glass, positioned: .below, relativeTo: nil)
+        } else {
+            // Older macOS: opaque dark frosted backdrop.
+            layer?.backgroundColor = NSColor(srgbRed: 28/255.0, green: 28/255.0, blue: 30/255.0, alpha: 0.72).cgColor
+            layer?.cornerRadius = 10
+            layer?.masksToBounds = true
+            layer?.borderWidth = 0.5
+            layer?.borderColor = NSColor(white: 1.0, alpha: 0.14).cgColor
+        }
+
+        // LiquidGlassControl provides per-element hover capsules in Enhanced mode;
+        // it is kept for button hover feedback on both OS versions.
         liquidBackdrop.cornerRadius = 10
         liquidBackdrop.isActive = true
         addSubview(liquidBackdrop, positioned: .below, relativeTo: nil)
@@ -268,7 +285,7 @@ open class LibraryTopBarView: NSView {
         self.is2Col = is2Col
         let iconName = is2Col ? "rectangle.grid.1x2" : "square.grid.2x2"
         let tip = is2Col ? "切换为单栏列表 (☰)" : "切换为双栏卡片 (⚏)"
-        let cfg = NSImage.SymbolConfiguration(pointSize: 10.5, weight: .medium)
+        let cfg = NSImage.SymbolConfiguration(pointSize: 15, weight: .medium)
         if let img = NSImage(systemSymbolName: iconName, accessibilityDescription: tip) {
             layoutButton.image = img.withSymbolConfiguration(cfg)
             searchLayoutButton.image = img.withSymbolConfiguration(cfg)

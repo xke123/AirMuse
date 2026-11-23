@@ -6,10 +6,31 @@ import QuartzCore
 /// Authentic AIRPLAY-zion crystal glass window surface.
 /// Renders the 9-slice `WINDOWGLASS` / `WINDOWGLASSFOCUS` border, middle body gradient,
 /// physical groove seams, and optional Gaussian specular sweep via `PlayerLayerComposer`.
-/// Does NOT use full-window `NSVisualEffectView` frosted blur.
+///
+/// Liquid Glass strategy (macOS 26+):
+/// - **Normal mode + frostedBars / alwaysShowGlassBars**: Two independent `NSGlassEffectView`
+///   strips covering only the top cap (20 pt) and bottom cap (20 pt) — the middle body
+///   rendered by the compositor remains fully opaque, so glass shows strictly in the bars.
+/// - **Mini-strip mode** (height ≤ miniBarStandardHeight): A single full-coverage glass
+///   view because the entire view IS the bar.
+/// - **Original mode**: No glass shell; the classic AIRPLAY 9-slice bitmap is used as-is.
 open class GlassSurface: NSView {
 
     public let composer = PlayerLayerComposer()
+
+    // Two narrow glass strips for the top/bottom cap bars (normal mode).
+    private var topBarGlass: NSView!
+    private var bottomBarGlass: NSView!
+    // Full-coverage glass for mini-strip mode (the whole view is a bar).
+    private var fullStripGlass: NSView!
+
+    private let composerHostView = NSView()
+
+    /// Set `true` on secondary windows (Lyrics, Library) to always show the glass bars
+    /// regardless of the global `useFrostedBarsInNormalMode` preference.
+    public var alwaysShowGlassBars: Bool = false {
+        didSet { needsLayout = true }
+    }
 
     public var hasMainGloss: Bool = false {
         didSet {
@@ -49,11 +70,55 @@ open class GlassSurface: NSView {
         setupGlass()
     }
 
+    // MARK: - Glass Setup
+
+    /// Creates a single `NSGlassEffectView` (macOS 26+) or `NSVisualEffectView` (older).
+    /// `maskedCorners` only applies to the `NSVisualEffectView` fallback path.
+    private func makeGlassView(maskedCorners: CACornerMask? = nil) -> NSView {
+        let r = OriginalDesignTokens.BaseMetrics.glassCornerRadius
+        if #available(macOS 26.0, *) {
+            let v = NSGlassEffectView(frame: .zero)
+            v.style = .clear
+            v.cornerRadius = r
+            return v
+        } else {
+            let v = NSVisualEffectView(frame: .zero)
+            v.blendingMode = .behindWindow
+            v.material = .hudWindow
+            v.state = .active
+            v.wantsLayer = true
+            v.layer?.masksToBounds = true
+            v.layer?.cornerRadius = r
+            if let mask = maskedCorners { v.layer?.maskedCorners = mask }
+            return v
+        }
+    }
+
     private func setupGlass() {
         wantsLayer = true
         layer?.masksToBounds = false
-        if let rootLayer = layer {
-            composer.attach(to: rootLayer)
+
+        // Top cap glass strip — rounded on the top two corners only (fallback path).
+        topBarGlass = makeGlassView(maskedCorners: [.layerMinXMaxYCorner, .layerMaxXMaxYCorner])
+        topBarGlass.isHidden = true
+        addSubview(topBarGlass)
+
+        // Bottom cap glass strip — rounded on the bottom two corners only (fallback path).
+        bottomBarGlass = makeGlassView(maskedCorners: [.layerMinXMinYCorner, .layerMaxXMinYCorner])
+        bottomBarGlass.isHidden = true
+        addSubview(bottomBarGlass)
+
+        // Full-coverage glass for mini-strip mode (the whole view is a single bar).
+        fullStripGlass = makeGlassView()
+        fullStripGlass.isHidden = true
+        addSubview(fullStripGlass)
+
+        composerHostView.wantsLayer = true
+        composerHostView.layer?.masksToBounds = false
+        addSubview(composerHostView)
+
+        if let hostLayer = composerHostView.layer {
+            composer.attach(to: hostLayer)
         }
 
         NotificationCenter.default.addObserver(
@@ -83,6 +148,51 @@ open class GlassSurface: NSView {
 
     open override func layout() {
         super.layout()
+        let coord = GlassInteractionCoordinator.shared
+        let s = coord.uiScale
+        let capH = OriginalDesignTokens.BaseMetrics.glassCapHeight * s
+        let isMiniStrip = bounds.height <= (OriginalDesignTokens.BaseMetrics.miniBarStandardHeight * s + 2.0)
+
+        // Whether to show glass at all: frosted-bars preference, explicit flag, or mini-strip.
+        let wantGlass = coord.useFrostedBarsInNormalMode || alwaysShowGlassBars
+
+        // Mini-strip: entire view is one glass bar → use fullStripGlass only.
+        // Normal:     top + bottom cap bars → topBarGlass + bottomBarGlass.
+        let showFull = isMiniStrip
+        let showBars = wantGlass && !isMiniStrip
+
+        topBarGlass.isHidden = !showBars
+        bottomBarGlass.isHidden = !showBars
+        fullStripGlass.isHidden = !showFull
+
+        if showBars {
+            topBarGlass.frame = NSRect(x: 0, y: bounds.height - capH, width: bounds.width, height: capH)
+            bottomBarGlass.frame = NSRect(x: 0, y: 0, width: bounds.width, height: capH)
+            // Fallback: update border colour on focus change.
+            if #unavailable(macOS 26.0) {
+                let alpha: CGFloat = isFocusedSurface ? 0.55 : 0.32
+                let border = NSColor(white: 1.0, alpha: alpha).cgColor
+                topBarGlass.layer?.borderWidth = 1.0
+                topBarGlass.layer?.borderColor = border
+                bottomBarGlass.layer?.borderWidth = 1.0
+                bottomBarGlass.layer?.borderColor = border
+            }
+        }
+        if showFull {
+            fullStripGlass.frame = bounds
+            if #unavailable(macOS 26.0) {
+                let alpha: CGFloat = isFocusedSurface ? 0.55 : 0.32
+                fullStripGlass.layer?.borderWidth = 1.0
+                fullStripGlass.layer?.borderColor = NSColor(white: 1.0, alpha: alpha).cgColor
+            }
+        }
+
+        composerHostView.frame = bounds
+        composerHostView.isHidden = isMiniStrip
+        composer.backgroundLayer.isHidden = isMiniStrip
+        composer.sweepLayer.isHidden = isMiniStrip
+        composer.fogLayer.isHidden = isMiniStrip
+
         refreshGlassSurface()
     }
 
@@ -93,6 +203,7 @@ open class GlassSurface: NSView {
     }
 
     @objc private func handleConfigChange() {
+        needsLayout = true
         refreshGlassSurface()
     }
 
@@ -103,19 +214,36 @@ open class GlassSurface: NSView {
     }
 
     public func refreshGlassSurface() {
-        guard let rootLayer = layer else { return }
-        composer.attach(to: rootLayer)
+        guard let hostLayer = composerHostView.layer else { return }
+        let coord = GlassInteractionCoordinator.shared
+        let s = coord.uiScale
+        let isMiniStrip = bounds.height <= (OriginalDesignTokens.BaseMetrics.miniBarStandardHeight * s + 2.0)
+
+        // Update fallback border colours on focus change.
+        if #unavailable(macOS 26.0) {
+            let alpha: CGFloat = isFocusedSurface ? 0.55 : 0.32
+            let border = NSColor(white: 1.0, alpha: alpha).cgColor
+            if !topBarGlass.isHidden { topBarGlass.layer?.borderColor = border }
+            if !bottomBarGlass.isHidden { bottomBarGlass.layer?.borderColor = border }
+            if !fullStripGlass.isHidden { fullStripGlass.layer?.borderColor = border }
+        }
+
+        if isMiniStrip { return }
+
+        composer.attach(to: hostLayer)
+
         let backingScale = window?.backingScaleFactor ?? NSScreen.main?.backingScaleFactor ?? 2.0
         composer.layout(bounds: bounds, backingScale: backingScale)
 
-        let coord = GlassInteractionCoordinator.shared
+        let usesGlassBars = coord.useFrostedBarsInNormalMode || alwaysShowGlassBars
         composer.updateBackground(
             size: bounds.size,
             uiScale: coord.uiScale,
             backingScale: backingScale,
             resolution: coord.resolutionMode,
-            focusRatio: isFocusedSurface ? 1.0 : 0.0,
+            focusRatio: usesGlassBars ? 1.0 : (isFocusedSurface ? 1.0 : 0.0),
             hasMainGloss: hasMainGloss,
+            frostedBars: usesGlassBars,
             artworkKey: artworkCacheKey,
             artworkImage: ambientArtwork
         )

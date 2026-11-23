@@ -690,7 +690,7 @@ open class LibraryContentView: NSView {
     public var onTrackSelected: ((MusicTrack) -> Void)?
     public var onPlayAll: (([MusicTrack]) -> Void)?
 
-    public private(set) var is2Col: Bool = false
+    public private(set) var is2Col: Bool = true
 
     private let titleLabel = NSTextField(labelWithString: "为你推荐")
     private let scrollView = NSScrollView()

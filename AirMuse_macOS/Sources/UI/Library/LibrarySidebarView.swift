@@ -15,14 +15,23 @@ public struct SidebarCategory: Identifiable, Sendable {
     }
 }
 
-// MARK: - SidebarCategoryButton
+// MARK: - SidebarCategoryItemView
 
-final class SidebarCategoryButton: NSButton {
+@MainActor
+final class SidebarCategoryItemView: NSView {
     override var isFlipped: Bool { true }
+
+    let title: String
+    var onClick: (() -> Void)?
 
     var isSelected: Bool = false {
         didSet {
-            updateColors()
+            guard oldValue != isSelected else { return }
+            if isSelected {
+                startMarqueeIfNeeded()
+            } else {
+                stopMarquee()
+            }
             needsDisplay = true
         }
     }
@@ -30,40 +39,107 @@ final class SidebarCategoryButton: NSButton {
     private var trackingArea: NSTrackingArea?
     private var isHovered: Bool = false {
         didSet {
-            updateColors()
             needsDisplay = true
         }
     }
 
-    override init(frame frameRect: NSRect) {
-        super.init(frame: frameRect)
-        setup()
+    private var scrollOffset: CGFloat = 0
+    private var marqueeTask: Task<Void, Never>?
+
+    init(title: String) {
+        self.title = title
+        super.init(frame: .zero)
+        wantsLayer = true
     }
 
     required init?(coder: NSCoder) {
-        super.init(coder: coder)
-        setup()
+        fatalError("init(coder:) has not been implemented")
     }
 
-    private func setup() {
-        bezelStyle = .regularSquare
-        isBordered = false
-        imagePosition = .imageLeft
-        alignment = .left
-        font = NSFont.systemFont(ofSize: 13.5, weight: .regular)
-        cell?.lineBreakMode = .byTruncatingTail
+    deinit {
+        marqueeTask?.cancel()
     }
 
-    private func updateColors() {
+    private var currentFont: NSFont {
+        NSFont.systemFont(ofSize: 13.5, weight: isSelected ? .semibold : .regular)
+    }
+
+    private var currentTextColor: NSColor {
         if isSelected {
-            contentTintColor = NSColor.white
-            font = NSFont.systemFont(ofSize: 13.5, weight: .semibold)
+            return .white
         } else if isHovered {
-            contentTintColor = NSColor(white: 0.92, alpha: 1.0)
-            font = NSFont.systemFont(ofSize: 13.5, weight: .regular)
+            return NSColor(white: 0.92, alpha: 1.0)
         } else {
-            contentTintColor = NSColor(white: 0.65, alpha: 1.0)
-            font = NSFont.systemFont(ofSize: 13.5, weight: .regular)
+            return NSColor(white: 0.65, alpha: 1.0)
+        }
+    }
+
+    private var availableTextWidth: CGFloat {
+        max(10, bounds.width - 19)
+    }
+
+    private func fullTextWidth() -> CGFloat {
+        let attrs: [NSAttributedString.Key: Any] = [.font: currentFont]
+        return ceil((title as NSString).size(withAttributes: attrs).width)
+    }
+
+    func restartMarqueeAfterLayoutIfSelected() {
+        if isSelected {
+            startMarqueeIfNeeded()
+        }
+    }
+
+    private func stopMarquee() {
+        marqueeTask?.cancel()
+        marqueeTask = nil
+        if scrollOffset != 0 {
+            scrollOffset = 0
+            needsDisplay = true
+        }
+    }
+
+    private func startMarqueeIfNeeded() {
+        stopMarquee()
+        guard isSelected, window != nil else { return }
+
+        let overflow = fullTextWidth() - availableTextWidth
+        guard overflow > 2.0 else { return }
+
+        let maxScroll = overflow + 6.0
+        marqueeTask = Task { @MainActor [weak self] in
+            // Wait 5 seconds after clicking before scrolling
+            try? await Task.sleep(for: .seconds(5))
+            while !Task.isCancelled, let self, self.isSelected, self.window != nil {
+                let currentOverflow = self.fullTextWidth() - self.availableTextWidth
+                guard currentOverflow > 2.0 else { break }
+                let targetScroll = currentOverflow + 6.0
+                let speedPtPerSec: CGFloat = 28.0
+                let stepSec: Double = 0.016
+                let stepPx = speedPtPerSec * CGFloat(stepSec)
+
+                var offset: CGFloat = 0
+                while offset < targetScroll && !Task.isCancelled && self.isSelected {
+                    offset = min(targetScroll, offset + stepPx)
+                    self.scrollOffset = offset
+                    self.needsDisplay = true
+                    try? await Task.sleep(for: .milliseconds(16))
+                }
+                guard !Task.isCancelled && self.isSelected else { break }
+                try? await Task.sleep(for: .seconds(1.5))
+                guard !Task.isCancelled && self.isSelected else { break }
+                self.scrollOffset = 0
+                self.needsDisplay = true
+                try? await Task.sleep(for: .seconds(2.0))
+            }
+        }
+    }
+
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        if window != nil && isSelected {
+            startMarqueeIfNeeded()
+        } else if window == nil {
+            stopMarquee()
         }
     }
 
@@ -86,6 +162,12 @@ final class SidebarCategoryButton: NSButton {
     override func mouseExited(with event: NSEvent) { isHovered = false }
     override func resetCursorRects() { addCursorRect(bounds, cursor: .pointingHand) }
 
+    override func mouseUp(with event: NSEvent) {
+        if bounds.contains(convert(event.locationInWindow, from: nil)) {
+            onClick?()
+        }
+    }
+
     override func draw(_ dirtyRect: NSRect) {
         if isSelected {
             let bgPath = NSBezierPath(roundedRect: bounds.insetBy(dx: 1.5, dy: 1.5), xRadius: 6, yRadius: 6)
@@ -102,13 +184,44 @@ final class SidebarCategoryButton: NSButton {
             NSColor(white: 1.0, alpha: 0.07).setFill()
             bgPath.fill()
         }
-        super.draw(dirtyRect)
+
+        let font = currentFont
+        let textH = ceil(font.ascender - font.descender + 2)
+        let textRect = NSRect(
+            x: 11,
+            y: (bounds.height - textH) * 0.5,
+            width: availableTextWidth,
+            height: textH
+        )
+
+        NSGraphicsContext.saveGraphicsState()
+        NSBezierPath(rect: textRect).addClip()
+
+        let paragraph = NSMutableParagraphStyle()
+        paragraph.alignment = .left
+        paragraph.lineBreakMode = scrollOffset > 0.1 ? .byClipping : .byTruncatingTail
+
+        let attrs: [NSAttributedString.Key: Any] = [
+            .font: font,
+            .foregroundColor: currentTextColor,
+            .paragraphStyle: paragraph
+        ]
+
+        if scrollOffset > 0.1 {
+            let fullW = fullTextWidth() + 4
+            let drawRect = NSRect(x: textRect.minX - scrollOffset, y: textRect.minY, width: fullW, height: textH)
+            (title as NSString).draw(in: drawRect, withAttributes: attrs)
+        } else {
+            (title as NSString).draw(in: textRect, withAttributes: attrs)
+        }
+
+        NSGraphicsContext.restoreGraphicsState()
     }
 }
 
 // MARK: - LibrarySidebarView
 
-/// Left category bar (专区栏) rendered in Liquid Glass with dynamic category buttons.
+/// Left category bar (专区栏) rendered in Liquid Glass with dynamic text-only category items.
 @MainActor
 open class LibrarySidebarView: NSVisualEffectView {
 
@@ -118,7 +231,7 @@ open class LibrarySidebarView: NSVisualEffectView {
 
     private let scrollView = NSScrollView()
     private let stackView = NSStackView()
-    private var categoryButtons: [SidebarCategoryButton] = []
+    private var categoryViews: [SidebarCategoryItemView] = []
     public private(set) var selectedIndex: Int = 0
     public private(set) var categories: [SidebarCategory] = []
 
@@ -150,7 +263,7 @@ open class LibrarySidebarView: NSVisualEffectView {
         scrollView.applySubtleOverlayScrollbar()
 
         stackView.orientation = .vertical
-        stackView.alignment = .leading
+        stackView.alignment = .width
         stackView.spacing = 3
         stackView.edgeInsets = NSEdgeInsets(top: 6, left: 4.5, bottom: 6, right: 4.5)
         stackView.translatesAutoresizingMaskIntoConstraints = false
@@ -161,59 +274,45 @@ open class LibrarySidebarView: NSVisualEffectView {
         NSLayoutConstraint.activate([
             stackView.leadingAnchor.constraint(equalTo: scrollView.contentView.leadingAnchor),
             stackView.trailingAnchor.constraint(equalTo: scrollView.contentView.trailingAnchor),
-            stackView.topAnchor.constraint(equalTo: scrollView.contentView.topAnchor)
+            stackView.topAnchor.constraint(equalTo: scrollView.contentView.topAnchor),
+            stackView.widthAnchor.constraint(equalTo: scrollView.contentView.widthAnchor)
         ])
     }
 
     open override func layout() {
         super.layout()
         scrollView.frame = bounds
-        let btnW = max(60, bounds.width - 9)
-        for btn in categoryButtons {
-            btn.widthAnchor.constraint(equalToConstant: btnW).isActive = true
-        }
     }
 
     public func setCategories(_ categories: [SidebarCategory], selectedIndex: Int = 0) {
         self.categories = categories
         self.selectedIndex = selectedIndex
         stackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
-        categoryButtons.removeAll()
+        categoryViews.removeAll()
 
-        let btnW = max(60, bounds.width - 9)
         for (idx, cat) in categories.enumerated() {
-            let btn = SidebarCategoryButton(frame: .zero)
-            btn.title = cat.title
-            btn.tag = idx
-            btn.target = self
-            btn.action = #selector(categoryClicked(_:))
-
-            if let icon = cat.iconName {
-                let config = NSImage.SymbolConfiguration(pointSize: 13.5, weight: .regular)
-                if let img = NSImage(systemSymbolName: icon, accessibilityDescription: cat.title) {
-                    btn.image = img.withSymbolConfiguration(config)
-                }
+            let itemView = SidebarCategoryItemView(title: cat.title)
+            itemView.onClick = { [weak self] in
+                self?.categoryClicked(index: idx)
             }
-
-            btn.translatesAutoresizingMaskIntoConstraints = false
-            btn.heightAnchor.constraint(equalToConstant: 39).isActive = true
-            btn.widthAnchor.constraint(equalToConstant: btnW).isActive = true
-            stackView.addArrangedSubview(btn)
-            categoryButtons.append(btn)
+            itemView.translatesAutoresizingMaskIntoConstraints = false
+            itemView.heightAnchor.constraint(equalToConstant: 39).isActive = true
+            stackView.addArrangedSubview(itemView)
+            categoryViews.append(itemView)
         }
 
         updateSelection(index: selectedIndex)
     }
 
-    @objc private func categoryClicked(_ sender: NSButton) {
-        updateSelection(index: sender.tag)
-        onCategorySelected?(sender.tag)
+    private func categoryClicked(index: Int) {
+        updateSelection(index: index)
+        onCategorySelected?(index)
     }
 
     public func updateSelection(index: Int) {
         self.selectedIndex = index
-        for (i, btn) in categoryButtons.enumerated() {
-            btn.isSelected = (i == index)
+        for (i, view) in categoryViews.enumerated() {
+            view.isSelected = (i == index)
         }
     }
 }
