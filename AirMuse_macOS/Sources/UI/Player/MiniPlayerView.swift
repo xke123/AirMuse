@@ -1,28 +1,38 @@
 import AppKit
+import QuartzCore
 import Domain
 import DesignSystem
 
 // MARK: - CarouselHaloTextView
 
 /// Renders Windows-style soft Gaussian glyph halo text (`DrawGlyphHaloText`)
-/// with 10-second vertical-slide carousel cycling across [Title, Artist, Album]
-/// and smooth marquee scrolling if a line exceeds the visible width.
+/// with 10-second vertical-slide carousel cycling across [Title, Artist, Album],
+/// M15 horizontal marquee scrolling when text overflows (CJK/RTL/emoji safe),
+/// and automatic clock shutdown when hidden, off-window, hovered, or Reduce Motion.
 @MainActor
 public final class CarouselHaloTextView: NSView {
 
+    private let ownerID = "CarouselHaloText-\(UUID().uuidString)"
     private var items: [String] = ["AirMuse Ready"]
     private var currentIndex: Int = 0
     private var currentLine: String = "AirMuse Ready"
     private var previousLine: String?
     private var slideProgress: CGFloat = 1.0
+    private var marqueeOffset: CGFloat = 0.0
+    private var marqueePaused: Bool = false
+
     private var cycleTask: Task<Void, Never>?
-    private var slideTask: Task<Void, Never>?
+    private var slideDriverID: UUID?
+    private var slideTicket: MotionTicket?
+    private var marqueeDriverID: UUID?
+    private var marqueeDelayRemaining: TimeInterval = 1.0
 
     public var cycleIntervalSeconds: UInt64 = 10
+    public var isMarqueeActive: Bool { marqueeDriverID != nil }
+    public var currentMarqueeOffset: CGFloat { marqueeOffset }
 
-    deinit {
-        cycleTask?.cancel()
-        slideTask?.cancel()
+    isolated deinit {
+        stopAllClocks()
     }
 
     public func setItems(_ newItems: [String]) {
@@ -47,31 +57,79 @@ public final class CarouselHaloTextView: NSView {
         transition(to: target)
     }
 
+    public func setPaused(_ paused: Bool) {
+        guard marqueePaused != paused else { return }
+        marqueePaused = paused
+        if paused {
+            stopMarqueeDriver()
+            cycleTask?.cancel()
+            cycleTask = nil
+        } else {
+            restartCycleTimer()
+            restartMarqueeIfNeeded()
+        }
+    }
+
     public override func viewDidMoveToWindow() {
         super.viewDidMoveToWindow()
-        restartCycleTimer()
+        if window == nil {
+            stopAllClocks()
+        } else if !isHiddenOrHasHiddenAncestor && !marqueePaused {
+            restartCycleTimer()
+            restartMarqueeIfNeeded()
+        }
     }
 
     public override func viewDidHide() {
         super.viewDidHide()
-        cycleTask?.cancel()
-        cycleTask = nil
+        stopAllClocks()
     }
 
     public override func viewDidUnhide() {
         super.viewDidUnhide()
-        restartCycleTimer()
+        if !marqueePaused {
+            restartCycleTimer()
+            restartMarqueeIfNeeded()
+        }
+    }
+
+    public override func layout() {
+        super.layout()
+        restartMarqueeIfNeeded()
+    }
+
+    private func stopAllClocks() {
+        cycleTask?.cancel()
+        cycleTask = nil
+        stopSlideDriver()
+        stopMarqueeDriver()
+        MotionCoordinator.shared.cancelAll(owner: ownerID)
+    }
+
+    private func stopSlideDriver() {
+        if let id = slideDriverID {
+            MotionCoordinator.shared.displayDriver.stop(id: id)
+            slideDriverID = nil
+        }
+        slideTicket = nil
+    }
+
+    private func stopMarqueeDriver() {
+        if let id = marqueeDriverID {
+            MotionCoordinator.shared.displayDriver.stop(id: id)
+            marqueeDriverID = nil
+        }
     }
 
     private func restartCycleTimer() {
         cycleTask?.cancel()
         cycleTask = nil
-        guard window != nil, !isHidden, items.count > 1 else { return }
+        guard window != nil, !isHiddenOrHasHiddenAncestor, !marqueePaused, items.count > 1 else { return }
 
         cycleTask = Task { @MainActor [weak self] in
             while !Task.isCancelled {
                 try? await Task.sleep(for: .seconds(self?.cycleIntervalSeconds ?? 10))
-                guard !Task.isCancelled, let self, self.window != nil, !self.isHidden, self.items.count > 1 else { break }
+                guard !Task.isCancelled, let self, self.window != nil, !self.isHiddenOrHasHiddenAncestor, !self.marqueePaused, self.items.count > 1 else { break }
                 self.currentIndex = (self.currentIndex + 1) % self.items.count
                 self.transition(to: self.items[self.currentIndex])
             }
@@ -81,31 +139,105 @@ public final class CarouselHaloTextView: NSView {
     private func transition(to nextLine: String) {
         previousLine = currentLine
         currentLine = nextLine
+        marqueeOffset = 0
+        stopMarqueeDriver()
+
+        let key = TransitionKey(owner: ownerID, channel: "slide")
+        stopSlideDriver()
+        let ticket = MotionCoordinator.shared.beginTransition(for: key, category: .content) { [weak self] in
+            self?.stopSlideDriver()
+        }
+        slideTicket = ticket
 
         if MotionCoordinator.shared.isReduceMotionEnabled {
             slideProgress = 1.0
             previousLine = nil
+            _ = MotionCoordinator.shared.complete(ticket)
+            slideTicket = nil
             needsDisplay = true
             return
         }
 
         slideProgress = 0.0
-        slideTask?.cancel()
-        slideTask = Task { @MainActor [weak self] in
-            let steps = 18
-            for step in 1...steps {
-                try? await Task.sleep(for: .milliseconds(16))
-                guard !Task.isCancelled, let self else { break }
-                let t = CGFloat(step) / CGFloat(steps)
-                // Smooth ease-out cubic
-                self.slideProgress = 1.0 - pow(1.0 - t, 3.0)
-                self.needsDisplay = true
+        var elapsed: TimeInterval = 0
+        let total = MotionTokens.Duration.miniTextSlide
+        slideDriverID = MotionCoordinator.shared.displayDriver.start { [weak self] dt, _ in
+            guard let self, MotionCoordinator.shared.isCurrent(ticket) else { return false }
+            elapsed += dt
+            let raw = min(1.0, elapsed / max(0.01, total))
+            self.slideProgress = CGFloat(1.0 - pow(1.0 - raw, 3.0))
+            self.needsDisplay = true
+            if raw >= 1.0 {
+                if MotionCoordinator.shared.complete(ticket) {
+                    self.slideProgress = 1.0
+                    self.previousLine = nil
+                    self.slideDriverID = nil
+                    self.slideTicket = nil
+                    self.restartMarqueeIfNeeded()
+                    self.needsDisplay = true
+                }
+                return false
             }
-            if let self {
-                self.slideProgress = 1.0
-                self.previousLine = nil
-                self.needsDisplay = true
+            return true
+        }
+    }
+
+    /// Computes exact natural single-line width using CoreText (handles CJK, RTL, and emoji clusters accurately).
+    public func measureTextWidth(_ text: String, font: NSFont) -> CGFloat {
+        guard !text.isEmpty else { return 0 }
+        let attr = NSAttributedString(string: text, attributes: [.font: font as CTFont])
+        let line = CTLineCreateWithAttributedString(attr)
+        var ascent: CGFloat = 0
+        var descent: CGFloat = 0
+        var leading: CGFloat = 0
+        return ceil(CGFloat(CTLineGetTypographicBounds(line, &ascent, &descent, &leading)))
+    }
+
+    private func restartMarqueeIfNeeded() {
+        stopMarqueeDriver()
+        guard !MotionCoordinator.shared.isReduceMotionEnabled,
+              !marqueePaused,
+              window != nil,
+              !isHiddenOrHasHiddenAncestor,
+              bounds.width > 12 else {
+            marqueeOffset = 0
+            return
+        }
+
+        let s = GlassInteractionCoordinator.shared.uiScale
+        let font = NSFont.systemFont(ofSize: 12.5 * s, weight: .regular)
+        let textW = measureTextWidth(currentLine, font: font)
+        guard textW > bounds.width + 2.0 else {
+            marqueeOffset = 0
+            return
+        }
+
+        let gap = MotionTokens.Thresholds.marqueeGapPt * s
+        let cycleSpan = textW + gap
+        let speed = MotionTokens.Thresholds.marqueeSpeedPtPerSec * s
+        marqueeDelayRemaining = 1.2
+
+        marqueeDriverID = MotionCoordinator.shared.displayDriver.start { [weak self] dt, _ in
+            guard let self,
+                  !MotionCoordinator.shared.isReduceMotionEnabled,
+                  !self.marqueePaused,
+                  self.window != nil,
+                  !self.isHiddenOrHasHiddenAncestor else {
+                self?.marqueeOffset = 0
+                self?.marqueeDriverID = nil
+                return false
             }
+            if self.marqueeDelayRemaining > 0 {
+                self.marqueeDelayRemaining -= dt
+                return true
+            }
+            self.marqueeOffset += speed * CGFloat(dt)
+            if self.marqueeOffset >= cycleSpan {
+                self.marqueeOffset -= cycleSpan
+                self.marqueeDelayRemaining = 1.2
+            }
+            self.needsDisplay = true
+            return true
         }
     }
 
@@ -131,24 +263,73 @@ public final class CarouselHaloTextView: NSView {
         }
 
         if p > 0.01, !currentLine.isEmpty {
-            let curRect = CGRect(x: 0, y: baseY - (1.0 - p) * slideDist, width: bounds.width, height: textH)
-            PixelFontRenderer.drawSoftGlyphHaloText(
-                currentLine,
-                in: curRect,
-                font: font,
-                textColor: OriginalDesignTokens.Colors.highlightSilver,
-                alignment: .center,
-                alpha: p
-            )
+            let textW = measureTextWidth(currentLine, font: font)
+            if textW > bounds.width + 2.0 && marqueeOffset > 0.1 && !MotionCoordinator.shared.isReduceMotionEnabled {
+                let gap = MotionTokens.Thresholds.marqueeGapPt * s
+                let span = textW + gap
+                let y = baseY - (1.0 - p) * slideDist
+                let x1 = -marqueeOffset
+                let x2 = x1 + span
+                NSGraphicsContext.saveGraphicsState()
+                NSBezierPath(rect: bounds).addClip()
+                PixelFontRenderer.drawSoftGlyphHaloText(
+                    currentLine,
+                    in: CGRect(x: x1, y: y, width: textW + 4, height: textH),
+                    font: font,
+                    textColor: OriginalDesignTokens.Colors.highlightSilver,
+                    alignment: .left,
+                    alpha: p
+                )
+                if x2 < bounds.width {
+                    PixelFontRenderer.drawSoftGlyphHaloText(
+                        currentLine,
+                        in: CGRect(x: x2, y: y, width: textW + 4, height: textH),
+                        font: font,
+                        textColor: OriginalDesignTokens.Colors.highlightSilver,
+                        alignment: .left,
+                        alpha: p
+                    )
+                }
+                NSGraphicsContext.restoreGraphicsState()
+            } else {
+                let curRect = CGRect(x: 0, y: baseY - (1.0 - p) * slideDist, width: bounds.width, height: textH)
+                PixelFontRenderer.drawSoftGlyphHaloText(
+                    currentLine,
+                    in: curRect,
+                    font: font,
+                    textColor: OriginalDesignTokens.Colors.highlightSilver,
+                    alignment: .center,
+                    alpha: p
+                )
+            }
         }
+    }
+}
+
+// MARK: - MiniHoverControlsContainer
+
+@MainActor
+private final class MiniHoverControlsContainer: NSView {
+    var allowsHitTesting: Bool = false
+
+    override func hitTest(_ point: NSPoint) -> NSView? {
+        guard allowsHitTesting, !isHidden, alphaValue > 0.05 else { return nil }
+        let localPt = convert(point, from: superview)
+        guard bounds.contains(localPt) else { return nil }
+        for sub in subviews.reversed() where !sub.isHidden {
+            if let hit = sub.hitTest(localPt) {
+                return hit
+            }
+        }
+        return nil
     }
 }
 
 // MARK: - MiniPlayerView
 
-/// 1:1 restoration of the AIRPLAY-zion / AirMuse_Remastered Mini Bar (330×40 @ 1×, 495×60 @ 1.5×).
-/// - Idle: 10-second vertical-slide carousel across [Title, Artist, Album] with Windows-style soft Gaussian glyph halo
-/// - Hover: `MINICONTROL` 16×16 playback buttons + `WINDOWBUTTON` controls
+/// 1:1 restoration of the AIRPLAY-zion / AirMuse_Remastered Mini Bar (330×30 @ 1×, 495×45 @ 1.5×).
+/// Supports M04 hover capsule transition (preserving time display, zero resize), M05 button physics,
+/// M06 real playback-state icon transition, M15 marquee/carousel, and keyboard accessibility.
 open class MiniPlayerView: GlassMiniPlayer {
 
     public var onPlayPause: (() -> Void)?
@@ -161,19 +342,21 @@ open class MiniPlayerView: GlassMiniPlayer {
     public var onToggleSource: (() -> Void)?
     public var onQuit: (() -> Void)?
 
-    // Idle state views
+    private let miniMotionID = "MiniPlayerView-\(UUID().uuidString)"
+
+    // Idle state views + persistent time readout
     private let idleContainer = NSView()
     private let carouselView = CarouselHaloTextView()
     private let timeView = TimeFontDisplayView()
 
     // Hover state views
     private let haloHostLayer = CALayer()
-    private let controlsContainer = NSView()
-    private let stopButton = GlassButton(image: nil, size: CGSize(width: 16, height: 16), enableLiquidGlassHover: true)
-    private let prevButton = GlassButton(image: nil, size: CGSize(width: 16, height: 16), enableLiquidGlassHover: true)
-    private let playPauseButton = GlassButton(image: nil, size: CGSize(width: 16, height: 16), enableLiquidGlassHover: true)
-    private let nextButton = GlassButton(image: nil, size: CGSize(width: 16, height: 16), enableLiquidGlassHover: true)
-    private let ejectButton = GlassButton(image: nil, size: CGSize(width: 16, height: 16), enableLiquidGlassHover: true)
+    private let controlsContainer = MiniHoverControlsContainer()
+    private let stopButton = GlassButton(image: nil, size: CGSize(width: 16, height: 16), enableLiquidGlassHover: false)
+    private let prevButton = GlassButton(image: nil, size: CGSize(width: 16, height: 16), enableLiquidGlassHover: false)
+    private let playPauseButton = GlassButton(image: nil, size: CGSize(width: 16, height: 16), enableLiquidGlassHover: false)
+    private let nextButton = GlassButton(image: nil, size: CGSize(width: 16, height: 16), enableLiquidGlassHover: false)
+    private let ejectButton = GlassButton(image: nil, size: CGSize(width: 16, height: 16), enableLiquidGlassHover: false)
 
     private let miniSourceButton = GlassButton(image: nil, size: CGSize(width: 13, height: 13), buttonStyle: .glassBar)
     private let libraryButton = GlassButton(image: nil, size: CGSize(width: 13, height: 13), buttonStyle: .glassBar)
@@ -186,8 +369,13 @@ open class MiniPlayerView: GlassMiniPlayer {
     private var lastPositionMs: Int64 = 0
     private var lastDurationMs: Int64 = 0
     private var isHovering: Bool = false
+    private var isKeyboardControlsActive: Bool = false
     private var trackingArea: NSTrackingArea?
     private var cachedHaloSize: CGSize = .zero
+
+    public var isHoverControlsInteractive: Bool {
+        controlsContainer.allowsHitTesting
+    }
 
     public override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
@@ -199,6 +387,15 @@ open class MiniPlayerView: GlassMiniPlayer {
         setupMiniViews()
     }
 
+    isolated deinit {
+        if let obs = resignKeyObserver {
+            NotificationCenter.default.removeObserver(obs)
+            resignKeyObserver = nil
+        }
+        MotionCoordinator.shared.cancelAll(owner: miniMotionID)
+        NotificationCenter.default.removeObserver(self)
+    }
+
     private func setupMiniViews() {
         idleContainer.wantsLayer = true
         idleContainer.alphaValue = 1.0
@@ -207,18 +404,26 @@ open class MiniPlayerView: GlassMiniPlayer {
         carouselView.cycleIntervalSeconds = 10
         idleContainer.addSubview(carouselView)
 
-        timeView.alignment = .right
-        let click = NSClickGestureRecognizer(target: self, action: #selector(toggleTimeMode))
-        timeView.addGestureRecognizer(click)
-        idleContainer.addSubview(timeView)
-
+        // M04: Keep time visible in its own non-overlapping left slot and clickable to toggle remaining time
         haloHostLayer.masksToBounds = false
         haloHostLayer.opacity = 0.0
         layer?.insertSublayer(haloHostLayer, at: 0)
 
         controlsContainer.wantsLayer = true
         controlsContainer.alphaValue = 0.0
+        controlsContainer.allowsHitTesting = false
         addSubview(controlsContainer)
+
+        timeView.alignment = .left
+        let click = NSClickGestureRecognizer(target: self, action: #selector(toggleTimeMode))
+        timeView.addGestureRecognizer(click)
+        addSubview(timeView)
+
+        stopButton.toolTip = "停止"
+        prevButton.toolTip = "上一首"
+        playPauseButton.toolTip = "播放 / 暂停"
+        nextButton.toolTip = "下一首"
+        ejectButton.toolTip = "显示 / 隐藏资料库"
 
         stopButton.onClick = { [weak self] in self?.onStop?() }
         prevButton.onClick = { [weak self] in self?.onPrevious?() }
@@ -266,6 +471,12 @@ open class MiniPlayerView: GlassMiniPlayer {
             name: GlassInteractionCoordinator.modeDidChangeNotification,
             object: nil
         )
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(skinSettingsChanged),
+            name: MotionAccessibility.preferencesDidChangeNotification,
+            object: nil
+        )
     }
 
     @objc private func toggleTimeMode() {
@@ -310,28 +521,112 @@ open class MiniPlayerView: GlassMiniPlayer {
         setHovering(false)
     }
 
-    private func setHovering(_ hovering: Bool) {
+    private var resignKeyObserver: NSObjectProtocol?
+
+    open override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        if let obs = resignKeyObserver {
+            NotificationCenter.default.removeObserver(obs)
+            resignKeyObserver = nil
+        }
+        if let win = window {
+            resignKeyObserver = NotificationCenter.default.addObserver(
+                forName: NSWindow.didResignKeyNotification,
+                object: win,
+                queue: .main
+            ) { [weak self] _ in
+                MainActor.assumeIsolated {
+                    self?.setKeyboardControlsFocused(false)
+                }
+            }
+        }
+    }
+
+    open override func viewDidHide() {
+        super.viewDidHide()
+        setHovering(false, immediate: true)
+        setKeyboardControlsFocused(false)
+    }
+
+    /// M04: Keyboard focus lock allows full Mini bar navigation via keyboard without hovering.
+    public func setKeyboardControlsFocused(_ focused: Bool) {
+        guard isKeyboardControlsActive != focused else { return }
+        isKeyboardControlsActive = focused
+        refreshHoverPresentation(immediate: false)
+    }
+
+    open override var acceptsFirstResponder: Bool { true }
+
+    open override func keyDown(with event: NSEvent) {
+        guard !event.isARepeat else { return }
+        switch event.keyCode {
+        case 48, 125, 126: // Tab / Down / Up -> enter keyboard control focus
+            setKeyboardControlsFocused(true)
+            window?.makeFirstResponder(playPauseButton)
+        case 49: // Space
+            onPlayPause?()
+        case 53: // Esc
+            setKeyboardControlsFocused(false)
+        case 123: // Left arrow
+            onPrevious?()
+        case 124: // Right arrow
+            onNext?()
+        default:
+            super.keyDown(with: event)
+        }
+    }
+
+    public func setHovering(_ hovering: Bool, immediate: Bool = false) {
         guard isHovering != hovering else { return }
         isHovering = hovering
-        let targetIdle: CGFloat = hovering ? 0.0 : 1.0
-        let targetCtrl: CGFloat = hovering ? 1.0 : 0.0
-        let targetHalo: Float = hovering ? 1.0 : 0.0
+        refreshHoverPresentation(immediate: immediate)
+    }
 
-        if MotionCoordinator.shared.isReduceMotionEnabled {
+    private func refreshHoverPresentation(immediate: Bool) {
+        let active = isHovering || isKeyboardControlsActive
+        let targetIdle: CGFloat = active ? 0.0 : 1.0
+        let targetCtrl: CGFloat = active ? 1.0 : 0.0
+        let targetHalo: Float = active ? 1.0 : 0.0
+
+        carouselView.setPaused(active)
+        controlsContainer.allowsHitTesting = active
+
+        let key = TransitionKey(owner: miniMotionID, channel: "hover")
+        let haloKey = TransitionKey(owner: miniMotionID, channel: "haloOpacity")
+        let ticket = MotionCoordinator.shared.beginTransition(for: key, category: .controlInteraction)
+
+        if immediate || MotionCoordinator.shared.isReduceMotionEnabled {
+            MotionCoordinator.shared.cancel(key: haloKey)
             idleContainer.alphaValue = targetIdle
             controlsContainer.alphaValue = targetCtrl
-            haloHostLayer.opacity = targetHalo
-        } else {
-            NSAnimationContext.runAnimationGroup { ctx in
-                ctx.duration = MotionTokens.Duration.hoverFade
-                idleContainer.animator().alphaValue = targetIdle
-                controlsContainer.animator().alphaValue = targetCtrl
-            }
             CATransaction.begin()
-            CATransaction.setAnimationDuration(MotionTokens.Duration.hoverFade)
+            CATransaction.setDisableActions(true)
             haloHostLayer.opacity = targetHalo
             CATransaction.commit()
+            _ = MotionCoordinator.shared.complete(ticket)
+            return
         }
+
+        MotionCoordinator.shared.animate(
+            duration: MotionTokens.Duration.hoverFade,
+            timingFunction: .easeInEaseOut,
+            ticket: ticket,
+            action: {
+                self.idleContainer.animator().alphaValue = targetIdle
+                self.controlsContainer.animator().alphaValue = targetCtrl
+            }
+        )
+        let haloTicket = MotionCoordinator.shared.beginTransition(for: haloKey, category: .controlInteraction)
+        MotionCoordinator.shared.animateLayerFloat(
+            haloHostLayer,
+            keyPath: "opacity",
+            animationKey: "haloOpacity",
+            to: CGFloat(targetHalo),
+            duration: MotionTokens.Duration.hoverFade,
+            timingFunction: .easeInEaseOut,
+            ticket: haloTicket,
+            setModel: { $0.opacity = Float($1) }
+        )
     }
 
     open override func layout() {
@@ -349,12 +644,16 @@ open class MiniPlayerView: GlassMiniPlayer {
             updateHaloLayer(w: w, h: h, s: s)
         }
 
-        // Idle: centered 10s carousel [Title, Artist, Album] across full bar without time display
-        timeView.isHidden = true
-        let textLeft = 14.0 * s
+        // M04: Non-overlapping left time slot + centered carousel
+        let timeW = 35.0 * s
+        let timeH = 11.0 * s
+        timeView.isHidden = false
+        timeView.frame = NSRect(x: 8.0 * s, y: (h - timeH) * 0.5, width: timeW, height: timeH)
+
+        let textLeft = 46.0 * s
         carouselView.frame = NSRect(x: textLeft, y: 0, width: max(20, w - textLeft * 2.0), height: h)
 
-        // Hover: centered 5 buttons (16×16 @ 1x) + left source button + right window buttons (13×13 @ 1x)
+        // Hover: centered 5 buttons (16×16 @ 1x) inside compact glass capsule + left source button + right window buttons
         let btnSize = 16.0 * s
         let btnY = (h - btnSize) * 0.5
         let startX = (w - 92.0 * s) * 0.5
@@ -393,8 +692,6 @@ open class MiniPlayerView: GlassMiniPlayer {
         ctx.scaleBy(x: scale, y: scale)
         ctx.clear(CGRect(x: 0, y: 0, width: w, height: h))
 
-        // 3 lens halos replicating Remastered MainWindow.cpp:
-        // 1) Center playback controls
         OriginalGlassRenderer.drawTextHalo(
             in: ctx,
             center: CGPoint(x: w * 0.5, y: h * 0.5),
@@ -402,7 +699,6 @@ open class MiniPlayerView: GlassMiniPlayer {
             ry: 14.0 * s,
             centerAlpha: 135.0 / 255.0
         )
-        // 2) Right window buttons
         OriginalGlassRenderer.drawTextHalo(
             in: ctx,
             center: CGPoint(x: w - 61.0 * s, y: h * 0.5),
@@ -410,7 +706,6 @@ open class MiniPlayerView: GlassMiniPlayer {
             ry: 14.0 * s,
             centerAlpha: 135.0 / 255.0
         )
-        // 3) Left source indicator button
         OriginalGlassRenderer.drawTextHalo(
             in: ctx,
             center: CGPoint(x: 51.5 * s, y: h * 0.5),
@@ -428,12 +723,20 @@ open class MiniPlayerView: GlassMiniPlayer {
     }
 
     public func updateState(_ state: PlaybackState) {
-        isPlayingState = state.isPlaying
+        let effectivePlaying = (state.status == .playing)
+        let playChanged = (isPlayingState != effectivePlaying)
+        isPlayingState = effectivePlaying
         lastPositionMs = state.estimatedPositionMs
         lastDurationMs = state.durationMs
 
         let s = GlassInteractionCoordinator.shared.uiScale
-        playPauseButton.setSymbol(name: state.isPlaying ? "pause.fill" : "play.fill", pointSize: 10.5 * s, weight: .bold)
+        if playChanged {
+            playPauseButton.transitionToSymbol(
+                name: effectivePlaying ? "pause.fill" : "play.fill",
+                pointSize: 10.5 * s,
+                weight: .bold
+            )
+        }
 
         if let track = state.currentTrack {
             carouselView.setItems([track.title, track.artistName, track.albumTitle])

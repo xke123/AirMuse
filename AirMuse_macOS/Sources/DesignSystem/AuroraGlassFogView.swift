@@ -60,6 +60,7 @@ open class AuroraGlassFogView: NSView {
     }
 
     open override func hitTest(_ point: NSPoint) -> NSView? {
+        guard !isHidden, alphaValue > 0.05 else { return nil }
         // `point` is in superview coordinates; convert to `self` before forwarding to subviews
         let localPoint = convert(point, from: superview)
         guard bounds.contains(localPoint) else { return nil }

@@ -1,33 +1,254 @@
 import AppKit
+import QuartzCore
+import ImageIO
 import Domain
 import DesignSystem
 import Playback
 import Infrastructure
 
-// MARK: - CapsuleProgressView
+// MARK: - ArtworkAmbientAnalyzer (M16 / M17 Off-MainActor Cache)
 
-/// Custom-drawn AIRPLAY capsule progress bar with hover highlight, drag scrubbing,
-/// and localized Liquid Glass hover feedback in Enhanced mode.
+/// Decodes album artwork bytes and extracts a localized ambient color strictly off-MainActor,
+/// caching results by `trackKey` so rapid track changes never block UI or commit stale colors.
+private actor ArtworkAmbientAnalyzer {
+    static let shared = ArtworkAmbientAnalyzer()
+
+    private var colorCache: [String: NSColor] = [:]
+    private var colorOrder: [String] = []
+    private let maxColorEntries = 64
+
+    func cachedColor(for trackKey: String) -> NSColor? {
+        colorCache[trackKey]
+    }
+
+    func decodeAndExtractColor(data: Data, trackKey: String, maxPixelSize: Int) -> (NSImage?, NSColor?) {
+        let cfData = data as CFData
+        guard let source = CGImageSourceCreateWithData(cfData, nil) else {
+            return (nil, colorCache[trackKey])
+        }
+        let options: [CFString: Any] = [
+            kCGImageSourceCreateThumbnailFromImageAlways: true,
+            kCGImageSourceShouldCacheImmediately: true,
+            kCGImageSourceCreateThumbnailWithTransform: true,
+            kCGImageSourceThumbnailMaxPixelSize: max(48, maxPixelSize)
+        ]
+        guard let cgImage = CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary) else {
+            return (NSImage(data: data), colorCache[trackKey])
+        }
+        let nsImage = NSImage(cgImage: cgImage, size: NSSize(width: cgImage.width, height: cgImage.height))
+        let color = extractAndCacheColor(from: cgImage, trackKey: trackKey)
+        return (nsImage, color)
+    }
+
+    func extractAndCacheColor(from cgImage: CGImage, trackKey: String) -> NSColor? {
+        if let hit = colorCache[trackKey] {
+            return hit
+        }
+        let sampleW = 12
+        let sampleH = 12
+        let cs = CGColorSpaceCreateDeviceRGB()
+        var bytes = [UInt8](repeating: 0, count: sampleW * sampleH * 4)
+        guard let ctx = CGContext(
+            data: &bytes,
+            width: sampleW,
+            height: sampleH,
+            bitsPerComponent: 8,
+            bytesPerRow: sampleW * 4,
+            space: cs,
+            bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+        ) else { return nil }
+        ctx.interpolationQuality = .low
+        ctx.draw(cgImage, in: CGRect(x: 0, y: 0, width: sampleW, height: sampleH))
+
+        var sumR: Double = 0
+        var sumG: Double = 0
+        var sumB: Double = 0
+        var weightSum: Double = 0
+
+        for i in stride(from: 0, to: bytes.count, by: 4) {
+            let r = Double(bytes[i]) / 255.0
+            let g = Double(bytes[i + 1]) / 255.0
+            let b = Double(bytes[i + 2]) / 255.0
+            let maxC = max(r, max(g, b))
+            let minC = min(r, min(g, b))
+            let sat = maxC > 0 ? (maxC - minC) / maxC : 0
+            let w = 0.25 + sat * 1.5
+            sumR += r * w
+            sumG += g * w
+            sumB += b * w
+            weightSum += w
+        }
+        guard weightSum > 0 else { return nil }
+        let color = NSColor(
+            srgbRed: CGFloat(sumR / weightSum),
+            green: CGFloat(sumG / weightSum),
+            blue: CGFloat(sumB / weightSum),
+            alpha: 1.0
+        )
+
+        if colorCache[trackKey] == nil {
+            if colorOrder.count >= maxColorEntries, let oldest = colorOrder.first {
+                colorOrder.removeFirst()
+                colorCache.removeValue(forKey: oldest)
+            }
+            colorOrder.append(trackKey)
+        }
+        colorCache[trackKey] = color
+        return color
+    }
+}
+
+// MARK: - ScrubTimePreviewPill (M09)
+
+@MainActor
+private final class ScrubTimePreviewPill: NSView {
+    private let glassView = NSGlassEffectView(frame: .zero)
+    private let fallbackLayer = CALayer()
+    private let label = NSTextField(labelWithString: "00:00")
+
+    override var mouseDownCanMoveWindow: Bool { false }
+    override func hitTest(_ point: NSPoint) -> NSView? { nil }
+
+    var text: String = "00:00" {
+        didSet {
+            if oldValue != text {
+                label.stringValue = text
+            }
+        }
+    }
+
+    override init(frame frameRect: NSRect) {
+        super.init(frame: frameRect)
+        setup()
+    }
+
+    required init?(coder: NSCoder) {
+        super.init(coder: coder)
+        setup()
+    }
+
+    private func setup() {
+        wantsLayer = true
+        layer?.cornerRadius = 8
+        layer?.masksToBounds = true
+
+        fallbackLayer.backgroundColor = NSColor(srgbRed: 22/255.0, green: 24/255.0, blue: 28/255.0, alpha: 0.92).cgColor
+        fallbackLayer.borderColor = NSColor(white: 1.0, alpha: 0.26).cgColor
+        fallbackLayer.borderWidth = 0.75
+        fallbackLayer.cornerRadius = 8
+        layer?.addSublayer(fallbackLayer)
+
+        glassView.style = .clear
+        glassView.cornerRadius = 8
+        glassView.autoresizingMask = [.width, .height]
+        addSubview(glassView)
+
+        label.font = NSFont.monospacedDigitSystemFont(ofSize: 9.5, weight: .semibold)
+        label.textColor = OriginalDesignTokens.Colors.titleSilver
+        label.alignment = .center
+        addSubview(label)
+
+        refreshMode()
+    }
+
+    func refreshMode() {
+        let useGlass = GlassInteractionCoordinator.shared.isEnhancedMode && !MotionCoordinator.shared.isReduceTransparencyEnabled
+        glassView.isHidden = !useGlass
+        fallbackLayer.isHidden = useGlass
+    }
+
+    override func layout() {
+        super.layout()
+        glassView.frame = bounds
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        fallbackLayer.frame = bounds
+        CATransaction.commit()
+        label.frame = NSRect(x: 2, y: (bounds.height - 13) * 0.5, width: max(10, bounds.width - 4), height: 13)
+    }
+}
+
+// MARK: - CapsuleProgressView (M09 + M24)
+
+/// Custom-drawn AIRPLAY capsule progress bar with hover/scrub liquid expansion,
+/// floating preview time pill, track-change cancellation, and bounded single-seek commit.
 @MainActor
 final class CapsuleProgressView: NSView {
-    var ratio: CGFloat = 0 { didSet { needsDisplay = true } }
-    var isHighlighted: Bool = false { didSet { needsDisplay = true; liquidHover.isActive = isHighlighted || isScrubbing } }
-    var isScrubbing: Bool = false { didSet { needsDisplay = true; liquidHover.isActive = isHighlighted || isScrubbing } }
+    private let ownerID = "CapsuleProgress-\(UUID().uuidString)"
+
+    var ratio: CGFloat = 0 {
+        didSet {
+            if abs(oldValue - ratio) > 0.0005 {
+                needsDisplay = true
+                updatePreviewPillPosition()
+            }
+        }
+    }
+    var durationMs: Int64 = 0 {
+        didSet { updatePreviewPillText() }
+    }
+    var isHighlighted: Bool = false {
+        didSet {
+            guard oldValue != isHighlighted else { return }
+            updateInteractionAppearance()
+        }
+    }
+    var isScrubbing: Bool = false {
+        didSet {
+            guard oldValue != isScrubbing else { return }
+            updateInteractionAppearance()
+        }
+    }
+
     var onSeek: ((CGFloat) -> Void)?
     var onScrubbingChanged: ((Bool, CGFloat) -> Void)?
 
     private let liquidHover = LiquidGlassControl()
+    private let previewPill = ScrubTimePreviewPill()
     private var trackingArea: NSTrackingArea?
+    private var expandFactor: CGFloat = 0.0
+    private var expandDriverID: UUID?
+    private var expandTicket: MotionTicket?
+
+    override var mouseDownCanMoveWindow: Bool { false }
+    override var acceptsFirstResponder: Bool { true }
+
+    var isPreviewVisible: Bool { !previewPill.isHidden && previewPill.alphaValue > 0.01 }
 
     override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
         wantsLayer = true
+        layer?.masksToBounds = false
         liquidHover.cornerRadius = 5.0
         addSubview(liquidHover)
+
+        previewPill.isHidden = true
+        previewPill.alphaValue = 0.0
+        addSubview(previewPill)
     }
 
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
+    }
+
+    isolated deinit {
+        stopExpandDriver()
+        MotionCoordinator.shared.cancelAll(owner: ownerID)
+    }
+
+    func cancelScrubbing() {
+        let wasScrubbing = isScrubbing
+        isScrubbing = false
+        isHighlighted = false
+        if wasScrubbing {
+            onScrubbingChanged?(false, ratio)
+        }
+        updateInteractionAppearance()
+    }
+
+    override func viewDidHide() {
+        super.viewDidHide()
+        cancelScrubbing()
     }
 
     override func layout() {
@@ -35,6 +256,7 @@ final class CapsuleProgressView: NSView {
         let barH = max(5.0, bounds.height * 0.45)
         liquidHover.frame = NSRect(x: 0, y: (bounds.height - barH) * 0.5 - 2, width: bounds.width, height: barH + 4)
         liquidHover.cornerRadius = liquidHover.bounds.height * 0.5
+        updatePreviewPillPosition()
     }
 
     override func updateTrackingAreas() {
@@ -57,6 +279,8 @@ final class CapsuleProgressView: NSView {
         isScrubbing = true
         let r = ratioFrom(event: event)
         ratio = r
+        updatePreviewPillText()
+        updatePreviewPillPosition()
         onScrubbingChanged?(true, r)
     }
 
@@ -64,6 +288,8 @@ final class CapsuleProgressView: NSView {
         guard isScrubbing else { return }
         let r = ratioFrom(event: event)
         ratio = r
+        updatePreviewPillText()
+        updatePreviewPillPosition()
         onScrubbingChanged?(true, r)
     }
 
@@ -76,30 +302,223 @@ final class CapsuleProgressView: NSView {
         onSeek?(r)
     }
 
+    override func keyDown(with event: NSEvent) {
+        if event.keyCode == 53 && isScrubbing { // Esc cancels scrub without seeking
+            cancelScrubbing()
+            return
+        }
+        if (event.keyCode == 123 || event.keyCode == 124), durationMs > 0 { // Left / Right 5s step
+            let stepRatio = CGFloat(5000.0 / Double(durationMs))
+            let next = min(max(ratio + (event.keyCode == 124 ? stepRatio : -stepRatio), 0), 1)
+            ratio = next
+            onSeek?(next)
+            return
+        }
+        super.keyDown(with: event)
+    }
+
+    override func scrollWheel(with event: NSEvent) {
+        guard GlassInteractionCoordinator.shared.enableTrackpadGestures,
+              durationMs > 0,
+              abs(event.scrollingDeltaX) > abs(event.scrollingDeltaY) * 1.5,
+              abs(event.scrollingDeltaX) > 0.5 else {
+            super.scrollWheel(with: event)
+            return
+        }
+        let deltaRatio = (-event.scrollingDeltaX) / max(bounds.width, 120.0) * 0.5
+        let next = min(max(ratio + deltaRatio, 0), 1)
+        ratio = next
+        if event.phase == .ended || event.momentumPhase == .ended || event.phase == [] {
+            isScrubbing = false
+            onScrubbingChanged?(false, next)
+            onSeek?(next)
+        } else {
+            isScrubbing = true
+            updatePreviewPillText()
+            updatePreviewPillPosition()
+            onScrubbingChanged?(true, next)
+        }
+    }
+
     private func ratioFrom(event: NSEvent) -> CGFloat {
         let pt = convert(event.locationInWindow, from: nil)
         guard bounds.width > 0 else { return 0 }
         return min(max(pt.x / bounds.width, 0), 1)
     }
 
+    private func updateInteractionAppearance() {
+        let active = isHighlighted || isScrubbing
+        liquidHover.isActive = active
+        previewPill.refreshMode()
+
+        let showPill = isScrubbing && durationMs > 0
+        if showPill {
+            previewPill.isHidden = false
+            updatePreviewPillText()
+            updatePreviewPillPosition()
+        }
+
+        let targetExpand: CGFloat = isScrubbing ? 1.0 : (isHighlighted ? 0.55 : 0.0)
+        let targetPillAlpha: CGFloat = showPill ? 1.0 : 0.0
+        let dur = active ? MotionTokens.Duration.scrubExpand : MotionTokens.Duration.scrubRelease
+
+        stopExpandDriver()
+        let key = TransitionKey(owner: ownerID, channel: "expand")
+        let ticket = MotionCoordinator.shared.beginTransition(for: key, category: .controlInteraction) { [weak self] in
+            self?.stopExpandDriver()
+        }
+        expandTicket = ticket
+
+        if MotionCoordinator.shared.isReduceMotionEnabled {
+            expandFactor = targetExpand
+            previewPill.alphaValue = targetPillAlpha
+            previewPill.isHidden = !showPill
+            _ = MotionCoordinator.shared.complete(ticket)
+            expandTicket = nil
+            needsDisplay = true
+            return
+        }
+
+        let startExpand = expandFactor
+        let startPillAlpha = previewPill.alphaValue
+        var elapsed: TimeInterval = 0
+        expandDriverID = MotionCoordinator.shared.displayDriver.start { [weak self] dt, _ in
+            guard let self, MotionCoordinator.shared.isCurrent(ticket) else { return false }
+            elapsed += dt
+            let raw = min(1.0, elapsed / max(0.01, dur))
+            let t = CGFloat(1.0 - pow(1.0 - raw, 3.0))
+            self.expandFactor = startExpand + (targetExpand - startExpand) * t
+            self.previewPill.alphaValue = startPillAlpha + (targetPillAlpha - startPillAlpha) * t
+            self.needsDisplay = true
+            if raw >= 1.0 {
+                if MotionCoordinator.shared.complete(ticket) {
+                    self.expandFactor = targetExpand
+                    self.previewPill.alphaValue = targetPillAlpha
+                    if !showPill { self.previewPill.isHidden = true }
+                    self.expandDriverID = nil
+                    self.expandTicket = nil
+                    self.needsDisplay = true
+                }
+                return false
+            }
+            return true
+        }
+    }
+
+    private func stopExpandDriver() {
+        if let id = expandDriverID {
+            MotionCoordinator.shared.displayDriver.stop(id: id)
+            expandDriverID = nil
+        }
+        expandTicket = nil
+    }
+
+    private func updatePreviewPillText() {
+        let ms = Int64(Double(ratio) * Double(max(0, durationMs)))
+        let totalSec = max(0, ms / 1000)
+        previewPill.text = String(format: "%02lld:%02lld", totalSec / 60, totalSec % 60)
+    }
+
+    private func updatePreviewPillPosition() {
+        let pillW: CGFloat = 42
+        let pillH: CGFloat = 17
+        let thumbX = bounds.width * min(max(ratio, 0), 1)
+        let x = min(max(thumbX - pillW * 0.5, 0), max(0, bounds.width - pillW))
+        previewPill.frame = NSRect(x: x, y: bounds.height + 2, width: pillW, height: pillH)
+    }
+
     override func draw(_ dirtyRect: NSRect) {
         guard let ctx = NSGraphicsContext.current?.cgContext else { return }
-        let barH = max(5.0, bounds.height * 0.43)
+        let baseH = max(5.0, bounds.height * 0.43)
+        let barH = baseH + expandFactor * 2.2
         let barRect = CGRect(x: 0, y: (bounds.height - barH) * 0.5, width: bounds.width, height: barH)
         OriginalControlRenderer.drawCapsuleProgress(in: ctx, rect: barRect, ratio: ratio, isHighlighted: isHighlighted, isScrubbing: isScrubbing)
     }
 }
 
-// MARK: - VolumeSegmentsView
+// MARK: - VolumeHUDView (M10)
 
-/// 8-segment vertical volume meter matching AIRPLAY's right-edge volume control.
+@MainActor
+private final class VolumeHUDView: NSView {
+    private let glassView = NSGlassEffectView(frame: .zero)
+    private let fallbackLayer = CALayer()
+    private let label = NSTextField(labelWithString: "100%")
+
+    override var mouseDownCanMoveWindow: Bool { false }
+    override func hitTest(_ point: NSPoint) -> NSView? { nil }
+
+    var volumePercent: Int = 100 {
+        didSet {
+            label.stringValue = "\(volumePercent)%"
+        }
+    }
+
+    override init(frame frameRect: NSRect) {
+        super.init(frame: frameRect)
+        setup()
+    }
+
+    required init?(coder: NSCoder) {
+        super.init(coder: coder)
+        setup()
+    }
+
+    private func setup() {
+        wantsLayer = true
+        layer?.cornerRadius = 7
+        layer?.masksToBounds = true
+
+        fallbackLayer.backgroundColor = NSColor(srgbRed: 22/255.0, green: 24/255.0, blue: 28/255.0, alpha: 0.92).cgColor
+        fallbackLayer.borderColor = NSColor(white: 1.0, alpha: 0.28).cgColor
+        fallbackLayer.borderWidth = 0.75
+        fallbackLayer.cornerRadius = 7
+        layer?.addSublayer(fallbackLayer)
+
+        glassView.style = .clear
+        glassView.cornerRadius = 7
+        glassView.autoresizingMask = [.width, .height]
+        addSubview(glassView)
+
+        label.font = NSFont.monospacedDigitSystemFont(ofSize: 9.5, weight: .semibold)
+        label.textColor = OriginalDesignTokens.Colors.titleSilver
+        label.alignment = .center
+        addSubview(label)
+        refreshMode()
+    }
+
+    func refreshMode() {
+        let useGlass = GlassInteractionCoordinator.shared.isEnhancedMode && !MotionCoordinator.shared.isReduceTransparencyEnabled
+        glassView.isHidden = !useGlass
+        fallbackLayer.isHidden = useGlass
+    }
+
+    override func layout() {
+        super.layout()
+        glassView.frame = bounds
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        fallbackLayer.frame = bounds
+        CATransaction.commit()
+        label.frame = NSRect(x: 2, y: (bounds.height - 13) * 0.5, width: max(10, bounds.width - 4), height: 13)
+    }
+}
+
+// MARK: - VolumeSegmentsView (M10 + M24)
+
+/// 8-segment vertical volume meter matching AIRPLAY's right-edge volume control,
+/// paired with a localized 180ms/900ms Glass Volume HUD.
 @MainActor
 final class VolumeSegmentsView: NSView {
+    private let ownerID = "VolumeSegments-\(UUID().uuidString)"
     var volume: Float = 1.0 { didSet { needsDisplay = true } }
     var onVolumeChanged: ((Float) -> Void)?
+    var onHUDVisibilityChanged: ((Bool, Int) -> Void)?
 
     private let liquidHover = LiquidGlassControl()
     private var trackingArea: NSTrackingArea?
+    private var dismissTask: Task<Void, Never>?
+
+    override var mouseDownCanMoveWindow: Bool { false }
 
     override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
@@ -110,6 +529,11 @@ final class VolumeSegmentsView: NSView {
 
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
+    }
+
+    isolated deinit {
+        dismissTask?.cancel()
+        MotionCoordinator.shared.cancelAll(owner: ownerID)
     }
 
     override func layout() {
@@ -125,12 +549,19 @@ final class VolumeSegmentsView: NSView {
         trackingArea = area
     }
 
+    override func viewDidHide() {
+        super.viewDidHide()
+        cancelHUD()
+    }
+
     override func mouseEntered(with event: NSEvent) {
         liquidHover.isActive = true
+        presentHUDAndScheduleDismiss()
     }
 
     override func mouseExited(with event: NSEvent) {
         liquidHover.isActive = false
+        scheduleHUDDismiss()
     }
 
     override func mouseDown(with event: NSEvent) {
@@ -142,10 +573,16 @@ final class VolumeSegmentsView: NSView {
     }
 
     override func scrollWheel(with event: NSEvent) {
+        guard GlassInteractionCoordinator.shared.enableTrackpadGestures,
+              abs(event.scrollingDeltaY) >= abs(event.scrollingDeltaX) else {
+            super.scrollWheel(with: event)
+            return
+        }
         let delta: Float = event.scrollingDeltaY > 0 ? 0.05 : -0.05
         let next = min(max(volume + delta, 0), 1)
         volume = next
         onVolumeChanged?(next)
+        presentHUDAndScheduleDismiss()
     }
 
     private func updateVolume(from event: NSEvent) {
@@ -154,6 +591,29 @@ final class VolumeSegmentsView: NSView {
         let next = Float(min(max(pt.y / bounds.height, 0), 1))
         volume = next
         onVolumeChanged?(next)
+        presentHUDAndScheduleDismiss()
+    }
+
+    func presentHUDAndScheduleDismiss() {
+        let pct = Int(round(min(max(volume, 0), 1) * 100.0))
+        onHUDVisibilityChanged?(true, pct)
+        scheduleHUDDismiss()
+    }
+
+    private func scheduleHUDDismiss() {
+        dismissTask?.cancel()
+        dismissTask = Task { @MainActor [weak self] in
+            try? await Task.sleep(for: .milliseconds(Int(MotionTokens.Duration.volumeHUDHold * 1000)))
+            guard !Task.isCancelled, let self else { return }
+            self.onHUDVisibilityChanged?(false, Int(round(self.volume * 100.0)))
+        }
+    }
+
+    func cancelHUD() {
+        dismissTask?.cancel()
+        dismissTask = nil
+        liquidHover.isActive = false
+        onHUDVisibilityChanged?(false, Int(round(volume * 100.0)))
     }
 
     override func draw(_ dirtyRect: NSRect) {
@@ -169,6 +629,7 @@ final class VolumeSegmentsView: NSView {
 /// Renders MM:SS using original `TIMEFONT` bitmap digits (6×7 @ 1×, 7px step).
 @MainActor
 final class TimeFontDisplayView: NSView {
+    override var mouseDownCanMoveWindow: Bool { false }
     var timeString: String = "00:00" {
         didSet {
             if oldValue != timeString { needsDisplay = true }
@@ -186,48 +647,74 @@ final class TimeFontDisplayView: NSView {
     }
 }
 
-// MARK: - StreamLoadingBarView
+// MARK: - StreamLoadingBarView (M23)
 
-/// Animated capsule loading indicator shown in the progress-bar slot while audio stream is loading.
+/// Animated capsule loading indicator shown in the progress-bar slot ONLY while awaiting
+/// audio stream (`loading` / `buffering` / `seeking`), driven by on-demand `MotionDisplayDriver`.
 @MainActor
 final class StreamLoadingBarView: NSView {
+    override var mouseDownCanMoveWindow: Bool { false }
     var statusText: String = "正在加载歌曲…" {
         didSet {
             if oldValue != statusText { needsDisplay = true }
         }
     }
     private var phase: CGFloat = 0
-    private var animTask: Task<Void, Never>?
-    private var isAnimating: Bool = false
+    private var driverSubID: UUID?
+    private(set) var isAnimating: Bool = false
 
-    deinit {
-        animTask?.cancel()
+    isolated deinit {
+        stopAnimating()
+    }
+
+    override func viewDidHide() {
+        super.viewDidHide()
+        stopAnimating()
+    }
+
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        if window == nil {
+            stopAnimating()
+        }
     }
 
     func startAnimating() {
         guard !isAnimating else { return }
+        guard !isHidden, window != nil else {
+            isAnimating = false
+            return
+        }
         isAnimating = true
         if MotionCoordinator.shared.isReduceMotionEnabled {
             phase = 0.5
             needsDisplay = true
             return
         }
-        animTask?.cancel()
-        animTask = Task { @MainActor [weak self] in
-            while !Task.isCancelled {
-                try? await Task.sleep(for: .milliseconds(33))
-                guard !Task.isCancelled, let self, self.isAnimating else { break }
-                self.phase += 0.032
-                if self.phase > 1.35 { self.phase = -0.35 }
-                self.needsDisplay = true
+        stopDriver()
+        driverSubID = MotionCoordinator.shared.displayDriver.start { [weak self] dt, _ in
+            guard let self, self.isAnimating, !self.isHidden, self.window != nil, !MotionCoordinator.shared.isReduceMotionEnabled else {
+                self?.isAnimating = false
+                self?.driverSubID = nil
+                return false
             }
+            self.phase += CGFloat(dt) * 0.95
+            if self.phase > 1.35 { self.phase = -0.35 }
+            self.needsDisplay = true
+            return true
         }
     }
 
     func stopAnimating() {
         isAnimating = false
-        animTask?.cancel()
-        animTask = nil
+        stopDriver()
+    }
+
+    private func stopDriver() {
+        if let id = driverSubID {
+            MotionCoordinator.shared.displayDriver.stop(id: id)
+            driverSubID = nil
+        }
     }
 
     override func draw(_ dirtyRect: NSRect) {
@@ -290,11 +777,29 @@ final class StreamLoadingBarView: NSView {
     }
 }
 
+// MARK: - PlayerHoverControlsContainer (M03)
+
+@MainActor
+private final class PlayerHoverControlsContainer: NSView {
+    var allowsHitTesting: Bool = false
+
+    override func hitTest(_ point: NSPoint) -> NSView? {
+        guard allowsHitTesting, !isHidden, alphaValue > 0.05 else { return nil }
+        let localPt = convert(point, from: superview)
+        guard bounds.contains(localPt) else { return nil }
+        for sub in subviews.reversed() where !sub.isHidden {
+            if let hit = sub.hitTest(localPt) {
+                return hit
+            }
+        }
+        return nil
+    }
+}
+
 // MARK: - PlayerView
 
 /// 1:1 restoration of the AIRPLAY-zion floating main player (330×106 @ 1×, 495×159 @ 1.5×).
-/// Uses authentic 9-slice crystal glass frame, original MAINCONTROL / WINDOWBUTTON sprite atlases,
-/// TIMEFONT digital clock, capsule progress bar, 8-segment volume meter, and specular lens-flare sweeps.
+/// Implements Motion V2 M01, M03, M05, M06, M07, M08, M09, M10, M11, M16, M17, M19, M20, M23, M24, M26.
 open class PlayerView: GlassSurface {
 
     public var onPlayPause: (() -> Void)?
@@ -326,9 +831,18 @@ open class PlayerView: GlassSurface {
         }
     }
 
-    // Left Column (Always-visible Album Artwork)
+    public var isHoverControlsInteractive: Bool {
+        controlsContainer.allowsHitTesting
+    }
+
+    public var isStreamLoadingAnimating: Bool {
+        streamLoadingView.isAnimating
+    }
+
+    // Left Column (Always-visible Album Artwork + M16 crossfade)
     private let artworkContainer = NSView()
     private let artworkView = NSImageView()
+    private let artworkFadeOverlay = NSImageView()
     private let artworkHoverGlass = LiquidGlassControl()
 
     // Right Column Upper (Idle): Track info
@@ -336,17 +850,19 @@ open class PlayerView: GlassSurface {
     private let titleLabel = NSTextField(labelWithString: "AirMuse Ready")
     private let artistLabel = NSTextField(labelWithString: "Waiting for playback…")
 
-    // Hover control views
-    private let controlsContainer = NSView()
+    // Hover control views (M03)
+    private let controlsContainer = PlayerHoverControlsContainer()
     private let topAuroraFogView = AuroraGlassFogView()
     private let bottomAuroraFogView = AuroraGlassFogView()
-    private let stopButton = GlassButton(image: nil, size: CGSize(width: 32, height: 32), enableLiquidGlassHover: true)
-    private let prevButton = GlassButton(image: nil, size: CGSize(width: 32, height: 32), enableLiquidGlassHover: true)
-    private let playPauseButton = GlassButton(image: nil, size: CGSize(width: 32, height: 32), enableLiquidGlassHover: true)
-    private let nextButton = GlassButton(image: nil, size: CGSize(width: 32, height: 32), enableLiquidGlassHover: true)
-    private let ejectButton = GlassButton(image: nil, size: CGSize(width: 32, height: 32), enableLiquidGlassHover: true)
+    private let playbackButtonsHost = NSView()
+    private let stopButton = GlassButton(image: nil, size: CGSize(width: 28, height: 28), enableLiquidGlassHover: false)
+    private let prevButton = GlassButton(image: nil, size: CGSize(width: 28, height: 28), enableLiquidGlassHover: false)
+    private let playPauseButton = GlassButton(image: nil, size: CGSize(width: 28, height: 28), enableLiquidGlassHover: false)
+    private let nextButton = GlassButton(image: nil, size: CGSize(width: 28, height: 28), enableLiquidGlassHover: false)
+    private let ejectButton = GlassButton(image: nil, size: CGSize(width: 28, height: 28), enableLiquidGlassHover: false)
 
     // Window buttons (Top Glass Bar)
+    private let motionSpeedButton = GlassButton(image: nil, size: CGSize(width: 13, height: 13), buttonStyle: .glassBar)
     private let glassStyleButton = GlassButton(image: nil, size: CGSize(width: 13, height: 13), buttonStyle: .glassBar)
     private let minimizeButton = GlassButton(image: nil, size: CGSize(width: 13, height: 13), buttonStyle: .glassBar)
     private let miniModeButton = GlassButton(image: nil, size: CGSize(width: 13, height: 13), buttonStyle: .glassBar)
@@ -360,28 +876,38 @@ open class PlayerView: GlassSurface {
     private let libraryButton = GlassButton(image: nil, size: CGSize(width: 13, height: 13), buttonStyle: .glassBar)
     private let lyricsButton = GlassButton(image: nil, size: CGSize(width: 13, height: 13), buttonStyle: .glassBar)
 
-    // Always-visible body progress & time (replaced by dynamic loading bar while awaiting audio stream)
+    // Always-visible body progress & time + Volume HUD (M09/M10/M23)
     private let streamLoadingView = StreamLoadingBarView()
     private let progressView = CapsuleProgressView()
     private let currentTimeView = TimeFontDisplayView()
     private let durationTimeView = TimeFontDisplayView()
     private let volumeView = VolumeSegmentsView()
+    private let volumeHUDView = VolumeHUDView()
 
     // State
     private var currentDurationMs: Int64 = 0
     private var isScrubbing: Bool = false
     private var isPlayingState: Bool = false
     private var isHoveringPanel: Bool = false
+    private var isKeyboardControlsActive: Bool = false
     private var currentArtworkTrackKey: String?
+    private var activePlaybackTrackKey: String?
     private var artworkLoadTask: Task<Void, Never>?
     private var trackingArea: NSTrackingArea?
 
-    // Specular sweep tracking
+    // Specular sweep tracking (M08)
     private var lastMouseY: CGFloat?
     private var lastMouseMoveTime: TimeInterval = 0
     private var lastMidCrossDir: Int = 0
     private var topBoundaryTriggered: Bool = false
     private var botBoundaryTriggered: Bool = false
+
+    // M01 Non-blocking startup scroll-unroll state
+    private let playerMotionID = "PlayerView-\(UUID().uuidString)"
+    private var introDriverSubID: UUID?
+    private var introTicket: MotionTicket?
+    private var introCompletion: (@MainActor (Bool) -> Void)?
+    public private(set) var isScrollIntroActive: Bool = false
 
     public override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
@@ -391,6 +917,16 @@ open class PlayerView: GlassSurface {
     public required init?(coder: NSCoder) {
         super.init(coder: coder)
         setupViews()
+    }
+
+    isolated deinit {
+        artworkLoadTask?.cancel()
+        if let obs = resignKeyObserver {
+            NotificationCenter.default.removeObserver(obs)
+            resignKeyObserver = nil
+        }
+        MotionCoordinator.shared.cancelAll(owner: playerMotionID)
+        NotificationCenter.default.removeObserver(self)
     }
 
     private func setupViews() {
@@ -416,6 +952,13 @@ open class PlayerView: GlassSurface {
         artworkView.contentTintColor = OriginalDesignTokens.Colors.subSilver
         artworkContainer.addSubview(artworkView)
 
+        artworkFadeOverlay.wantsLayer = true
+        artworkFadeOverlay.layer?.cornerRadius = 5.0
+        artworkFadeOverlay.layer?.masksToBounds = true
+        artworkFadeOverlay.imageScaling = .scaleProportionallyUpOrDown
+        artworkFadeOverlay.isHidden = true
+        artworkContainer.addSubview(artworkFadeOverlay)
+
         // Right Column Upper (Idle): Track info
         idleContainer.wantsLayer = true
         idleContainer.alphaValue = 1.0
@@ -434,6 +977,7 @@ open class PlayerView: GlassSurface {
         // Hover controls container
         controlsContainer.wantsLayer = true
         controlsContainer.alphaValue = 0.0
+        controlsContainer.allowsHitTesting = false
         addSubview(controlsContainer)
 
         topAuroraFogView.seamEdge = .bottom
@@ -441,11 +985,19 @@ open class PlayerView: GlassSurface {
         controlsContainer.addSubview(topAuroraFogView)
         controlsContainer.addSubview(bottomAuroraFogView)
 
-        stopButton.enableDarkHalo = true
-        prevButton.enableDarkHalo = true
-        playPauseButton.enableDarkHalo = true
-        nextButton.enableDarkHalo = true
-        ejectButton.enableDarkHalo = true
+        playbackButtonsHost.wantsLayer = true
+        controlsContainer.addSubview(playbackButtonsHost)
+
+        for btn in [stopButton, prevButton, playPauseButton, nextButton, ejectButton] {
+            btn.enableDarkHalo = true
+            btn.enablePersistentLiquidGlass = false
+        }
+
+        stopButton.toolTip = "停止"
+        prevButton.toolTip = "上一首"
+        playPauseButton.toolTip = "播放 / 暂停"
+        nextButton.toolTip = "下一首"
+        ejectButton.toolTip = "打开 / 隐藏资料库"
 
         stopButton.onClick = { [weak self] in self?.onStop?() }
         prevButton.onClick = { [weak self] in self?.onPrevious?() }
@@ -453,19 +1005,32 @@ open class PlayerView: GlassSurface {
         nextButton.onClick = { [weak self] in self?.onNext?() }
         ejectButton.onClick = { [weak self] in self?.onToggleLibrary?() }
 
-        controlsContainer.addSubview(stopButton)
-        controlsContainer.addSubview(prevButton)
-        controlsContainer.addSubview(playPauseButton)
-        controlsContainer.addSubview(nextButton)
-        controlsContainer.addSubview(ejectButton)
+        playbackButtonsHost.addSubview(stopButton)
+        playbackButtonsHost.addSubview(prevButton)
+        playbackButtonsHost.addSubview(playPauseButton)
+        playbackButtonsHost.addSubview(nextButton)
+        playbackButtonsHost.addSubview(ejectButton)
 
         volumeView.onVolumeChanged = { [weak self] vol in self?.onVolumeChanged?(vol) }
+        volumeView.onHUDVisibilityChanged = { [weak self] visible, pct in
+            self?.setVolumeHUDVisible(visible, percent: pct)
+        }
         controlsContainer.addSubview(volumeView)
 
+        volumeHUDView.isHidden = true
+        volumeHUDView.alphaValue = 0.0
+        addSubview(volumeHUDView)
+
         // Top glass bar buttons
+        motionSpeedButton.enableDarkHalo = false
+        motionSpeedButton.onClick = { [weak self] in
+            self?.presentMotionSpeedPopover()
+        }
+        controlsContainer.addSubview(motionSpeedButton)
+
         glassStyleButton.enableDarkHalo = false
-        glassStyleButton.onClick = {
-            GlassInteractionCoordinator.shared.useFrostedBarsInNormalMode.toggle()
+        glassStyleButton.onClick = { [weak self] in
+            self?.presentRenderOptionsPopover()
         }
         controlsContainer.addSubview(glassStyleButton)
 
@@ -555,12 +1120,85 @@ open class PlayerView: GlassSurface {
             name: GlassInteractionCoordinator.modeDidChangeNotification,
             object: nil
         )
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(skinSettingsChanged),
+            name: MotionAccessibility.preferencesDidChangeNotification,
+            object: nil
+        )
     }
 
     @objc private func skinSettingsChanged() {
         reloadSprites()
+        volumeHUDView.refreshMode()
         needsLayout = true
-        refreshGlassSurface()
+        refreshGlassSurface(animateFocus: false)
+    }
+
+    private func presentMotionSpeedPopover() {
+        let coord = GlassInteractionCoordinator.shared
+        let presets: [(TimeInterval, String)] = [
+            (1.0, "模式切换总时长：1.0s"),
+            (1.2, "模式切换总时长：1.2s"),
+            (1.5, "模式切换总时长：1.5s")
+        ]
+        guard let win = window else {
+            let idx = presets.firstIndex { abs($0.0 - coord.modeSequenceTotalDuration) < 0.05 } ?? 0
+            coord.modeSequenceTotalDuration = presets[(idx + 1) % presets.count].0
+            reloadSprites()
+            return
+        }
+        let items = presets.map { dur, label in
+            GlassPopoverMenuItem(
+                id: "speed_\(dur)",
+                title: label,
+                isSelected: abs(coord.modeSequenceTotalDuration - dur) < 0.05,
+                action: { [weak self] in
+                    coord.modeSequenceTotalDuration = dur
+                    self?.reloadSprites()
+                }
+            )
+        }
+        let rectInWin = motionSpeedButton.convert(motionSpeedButton.bounds, to: nil)
+        let screenRect = win.convertToScreen(rectInWin)
+        GlassPopoverMenu.shared.present(items: items, relativeTo: screenRect, parentWindow: win)
+    }
+
+    private func presentRenderOptionsPopover() {
+        guard let win = window else {
+            GlassInteractionCoordinator.shared.useFrostedBarsInNormalMode.toggle()
+            return
+        }
+        let coord = GlassInteractionCoordinator.shared
+        let items = [
+            GlassPopoverMenuItem(
+                id: "mode_original",
+                title: "Original（原版水晶皮肤）",
+                isSelected: coord.renderMode == .original,
+                action: { coord.renderMode = .original }
+            ),
+            GlassPopoverMenuItem(
+                id: "mode_enhanced",
+                title: "Enhanced（局部 Liquid Glass）",
+                isSelected: coord.renderMode == .enhanced,
+                action: { coord.renderMode = .enhanced }
+            ),
+            GlassPopoverMenuItem(
+                id: "frosted_bars",
+                title: coord.useFrostedBarsInNormalMode ? "玻璃条：磨砂玻璃" : "玻璃条：原版切片",
+                isSelected: coord.useFrostedBarsInNormalMode,
+                action: { coord.useFrostedBarsInNormalMode.toggle() }
+            ),
+            GlassPopoverMenuItem(
+                id: "gestures",
+                title: "触控板区域手势",
+                isSelected: coord.enableTrackpadGestures,
+                action: { coord.enableTrackpadGestures.toggle() }
+            )
+        ]
+        let rectInWin = glassStyleButton.convert(glassStyleButton.bounds, to: nil)
+        let screenRect = win.convertToScreen(rectInWin)
+        GlassPopoverMenu.shared.present(items: items, relativeTo: screenRect, parentWindow: win)
     }
 
     private func reloadSprites() {
@@ -572,10 +1210,14 @@ open class PlayerView: GlassSurface {
         nextButton.setSymbol(name: "forward.fill", pointSize: 13.5 * s, weight: .bold)
         ejectButton.setSymbol(name: "eject.fill", pointSize: 12.0 * s, weight: .bold)
 
+        let speedSec = String(format: "%.1fs", GlassInteractionCoordinator.shared.modeSequenceTotalDuration)
+        motionSpeedButton.setSymbol(name: "timer", pointSize: 9.0 * s, weight: .medium)
+        motionSpeedButton.toolTip = "模式动画速度 (\(speedSec))"
+
         let frosted = GlassInteractionCoordinator.shared.useFrostedBarsInNormalMode
         let styleSymbol = frosted ? "sparkles.rectangle.stack" : "square.on.square"
         glassStyleButton.setSymbol(name: styleSymbol, pointSize: 9.0 * s, weight: .medium)
-        glassStyleButton.toolTip = frosted ? "切换玻璃条样式（当前：磨砂模糊 / 点击切回原版）" : "切换玻璃条样式（当前：原版玻璃 / 点击切为磨砂）"
+        glassStyleButton.toolTip = frosted ? "渲染模式与玻璃条选项" : "渲染模式与玻璃条选项"
 
         minimizeButton.setSymbol(name: "minus", pointSize: 9.0 * s, weight: .bold)
         miniModeButton.setSymbol(name: "rectangle.compress.vertical", pointSize: 8.5 * s, weight: .bold)
@@ -615,6 +1257,230 @@ open class PlayerView: GlassSurface {
         setHovering(true)
     }
 
+    open override func mouseDown(with event: NSEvent) {
+        cancelScrollIntro()
+        super.mouseDown(with: event)
+    }
+
+    open override func rightMouseDown(with event: NSEvent) {
+        cancelScrollIntro()
+        super.rightMouseDown(with: event)
+    }
+
+    private var resignKeyObserver: NSObjectProtocol?
+
+    open override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        if let obs = resignKeyObserver {
+            NotificationCenter.default.removeObserver(obs)
+            resignKeyObserver = nil
+        }
+        if let win = window {
+            resignKeyObserver = NotificationCenter.default.addObserver(
+                forName: NSWindow.didResignKeyNotification,
+                object: win,
+                queue: .main
+            ) { [weak self] _ in
+                MainActor.assumeIsolated {
+                    self?.setKeyboardControlsFocused(false)
+                }
+            }
+        }
+    }
+
+    open override var acceptsFirstResponder: Bool { true }
+
+    open override func keyDown(with event: NSEvent) {
+        cancelScrollIntro()
+        guard !event.isARepeat else { return }
+        switch event.keyCode {
+        case 48, 125, 126: // Tab / Down / Up -> enter keyboard control focus
+            setKeyboardControlsFocused(true)
+            window?.makeFirstResponder(playPauseButton)
+        case 49: // Space -> Play/Pause
+            onPlayPause?()
+        case 53: // Esc -> release keyboard focus lock
+            setKeyboardControlsFocused(false)
+        case 123: // Left arrow
+            onPrevious?()
+        case 124: // Right arrow
+            onNext?()
+        default:
+            super.keyDown(with: event)
+        }
+    }
+
+    open override func magnify(with event: NSEvent) {
+        guard GlassInteractionCoordinator.shared.enablePinchToToggleMiniMode else {
+            super.magnify(with: event)
+            return
+        }
+        if event.phase == .ended && event.magnification < -0.18 {
+            onToggleMiniMode?()
+        }
+    }
+
+    open override func viewDidHide() {
+        super.viewDidHide()
+        cancelScrollIntro()
+        setHovering(false, immediate: true)
+        setKeyboardControlsFocused(false)
+        progressView.cancelScrubbing()
+        volumeView.cancelHUD()
+    }
+
+    // MARK: - M01 Glass-Bar Scroll Open & Reverse Collapse
+
+    /// Opens the Main Player using two glass bars appearing together at center,
+    /// then unrolling like a scroll to reveal the dark middle UI.
+    public func playScrollIntro(completion: (@MainActor (Bool) -> Void)? = nil) {
+        runScrollBarsTransition(
+            isCollapsing: false,
+            duration: MotionTokens.Duration.scrollIntro,
+            completion: completion
+        )
+    }
+
+    /// Reverses the Main Player scroll-unroll: top & bottom glass bars glide back together
+    /// to cover the UI, then fade out cleanly before hiding or quitting.
+    public func playScrollCollapse(completion: @escaping @MainActor (Bool) -> Void) {
+        runScrollBarsTransition(
+            isCollapsing: true,
+            duration: MotionTokens.Duration.scrollCollapse,
+            completion: completion
+        )
+    }
+
+    private func runScrollBarsTransition(
+        isCollapsing: Bool,
+        duration: TimeInterval,
+        completion: (@MainActor (Bool) -> Void)?
+    ) {
+        cancelScrollIntro()
+        guard !MotionCoordinator.shared.isReduceMotionEnabled else {
+            completion?(true)
+            return
+        }
+        let s = GlassInteractionCoordinator.shared.uiScale
+        let h = bounds.height
+        let w = bounds.width
+        let capH = OriginalDesignTokens.BaseMetrics.glassCapHeight * s
+        guard w > 20, h > capH * 2.0 + 4.0 else {
+            completion?(true)
+            return
+        }
+
+        let key = TransitionKey(owner: playerMotionID, channel: "scrollIntro")
+        let ticket = MotionCoordinator.shared.beginTransition(for: key, category: .decorative) { [weak self] in
+            self?.teardownScrollIntroVisuals(committed: false)
+        }
+        introTicket = ticket
+        introCompletion = completion
+        isScrollIntroActive = true
+
+        applyScrollBarsProgress(isCollapsing ? 1.0 : 0.0)
+
+        var elapsed: TimeInterval = 0
+        introDriverSubID = MotionCoordinator.shared.displayDriver.start { [weak self] dt, _ in
+            guard let self, MotionCoordinator.shared.isCurrent(ticket) else {
+                return false
+            }
+            elapsed += dt
+            let raw = min(1.0, elapsed / max(0.01, duration))
+            let progress = isCollapsing ? CGFloat(1.0 - raw) : CGFloat(raw)
+            self.applyScrollBarsProgress(progress)
+            if raw >= 1.0 {
+                if MotionCoordinator.shared.complete(ticket) {
+                    self.teardownScrollIntroVisuals(committed: true, keepCollapsedHidden: isCollapsing)
+                }
+                return false
+            }
+            return true
+        }
+    }
+
+    public func cancelScrollIntro() {
+        guard isScrollIntroActive || introTicket != nil || introDriverSubID != nil else { return }
+        let key = TransitionKey(owner: playerMotionID, channel: "scrollIntro")
+        MotionCoordinator.shared.cancel(key: key)
+        teardownScrollIntroVisuals(committed: false)
+    }
+
+    private func applyScrollBarsProgress(_ raw: CGFloat) {
+        let p = min(max(raw, 0), 1)
+        let s = GlassInteractionCoordinator.shared.uiScale
+        let capH = OriginalDesignTokens.BaseMetrics.glassCapHeight * s
+        let w = bounds.width
+        let h = bounds.height
+        let cy = h * 0.5
+
+        // Phase A (0.0 .. 0.24): Two glass bars appear back-to-back in center with 0 middle body
+        // Phase B (0.24 .. 1.00): Top bar moves up (cy -> h - capH), Bottom bar moves down (cy - capH -> 0)
+        let phaseSplit: CGFloat = 0.24
+        let barAlpha: CGFloat
+        let unrollT: CGFloat
+        if p < phaseSplit {
+            let a = p / phaseSplit
+            barAlpha = a * a * (3.0 - 2.0 * a)
+            unrollT = 0.0
+        } else {
+            barAlpha = 1.0
+            let u = (p - phaseSplit) / (1.0 - phaseSplit)
+            unrollT = 1.0 - pow(1.0 - u, 3.0)
+        }
+
+        let insetX: CGFloat = p < phaseSplit ? (1.0 - barAlpha) * 6.0 * s : 0.0
+        let barW = max(20.0, w - insetX * 2.0)
+        let topY = cy + ((h - capH) - cy) * unrollT
+        let botStartY = cy - capH
+        let botY = botStartY * (1.0 - unrollT)
+
+        let topFrame = NSRect(x: insetX, y: topY, width: barW, height: capH)
+        let botFrame = NSRect(x: insetX, y: botY, width: barW, height: capH)
+
+        applyScrollPresentation(
+            topBarFrame: topFrame,
+            bottomBarFrame: botFrame,
+            barAlpha: barAlpha
+        )
+
+        let contentAlpha = unrollT <= 0.25 ? 0.0 : min(1.0, (unrollT - 0.25) / 0.75)
+        artworkContainer.alphaValue = contentAlpha
+        idleContainer.alphaValue = isHoveringPanel ? 0.0 : contentAlpha
+        progressView.alphaValue = contentAlpha
+        streamLoadingView.alphaValue = contentAlpha
+        currentTimeView.alphaValue = contentAlpha
+        durationTimeView.alphaValue = contentAlpha
+        controlsContainer.alphaValue = (isHoveringPanel || isKeyboardControlsActive) ? contentAlpha : 0.0
+    }
+
+    private func teardownScrollIntroVisuals(committed: Bool, keepCollapsedHidden: Bool = false) {
+        if let subID = introDriverSubID {
+            MotionCoordinator.shared.displayDriver.stop(id: subID)
+            introDriverSubID = nil
+        }
+        introTicket = nil
+        isScrollIntroActive = false
+        let pending = introCompletion
+        introCompletion = nil
+
+        if keepCollapsedHidden {
+            clearScrollPresentation()
+            alphaValue = 0.0
+        } else {
+            clearScrollPresentation()
+            alphaValue = 1.0
+            artworkContainer.alphaValue = 1.0
+            idleContainer.alphaValue = isHoveringPanel ? 0.0 : 1.0
+            progressView.alphaValue = 1.0
+            streamLoadingView.alphaValue = 1.0
+            currentTimeView.alphaValue = 1.0
+            durationTimeView.alphaValue = 1.0
+            controlsContainer.alphaValue = (isHoveringPanel || isKeyboardControlsActive) ? 1.0 : 0.0
+        }
+        pending?(committed)
+    }
+
     open override func mouseExited(with event: NSEvent) {
         setHovering(false)
         lastMouseY = nil
@@ -633,7 +1499,7 @@ open class PlayerView: GlassSurface {
         let botGlassBoundary = capH
         let topGlassBoundary = h - capH
 
-        let now = ProcessInfo.processInfo.systemUptime
+        let now = MotionCoordinator.shared.clock.now
         let dt = lastMouseMoveTime > 0 ? max(0.001, min(0.1, now - lastMouseMoveTime)) : 0.016
         lastMouseMoveTime = now
 
@@ -642,7 +1508,6 @@ open class PlayerView: GlassSurface {
             let speedY = abs(dy) / CGFloat(dt)
             let isFast = speedY > MotionTokens.Thresholds.fastMoveVelocity * s || abs(dy) >= 14.0 * s
 
-            // Midline crossing (note AppKit y increases upward)
             if prevY > midY && pt.y <= midY {
                 if lastMidCrossDir != 1 {
                     if !isFast { triggerSpecularSweep(from: 0.5, to: 1.0) }
@@ -655,7 +1520,6 @@ open class PlayerView: GlassSurface {
                 }
             }
 
-            // Glass bar boundary bounce sweeps
             if !botBoundaryTriggered && dy < 0 && pt.y <= botGlassBoundary {
                 triggerSpecularSweep(from: 1.0, to: 0.0)
                 botBoundaryTriggered = true
@@ -674,25 +1538,99 @@ open class PlayerView: GlassSurface {
         lastMouseY = pt.y
     }
 
-    private func setHovering(_ hovering: Bool) {
+    public func setKeyboardControlsFocused(_ focused: Bool) {
+        guard isKeyboardControlsActive != focused else { return }
+        isKeyboardControlsActive = focused
+        refreshHoverPresentation(immediate: false)
+    }
+
+    public func setHovering(_ hovering: Bool, immediate: Bool = false) {
         guard isHoveringPanel != hovering else { return }
         isHoveringPanel = hovering
-        let targetIdle: CGFloat = hovering ? 0.0 : 1.0
-        let targetCtrl: CGFloat = hovering ? 1.0 : 0.0
-        artworkHoverGlass.isActive = hovering
+        refreshHoverPresentation(immediate: immediate)
+    }
 
-        if MotionCoordinator.shared.isReduceMotionEnabled {
+    private func refreshHoverPresentation(immediate: Bool) {
+        let active = isHoveringPanel || isKeyboardControlsActive
+        let targetIdle: CGFloat = active ? 0.0 : 1.0
+        let targetCtrl: CGFloat = active ? 1.0 : 0.0
+        artworkHoverGlass.isActive = active
+        controlsContainer.allowsHitTesting = active
+
+        let key = TransitionKey(owner: playerMotionID, channel: "hover")
+        let ticket = MotionCoordinator.shared.beginTransition(for: key, category: .controlInteraction)
+
+        let targetTransform = CATransform3DMakeTranslation(
+            0,
+            active ? 0 : -MotionTokens.Geometry.hoverDisplacementPt,
+            0
+        )
+
+        if immediate || MotionCoordinator.shared.isReduceMotionEnabled {
             idleContainer.alphaValue = targetIdle
             controlsContainer.alphaValue = targetCtrl
-            artworkView.layer?.borderColor = NSColor(white: 1.0, alpha: hovering ? 0.36 : 0.16).cgColor
-        } else {
-            NSAnimationContext.runAnimationGroup { ctx in
-                ctx.duration = MotionTokens.Duration.hoverFade
-                idleContainer.animator().alphaValue = targetIdle
-                controlsContainer.animator().alphaValue = targetCtrl
-            }
-            artworkView.layer?.borderColor = NSColor(white: 1.0, alpha: hovering ? 0.36 : 0.16).cgColor
+            CATransaction.begin()
+            CATransaction.setDisableActions(true)
+            controlsContainer.layer?.removeAnimation(forKey: "hoverSlide")
+            controlsContainer.layer?.transform = CATransform3DIdentity
+            artworkView.layer?.borderColor = NSColor(white: 1.0, alpha: active ? 0.36 : 0.16).cgColor
+            CATransaction.commit()
+            _ = MotionCoordinator.shared.complete(ticket)
+            return
         }
+
+        if let ctrlLayer = controlsContainer.layer {
+            let startY = (ctrlLayer.presentation()?.value(forKeyPath: "transform.translation.y") as? NSNumber).map { CGFloat($0.doubleValue) } ?? (active ? -MotionTokens.Geometry.hoverDisplacementPt : 0)
+            CATransaction.begin()
+            CATransaction.setDisableActions(true)
+            ctrlLayer.transform = targetTransform
+            artworkView.layer?.borderColor = NSColor(white: 1.0, alpha: active ? 0.36 : 0.16).cgColor
+            CATransaction.commit()
+
+            let slideAnim = CABasicAnimation(keyPath: "transform.translation.y")
+            slideAnim.fromValue = startY
+            slideAnim.toValue = active ? 0.0 : -MotionTokens.Geometry.hoverDisplacementPt
+            slideAnim.duration = MotionTokens.Duration.hoverFade
+            slideAnim.timingFunction = CAMediaTimingFunction(name: .easeOut)
+            slideAnim.isRemovedOnCompletion = true
+            ctrlLayer.add(slideAnim, forKey: "hoverSlide")
+        }
+
+        MotionCoordinator.shared.animate(
+            duration: MotionTokens.Duration.hoverFade,
+            timingFunction: .easeInEaseOut,
+            ticket: ticket,
+            action: {
+                self.idleContainer.animator().alphaValue = targetIdle
+                self.controlsContainer.animator().alphaValue = targetCtrl
+            }
+        )
+    }
+
+    private func setVolumeHUDVisible(_ visible: Bool, percent: Int) {
+        volumeHUDView.volumePercent = percent
+        volumeHUDView.refreshMode()
+        let key = TransitionKey(owner: playerMotionID, channel: "volumeHUD")
+        let ticket = MotionCoordinator.shared.beginTransition(for: key, category: .controlInteraction)
+
+        if visible {
+            volumeHUDView.isHidden = false
+        }
+        let targetAlpha: CGFloat = visible ? 1.0 : 0.0
+        let dur = visible ? MotionTokens.Duration.volumeHUDIn : MotionTokens.Duration.volumeHUDOut
+
+        MotionCoordinator.shared.animate(
+            duration: dur,
+            timingFunction: visible ? .easeOut : .easeIn,
+            ticket: ticket,
+            action: {
+                self.volumeHUDView.animator().alphaValue = targetAlpha
+            },
+            completion: { [weak self] committed in
+                guard committed, let self, !visible else { return }
+                self.volumeHUDView.isHidden = true
+            }
+        )
     }
 
     open override func layout() {
@@ -704,18 +1642,19 @@ open class PlayerView: GlassSurface {
         idleContainer.frame = bounds
         controlsContainer.frame = bounds
 
-        // Helper converting top-down y (from MainWindow.cpp) to AppKit bottom-up y
         func appKitY(topY: CGFloat, height: CGFloat) -> CGFloat {
             return h - topY - height
         }
 
-        // 1. Left Column: Always-visible Album Artwork (54×54 @ 1x, centered in 66pt middle body)
+        // 1. Left Column: Always-visible Album Artwork (54×54 @ 1x)
         let artSize = 54.0 * s
         let artX = 12.0 * s
         let artY = appKitY(topY: 26.0 * s, height: artSize)
         artworkContainer.frame = NSRect(x: artX, y: artY, width: artSize, height: artSize)
         artworkView.frame = artworkContainer.bounds
         artworkView.layer?.cornerRadius = 5.0 * s
+        artworkFadeOverlay.frame = artworkContainer.bounds
+        artworkFadeOverlay.layer?.cornerRadius = 5.0 * s
         artworkHoverGlass.frame = artworkContainer.bounds.insetBy(dx: -2.0 * s, dy: -2.0 * s)
         artworkHoverGlass.cornerRadius = 6.5 * s
 
@@ -724,24 +1663,26 @@ open class PlayerView: GlassSurface {
         let rightColRight = w - 28.0 * s
         let rightColW = max(80.0 * s, rightColRight - rightColLeft)
 
-        // Right Column Upper (Idle): Title & Artist (left-aligned)
         titleLabel.font = NSFont.systemFont(ofSize: 13.0 * s, weight: .bold)
         artistLabel.font = NSFont.systemFont(ofSize: 11.0 * s, weight: .regular)
         titleLabel.frame = NSRect(x: rightColLeft, y: appKitY(topY: 26.0 * s, height: 19.0 * s), width: rightColW, height: 19.0 * s)
         artistLabel.frame = NSRect(x: rightColLeft, y: appKitY(topY: 46.0 * s, height: 16.0 * s), width: rightColW, height: 16.0 * s)
 
-        // Right Column Upper (Hover): 5 playback control buttons (32×32 @ 1x)
-        let ctrlSize = 32.0 * s
-        let groupW = 164.0 * s
+        // Right Column Upper (Hover): 5 playback control buttons
+        let ctrlSize = 28.0 * s
+        let ctrlGap = 6.0 * s
+        let groupW = ctrlSize * 5.0 + ctrlGap * 4.0
         let startX = rightColLeft + max(0, (rightColW - groupW) * 0.5)
-        let ctrlY = appKitY(topY: 26.0 * s, height: ctrlSize)
-        stopButton.frame = NSRect(x: startX, y: ctrlY, width: ctrlSize, height: ctrlSize)
-        prevButton.frame = NSRect(x: startX + 32.0 * s, y: ctrlY, width: ctrlSize, height: ctrlSize)
-        playPauseButton.frame = NSRect(x: startX + 66.0 * s, y: ctrlY, width: ctrlSize, height: ctrlSize)
-        nextButton.frame = NSRect(x: startX + 100.0 * s, y: ctrlY, width: ctrlSize, height: ctrlSize)
-        ejectButton.frame = NSRect(x: startX + 132.0 * s, y: ctrlY, width: ctrlSize, height: ctrlSize)
+        let ctrlY = appKitY(topY: 28.0 * s, height: ctrlSize)
+        playbackButtonsHost.frame = NSRect(x: startX, y: ctrlY, width: groupW, height: ctrlSize)
 
-        // 3. Top glass bar window buttons (13×13 @ 1x), perfectly aligned horizontally
+        stopButton.frame = NSRect(x: 0, y: 0, width: ctrlSize, height: ctrlSize)
+        prevButton.frame = NSRect(x: ctrlSize + ctrlGap, y: 0, width: ctrlSize, height: ctrlSize)
+        playPauseButton.frame = NSRect(x: (ctrlSize + ctrlGap) * 2.0, y: 0, width: ctrlSize, height: ctrlSize)
+        nextButton.frame = NSRect(x: (ctrlSize + ctrlGap) * 3.0, y: 0, width: ctrlSize, height: ctrlSize)
+        ejectButton.frame = NSRect(x: (ctrlSize + ctrlGap) * 4.0, y: 0, width: ctrlSize, height: ctrlSize)
+
+        // 3. Top glass bar window buttons
         let wbSize = 13.0 * s
         let capH = OriginalDesignTokens.BaseMetrics.glassCapHeight * s
         let topBarBtnY = (h - capH) + (capH - wbSize) * 0.5
@@ -752,8 +1693,9 @@ open class PlayerView: GlassSurface {
         miniModeButton.frame = NSRect(x: topMostButton.frame.minX - btnSpacing - wbSize, y: topBarBtnY, width: wbSize, height: wbSize)
         minimizeButton.frame = NSRect(x: miniModeButton.frame.minX - btnSpacing - wbSize, y: topBarBtnY, width: wbSize, height: wbSize)
         glassStyleButton.frame = NSRect(x: minimizeButton.frame.minX - btnSpacing - wbSize, y: topBarBtnY, width: wbSize, height: wbSize)
+        motionSpeedButton.frame = NSRect(x: glassStyleButton.frame.minX - btnSpacing - wbSize, y: topBarBtnY, width: wbSize, height: wbSize)
 
-        // 4. Bottom glass bar panel & source buttons (13×13 @ 1x), perfectly aligned horizontally
+        // 4. Bottom glass bar panel & source buttons
         let botBarBtnY = (capH - wbSize) * 0.5
         appleMusicButton.frame = NSRect(x: 20.0 * s, y: botBarBtnY, width: wbSize, height: wbSize)
         spotifyButton.frame = NSRect(x: appleMusicButton.frame.maxX + 6.0 * s, y: botBarBtnY, width: wbSize, height: wbSize)
@@ -771,10 +1713,10 @@ open class PlayerView: GlassSurface {
 
         if !isMiniStrip {
             topAuroraFogView.setPlume(
-                for: [glassStyleButton, minimizeButton, miniModeButton, topMostButton, quitButton],
+                for: [motionSpeedButton, glassStyleButton, minimizeButton, miniModeButton, topMostButton, quitButton],
                 alignment: .right,
                 anchorSpread: 10.0 * s,
-                tailLength: 68.0 * s,
+                tailLength: 74.0 * s,
                 peakAlpha: 1.0
             )
             let leftBotPlume = bottomAuroraFogView.makePlume(
@@ -797,10 +1739,14 @@ open class PlayerView: GlassSurface {
             bottomAuroraFogView.plumes = []
         }
 
-        // 5. Volume segments (far right of right column)
-        volumeView.frame = NSRect(x: w - 23.0 * s, y: appKitY(topY: 32.0 * s, height: 38.0 * s), width: 14.0 * s, height: 38.0 * s)
+        // 5. Volume segments & localized Volume HUD (M10)
+        let volFrame = NSRect(x: w - 23.0 * s, y: appKitY(topY: 32.0 * s, height: 38.0 * s), width: 14.0 * s, height: 38.0 * s)
+        volumeView.frame = volFrame
+        let hudW: CGFloat = 34.0
+        let hudH: CGFloat = 18.0
+        volumeHUDView.frame = NSRect(x: volFrame.minX - hudW - 4.0, y: volFrame.midY - hudH * 0.5, width: hudW, height: hudH)
 
-        // 6. Right Column Lower: Progress bar & TIMEFONT digital clock (or StreamLoadingBarView while loading)
+        // 6. Right Column Lower: Progress bar & TIMEFONT digital clock (or StreamLoadingBarView)
         let progY = appKitY(topY: 64.0 * s, height: 14.0 * s)
         streamLoadingView.frame = NSRect(x: rightColLeft, y: progY, width: rightColW, height: 14.0 * s)
         let timeW = 36.0 * s
@@ -812,11 +1758,30 @@ open class PlayerView: GlassSurface {
     }
 
     public func updateState(_ state: PlaybackState) {
+        let trackKey = state.currentTrack?.trackKey
+        if trackKey != activePlaybackTrackKey {
+            activePlaybackTrackKey = trackKey
+            // M09: Track switch invalidates any in-progress scrub immediately
+            progressView.cancelScrubbing()
+            isScrubbing = false
+        }
+
         currentDurationMs = state.durationMs
-        isPlayingState = state.isPlaying
+        progressView.durationMs = state.durationMs
+
+        // M06: Only transition play/pause symbol when real playback status changes (buffering never fakes Playing)
+        let effectivePlaying = (state.status == .playing)
+        let playChanged = (isPlayingState != effectivePlaying)
+        isPlayingState = effectivePlaying
 
         let s = GlassInteractionCoordinator.shared.uiScale
-        playPauseButton.setSymbol(name: state.isPlaying ? "pause.fill" : "play.fill", pointSize: 16.5 * s, weight: .bold)
+        if playChanged {
+            playPauseButton.transitionToSymbol(
+                name: effectivePlaying ? "pause.fill" : "play.fill",
+                pointSize: 16.5 * s,
+                weight: .bold
+            )
+        }
 
         let titleFont = NSFont.systemFont(ofSize: 13.0 * s, weight: .bold)
         let subFont = NSFont.systemFont(ofSize: 11.0 * s, weight: .regular)
@@ -843,9 +1808,10 @@ open class PlayerView: GlassSurface {
             )
         }
 
-        let isAwaitingStream = (state.status == .loading || state.status == .buffering) && !state.isPlaying
+        // M23: Only active during genuine loading / buffering / seeking; stops immediately otherwise
+        let isAwaitingStream = (state.status == .loading || state.status == .buffering || state.status == .seeking) && !effectivePlaying
         if isAwaitingStream {
-            streamLoadingView.statusText = (state.status == .buffering) ? "正在缓冲音频…" : "正在请求曲目…"
+            streamLoadingView.statusText = (state.status == .buffering || state.status == .seeking) ? "正在缓冲音频…" : "正在请求曲目…"
             streamLoadingView.isHidden = false
             streamLoadingView.startAnimating()
             progressView.isHidden = true
@@ -871,45 +1837,112 @@ open class PlayerView: GlassSurface {
             }
         }
 
-        volumeView.volume = state.volume
+        volumeView.volume = min(max(state.volume, 0), 1)
 
-        // Artwork with ambient glass diffuse
-        let trackKey = state.currentTrack?.trackKey
-        if let data = state.artworkData, let img = NSImage(data: data) {
-            artworkLoadTask?.cancel()
-            currentArtworkTrackKey = trackKey
-            applyArtwork(img, key: trackKey ?? "data")
+        // M16 / M17: Off-MainActor artwork decode & ambient color extraction with trackKey generation guard
+        if let data = state.artworkData {
+            let expectedKey = trackKey ?? "data-\(data.hashValue)"
+            if currentArtworkTrackKey != expectedKey {
+                currentArtworkTrackKey = expectedKey
+                artworkLoadTask?.cancel()
+                let pxSize = Int(round(54.0 * s * 2.0))
+                artworkLoadTask = Task { [weak self] in
+                    let (img, ambientCol) = await ArtworkAmbientAnalyzer.shared.decodeAndExtractColor(
+                        data: data,
+                        trackKey: expectedKey,
+                        maxPixelSize: pxSize
+                    )
+                    guard !Task.isCancelled, let self, self.currentArtworkTrackKey == expectedKey else { return }
+                    self.applyArtwork(img, key: expectedKey, ambientColor: ambientCol)
+                }
+            }
         } else if let track = state.currentTrack, let url = track.artworkURL {
             if currentArtworkTrackKey != track.trackKey {
                 currentArtworkTrackKey = track.trackKey
                 artworkLoadTask?.cancel()
-                applyArtwork(nil, key: "none")
                 let expectedKey = track.trackKey
                 artworkLoadTask = Task { [weak self] in
                     let img = await ImageCacheV2.shared.image(for: url, targetPixelSize: 222)
+                    guard !Task.isCancelled else { return }
+                    var extractedColor: NSColor? = nil
+                    if let img {
+                        var rect = NSRect(origin: .zero, size: img.size)
+                        if let cg = img.cgImage(forProposedRect: &rect, context: nil, hints: nil) {
+                            extractedColor = await ArtworkAmbientAnalyzer.shared.extractAndCacheColor(from: cg, trackKey: expectedKey)
+                        }
+                    }
                     guard !Task.isCancelled, let self, self.currentArtworkTrackKey == expectedKey else { return }
-                    self.applyArtwork(img, key: expectedKey)
+                    self.applyArtwork(img, key: expectedKey, ambientColor: extractedColor)
                 }
             }
         } else {
             artworkLoadTask?.cancel()
-            currentArtworkTrackKey = nil
-            applyArtwork(nil, key: "none")
+            if currentArtworkTrackKey != nil {
+                currentArtworkTrackKey = nil
+                applyArtwork(nil, key: "none", ambientColor: nil)
+            }
         }
     }
 
-    private func applyArtwork(_ img: NSImage?, key: String) {
+    private func applyArtwork(_ img: NSImage?, key: String, ambientColor: NSColor?) {
+        let prevImage = artworkView.image
+        let transitionKey = TransitionKey(owner: playerMotionID, channel: "artwork")
+        let ticket = MotionCoordinator.shared.beginTransition(for: transitionKey, category: .content)
+
         if let img {
+            if !MotionCoordinator.shared.isReduceMotionEnabled,
+               let prevImage,
+               artworkCacheKey != "none",
+               artworkCacheKey != key {
+                artworkFadeOverlay.image = prevImage
+                artworkFadeOverlay.alphaValue = 1.0
+                artworkFadeOverlay.isHidden = false
+            } else {
+                artworkFadeOverlay.isHidden = true
+            }
+
             artworkView.image = img
             artworkView.imageScaling = .scaleProportionallyUpOrDown
             var rect = NSRect(origin: .zero, size: img.size)
             artworkCacheKey = key
             ambientArtwork = img.cgImage(forProposedRect: &rect, context: nil, hints: nil)
+            composer.updateAmbientColor(ambientColor, animated: true)
+
+            if !artworkFadeOverlay.isHidden {
+                if let artLayer = artworkView.layer {
+                    let sAnim = CABasicAnimation(keyPath: "transform.scale")
+                    sAnim.fromValue = MotionTokens.Geometry.artworkTransitionScale
+                    sAnim.toValue = 1.0
+                    sAnim.duration = MotionTokens.Duration.artworkCrossfade
+                    sAnim.timingFunction = CAMediaTimingFunction(name: .easeOut)
+                    sAnim.isRemovedOnCompletion = true
+                    artLayer.add(sAnim, forKey: "artScale")
+                }
+                MotionCoordinator.shared.animate(
+                    duration: MotionTokens.Duration.artworkCrossfade,
+                    timingFunction: .easeInEaseOut,
+                    ticket: ticket,
+                    action: {
+                        self.artworkFadeOverlay.animator().alphaValue = 0.0
+                    },
+                    completion: { [weak self] committed in
+                        guard committed, let self else { return }
+                        self.artworkFadeOverlay.isHidden = true
+                        self.artworkFadeOverlay.image = nil
+                    }
+                )
+            } else {
+                _ = MotionCoordinator.shared.complete(ticket)
+            }
         } else {
+            artworkFadeOverlay.isHidden = true
+            artworkFadeOverlay.image = nil
             artworkView.image = NSImage(systemSymbolName: "music.note", accessibilityDescription: "Album Art")
             artworkView.imageScaling = .scaleProportionallyDown
             artworkCacheKey = "none"
             ambientArtwork = nil
+            composer.updateAmbientColor(nil, animated: true)
+            _ = MotionCoordinator.shared.complete(ticket)
         }
         needsLayout = true
     }

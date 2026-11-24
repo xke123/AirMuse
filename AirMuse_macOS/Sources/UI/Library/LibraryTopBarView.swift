@@ -44,6 +44,7 @@ open class LibraryTopBarView: NSView {
     private let searchLayoutButton = NSButton()
     private let searchCloseButton = NSButton()
 
+    private let topBarMotionID = "LibraryTopBar-\(UUID().uuidString)"
     private var debounceTask: Task<Void, Never>?
     private var currentScope: Int = 0
 
@@ -227,14 +228,40 @@ open class LibraryTopBarView: NSView {
 
     public func setSearchMode(_ active: Bool, animated: Bool = true) {
         isSearchMode = active
-        navContainer.isHidden = active
-        searchContainer.isHidden = !active
+        let key = TransitionKey(owner: topBarMotionID, channel: "searchMode")
+        let ticket = MotionCoordinator.shared.beginTransition(for: key, category: .controlInteraction)
 
         if active {
             window?.makeFirstResponder(searchField)
         } else {
             searchField.stringValue = ""
         }
+
+        if !animated || MotionCoordinator.shared.isReduceMotionEnabled {
+            navContainer.isHidden = active
+            navContainer.alphaValue = active ? 0.0 : 1.0
+            searchContainer.isHidden = !active
+            searchContainer.alphaValue = active ? 1.0 : 0.0
+            _ = MotionCoordinator.shared.complete(ticket)
+            return
+        }
+
+        navContainer.isHidden = false
+        searchContainer.isHidden = false
+        MotionCoordinator.shared.animate(
+            duration: MotionTokens.Duration.searchFocus,
+            timingFunction: .easeInEaseOut,
+            ticket: ticket,
+            action: {
+                self.navContainer.animator().alphaValue = active ? 0.0 : 1.0
+                self.searchContainer.animator().alphaValue = active ? 1.0 : 0.0
+            },
+            completion: { [weak self] committed in
+                guard committed, let self else { return }
+                self.navContainer.isHidden = self.isSearchMode
+                self.searchContainer.isHidden = !self.isSearchMode
+            }
+        )
     }
 
     public func updateLayoutIcon(is2Col: Bool) {

@@ -44,7 +44,8 @@ final class SidebarCategoryItemView: NSView {
     }
 
     private var scrollOffset: CGFloat = 0
-    private var marqueeTask: Task<Void, Never>?
+    private var marqueeDwellTask: Task<Void, Never>?
+    private var marqueeDriverID: UUID?
 
     init(title: String) {
         self.title = title
@@ -56,8 +57,8 @@ final class SidebarCategoryItemView: NSView {
         fatalError("init(coder:) has not been implemented")
     }
 
-    deinit {
-        marqueeTask?.cancel()
+    isolated deinit {
+        stopMarquee()
     }
 
     private var currentFont: NSFont {
@@ -90,8 +91,12 @@ final class SidebarCategoryItemView: NSView {
     }
 
     private func stopMarquee() {
-        marqueeTask?.cancel()
-        marqueeTask = nil
+        marqueeDwellTask?.cancel()
+        marqueeDwellTask = nil
+        if let driverID = marqueeDriverID {
+            MotionCoordinator.shared.displayDriver.stop(id: driverID)
+            marqueeDriverID = nil
+        }
         if scrollOffset != 0 {
             scrollOffset = 0
             needsDisplay = true
@@ -100,37 +105,79 @@ final class SidebarCategoryItemView: NSView {
 
     private func startMarqueeIfNeeded() {
         stopMarquee()
-        guard isSelected, window != nil else { return }
+        guard isSelected, window != nil, !isHiddenOrHasHiddenAncestor, !MotionCoordinator.shared.isReduceMotionEnabled else { return }
 
         let overflow = fullTextWidth() - availableTextWidth
         guard overflow > 2.0 else { return }
 
-        marqueeTask = Task { @MainActor [weak self] in
+        marqueeDwellTask = Task { @MainActor [weak self] in
             // Wait 5 seconds after clicking before scrolling
             try? await Task.sleep(for: .seconds(5))
-            while !Task.isCancelled, let self, self.isSelected, self.window != nil {
-                let currentOverflow = self.fullTextWidth() - self.availableTextWidth
-                guard currentOverflow > 2.0 else { break }
-                let targetScroll = currentOverflow + 6.0
-                let speedPtPerSec: CGFloat = 28.0
-                let stepSec: Double = 0.016
-                let stepPx = speedPtPerSec * CGFloat(stepSec)
+            guard !Task.isCancelled,
+                  let self,
+                  self.isSelected,
+                  self.window != nil,
+                  !self.isHiddenOrHasHiddenAncestor,
+                  !MotionCoordinator.shared.isReduceMotionEnabled else { return }
+            self.beginDisplayDrivenMarquee()
+        }
+    }
 
-                var offset: CGFloat = 0
-                while offset < targetScroll && !Task.isCancelled && self.isSelected {
-                    offset = min(targetScroll, offset + stepPx)
-                    self.scrollOffset = offset
-                    self.needsDisplay = true
-                    try? await Task.sleep(for: .milliseconds(16))
-                }
-                guard !Task.isCancelled && self.isSelected else { break }
-                try? await Task.sleep(for: .seconds(1.5))
-                guard !Task.isCancelled && self.isSelected else { break }
+    private func beginDisplayDrivenMarquee() {
+        if let existing = marqueeDriverID {
+            MotionCoordinator.shared.displayDriver.stop(id: existing)
+            marqueeDriverID = nil
+        }
+        let speedPtPerSec: CGFloat = 28.0
+        var phase: Int = 0 // 0: scroll, 1: pause at end (1.5s), 2: pause at start (2.0s)
+        var holdElapsed: TimeInterval = 0
+        marqueeDriverID = MotionCoordinator.shared.displayDriver.start { [weak self] dt, _ in
+            guard let self,
+                  self.isSelected,
+                  self.window != nil,
+                  !self.isHiddenOrHasHiddenAncestor,
+                  !MotionCoordinator.shared.isReduceMotionEnabled else {
+                self?.marqueeDriverID = nil
+                return false
+            }
+            let currentOverflow = self.fullTextWidth() - self.availableTextWidth
+            guard currentOverflow > 2.0 else {
                 self.scrollOffset = 0
                 self.needsDisplay = true
-                try? await Task.sleep(for: .seconds(2.0))
+                self.marqueeDriverID = nil
+                return false
             }
+            let targetScroll = currentOverflow + 6.0
+            switch phase {
+            case 0:
+                self.scrollOffset = min(targetScroll, self.scrollOffset + speedPtPerSec * CGFloat(dt))
+                self.needsDisplay = true
+                if self.scrollOffset >= targetScroll {
+                    phase = 1
+                    holdElapsed = 0
+                }
+            case 1:
+                holdElapsed += dt
+                if holdElapsed >= 1.5 {
+                    self.scrollOffset = 0
+                    self.needsDisplay = true
+                    phase = 2
+                    holdElapsed = 0
+                }
+            default:
+                holdElapsed += dt
+                if holdElapsed >= 2.0 {
+                    phase = 0
+                    holdElapsed = 0
+                }
+            }
+            return true
         }
+    }
+
+    override func viewDidHide() {
+        super.viewDidHide()
+        stopMarquee()
     }
 
     override func viewDidMoveToWindow() {
@@ -276,6 +323,28 @@ open class LibrarySidebarView: NSVisualEffectView {
             stackView.topAnchor.constraint(equalTo: scrollView.contentView.topAnchor),
             stackView.widthAnchor.constraint(equalTo: scrollView.contentView.widthAnchor)
         ])
+
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleAccessibilityChanged),
+            name: MotionAccessibility.preferencesDidChangeNotification,
+            object: nil
+        )
+        handleAccessibilityChanged()
+    }
+
+    isolated deinit {
+        NotificationCenter.default.removeObserver(self)
+    }
+
+    @objc private func handleAccessibilityChanged() {
+        if MotionCoordinator.shared.isReduceTransparencyEnabled {
+            state = .inactive
+            layer?.backgroundColor = NSColor(srgbRed: 22/255.0, green: 24/255.0, blue: 28/255.0, alpha: 0.96).cgColor
+        } else {
+            state = .active
+            layer?.backgroundColor = NSColor.clear.cgColor
+        }
     }
 
     open override func layout() {

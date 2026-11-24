@@ -51,6 +51,9 @@ open class LyricsModuleView: NSView {
 
     public var onClose: (() -> Void)?
     public var onMiniModeDidChange: (() -> Void)?
+    public var onMiniModeTransitionRequested: ((Bool) -> Void)?
+
+    public var contentContainerView: NSView { panel.contentView }
 
     public override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
@@ -129,21 +132,35 @@ open class LyricsModuleView: NSView {
         layoutTopBarButtons()
     }
 
-    private func setHovering(_ hovering: Bool) {
+    open override func viewDidHide() {
+        super.viewDidHide()
+        isHovering = false
+        MotionCoordinator.shared.cancel(key: TransitionKey(owner: "LyricsModule-\(ObjectIdentifier(self).hashValue)", channel: "hover"))
+        auroraFogView.alphaValue = 0.0
+    }
+
+    public func setHovering(_ hovering: Bool, immediate: Bool = false) {
         guard isHovering != hovering else { return }
         isHovering = hovering
-        updateButtonVisibility(animated: true)
+        updateButtonVisibility(animated: !immediate)
     }
 
     private func updateButtonVisibility(animated: Bool) {
         let targetAlpha: CGFloat = isHovering ? 1.0 : 0.0
+        let key = TransitionKey(owner: "LyricsModule-\(ObjectIdentifier(self).hashValue)", channel: "hover")
+        let ticket = MotionCoordinator.shared.beginTransition(for: key, category: .controlInteraction)
         if !animated || MotionCoordinator.shared.isReduceMotionEnabled {
             auroraFogView.alphaValue = targetAlpha
+            _ = MotionCoordinator.shared.complete(ticket)
         } else {
-            NSAnimationContext.runAnimationGroup { ctx in
-                ctx.duration = MotionTokens.Duration.hoverFade
-                auroraFogView.animator().alphaValue = targetAlpha
-            }
+            MotionCoordinator.shared.animate(
+                duration: MotionTokens.Duration.hoverFade,
+                timingFunction: .easeInEaseOut,
+                ticket: ticket,
+                action: {
+                    self.auroraFogView.animator().alphaValue = targetAlpha
+                }
+            )
         }
     }
 
@@ -163,15 +180,23 @@ open class LyricsModuleView: NSView {
     private func layoutTopBarButtons() {
         let s = GlassInteractionCoordinator.shared.uiScale
         let wb = 13.0 * s
-        let capH = (isMiniLyricsMode ? 4.0 : OriginalDesignTokens.BaseMetrics.glassCapHeight) * s
-        let btnY = (capH - wb) * 0.5
 
-        auroraFogView.frame = NSRect(x: 0, y: panel.bounds.height - capH, width: panel.bounds.width, height: capH)
-        auroraFogView.isFogEnabled = !isMiniLyricsMode
-        closeButton.frame = NSRect(x: panel.bounds.width - 16.0 * s - wb, y: btnY, width: wb, height: wb)
-        miniToggleButton.frame = NSRect(x: closeButton.frame.minX - 5.0 * s - wb, y: btnY, width: wb, height: wb)
-
-        if !isMiniLyricsMode {
+        if isMiniLyricsMode {
+            // In Mini-Lyrics bar mode (height = 30 * s), center controls vertically inside the bar
+            let barH = max(wb, panel.bounds.height)
+            let btnY = (barH - wb) * 0.5
+            auroraFogView.frame = panel.bounds
+            auroraFogView.isFogEnabled = false
+            auroraFogView.plumes = []
+            closeButton.frame = NSRect(x: panel.bounds.width - 12.0 * s - wb, y: btnY, width: wb, height: wb)
+            miniToggleButton.frame = NSRect(x: closeButton.frame.minX - 5.0 * s - wb, y: btnY, width: wb, height: wb)
+        } else {
+            let capH = OriginalDesignTokens.BaseMetrics.glassCapHeight * s
+            let btnY = (capH - wb) * 0.5
+            auroraFogView.frame = NSRect(x: 0, y: panel.bounds.height - capH, width: panel.bounds.width, height: capH)
+            auroraFogView.isFogEnabled = true
+            closeButton.frame = NSRect(x: panel.bounds.width - 16.0 * s - wb, y: btnY, width: wb, height: wb)
+            miniToggleButton.frame = NSRect(x: closeButton.frame.minX - 5.0 * s - wb, y: btnY, width: wb, height: wb)
             auroraFogView.setPlume(
                 for: [miniToggleButton, closeButton],
                 alignment: .right,
@@ -179,20 +204,54 @@ open class LyricsModuleView: NSView {
                 tailLength: 64.0 * s,
                 peakAlpha: 1.0
             )
-        } else {
-            auroraFogView.plumes = []
         }
+    }
+
+    public func setMiniLyricsModeState(_ mini: Bool) {
+        guard isMiniLyricsMode != mini else { return }
+        isMiniLyricsMode = mini
+        lyricsView.setMiniMode(mini)
+        reloadSprites()
+        layoutTopBarButtons()
+        updateButtonVisibility(animated: false)
     }
 
     public func toggleMiniLyricsMode() {
         isMiniLyricsMode.toggle()
         lyricsView.setMiniMode(isMiniLyricsMode)
         reloadSprites()
+        layoutTopBarButtons()
         updateButtonVisibility(animated: false)
-        onMiniModeDidChange?()
+        if let onMiniModeTransitionRequested {
+            onMiniModeTransitionRequested(isMiniLyricsMode)
+        } else {
+            onMiniModeDidChange?()
+        }
+    }
+
+    public var isScrollPresentationActive: Bool {
+        panel.isScrollPresentationActive
     }
 
     public func refreshGlass() {
         panel.refreshGlassSurface()
+    }
+
+    public func applyScrollPresentation(
+        topBarFrame: NSRect,
+        bottomBarFrame: NSRect,
+        barAlpha: CGFloat = 1.0,
+        outerClipRect: NSRect? = nil
+    ) {
+        panel.applyScrollPresentation(
+            topBarFrame: topBarFrame,
+            bottomBarFrame: bottomBarFrame,
+            barAlpha: barAlpha,
+            outerClipRect: outerClipRect
+        )
+    }
+
+    public func clearScrollPresentation() {
+        panel.clearScrollPresentation()
     }
 }

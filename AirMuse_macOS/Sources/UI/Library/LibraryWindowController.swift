@@ -33,6 +33,11 @@ private final class LibraryHoverTrackerView: NSView {
     override func mouseExited(with event: NSEvent) {
         onHoverChanged?(false)
     }
+
+    override func viewDidHide() {
+        super.viewDidHide()
+        onHoverChanged?(false)
+    }
 }
 
 // MARK: - LibraryWindowController
@@ -47,6 +52,7 @@ open class LibraryWindowController: NSWindowController {
 
     private let panel = GlassPanel()
     public var moduleView: GlassPanel { panel }
+    public var contentContainerView: NSView { panel.contentView }
     private let topBar = LibraryTopBarView()
     private let sidebar = LibrarySidebarView()
     private let contentView = LibraryContentView()
@@ -71,6 +77,10 @@ open class LibraryWindowController: NSWindowController {
 
     private var categoryLoadTask: Task<Void, Never>?
     private var searchTask: Task<Void, Never>?
+    private var categoryGeneration: UInt64 = 0
+    private var searchGeneration: UInt64 = 0
+    private var detailGeneration: UInt64 = 0
+    private var detailLoadTask: Task<Void, Never>?
     private var isLoadingHomeSidebar: Bool = false
 
     // Dynamic remote categories cached per tab index (0: Home recommendations, 1: Browse editorial, 2: Radio)
@@ -88,10 +98,12 @@ open class LibraryWindowController: NSWindowController {
         observeSession()
     }
 
-    deinit {
+    isolated deinit {
         sessionTask?.cancel()
         categoryLoadTask?.cancel()
         searchTask?.cancel()
+        detailLoadTask?.cancel()
+        MotionCoordinator.shared.cancel(key: TransitionKey(owner: "LibraryWindow-\(ObjectIdentifier(self).hashValue)", channel: "hover"))
     }
 
     public required init?(coder: NSCoder) {
@@ -231,13 +243,20 @@ open class LibraryWindowController: NSWindowController {
         guard isHovering != hovering else { return }
         isHovering = hovering
         let targetAlpha: CGFloat = hovering ? 1.0 : 0.0
+        let key = TransitionKey(owner: "LibraryWindow-\(ObjectIdentifier(self).hashValue)", channel: "hover")
+        let ticket = MotionCoordinator.shared.beginTransition(for: key, category: .controlInteraction)
         if MotionCoordinator.shared.isReduceMotionEnabled {
             auroraFogView.alphaValue = targetAlpha
+            _ = MotionCoordinator.shared.complete(ticket)
         } else {
-            NSAnimationContext.runAnimationGroup { ctx in
-                ctx.duration = MotionTokens.Duration.hoverFade
-                auroraFogView.animator().alphaValue = targetAlpha
-            }
+            MotionCoordinator.shared.animate(
+                duration: MotionTokens.Duration.hoverFade,
+                timingFunction: .easeInEaseOut,
+                ticket: ticket,
+                action: {
+                    self.auroraFogView.animator().alphaValue = targetAlpha
+                }
+            )
         }
     }
 
@@ -587,6 +606,8 @@ open class LibraryWindowController: NSWindowController {
         )
 
         categoryLoadTask?.cancel()
+        categoryGeneration &+= 1
+        let expectedGen = categoryGeneration
         contentView.setTitle(currentCat.title)
         contentView.setLoading(true)
 
@@ -610,7 +631,10 @@ open class LibraryWindowController: NSWindowController {
                 }
             }
 
-            guard !Task.isCancelled, self.activeTabIndex == targetTab, self.activeCategoryIndex == targetCategory else {
+            guard !Task.isCancelled,
+                  self.categoryGeneration == expectedGen,
+                  self.activeTabIndex == targetTab,
+                  self.activeCategoryIndex == targetCategory else {
                 return
             }
 
@@ -623,12 +647,12 @@ open class LibraryWindowController: NSWindowController {
             self.contentView.setLoading(false)
             if let loadError {
                 self.contentView.setTitle("\(currentCat.title) (加载失败: \(loadError.localizedDescription))")
-                self.contentView.displayItems([])
+                self.contentView.displayItems([], animated: true)
             } else if items.isEmpty {
                 self.contentView.setTitle("\(currentCat.title) (暂无内容)")
-                self.contentView.displayItems([])
+                self.contentView.displayItems([], animated: true)
             } else {
-                self.contentView.displayItems(items)
+                self.contentView.displayItems(items, animated: true)
             }
         }
     }
@@ -1004,6 +1028,8 @@ open class LibraryWindowController: NSWindowController {
     private func performSearch(query: String, scope: Int) {
         let trimmed = query.trimmingCharacters(in: .whitespaces)
         searchTask?.cancel()
+        searchGeneration &+= 1
+        let expectedGen = searchGeneration
         guard !trimmed.isEmpty else {
             handleTabSelected(activeTabIndex)
             return
@@ -1076,17 +1102,17 @@ open class LibraryWindowController: NSWindowController {
                 }
             }
 
-            guard !Task.isCancelled else { return }
+            guard !Task.isCancelled, self.searchGeneration == expectedGen else { return }
 
             self.contentView.setLoading(false)
             if let searchError {
                 self.contentView.setTitle("搜索失败: \(searchError.localizedDescription)")
-                self.contentView.displayItems([])
+                self.contentView.displayItems([], animated: true)
             } else if items.isEmpty {
                 self.contentView.setTitle("未找到 \"\(trimmed)\" 的相关结果")
-                self.contentView.displayItems([])
+                self.contentView.displayItems([], animated: true)
             } else {
-                self.contentView.displayItems(items)
+                self.contentView.displayItems(items, animated: true)
             }
         }
     }
@@ -1098,46 +1124,52 @@ open class LibraryWindowController: NSWindowController {
         case .album:
             let albumID = item.albumID ?? item.id
             let isLib = albumID.hasPrefix("l.") || albumID.hasPrefix("i.")
+            detailGeneration &+= 1
+            let expectedGen = detailGeneration
+            detailLoadTask?.cancel()
             contentView.showDetail(title: item.title, tracks: [])
-            Task { [weak self] in
+            detailLoadTask = Task { [weak self] in
                 guard let self else { return }
                 var tracks: [MusicTrack] = []
                 if let provider = self.appleMusicProvider {
                     tracks = (try? await provider.fetchAlbumTracks(albumID: albumID, isLibrary: isLib)) ?? []
                 }
-                await MainActor.run {
-                    self.contentView.updateDetailTracks(tracks)
-                }
+                guard !Task.isCancelled, self.detailGeneration == expectedGen else { return }
+                self.contentView.updateDetailTracks(tracks)
             }
 
         case .playlist:
             let playlistID = item.playlistID ?? item.id
             let isLib = playlistID.hasPrefix("p.") || playlistID.hasPrefix("l.")
+            detailGeneration &+= 1
+            let expectedGen = detailGeneration
+            detailLoadTask?.cancel()
             contentView.showDetail(title: item.title, tracks: [])
-            Task { [weak self] in
+            detailLoadTask = Task { [weak self] in
                 guard let self else { return }
                 var tracks: [MusicTrack] = []
                 if let provider = self.appleMusicProvider {
                     tracks = (try? await provider.fetchPlaylistTracks(playlistID: playlistID, isLibrary: isLib)) ?? []
                 }
-                await MainActor.run {
-                    self.contentView.updateDetailTracks(tracks)
-                }
+                guard !Task.isCancelled, self.detailGeneration == expectedGen else { return }
+                self.contentView.updateDetailTracks(tracks)
             }
 
         case .artist:
             let artistID = item.id
             let isLib = artistID.hasPrefix("l.") || artistID.hasPrefix("i.")
+            detailGeneration &+= 1
+            let expectedGen = detailGeneration
+            detailLoadTask?.cancel()
             contentView.showDetail(title: item.title, tracks: [])
-            Task { [weak self] in
+            detailLoadTask = Task { [weak self] in
                 guard let self else { return }
                 var tracks: [MusicTrack] = []
                 if let provider = self.appleMusicProvider {
                     tracks = (try? await provider.fetchArtistTopSongs(artistID: artistID, isLibrary: isLib)) ?? []
                 }
-                await MainActor.run {
-                    self.contentView.updateDetailTracks(tracks)
-                }
+                guard !Task.isCancelled, self.detailGeneration == expectedGen else { return }
+                self.contentView.updateDetailTracks(tracks)
             }
 
         case .song, .radio, .chart:

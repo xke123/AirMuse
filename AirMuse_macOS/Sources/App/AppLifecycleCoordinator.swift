@@ -110,6 +110,7 @@ public final class AppLifecycleCoordinator {
 
         // Show main interactive stage immediately without a blocking 2-second splash
         stage.showAndFocus()
+        stage.playLaunchIntroIfNeeded()
         AppSignpost.shared.endInterval("StartupToInteractive", startupInterval)
         AppLogger.shared.log(
             category: .lifecycle,

@@ -123,9 +123,12 @@ final class MediaCardRowView: NSView {
 
     public var onClick: (() -> Void)?
 
+    private let cardMotionID = "MediaCardRow-\(UUID().uuidString)"
     private var trackingArea: NSTrackingArea?
+    private var artworkTask: Task<Void, Never>?
     private var isHovered: Bool = false {
         didSet {
+            guard oldValue != isHovered else { return }
             needsDisplay = true
         }
     }
@@ -171,8 +174,10 @@ final class MediaCardRowView: NSView {
 
         // Load artwork asynchronously via ImageCacheV2
         if let artURL = item.artworkURL {
-            Task { [weak artView] in
-                if let img = await ImageCacheV2.shared.image(for: artURL, targetPixelSize: 120) {
+            artworkTask = Task { [weak artView] in
+                let img = await ImageCacheV2.shared.image(for: artURL, targetPixelSize: 120)
+                guard !Task.isCancelled else { return }
+                if let img {
                     await MainActor.run {
                         artView?.image = img
                     }
@@ -235,12 +240,37 @@ final class MediaCardRowView: NSView {
         trackingArea = area
     }
 
+    override func viewDidMoveToSuperview() {
+        super.viewDidMoveToSuperview()
+        if superview == nil {
+            artworkTask?.cancel()
+            isHovered = false
+            MotionCoordinator.shared.cancelAll(owner: cardMotionID)
+        }
+    }
+
+    override func viewDidHide() {
+        super.viewDidHide()
+        isHovered = false
+    }
+
     override func mouseEntered(with event: NSEvent) { isHovered = true }
     override func mouseExited(with event: NSEvent) { isHovered = false }
     override func resetCursorRects() { addCursorRect(bounds, cursor: .pointingHand) }
 
     override func mouseUp(with event: NSEvent) {
         if bounds.contains(convert(event.locationInWindow, from: nil)) {
+            let key = TransitionKey(owner: cardMotionID, channel: "select")
+            let ticket = MotionCoordinator.shared.beginTransition(for: key, category: .controlInteraction)
+            if !MotionCoordinator.shared.isReduceMotionEnabled {
+                MotionCoordinator.shared.animate(duration: MotionTokens.Duration.cardSelect, ticket: ticket, action: {
+                    self.animator().alphaValue = 0.85
+                }) { [weak self] _ in
+                    self?.alphaValue = 1.0
+                }
+            } else {
+                _ = MotionCoordinator.shared.complete(ticket)
+            }
             onClick?()
         }
     }
@@ -273,10 +303,13 @@ final class MediaGridCardView: NSView {
 
     public var onClick: (() -> Void)?
 
+    private let cardMotionID = "MediaGridCard-\(UUID().uuidString)"
     private var trackingArea: NSTrackingArea?
+    private var artworkTask: Task<Void, Never>?
     private var isHovered: Bool = false {
         didSet {
-            playHoverOverlay.isHidden = !isHovered
+            guard oldValue != isHovered else { return }
+            updateHoverOverlay(animated: true)
             needsDisplay = true
         }
     }
@@ -311,9 +344,11 @@ final class MediaGridCardView: NSView {
         artView.wantsLayer = true
         thumbWrap.addSubview(artView)
 
-        // Play hover overlay
+        // Play hover overlay (M21: 120ms fade-in, zero per-card NSGlassEffectView creation)
         playHoverOverlay.image = NSImage(systemSymbolName: "play.circle.fill", accessibilityDescription: "Play")
-        playHoverOverlay.contentTintColor = NSColor(white: 1.0, alpha: 0.90)
+        playHoverOverlay.contentTintColor = NSColor(white: 1.0, alpha: 0.92)
+        playHoverOverlay.wantsLayer = true
+        playHoverOverlay.alphaValue = 0.0
         playHoverOverlay.isHidden = true
         thumbWrap.addSubview(playHoverOverlay)
 
@@ -325,8 +360,10 @@ final class MediaGridCardView: NSView {
 
         // Load artwork asynchronously via ImageCacheV2
         if let artURL = item.artworkURL {
-            Task { [weak artView] in
-                if let img = await ImageCacheV2.shared.image(for: artURL, targetPixelSize: 320) {
+            artworkTask = Task { [weak artView] in
+                let img = await ImageCacheV2.shared.image(for: artURL, targetPixelSize: 320)
+                guard !Task.isCancelled else { return }
+                if let img {
                     await MainActor.run {
                         artView?.image = img
                     }
@@ -377,12 +414,64 @@ final class MediaGridCardView: NSView {
         trackingArea = area
     }
 
+    override func viewDidMoveToSuperview() {
+        super.viewDidMoveToSuperview()
+        if superview == nil {
+            artworkTask?.cancel()
+            isHovered = false
+            MotionCoordinator.shared.cancelAll(owner: cardMotionID)
+        }
+    }
+
+    override func viewDidHide() {
+        super.viewDidHide()
+        isHovered = false
+    }
+
     override func mouseEntered(with event: NSEvent) { isHovered = true }
     override func mouseExited(with event: NSEvent) { isHovered = false }
     override func resetCursorRects() { addCursorRect(bounds, cursor: .pointingHand) }
 
+    private func updateHoverOverlay(animated: Bool) {
+        let key = TransitionKey(owner: cardMotionID, channel: "hover")
+        let ticket = MotionCoordinator.shared.beginTransition(for: key, category: .controlInteraction)
+        let show = isHovered
+        if show { playHoverOverlay.isHidden = false }
+
+        if !animated || MotionCoordinator.shared.isReduceMotionEnabled {
+            playHoverOverlay.alphaValue = show ? 1.0 : 0.0
+            playHoverOverlay.isHidden = !show
+            _ = MotionCoordinator.shared.complete(ticket)
+            return
+        }
+
+        MotionCoordinator.shared.animate(
+            duration: MotionTokens.Duration.cardHover,
+            timingFunction: .easeOut,
+            ticket: ticket,
+            action: {
+                self.playHoverOverlay.animator().alphaValue = show ? 1.0 : 0.0
+            },
+            completion: { [weak self] committed in
+                guard committed, let self, !self.isHovered else { return }
+                self.playHoverOverlay.isHidden = true
+            }
+        )
+    }
+
     override func mouseUp(with event: NSEvent) {
         if bounds.contains(convert(event.locationInWindow, from: nil)) {
+            let key = TransitionKey(owner: cardMotionID, channel: "select")
+            let ticket = MotionCoordinator.shared.beginTransition(for: key, category: .controlInteraction)
+            if !MotionCoordinator.shared.isReduceMotionEnabled {
+                MotionCoordinator.shared.animate(duration: MotionTokens.Duration.cardSelect, ticket: ticket, action: {
+                    self.animator().alphaValue = 0.85
+                }) { [weak self] _ in
+                    self?.alphaValue = 1.0
+                }
+            } else {
+                _ = MotionCoordinator.shared.complete(ticket)
+            }
             onClick?()
         }
     }
@@ -418,9 +507,12 @@ final class DetailTrackRowView: NSView {
 
     public var onClick: (() -> Void)?
 
+    private let cardMotionID = "MediaCardRow-\(UUID().uuidString)"
     private var trackingArea: NSTrackingArea?
+    private var artworkTask: Task<Void, Never>?
     private var isHovered: Bool = false {
         didSet {
+            guard oldValue != isHovered else { return }
             needsDisplay = true
         }
     }
@@ -494,6 +586,18 @@ final class DetailTrackRowView: NSView {
         )
         addTrackingArea(area)
         trackingArea = area
+    }
+
+    override func viewDidMoveToSuperview() {
+        super.viewDidMoveToSuperview()
+        if superview == nil {
+            isHovered = false
+        }
+    }
+
+    override func viewDidHide() {
+        super.viewDidHide()
+        isHovered = false
     }
 
     override func mouseEntered(with event: NSEvent) { isHovered = true }
@@ -734,6 +838,9 @@ open class LibraryContentView: NSView {
     private let emptyLabel = NSTextField(labelWithString: "没有找到相关项目")
     private let detailOverlay = DetailOverlayView()
 
+    private let contentMotionID = "LibraryContentView-\(UUID().uuidString)"
+    private var titleWidthConstraint: NSLayoutConstraint?
+    private var titleHeightConstraint: NSLayoutConstraint?
     private var currentItems: [MediaCardItem] = []
     private var currentDetailTracks: [MusicTrack] = []
 
@@ -833,15 +940,42 @@ open class LibraryContentView: NSView {
         displayItems(self.currentItems)
     }
 
-    public func displayItems(_ items: [MediaCardItem]) {
+    public func displayItems(_ items: [MediaCardItem], animated: Bool = false) {
         self.currentItems = items
         detailOverlay.isHidden = true
         stackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
         emptyLabel.isHidden = !items.isEmpty
 
+        let key = TransitionKey(owner: contentMotionID, channel: "crossfade")
+        let ticket = MotionCoordinator.shared.beginTransition(for: key, category: .content)
+        if animated && !MotionCoordinator.shared.isReduceMotionEnabled && window != nil && !isHidden {
+            scrollView.alphaValue = 0.25
+            MotionCoordinator.shared.animate(
+                duration: MotionTokens.Duration.categoryCrossfade,
+                timingFunction: .easeOut,
+                ticket: ticket,
+                action: {
+                    self.scrollView.animator().alphaValue = 1.0
+                }
+            )
+        } else {
+            scrollView.alphaValue = 1.0
+            _ = MotionCoordinator.shared.complete(ticket)
+        }
+
         let headerWidth = max(100, bounds.width - 14)
-        titleLabel.widthAnchor.constraint(equalToConstant: headerWidth).isActive = true
-        titleLabel.heightAnchor.constraint(equalToConstant: 24).isActive = true
+        if let titleWidthConstraint {
+            titleWidthConstraint.constant = headerWidth
+        } else {
+            let w = titleLabel.widthAnchor.constraint(equalToConstant: headerWidth)
+            w.isActive = true
+            titleWidthConstraint = w
+        }
+        if titleHeightConstraint == nil {
+            let h = titleLabel.heightAnchor.constraint(equalToConstant: 24)
+            h.isActive = true
+            titleHeightConstraint = h
+        }
         stackView.addArrangedSubview(titleLabel)
 
         AppLogger.shared.log(

@@ -8,6 +8,8 @@ import Infrastructure
 
 /// Controls Main (`PlayerView`) and Mini (`MiniPlayerView`) player views inside a shared `playerSlotView`
 /// hosted by `UnifiedStageController`.
+/// Note: `WebRuntime` attaches its keep-alive `WKWebView` directly to `playerSlotView` behind `visualContainer`,
+/// so clipping `visualContainer` during M02 morph never disturbs WebKit playback.
 @MainActor
 open class PlayerWindowController: NSWindowController {
 
@@ -15,12 +17,18 @@ open class PlayerWindowController: NSWindowController {
     public private(set) var isTopMost: Bool = true
 
     public let playerSlotView = NSView()
-    private let playerView = PlayerView()
-    private let miniPlayerView = MiniPlayerView()
+    private let visualContainer = NSView()
+    public let playerView = PlayerView()
+    public let miniPlayerView = MiniPlayerView()
 
     public var onToggleLyrics: (() -> Void)?
     public var onToggleLibrary: (() -> Void)?
     public var onToggleLog: (() -> Void)?
+    public var onMinimizeRequested: (() -> Void)?
+    public var onQuitRequested: (() -> Void)?
+    public var onChoreographedMiniToggleRequested: (() -> Void)?
+    /// Fired when UnifiedStageController should drive an animated Normal↔Mini morph (M02).
+    public var onModeTransitionRequested: ((Bool) -> Void)?
     public var onModeDidTransition: (() -> Void)?
     public var onTopMostDidChange: (() -> Void)?
 
@@ -48,35 +56,85 @@ open class PlayerWindowController: NSWindowController {
         progressTask?.cancel()
     }
 
-    public func preferredPlayerSize(for scale: CGFloat) -> NSSize {
+    public func preferredPlayerSize(for scale: CGFloat, mini: Bool? = nil) -> NSSize {
+        let useMini = mini ?? isMiniMode
         let w = OriginalDesignTokens.BaseMetrics.mainPlayerWidth * scale
-        let h = (isMiniMode
+        let h = (useMini
             ? OriginalDesignTokens.BaseMetrics.miniBarStandardHeight
             : OriginalDesignTokens.BaseMetrics.mainPlayerHeight) * scale
         return NSSize(width: w, height: h)
     }
 
     public func layoutSlot(frame: NSRect) {
+        let sizeChanged = playerSlotView.frame.size != frame.size
         playerSlotView.frame = frame
-        playerView.frame = playerSlotView.bounds
-        miniPlayerView.frame = playerSlotView.bounds
-        playerView.needsLayout = true
-        miniPlayerView.needsLayout = true
+        visualContainer.frame = playerSlotView.bounds
         if !isMiniMode {
-            playerView.refreshGlassSurface()
+            if sizeChanged || playerView.frame != visualContainer.bounds {
+                playerView.frame = visualContainer.bounds
+                playerView.needsLayout = true
+            } else {
+                playerView.refreshGlassSurface()
+            }
+        } else {
+            if sizeChanged || miniPlayerView.frame != visualContainer.bounds {
+                miniPlayerView.frame = visualContainer.bounds
+                miniPlayerView.needsLayout = true
+            } else {
+                miniPlayerView.refreshAppearance()
+            }
         }
+    }
+
+    /// Updates visual crossfade & top-pinned bounds during an active M02 Normal↔Mini morph.
+    public func applyMorphFrame(slotFrame: NSRect, targetMini: Bool, progress: CGFloat, scale: CGFloat) {
+        playerSlotView.frame = slotFrame
+        visualContainer.frame = playerSlotView.bounds
+        visualContainer.layer?.masksToBounds = true
+
+        playerView.isHidden = false
+        miniPlayerView.isHidden = false
+
+        let normalSize = preferredPlayerSize(for: scale, mini: false)
+        let miniSize = preferredPlayerSize(for: scale, mini: true)
+        let boundsH = visualContainer.bounds.height
+
+        // Pin both subviews to the top edge of visualContainer so controls clip cleanly instead of squishing
+        playerView.frame = NSRect(x: 0, y: boundsH - normalSize.height, width: normalSize.width, height: normalSize.height)
+        miniPlayerView.frame = NSRect(x: 0, y: boundsH - miniSize.height, width: miniSize.width, height: miniSize.height)
+
+        // Derive crossfade monotonically from live slot height so mid-flight reversals are 100% continuous
+        let spanH = max(1.0, normalSize.height - miniSize.height)
+        let normalFraction = min(1.0, max(0.0, (slotFrame.height - miniSize.height) / spanH))
+        playerView.alphaValue = min(1.0, max(0.0, (normalFraction - 0.35) / 0.65))
+        miniPlayerView.alphaValue = min(1.0, max(0.0, (0.40 - normalFraction) / 0.40))
+    }
+
+    /// Finalizes visibility, alpha, masks, and bounds after M02 morph settles or cancels.
+    public func finalizeMorphState(isMini: Bool, slotFrame: NSRect) {
+        visualContainer.layer?.masksToBounds = false
+        playerView.alphaValue = 1.0
+        miniPlayerView.alphaValue = 1.0
+        playerView.isHidden = isMini
+        miniPlayerView.isHidden = !isMini
+        layoutSlot(frame: slotFrame)
     }
 
     private func setupSlotViews() {
         playerSlotView.wantsLayer = true
         playerSlotView.layer?.masksToBounds = false
 
-        playerView.autoresizingMask = [.width, .height]
-        playerSlotView.addSubview(playerView)
+        visualContainer.wantsLayer = true
+        visualContainer.layer?.masksToBounds = false
+        visualContainer.autoresizingMask = [.width, .height]
+        playerSlotView.addSubview(visualContainer)
 
-        miniPlayerView.autoresizingMask = [.width, .height]
+        playerView.autoresizingMask = []
+        visualContainer.addSubview(playerView)
+
+        miniPlayerView.autoresizingMask = []
         miniPlayerView.isHidden = true
-        playerSlotView.addSubview(miniPlayerView)
+        visualContainer.addSubview(miniPlayerView)
     }
 
     private func wireActions() {
@@ -106,7 +164,11 @@ open class PlayerWindowController: NSWindowController {
         }
         playerView.onToggleMiniMode = { [weak self] in
             AppLogger.shared.log(category: .userAction, level: .info, message: "用户点击切换 [迷你播放器] 模式")
-            self?.toggleMiniMode()
+            if let onChoreographedMiniToggleRequested = self?.onChoreographedMiniToggleRequested {
+                onChoreographedMiniToggleRequested()
+            } else {
+                self?.toggleMiniMode()
+            }
         }
         playerView.onToggleTopMost = { [weak self] in
             self?.toggleTopMost()
@@ -118,6 +180,20 @@ open class PlayerWindowController: NSWindowController {
         playerView.onToggleLibrary = { [weak self] in
             AppLogger.shared.log(category: .userAction, level: .info, message: "用户点击 [音乐资料库] 按钮")
             self?.onToggleLibrary?()
+        }
+        playerView.onMinimize = { [weak self] in
+            if let onMinimizeRequested = self?.onMinimizeRequested {
+                onMinimizeRequested()
+            } else {
+                self?.playerView.window?.miniaturize(nil)
+            }
+        }
+        playerView.onQuit = { [weak self] in
+            if let onQuitRequested = self?.onQuitRequested {
+                onQuitRequested()
+            } else {
+                NSApp.terminate(nil)
+            }
         }
         playerView.onSelectAppleMusic = { [weak self] in
             AppLogger.shared.log(category: .userAction, level: .info, message: "用户点击 [Apple Music] 平台切换")
@@ -150,7 +226,11 @@ open class PlayerWindowController: NSWindowController {
         }
         miniPlayerView.onExpand = { [weak self] in
             AppLogger.shared.log(category: .userAction, level: .info, message: "用户点击迷你栏 [还原展开] 按钮")
-            self?.toggleMiniMode()
+            if let onChoreographedMiniToggleRequested = self?.onChoreographedMiniToggleRequested {
+                onChoreographedMiniToggleRequested()
+            } else {
+                self?.toggleMiniMode()
+            }
         }
         miniPlayerView.onToggleLyrics = { [weak self] in
             self?.onToggleLyrics?()
@@ -161,6 +241,13 @@ open class PlayerWindowController: NSWindowController {
         miniPlayerView.onToggleSource = { [weak self] in
             self?.onToggleLibrary?()
         }
+        miniPlayerView.onQuit = { [weak self] in
+            if let onQuitRequested = self?.onQuitRequested {
+                onQuitRequested()
+            } else {
+                NSApp.terminate(nil)
+            }
+        }
     }
 
     public func toggleTopMost() {
@@ -169,11 +256,37 @@ open class PlayerWindowController: NSWindowController {
         onTopMostDidChange?()
     }
 
+    public func setMiniModeStateForChoreography(_ mini: Bool) {
+        isMiniMode = mini
+        playerView.cancelScrollIntro()
+    }
+
     public func toggleMiniMode() {
         isMiniMode.toggle()
-        playerView.isHidden = isMiniMode
-        miniPlayerView.isHidden = !isMiniMode
-        onModeDidTransition?()
+        playerView.cancelScrollIntro()
+        if let onModeTransitionRequested {
+            onModeTransitionRequested(isMiniMode)
+        } else {
+            playerView.isHidden = isMiniMode
+            miniPlayerView.isHidden = !isMiniMode
+            onModeDidTransition?()
+        }
+    }
+
+    public func playScrollIntroIfEligible(completion: (@MainActor (Bool) -> Void)? = nil) {
+        guard !isMiniMode else {
+            completion?(true)
+            return
+        }
+        playerView.playScrollIntro(completion: completion)
+    }
+
+    public func playScrollCollapseIfEligible(completion: @escaping @MainActor (Bool) -> Void) {
+        guard !isMiniMode else {
+            completion(true)
+            return
+        }
+        playerView.playScrollCollapse(completion: completion)
     }
 
     private func executeCommand(_ block: @escaping () async throws -> Void) {
