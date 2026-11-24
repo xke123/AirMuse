@@ -388,7 +388,17 @@ public final class AppleMusicWebPlayer: NSObject, WKNavigationDelegate, WKScript
                 Promise.resolve(mk.play()),
                 new Promise(function(resolve) { setTimeout(resolve, 1500); })
             ]);
-            return { ok: true };
+            var a = document.querySelector('audio, video');
+            return {
+                ok: true,
+                isAuth: !!mk.isAuthorized,
+                hasToken: !!mk.musicUserToken,
+                hasCookie: document.cookie.includes('media-user-token='),
+                storefront: String(mk.storefrontId || ''),
+                mkDur: Number(mk.currentPlaybackDuration || 0),
+                audioDur: a && isFinite(a.duration) ? Number(a.duration) : 0,
+                audioSrc: a && a.src ? String(a.src).slice(0, 90) : ''
+            };
         } catch(e) {
             return { ok: false, error: String(e && e.message ? e.message : e) };
         }
@@ -765,7 +775,14 @@ public final class AppleMusicWebPlayer: NSObject, WKNavigationDelegate, WKScript
                 guard myGen == playCommandGeneration else { return false }
                 if let dict = res as? [String: Any], let ok = dict["ok"] as? Bool, ok {
                     self.trackPlaybackStartTime = Date()
-                    AppLogger.shared.log(category: .playback, level: .info, message: "Web 播放器指令执行成功: \(description)")
+                    let isAuth = dict["isAuth"] as? Bool ?? false
+                    let hasCookie = dict["hasCookie"] as? Bool ?? false
+                    let sf = dict["storefront"] as? String ?? ""
+                    let mkDur = dict["mkDur"] as? Double ?? 0
+                    let audioDur = dict["audioDur"] as? Double ?? 0
+                    let audioSrc = dict["audioSrc"] as? String ?? ""
+                    let diag = "isAuth=\(isAuth), hasCookie=\(hasCookie), sf=\(sf), mkDur=\(Int(mkDur))s, audioDur=\(Int(audioDur))s" + (audioSrc.isEmpty ? "" : ", src=\(audioSrc)")
+                    AppLogger.shared.log(category: .playback, level: .info, message: "Web 播放器指令执行成功: \(description)", details: diag)
                     onStateChanged?()
                     return true
                 } else if let dict = res as? [String: Any], let cancelled = dict["cancelled"] as? Bool, cancelled {
@@ -896,6 +913,17 @@ public final class AppleMusicWebPlayer: NSObject, WKNavigationDelegate, WKScript
         case "nowPlayingItemDidChange":
             let title = body["title"] as? String ?? ""
             let artist = body["artistName"] as? String ?? ""
+            let isAuth = body["isAuthorized"] as? Bool ?? false
+            let pbDur = body["playbackDuration"] as? Double ?? 0
+            let metaDur = body["metaDuration"] as? Double ?? 0
+            if !title.isEmpty {
+                AppLogger.shared.log(
+                    category: .playback,
+                    level: (pbDur > 0 && pbDur <= 31 && metaDur > 45) ? .warn : .info,
+                    message: "MusicKit 曲目变更: \(title) - \(artist)",
+                    details: "isAuthorized=\(isAuth), 流时长=\(Int(pbDur))s, 元数据时长=\(Int(metaDur))s"
+                )
+            }
             self.currentTrackTitle = title
             self.currentArtistName = artist
             onTrackChanged?(title, artist)

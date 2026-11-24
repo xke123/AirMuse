@@ -69,6 +69,7 @@ public final class AppleMusicSessionManager: NSObject {
     private static let keychainTokenKey = "media_user_token"
     private static let keychainStorefrontKey = "storefront_id"
     private static let keychainDevTokenKey = "developer_token"
+    private static let keychainAccountNameKey = "account_name"
     private static let officialAppleMusicURL = URL(string: "https://music.apple.com")!
     private static let officialLoginURL = URL(string: "https://music.apple.com/login")!
 
@@ -173,7 +174,12 @@ public final class AppleMusicSessionManager: NSObject {
         // enter .loggedIn immediately (0ms) and verify silently in the background.
         if let devToken = capturedDeveloperToken {
             let sf = savedStorefront
-            let resolvedDisplayName = sf.map { "Apple Music 会员 (\($0.uppercased()))" } ?? "Apple Music 用户"
+            let cachedAccountName = (try? sessionStore.load(key: Self.keychainAccountNameKey))?.trimmingCharacters(in: .whitespacesAndNewlines)
+            let resolvedDisplayName: String = {
+                if let cachedAccountName, !cachedAccountName.isEmpty { return cachedAccountName }
+                if let sf { return "Apple Music 会员 (\(sf.uppercased()))" }
+                return "Apple Music 用户"
+            }()
             let optimisticAccount = MusicAccount(
                 id: UUID().uuidString,
                 providerID: "apple_music",
@@ -391,6 +397,9 @@ public final class AppleMusicSessionManager: NSObject {
                 if let sf = storefront {
                     try? sessionStore.save(sf, forKey: Self.keychainStorefrontKey)
                 }
+                if let name = accountName, !name.trimmingCharacters(in: .whitespaces).isEmpty {
+                    try? sessionStore.save(name, forKey: Self.keychainAccountNameKey)
+                }
 
                 // Account Name rule: MUST come from trusted server data or truthful description.
                 // NEVER invent a fake dummy username like '小可' or 'Tim Cook'!
@@ -465,6 +474,9 @@ public final class AppleMusicSessionManager: NSObject {
                 if let sf = storefront {
                     UserDefaults.standard.set(sf, forKey: Self.userDefaultsStorefrontKey)
                     try? sessionStore.save(sf, forKey: Self.keychainStorefrontKey)
+                }
+                if let name = accountName, !name.trimmingCharacters(in: .whitespaces).isEmpty {
+                    try? sessionStore.save(name, forKey: Self.keychainAccountNameKey)
                 }
                 await ampClient.setStorefront(storefront)
 
