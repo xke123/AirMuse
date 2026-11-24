@@ -33,7 +33,7 @@ open class LogWindow: NSPanel {
 open class LogWindowController: NSWindowController {
 
     private let panel = GlassPanel()
-    private let titleLabel = NSTextField(labelWithString: "AirMuse 诊断日志 (Diagnostics)")
+    private let titleLabel = NSTextField(labelWithString: "AirMuse Core V2 诊断日志")
     private let badgeLabel = NSTextField(labelWithString: "0 条")
     private let copyButton = NSButton()
     private let refreshButton = NSButton()
@@ -44,15 +44,20 @@ open class LogWindowController: NSWindowController {
     private let textView = NSTextView()
 
     private var appleMusicProvider: AppleMusicProvider?
+    private var diagnosticsProvider: (@Sendable () async -> String)?
 
-    public init(appleMusicProvider: AppleMusicProvider? = nil) {
+    public init(
+        appleMusicProvider: AppleMusicProvider? = nil,
+        diagnosticsProvider: (@Sendable () async -> String)? = nil
+    ) {
         self.appleMusicProvider = appleMusicProvider
+        self.diagnosticsProvider = diagnosticsProvider
 
         let screenFrame = NSScreen.main?.visibleFrame ?? NSRect(x: 100, y: 100, width: 1200, height: 800)
         let rect = NSRect(
             x: screenFrame.minX + 40,
             y: screenFrame.maxY - 460,
-            width: 540,
+            width: 560,
             height: 420
         )
         let window = LogWindow(contentRect: rect)
@@ -94,7 +99,7 @@ open class LogWindowController: NSWindowController {
         container.addSubview(copyButton)
 
         // Refresh test button
-        refreshButton.title = "🔄 测试拉取"
+        refreshButton.title = "🔄 V2 诊断"
         refreshButton.font = NSFont.systemFont(ofSize: 9.5, weight: .regular)
         refreshButton.bezelStyle = .recessed
         refreshButton.contentTintColor = NSColor(white: 0.75, alpha: 1.0)
@@ -216,7 +221,9 @@ open class LogWindowController: NSWindowController {
         let catColor: NSColor = switch entry.category {
         case .lifecycle:  NSColor(calibratedRed: 0.75, green: 0.45, blue: 0.95, alpha: 1.0) // purple
         case .userAction: NSColor(calibratedRed: 0.98, green: 0.70, blue: 0.20, alpha: 1.0) // gold/yellow
+        case .session:    NSColor(calibratedRed: 0.35, green: 0.85, blue: 0.95, alpha: 1.0) // bright cyan
         case .auth:       NSColor(calibratedRed: 0.95, green: 0.40, blue: 0.65, alpha: 1.0) // pink
+        case .engine:     NSColor(calibratedRed: 0.95, green: 0.55, blue: 0.25, alpha: 1.0) // coral orange
         case .injection:  NSColor(calibratedRed: 0.95, green: 0.65, blue: 0.20, alpha: 1.0) // amber
         case .ampAPI:     NSColor(calibratedRed: 0.15, green: 0.80, blue: 0.90, alpha: 1.0) // cyan
         case .musicKit:   NSColor(calibratedRed: 0.30, green: 0.65, blue: 1.00, alpha: 1.0) // blue
@@ -233,6 +240,15 @@ open class LogWindowController: NSWindowController {
             .foregroundColor: catColor
         ]
         result.append(NSAttributedString(string: "[\(entry.category.rawValue)] ", attributes: catAttrs))
+
+        // Correlation ID
+        if let corr = entry.correlationID, !corr.isEmpty {
+            let corrAttrs: [NSAttributedString.Key: Any] = [
+                .font: NSFont.monospacedSystemFont(ofSize: 9.0, weight: .medium),
+                .foregroundColor: NSColor(white: 0.55, alpha: 1.0)
+            ]
+            result.append(NSAttributedString(string: "[\(corr)] ", attributes: corrAttrs))
+        }
 
         // Message
         let msgAttrs: [NSAttributedString.Key: Any] = [
@@ -284,25 +300,32 @@ open class LogWindowController: NSWindowController {
     }
 
     @objc private func testFetchClicked() {
-        AppLogger.shared.log(category: .ampAPI, level: .info, message: "手动发起 Apple Music Top Charts API 诊断测试...")
+        let diagID = "diag-\(UUID().uuidString.prefix(6))"
+        AppLogger.shared.log(category: .lifecycle, level: .info, correlationID: diagID, message: "开始执行 Core V2 全链路诊断自检...")
         Task { [weak self] in
             guard let self else { return }
+            if let diag = self.diagnosticsProvider {
+                let summary = await diag()
+                AppLogger.shared.log(category: .lifecycle, level: .info, correlationID: diagID, message: "Core V2 子系统实时快照", details: summary)
+            }
             do {
                 if let provider = self.appleMusicProvider {
                     let tracks = try await provider.fetchTopCharts()
                     AppLogger.shared.log(
                         category: .ampAPI,
                         level: .info,
+                        correlationID: diagID,
                         message: "诊断测试成功: 成功拉取到 \(tracks.count) 首榜单曲目",
                         details: "首曲: \(tracks.first?.title ?? "none") - \(tracks.first?.artistName ?? "")"
                     )
                 } else {
-                    AppLogger.shared.log(category: .ampAPI, level: .warn, message: "AppleMusicProvider 未挂载")
+                    AppLogger.shared.log(category: .ampAPI, level: .warn, correlationID: diagID, message: "AppleMusicProvider 未挂载")
                 }
             } catch {
                 AppLogger.shared.log(
                     category: .error,
                     level: .error,
+                    correlationID: diagID,
                     message: "诊断测试失败: \(error.localizedDescription)",
                     details: "\(error)"
                 )

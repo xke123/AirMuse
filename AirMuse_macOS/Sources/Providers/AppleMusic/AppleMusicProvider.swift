@@ -38,6 +38,7 @@ public actor AppleMusicProvider:
 
     public let sessionAdapter: any AppleMusicSessionAdapter
     private let ampClient: AppleMusicAmpClient
+    private let libraryRepo: LibraryRepositoryV2?
     private var currentPlayingTrack: MusicTrack?
     private var catalogIDCache: [String: String] = [:]
     private var currentVolume: Float = 1.0
@@ -138,16 +139,12 @@ public actor AppleMusicProvider:
     @MainActor
     public init(
         sessionAdapter: (any AppleMusicSessionAdapter)? = nil,
-        ampClient: AppleMusicAmpClient = .shared
+        ampClient: AppleMusicAmpClient = .shared,
+        libraryRepository: LibraryRepositoryV2? = nil
     ) {
-        let adapter = sessionAdapter ?? AppleMusicWebSessionAdapter(manager: .shared)
-        self.sessionAdapter = adapter
+        self.sessionAdapter = sessionAdapter ?? AppleMusicKitSessionAdapter()
         self.ampClient = ampClient
-        AppleMusicSessionManager.shared.webPlayer.onStateChanged = { [weak self] in
-            Task { [weak self] in
-                await self?.emitCurrentState()
-            }
-        }
+        self.libraryRepo = libraryRepository
     }
 
     // MARK: - MusicAuthenticationProvider
@@ -193,12 +190,117 @@ public actor AppleMusicProvider:
         }
     }
 
+    private func currentStorefrontAndAccount() async -> (storefront: String, accountID: String?) {
+        let snap = await sessionAdapter.snapshot
+        let sf = (snap.storefront?.isEmpty == false) ? snap.storefront! : "cn"
+        return (sf, snap.account?.id)
+    }
+
+    private func loadCachedPublic<T: Codable & Sendable>(
+        _ type: T.Type,
+        resourceType: String,
+        resourceID: String,
+        ttlPolicy: LibraryRepositoryV2.TTLPolicy = .publicCatalog,
+        isEmpty: @escaping @Sendable (T) -> Bool = { _ in false },
+        remoteFetch: @escaping @Sendable () async throws -> T
+    ) async throws -> T {
+        guard let libraryRepo else {
+            return try await remoteFetch()
+        }
+        let (sf, _) = await currentStorefrontAndAccount()
+        let key = CacheKey(
+            providerID: providerID,
+            scope: .public,
+            accountID: nil,
+            storefront: sf,
+            resource: resourceType,
+            normalizedParameters: resourceID
+        )
+        let outcome = await libraryRepo.load(
+            T.self,
+            key: key,
+            ttlPolicy: ttlPolicy,
+            isEmptyValue: isEmpty,
+            remoteFetch: remoteFetch
+        )
+        switch outcome {
+        case .loaded(let value, _, _):
+            return value
+        case .empty:
+            return try await remoteFetch()
+        case .error(let err, let fallback):
+            if let fallback { return fallback }
+            throw err
+        case .unauthorized(let err):
+            throw err
+        }
+    }
+
+    private func loadCachedPrivate<T: Codable & Sendable>(
+        _ type: T.Type,
+        resourceType: String,
+        resourceID: String,
+        ttlPolicy: LibraryRepositoryV2.TTLPolicy = .personalLibrary,
+        isEmpty: @escaping @Sendable (T) -> Bool = { _ in false },
+        remoteFetch: @escaping @Sendable () async throws -> T
+    ) async throws -> T {
+        guard let libraryRepo else {
+            return try await remoteFetch()
+        }
+        let (sf, accountID) = await currentStorefrontAndAccount()
+        guard let accountID, !accountID.isEmpty else {
+            return try await remoteFetch()
+        }
+        let key = CacheKey(
+            providerID: providerID,
+            scope: .private,
+            accountID: accountID,
+            storefront: sf,
+            resource: resourceType,
+            normalizedParameters: resourceID
+        )
+        let outcome = await libraryRepo.load(
+            T.self,
+            key: key,
+            ttlPolicy: ttlPolicy,
+            isEmptyValue: isEmpty,
+            remoteFetch: remoteFetch
+        )
+        switch outcome {
+        case .loaded(let value, _, _):
+            return value
+        case .empty:
+            return try await remoteFetch()
+        case .error(let err, let fallback):
+            if let fallback { return fallback }
+            throw err
+        case .unauthorized:
+            return try await remoteFetch()
+        }
+    }
+
     public func fetchTopCharts(genre: String? = nil) async throws -> [MusicTrack] {
-        return try await ampClient.fetchCharts()
+        let client = self.ampClient
+        return try await loadCachedPublic(
+            [MusicTrack].self,
+            resourceType: "charts",
+            resourceID: genre ?? "songs",
+            isEmpty: { $0.isEmpty }
+        ) {
+            try await client.fetchCharts()
+        }
     }
 
     public func fetchNewReleases() async throws -> [MusicAlbum] {
-        return try await ampClient.fetchNewReleases()
+        let client = self.ampClient
+        return try await loadCachedPublic(
+            [MusicAlbum].self,
+            resourceType: "charts",
+            resourceID: "albums",
+            isEmpty: { $0.isEmpty }
+        ) {
+            try await client.fetchNewReleases()
+        }
     }
 
     public func fetchRecommendations() async throws -> [AmpCategory] {
@@ -206,7 +308,16 @@ public actor AppleMusicProvider:
         guard await sessionAdapter.webSessionState.isLoggedIn else {
             return []
         }
-        return try await ampClient.fetchPersonalRecommendations(generation: gen)
+        let client = self.ampClient
+        return try await loadCachedPrivate(
+            [AmpCategory].self,
+            resourceType: "recommendations",
+            resourceID: "listen-now",
+            ttlPolicy: .recommendations,
+            isEmpty: { $0.isEmpty }
+        ) {
+            try await client.fetchPersonalRecommendations(generation: gen)
+        }
     }
 
     public func fetchRecentlyAdded() async throws -> [AmpCategoryItem] {
@@ -214,7 +325,15 @@ public actor AppleMusicProvider:
         guard await sessionAdapter.webSessionState.isLoggedIn else {
             return []
         }
-        return try await ampClient.fetchRecentlyAdded(limit: 50, generation: gen)
+        let client = self.ampClient
+        return try await loadCachedPrivate(
+            [AmpCategoryItem].self,
+            resourceType: "library",
+            resourceID: "recently-added",
+            isEmpty: { $0.isEmpty }
+        ) {
+            try await client.fetchRecentlyAdded(limit: 25, generation: gen)
+        }
     }
 
     public func fetchFavoriteSongs() async throws -> [MusicTrack] {
@@ -222,9 +341,7 @@ public actor AppleMusicProvider:
         guard await sessionAdapter.webSessionState.isLoggedIn else {
             return []
         }
-        let favs = try await ampClient.fetchFavoriteSongsPlaylist(generation: gen)
-        if !favs.isEmpty { return favs }
-        return try await ampClient.fetchLibrarySongs(limit: 100, generation: gen)
+        return try await ampClient.fetchFavoriteSongsPlaylist(generation: gen)
     }
 
     public func fetchMadeForYouPlaylists() async throws -> [MusicPlaylist] {
@@ -269,7 +386,15 @@ public actor AppleMusicProvider:
     }
 
     public func fetchEditorialCategories(name: String = "music") async throws -> [AmpCategory] {
-        return try await ampClient.fetchEditorialGroupings(name: name)
+        let client = self.ampClient
+        return try await loadCachedPublic(
+            [AmpCategory].self,
+            resourceType: "editorial",
+            resourceID: name,
+            isEmpty: { $0.isEmpty }
+        ) {
+            try await client.fetchEditorialGroupings(name: name)
+        }
     }
 
     // MARK: - MusicSearchProvider

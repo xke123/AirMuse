@@ -60,8 +60,11 @@ open class LibraryWindowController: NSWindowController {
     private let accountButton = GlassButton(sprite: nil, size: CGSize(width: 13, height: 13), buttonStyle: .glassBar)
     private let closeButton = GlassButton(sprite: nil, size: CGSize(width: 13, height: 13), buttonStyle: .glassBar)
 
-    private let coordinator: PlaybackCoordinator
+    private let coordinator: PlaybackCoordinatorV2
+    private let sessionCoordinator: SessionCoordinator?
     private var appleMusicProvider: AppleMusicProvider?
+    private var currentSessionSnapshot: SessionSnapshot = .initial
+    private var sessionTask: Task<Void, Never>?
 
     private var activeTabIndex: Int = 0
     private var activeCategoryIndex: Int = 0
@@ -71,16 +74,24 @@ open class LibraryWindowController: NSWindowController {
     private var isLoadingHomeSidebar: Bool = false
 
     // Dynamic remote categories cached per tab index (0: Home recommendations, 1: Browse editorial, 2: Radio)
-    private var loadedEditorialCategories: [Int: [AmpCategory]] = LibraryCacheStore.shared.load() ?? [:]
+    private var loadedEditorialCategories: [Int: [AmpCategory]] = [:]
 
-    public init(coordinator: PlaybackCoordinator, appleMusicProvider: AppleMusicProvider? = nil) {
+    public init(coordinator: PlaybackCoordinatorV2, sessionCoordinator: SessionCoordinator? = nil, appleMusicProvider: AppleMusicProvider? = nil) {
         self.coordinator = coordinator
+        self.sessionCoordinator = sessionCoordinator
         self.appleMusicProvider = appleMusicProvider
 
         super.init(window: nil)
 
         setupPanelUI()
         wireCallbacks()
+        observeSession()
+    }
+
+    deinit {
+        sessionTask?.cancel()
+        categoryLoadTask?.cancel()
+        searchTask?.cancel()
     }
 
     public required init?(coder: NSCoder) {
@@ -240,12 +251,11 @@ open class LibraryWindowController: NSWindowController {
     public func updateTopBarTitle() {
         let s = GlassInteractionCoordinator.shared.uiScale
         let font = NSFont.systemFont(ofSize: 10.5 * s, weight: .semibold)
-        let isLogged = AppleMusicSessionManager.shared.webSessionState.isLoggedIn
-            || AppleMusicSessionManager.shared.currentUserToken != nil
+        let isLogged = currentSessionSnapshot.sessionState == .authenticated
 
         let text: String
         if isLogged {
-            let name = Self.resolveUserDisplayName()
+            let name = Self.resolveUserDisplayName(from: currentSessionSnapshot)
             text = "\(name)的Apple Music"
         } else {
             text = "未登录的Apple Music"
@@ -279,22 +289,13 @@ open class LibraryWindowController: NSWindowController {
         auroraFogView.plumes = [titlePlume, buttonsPlume].compactMap { $0 }
     }
 
-    /// Resolves the authenticated user's display name, falling back to current macOS user if generic.
-    public static func resolveUserDisplayName() -> String {
-        if let accountName = AppleMusicSessionManager.shared.currentAccount?.displayName,
-           !accountName.isEmpty,
-           !accountName.contains("Apple Music 用户"),
-           !accountName.contains("Apple Music 会员") {
+    /// Resolves the authenticated user's display name truthfully without hardcoded personal fallbacks.
+    public static func resolveUserDisplayName(from snapshot: SessionSnapshot = .initial) -> String {
+        if let accountName = snapshot.account?.displayName,
+           !accountName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             return accountName
         }
-        let full = NSFullUserName()
-        if full.contains("小可") {
-            return "小可"
-        }
-        if !full.isEmpty {
-            return full
-        }
-        return "小可"
+        return "Apple Music"
     }
 
     @objc private func handleSkinChange() {
@@ -304,26 +305,32 @@ open class LibraryWindowController: NSWindowController {
         panel.refreshGlassSurface()
     }
 
-    @objc private func handleSessionStateNotification(_ notif: Notification) {
-        Task { @MainActor [weak self] in
-            guard let self else { return }
-            self.updateTopBarTitle()
-            guard let state = notif.userInfo?["state"] as? AppleMusicWebSessionState else { return }
-            switch state {
-            case .verifying, .loggingIn, .unknown:
-                return
-            case .loggedOut, .expired:
-                LibraryCacheStore.shared.clear()
-                self.loadedEditorialCategories.removeAll()
-                self.handleTabSelected(self.activeTabIndex)
-            case .loggedIn:
-                if self.activeTabIndex == 0 && (self.loadedEditorialCategories[0]?.isEmpty == false) {
-                    self.loadDynamicHomeSidebar()
-                } else {
-                    self.handleTabSelected(self.activeTabIndex)
+    private func observeSession() {
+        guard let sessionCoordinator else { return }
+        sessionTask = Task { @MainActor [weak self] in
+            let stream = await sessionCoordinator.snapshots()
+            for await snap in stream {
+                guard !Task.isCancelled, let self else { break }
+                let prevState = self.currentSessionSnapshot.sessionState
+                self.currentSessionSnapshot = snap
+                self.updateTopBarTitle()
+                switch snap.sessionState {
+                case .signedOut, .expired, .invalidating:
+                    if prevState != snap.sessionState {
+                        self.loadedEditorialCategories.removeAll()
+                        self.handleTabSelected(self.activeTabIndex)
+                    }
+                case .authenticated:
+                    if prevState != .authenticated {
+                        if self.activeTabIndex == 0 && (self.loadedEditorialCategories[0]?.isEmpty == false) {
+                            self.loadDynamicHomeSidebar()
+                        } else {
+                            self.handleTabSelected(self.activeTabIndex)
+                        }
+                    }
+                default:
+                    break
                 }
-            case .error:
-                return
             }
         }
     }
@@ -370,13 +377,7 @@ open class LibraryWindowController: NSWindowController {
             self?.onClose?()
         }
 
-        // Observe Apple Music Session changes via a single notification path
-        NotificationCenter.default.addObserver(
-            self,
-            selector: #selector(handleSessionStateNotification(_:)),
-            name: AppleMusicSessionManager.sessionStateDidChangeNotification,
-            object: nil
-        )
+
 
         // Sidebar Events
         sidebar.onCategorySelected = { [weak self] categoryIndex in
@@ -537,7 +538,6 @@ open class LibraryWindowController: NSWindowController {
             await MainActor.run {
                 guard self.activeTabIndex == 0 else { return }
                 self.loadedEditorialCategories[0] = recs
-                LibraryCacheStore.shared.save(categories: self.loadedEditorialCategories)
                 let categories = self.categoriesForTab(0)
                 let prevIndex = min(self.activeCategoryIndex, max(0, categories.count - 1))
                 self.sidebar.setCategories(categories, selectedIndex: prevIndex)
@@ -554,7 +554,6 @@ open class LibraryWindowController: NSWindowController {
             await MainActor.run {
                 guard self.activeTabIndex == tabIndex else { return }
                 self.loadedEditorialCategories[tabIndex] = groups
-                LibraryCacheStore.shared.save(categories: self.loadedEditorialCategories)
                 let categories = self.categoriesForTab(tabIndex)
                 let prevIndex = min(self.activeCategoryIndex, max(0, categories.count - 1))
                 self.sidebar.setCategories(categories, selectedIndex: prevIndex)
@@ -570,7 +569,6 @@ open class LibraryWindowController: NSWindowController {
 
         if forceRefresh {
             loadedEditorialCategories.removeValue(forKey: targetTab)
-            LibraryCacheStore.shared.save(categories: loadedEditorialCategories)
             if targetTab == 0 {
                 loadDynamicHomeSidebar()
             } else if targetTab == 1 || targetTab == 2 {
@@ -746,19 +744,15 @@ open class LibraryWindowController: NSWindowController {
                     }
                 }
                 let playlists = try await provider.fetchLibraryPlaylists()
-                if !playlists.isEmpty {
-                    return playlists.map { pl in
-                        MediaCardItem(
-                            id: pl.id,
-                            title: pl.name,
-                            subtitle: "歌单 · \(pl.trackCount) 首",
-                            type: .playlist,
-                            artworkURL: pl.artworkURL,
-                            playlistID: pl.id
-                        )
-                    }
-                } else {
-                    return self.sampleCardItems().filter { $0.type == .playlist }
+                return playlists.map { pl in
+                    MediaCardItem(
+                        id: pl.id,
+                        title: pl.name,
+                        subtitle: "歌单 · \(pl.trackCount) 首",
+                        type: .playlist,
+                        artworkURL: pl.artworkURL,
+                        playlistID: pl.id
+                    )
                 }
             default:
                 return []
@@ -936,19 +930,15 @@ open class LibraryWindowController: NSWindowController {
             switch categoryIndex {
             case 0: // 全部歌单
                 let playlists = try await provider.fetchLibraryPlaylists()
-                if !playlists.isEmpty {
-                    return playlists.map { pl in
-                        MediaCardItem(
-                            id: pl.id,
-                            title: pl.name,
-                            subtitle: "歌单 · \(pl.trackCount) 首",
-                            type: .playlist,
-                            artworkURL: pl.artworkURL,
-                            playlistID: pl.id
-                        )
-                    }
-                } else {
-                    return self.sampleCardItems().filter { $0.type == .playlist }
+                return playlists.map { pl in
+                    MediaCardItem(
+                        id: pl.id,
+                        title: pl.name,
+                        subtitle: "歌单 · \(pl.trackCount) 首",
+                        type: .playlist,
+                        artworkURL: pl.artworkURL,
+                        playlistID: pl.id
+                    )
                 }
             case 1: // 为你推荐
                 let mfy = try await provider.fetchMadeForYouPlaylists()
@@ -1115,9 +1105,6 @@ open class LibraryWindowController: NSWindowController {
                 if let provider = self.appleMusicProvider {
                     tracks = (try? await provider.fetchAlbumTracks(albumID: albumID, isLibrary: isLib)) ?? []
                 }
-                if tracks.isEmpty {
-                    tracks = self.sampleAlbumTracks(albumTitle: item.title)
-                }
                 await MainActor.run {
                     self.contentView.updateDetailTracks(tracks)
                 }
@@ -1133,9 +1120,6 @@ open class LibraryWindowController: NSWindowController {
                 if let provider = self.appleMusicProvider {
                     tracks = (try? await provider.fetchPlaylistTracks(playlistID: playlistID, isLibrary: isLib)) ?? []
                 }
-                if tracks.isEmpty {
-                    tracks = self.sampleAlbumTracks(albumTitle: item.title)
-                }
                 await MainActor.run {
                     self.contentView.updateDetailTracks(tracks)
                 }
@@ -1150,9 +1134,6 @@ open class LibraryWindowController: NSWindowController {
                 var tracks: [MusicTrack] = []
                 if let provider = self.appleMusicProvider {
                     tracks = (try? await provider.fetchArtistTopSongs(artistID: artistID, isLibrary: isLib)) ?? []
-                }
-                if tracks.isEmpty {
-                    tracks = self.sampleAlbumTracks(albumTitle: item.title)
                 }
                 await MainActor.run {
                     self.contentView.updateDetailTracks(tracks)
@@ -1195,7 +1176,7 @@ open class LibraryWindowController: NSWindowController {
 
     @MainActor
     private func handlePlaybackError(_ error: Error) {
-        let isAlreadyLoggedIn = AppleMusicSessionManager.shared.webSessionState.isLoggedIn
+        let isAlreadyLoggedIn = currentSessionSnapshot.sessionState == .authenticated
         if let amErr = error as? AppleMusicError {
             switch amErr {
             case .notAuthorized, .requiresSubscription:
@@ -1228,89 +1209,5 @@ open class LibraryWindowController: NSWindowController {
         let m = total / 60
         let s = total % 60
         return String(format: "%02d:%02d", m, s)
-    }
-
-    private func sampleCardItems() -> [MediaCardItem] {
-        [
-            MediaCardItem(
-                id: "1",
-                title: "优质过客",
-                subtitle: "AirMuse Ensemble",
-                type: .chart,
-                duration: "03:35",
-                track: MusicTrack(
-                    id: "1",
-                    title: "优质过客",
-                    artistName: "AirMuse Ensemble",
-                    albumTitle: "AirMuse Sessions",
-                    durationMs: 215_000,
-                    providerID: "apple_music",
-                    providerTrackID: "1"
-                )
-            ),
-            MediaCardItem(
-                id: "2",
-                title: "Liquid Glass Dreams",
-                subtitle: "Zion Echo · 10 首",
-                type: .album,
-                albumID: "sample_al_2"
-            ),
-            MediaCardItem(
-                id: "3",
-                title: "每日新发现",
-                subtitle: "歌单 · 25 首",
-                type: .playlist,
-                playlistID: "sample_pl_3"
-            ),
-            MediaCardItem(
-                id: "4",
-                title: "Apple Music 1 经典电台",
-                subtitle: "Apple Music Radio",
-                type: .radio,
-                track: MusicTrack(
-                    id: "4",
-                    title: "Apple Music 1 经典电台",
-                    artistName: "Apple Music Radio",
-                    albumTitle: "Radio",
-                    durationMs: 0,
-                    providerID: "apple_music",
-                    providerTrackID: "4"
-                )
-            ),
-            MediaCardItem(
-                id: "5",
-                title: "夜航星 (Night Navigation)",
-                subtitle: "不才 · 三体原声",
-                type: .song,
-                duration: "04:12",
-                track: MusicTrack(
-                    id: "5",
-                    title: "夜航星 (Night Navigation)",
-                    artistName: "不才",
-                    albumTitle: "三体原声",
-                    durationMs: 252_000,
-                    providerID: "apple_music",
-                    providerTrackID: "5"
-                )
-            ),
-            MediaCardItem(
-                id: "6",
-                title: "范特西 (Fantasy)",
-                subtitle: "周杰伦 · 10 首",
-                type: .album,
-                albumID: "sample_al_6"
-            )
-        ]
-    }
-
-    private func sampleAlbumTracks(albumTitle: String) -> [MusicTrack] {
-        [
-            MusicTrack(id: "t1", title: "爱在西元前", artistName: "周杰伦", albumTitle: albumTitle, durationMs: 223000, providerID: "apple_music", providerTrackID: "t1"),
-            MusicTrack(id: "t2", title: "爸我回来了", artistName: "周杰伦", albumTitle: albumTitle, durationMs: 235000, providerID: "apple_music", providerTrackID: "t2"),
-            MusicTrack(id: "t3", title: "简单爱", artistName: "周杰伦", albumTitle: albumTitle, durationMs: 270000, providerID: "apple_music", providerTrackID: "t3"),
-            MusicTrack(id: "t4", title: "开不了口", artistName: "周杰伦", albumTitle: albumTitle, durationMs: 284000, providerID: "apple_music", providerTrackID: "t4"),
-            MusicTrack(id: "t5", title: "上海一九四三", artistName: "周杰伦", albumTitle: albumTitle, durationMs: 195000, providerID: "apple_music", providerTrackID: "t5"),
-            MusicTrack(id: "t6", title: "安静", artistName: "周杰伦", albumTitle: albumTitle, durationMs: 334000, providerID: "apple_music", providerTrackID: "t6")
-        ]
     }
 }

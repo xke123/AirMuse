@@ -169,11 +169,10 @@ final class MediaCardRowView: NSView {
         badge.frame = NSRect(x: 57 - badgeW - 3, y: 3, width: badgeW, height: 16)
         thumbWrap.addSubview(badge)
 
-        // Load artwork asynchronously
+        // Load artwork asynchronously via ImageCacheV2
         if let artURL = item.artworkURL {
             Task { [weak artView] in
-                if let (data, _) = try? await URLSession.shared.data(from: artURL),
-                   let img = NSImage(data: data) {
+                if let img = await ImageCacheV2.shared.image(for: artURL, targetPixelSize: 120) {
                     await MainActor.run {
                         artView?.image = img
                     }
@@ -324,11 +323,10 @@ final class MediaGridCardView: NSView {
         badge.frame = NSRect(x: 6, y: 6, width: badgeW, height: 16)
         thumbWrap.addSubview(badge)
 
-        // Load artwork
+        // Load artwork asynchronously via ImageCacheV2
         if let artURL = item.artworkURL {
             Task { [weak artView] in
-                if let (data, _) = try? await URLSession.shared.data(from: artURL),
-                   let img = NSImage(data: data) {
+                if let img = await ImageCacheV2.shared.image(for: artURL, targetPixelSize: 320) {
                     await MainActor.run {
                         artView?.image = img
                     }

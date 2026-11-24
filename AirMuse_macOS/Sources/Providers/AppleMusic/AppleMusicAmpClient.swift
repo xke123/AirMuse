@@ -75,6 +75,7 @@ public actor AppleMusicAmpClient {
     private var storefront: String = "cn"
     private var activeGeneration: Int = 0
     private var resolvedCatalogIDs: [String: String] = [:]
+    private var inFlightDevTokenTask: Task<String, Error>?
     private let session: URLSession
 
     public private(set) var onSessionExpired: (@Sendable () -> Void)?
@@ -212,7 +213,15 @@ public actor AppleMusicAmpClient {
         if let devToken, !devToken.isEmpty {
             return devToken
         }
-        let token = try await fetchPublicDeveloperToken()
+        if let existingTask = inFlightDevTokenTask {
+            return try await existingTask.value
+        }
+        let task = Task<String, Error> {
+            try await self.fetchPublicDeveloperToken()
+        }
+        inFlightDevTokenTask = task
+        defer { inFlightDevTokenTask = nil }
+        let token = try await task.value
         self.devToken = token
         AppLogger.shared.log(
             category: .auth,
@@ -277,6 +286,8 @@ public actor AppleMusicAmpClient {
         } else {
             do {
                 currentDevToken = try await ensureDeveloperToken()
+            } catch is CancellationError {
+                throw CancellationError()
             } catch {
                 AppLogger.shared.log(category: .error, level: .warn, message: "未能获取 Developer Token，拒绝执行 Amp-API 请求: \(url.path)")
                 throw AppleMusicSessionError.developerTokenMissing

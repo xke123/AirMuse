@@ -39,10 +39,14 @@ open class AppleMusicAuthWindow: NSPanel {
 open class AppleMusicAuthWindowController: NSWindowController {
 
     private let accountView = AppleMusicAccountView()
-    private let sessionManager: AppleMusicSessionManager
+    private let sessionCoordinator: SessionCoordinator
+    private let webLoginController: WebLoginController
+    private var snapshotTask: Task<Void, Never>?
+    private var currentSnapshot: SessionSnapshot = .initial
 
-    public init(sessionManager: AppleMusicSessionManager = .shared) {
-        self.sessionManager = sessionManager
+    public init(sessionCoordinator: SessionCoordinator, webLoginController: WebLoginController) {
+        self.sessionCoordinator = sessionCoordinator
+        self.webLoginController = webLoginController
 
         let screenFrame = NSScreen.main?.visibleFrame ?? NSRect(x: 100, y: 100, width: 1200, height: 800)
         let rect = NSRect(
@@ -64,6 +68,10 @@ open class AppleMusicAuthWindowController: NSWindowController {
         fatalError("init(coder:) has not been implemented")
     }
 
+    deinit {
+        snapshotTask?.cancel()
+    }
+
     private func wireCallbacks() {
         accountView.onCloseClicked = { [weak self] in
             self?.window?.orderOut(nil)
@@ -76,7 +84,7 @@ open class AppleMusicAuthWindowController: NSWindowController {
         accountView.onSignOutClicked = { [weak self] in
             guard let self else { return }
             Task {
-                await self.sessionManager.signOut()
+                await self.sessionCoordinator.invalidate(reason: .userSignOut)
                 self.refreshView()
             }
         }
@@ -84,7 +92,7 @@ open class AppleMusicAuthWindowController: NSWindowController {
         accountView.onSwitchAccountClicked = { [weak self] in
             guard let self else { return }
             Task {
-                await self.sessionManager.signOut()
+                await self.sessionCoordinator.invalidate(reason: .accountSwitch)
                 self.handleStartLogin()
             }
         }
@@ -92,7 +100,7 @@ open class AppleMusicAuthWindowController: NSWindowController {
         accountView.onReverifyClicked = { [weak self] in
             guard let self else { return }
             Task {
-                await self.sessionManager.restoreSessionFromStorage()
+                await self.sessionCoordinator.restoreFromStorage()
                 self.refreshView()
             }
         }
@@ -100,61 +108,72 @@ open class AppleMusicAuthWindowController: NSWindowController {
         accountView.onResetSessionClicked = { [weak self] in
             guard let self else { return }
             Task {
-                await self.sessionManager.resetSession()
+                await self.sessionCoordinator.invalidate(reason: .userSignOut)
+                await self.webLoginController.clearAllWebData()
                 self.refreshView()
             }
         }
 
         accountView.onCancelWebLogin = { [weak self] in
+            self?.webLoginController.cancelLogin()
             self?.accountView.dismissWebLogin()
         }
     }
 
     private func handleStartLogin() {
-        sessionManager.startLogin()
-        let wv = sessionManager.createLoginWebView()
-        accountView.presentWebLogin(with: wv)
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            let wv = await self.webLoginController.startLogin()
+            self.accountView.presentWebLogin(with: wv)
+        }
     }
 
     private func listenToSessionChanges() {
-        NotificationCenter.default.addObserver(
-            self,
-            selector: #selector(handleSessionStateNotification(_:)),
-            name: AppleMusicSessionManager.sessionStateDidChangeNotification,
-            object: nil
-        )
+        snapshotTask = Task { @MainActor [weak self] in
+            guard let self else { return }
+            let stream = await self.sessionCoordinator.snapshots()
+            for await snap in stream {
+                guard !Task.isCancelled else { break }
+                self.currentSnapshot = snap
+                self.refreshView()
 
-        sessionManager.onAPIAuthorizationChanged = { [weak self] _ in
-            self?.refreshView()
-        }
-    }
-
-    @objc private func handleSessionStateNotification(_ notif: Notification) {
-        guard let newState = notif.userInfo?["state"] as? AppleMusicWebSessionState else { return }
-        self.refreshView()
-
-        // If login completed successfully, wait briefly for music.apple.com to finish persisting localStorage before dismissing
-        if newState.isLoggedIn {
-            Task { @MainActor [weak self] in
-                try? await Task.sleep(for: .seconds(1.5))
-                self?.accountView.dismissWebLogin()
+                if snap.sessionState == .authenticated {
+                    Task { @MainActor [weak self] in
+                        try? await Task.sleep(for: .seconds(1.5))
+                        self?.accountView.dismissWebLogin()
+                    }
+                }
             }
-        }
-
-        // If unsupported flow occurred, surface warning in web view
-        if case .error(let err) = newState,
-           case .unsupportedAuthenticationFlow(let msg) = err {
-            let wv = self.sessionManager.createLoginWebView()
-            self.accountView.presentWebLogin(with: wv, warning: msg)
         }
     }
 
     public func refreshView() {
+        let webState: AppleMusicWebSessionState = switch currentSnapshot.sessionState {
+        case .signedOut, .invalidating:
+            .loggedOut
+        case .restoring, .verifying:
+            .verifying(tokenSnippet: nil)
+        case .authenticating:
+            .loggingIn(progressMessage: "请在官方页面完成登录")
+        case .authenticated:
+            if let acc = currentSnapshot.account {
+                .loggedIn(account: acc, storefront: currentSnapshot.context?.storefront)
+            } else {
+                .verifying(tokenSnippet: nil)
+            }
+        case .offlineUnverified:
+            .unknown
+        case .expired(let reason):
+            .expired(reason: reason)
+        case .failed(let msg):
+            .error(.tokenVerificationFailed(statusCode: 0, message: msg))
+        }
+
         accountView.updateState(
-            webState: sessionManager.webSessionState,
-            apiState: sessionManager.apiAuthorizationState,
-            account: sessionManager.currentAccount,
-            storefront: sessionManager.currentStorefront
+            webState: webState,
+            apiState: .developerCredentialsMissing(reason: "Web 官方会话模式"),
+            account: currentSnapshot.account,
+            storefront: currentSnapshot.context?.storefront
         )
     }
 

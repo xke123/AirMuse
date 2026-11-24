@@ -24,12 +24,12 @@ open class PlayerWindowController: NSWindowController {
     public var onModeDidTransition: (() -> Void)?
     public var onTopMostDidChange: (() -> Void)?
 
-    private let coordinator: PlaybackCoordinator
+    private let coordinator: PlaybackCoordinatorV2
     private let store: PlaybackStore
     private var observationTask: Task<Void, Never>?
     private var progressTask: Task<Void, Never>?
 
-    public init(coordinator: PlaybackCoordinator, store: PlaybackStore) {
+    public init(coordinator: PlaybackCoordinatorV2, store: PlaybackStore) {
         self.coordinator = coordinator
         self.store = store
         super.init(window: nil)

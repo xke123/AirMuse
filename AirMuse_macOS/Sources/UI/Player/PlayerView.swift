@@ -886,7 +886,7 @@ open class PlayerView: GlassSurface {
                 applyArtwork(nil, key: "none")
                 let expectedKey = track.trackKey
                 artworkLoadTask = Task { [weak self] in
-                    let img = await ImageCache.shared.image(for: url, size: CGSize(width: 222, height: 222))
+                    let img = await ImageCacheV2.shared.image(for: url, targetPixelSize: 222)
                     guard !Task.isCancelled, let self, self.currentArtworkTrackKey == expectedKey else { return }
                     self.applyArtwork(img, key: expectedKey)
                 }

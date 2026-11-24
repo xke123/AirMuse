@@ -75,8 +75,15 @@ struct SkinAndWindowTests {
 
     @Test("4. Mini mode rapid toggle state machine remains consistent")
     func testMiniModeRapidToggleState() {
+        struct StubEngine: PlaybackEngineProtocol {
+            var engineInstanceID: UUID { UUID() }
+            func events() async -> AsyncStream<EngineEvent> { AsyncStream { $0.finish() } }
+            func prepare(sessionContext: SessionContext, deadlineSeconds: TimeInterval) async throws {}
+            func execute(_ command: EngineCommand, context: PlaybackOperationContext) async throws {}
+            func isolateAndReset() async {}
+        }
         let store = PlaybackStore()
-        let coord = PlaybackCoordinator(store: store)
+        let coord = PlaybackCoordinatorV2(store: store, engine: StubEngine())
         let ctrl = PlayerWindowController(coordinator: coord, store: store)
 
         #expect(!ctrl.isMiniMode)
