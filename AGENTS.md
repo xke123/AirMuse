@@ -4,7 +4,7 @@
 将 `AirMuse_macOS` 核心业务重构为稳定、快速、低资源占用的原生音乐播放器。保留 AppKit 原始皮肤、Liquid Glass、MiniPlayer、窗口交互、歌词、音乐库和系统媒体控制。Windows 原版及 Remastered 仅作为参考。暂不实现 Spotify/QQ Music；保持可扩展接口。继续使用 Swift 6、AppKit、WebKit、URLSession、SQLite，不引入 Electron 或不必要依赖。
 
 ## 每次会话必须执行
-1. 阅读本文件及 `AirMuse_macOS/docs/CORE_V2_{ARCHITECTURE,ROADMAP,PROGRESS,BASELINE}.md`。
+1. 阅读本文件及 `AirMuse_macOS/docs/archive/core-v2/CORE_V2_{ARCHITECTURE,ROADMAP,PROGRESS,BASELINE}.md`。
 2. 检查 Git 分支、HEAD、工作区差异、Package.swift、实际调用链；保护用户未提交的修改。基线以当前源码为准。
 3. 按 ROADMAP 依赖选择最早可执行任务，实际编码、测试、审查差异；不止于分析或建立空接口。
 4. 更新 PROGRESS 和 ROADMAP 的任务状态，记录命令、结果、证据、阻塞及下一步。架构变更同步更新 ARCHITECTURE。
