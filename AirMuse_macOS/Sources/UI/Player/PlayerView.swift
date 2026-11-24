@@ -234,6 +234,8 @@ open class PlayerView: GlassSurface {
 
     // Hover control views
     private let controlsContainer = NSView()
+    private let topAuroraFogView = AuroraGlassFogView()
+    private let bottomAuroraFogView = AuroraGlassFogView()
     private let stopButton = GlassButton(image: nil, size: CGSize(width: 32, height: 32), enableLiquidGlassHover: true)
     private let prevButton = GlassButton(image: nil, size: CGSize(width: 32, height: 32), enableLiquidGlassHover: true)
     private let playPauseButton = GlassButton(image: nil, size: CGSize(width: 32, height: 32), enableLiquidGlassHover: true)
@@ -241,18 +243,18 @@ open class PlayerView: GlassSurface {
     private let ejectButton = GlassButton(image: nil, size: CGSize(width: 32, height: 32), enableLiquidGlassHover: true)
 
     // Window buttons (Top Glass Bar)
-    private let glassStyleButton = GlassButton(image: nil, size: CGSize(width: 13, height: 13))
-    private let minimizeButton = GlassButton(image: nil, size: CGSize(width: 13, height: 13))
-    private let miniModeButton = GlassButton(image: nil, size: CGSize(width: 13, height: 13))
-    private let topMostButton = GlassButton(image: nil, size: CGSize(width: 13, height: 13))
-    private let quitButton = GlassButton(image: nil, size: CGSize(width: 13, height: 13))
+    private let glassStyleButton = GlassButton(image: nil, size: CGSize(width: 13, height: 13), buttonStyle: .glassBar)
+    private let minimizeButton = GlassButton(image: nil, size: CGSize(width: 13, height: 13), buttonStyle: .glassBar)
+    private let miniModeButton = GlassButton(image: nil, size: CGSize(width: 13, height: 13), buttonStyle: .glassBar)
+    private let topMostButton = GlassButton(image: nil, size: CGSize(width: 13, height: 13), buttonStyle: .glassBar)
+    private let quitButton = GlassButton(image: nil, size: CGSize(width: 13, height: 13), buttonStyle: .glassBar)
 
     // Panel & Source buttons (Bottom Glass Bar)
-    private let appleMusicButton = GlassButton(image: nil, size: CGSize(width: 13, height: 13))
-    private let spotifyButton = GlassButton(image: nil, size: CGSize(width: 13, height: 13))
-    private let qqMusicButton = GlassButton(image: nil, size: CGSize(width: 13, height: 13))
-    private let libraryButton = GlassButton(image: nil, size: CGSize(width: 13, height: 13))
-    private let lyricsButton = GlassButton(image: nil, size: CGSize(width: 13, height: 13))
+    private let appleMusicButton = GlassButton(image: nil, size: CGSize(width: 13, height: 13), buttonStyle: .glassBar)
+    private let spotifyButton = GlassButton(image: nil, size: CGSize(width: 13, height: 13), buttonStyle: .glassBar)
+    private let qqMusicButton = GlassButton(image: nil, size: CGSize(width: 13, height: 13), buttonStyle: .glassBar)
+    private let libraryButton = GlassButton(image: nil, size: CGSize(width: 13, height: 13), buttonStyle: .glassBar)
+    private let lyricsButton = GlassButton(image: nil, size: CGSize(width: 13, height: 13), buttonStyle: .glassBar)
 
     // Always-visible body progress & time
     private let progressView = CapsuleProgressView()
@@ -328,6 +330,11 @@ open class PlayerView: GlassSurface {
         controlsContainer.wantsLayer = true
         controlsContainer.alphaValue = 0.0
         addSubview(controlsContainer)
+
+        topAuroraFogView.seamEdge = .bottom
+        bottomAuroraFogView.seamEdge = .top
+        controlsContainer.addSubview(topAuroraFogView)
+        controlsContainer.addSubview(bottomAuroraFogView)
 
         stopButton.enableDarkHalo = true
         prevButton.enableDarkHalo = true
@@ -515,8 +522,9 @@ open class PlayerView: GlassSurface {
         let s = GlassInteractionCoordinator.shared.uiScale
         let h = bounds.height
         let midY = h * 0.5
-        let botGlassBoundary = 20.0 * s
-        let topGlassBoundary = h - 20.0 * s
+        let capH = OriginalDesignTokens.BaseMetrics.glassCapHeight * s
+        let botGlassBoundary = capH
+        let topGlassBoundary = h - capH
 
         let now = ProcessInfo.processInfo.systemUptime
         let dt = lastMouseMoveTime > 0 ? max(0.001, min(0.1, now - lastMouseMoveTime)) : 0.016
@@ -564,13 +572,11 @@ open class PlayerView: GlassSurface {
         isHoveringPanel = hovering
         let targetIdle: CGFloat = hovering ? 0.0 : 1.0
         let targetCtrl: CGFloat = hovering ? 1.0 : 0.0
-        let targetFogOpacity: Float = hovering ? 1.0 : 0.0
         artworkHoverGlass.isActive = hovering
 
         if MotionCoordinator.shared.isReduceMotionEnabled {
             idleContainer.alphaValue = targetIdle
             controlsContainer.alphaValue = targetCtrl
-            composer.fogLayer.opacity = targetFogOpacity
             artworkView.layer?.borderColor = NSColor(white: 1.0, alpha: hovering ? 0.36 : 0.16).cgColor
         } else {
             NSAnimationContext.runAnimationGroup { ctx in
@@ -578,10 +584,6 @@ open class PlayerView: GlassSurface {
                 idleContainer.animator().alphaValue = targetIdle
                 controlsContainer.animator().alphaValue = targetCtrl
             }
-            CATransaction.begin()
-            CATransaction.setAnimationDuration(MotionTokens.Duration.hoverFade)
-            composer.fogLayer.opacity = targetFogOpacity
-            CATransaction.commit()
             artworkView.layer?.borderColor = NSColor(white: 1.0, alpha: hovering ? 0.36 : 0.16).cgColor
         }
     }
@@ -652,6 +654,41 @@ open class PlayerView: GlassSurface {
 
         lyricsButton.frame = NSRect(x: w - 16.0 * s - wbSize, y: botBarBtnY, width: wbSize, height: wbSize)
         libraryButton.frame = NSRect(x: lyricsButton.frame.minX - 6.0 * s - wbSize, y: botBarBtnY, width: wbSize, height: wbSize)
+
+        // 4b. Normal-mode glass bar laser fog backings
+        let isMiniStrip = h <= (OriginalDesignTokens.BaseMetrics.miniBarStandardHeight * s + 2.0)
+        topAuroraFogView.frame = NSRect(x: 0, y: h - capH, width: w, height: capH)
+        bottomAuroraFogView.frame = NSRect(x: 0, y: 0, width: w, height: capH)
+        topAuroraFogView.isFogEnabled = !isMiniStrip
+        bottomAuroraFogView.isFogEnabled = !isMiniStrip
+
+        if !isMiniStrip {
+            topAuroraFogView.setPlume(
+                for: [glassStyleButton, minimizeButton, miniModeButton, topMostButton, quitButton],
+                alignment: .right,
+                anchorSpread: 10.0 * s,
+                tailLength: 68.0 * s,
+                peakAlpha: 1.0
+            )
+            let leftBotPlume = bottomAuroraFogView.makePlume(
+                for: [appleMusicButton, spotifyButton, qqMusicButton],
+                alignment: .left,
+                anchorSpread: 10.0 * s,
+                tailLength: 56.0 * s,
+                peakAlpha: 1.0
+            )
+            let rightBotPlume = bottomAuroraFogView.makePlume(
+                for: [libraryButton, lyricsButton],
+                alignment: .right,
+                anchorSpread: 10.0 * s,
+                tailLength: 56.0 * s,
+                peakAlpha: 1.0
+            )
+            bottomAuroraFogView.plumes = [leftBotPlume, rightBotPlume].compactMap { $0 }
+        } else {
+            topAuroraFogView.plumes = []
+            bottomAuroraFogView.plumes = []
+        }
 
         // 5. Volume segments (far right of right column)
         volumeView.frame = NSRect(x: w - 23.0 * s, y: appKitY(topY: 32.0 * s, height: 38.0 * s), width: 14.0 * s, height: 38.0 * s)

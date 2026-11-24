@@ -527,7 +527,18 @@ final class DetailOverlayView: NSView {
     public var onPlayAll: (() -> Void)?
     public var onTrackSelected: ((MusicTrack) -> Void)?
 
+    public var topContentInset: CGFloat = 0 {
+        didSet {
+            guard oldValue != topContentInset else { return }
+            updateTrackStackInsets()
+            needsLayout = true
+        }
+    }
+
+    private let headerHeight: CGFloat = 36
+    private let headerTopGap: CGFloat = 4
     private let headerView = NSView()
+    private let headerGlassView = NSGlassEffectView(frame: .zero)
     private let backButton = NSButton()
     private let titleLabel = NSTextField(labelWithString: "")
     private let playAllButton = NSButton()
@@ -551,42 +562,7 @@ final class DetailOverlayView: NSView {
         wantsLayer = true
         layer?.backgroundColor = NSColor(calibratedWhite: 0.09, alpha: 0.96).cgColor
 
-        // Header
-        headerView.wantsLayer = true
-        addSubview(headerView)
-
-        backButton.title = "← 返回"
-        backButton.font = NSFont.systemFont(ofSize: 14, weight: .medium)
-        backButton.bezelStyle = .recessed
-        backButton.isBordered = false
-        backButton.contentTintColor = NSColor(calibratedWhite: 0.70, alpha: 1.0)
-        backButton.target = self
-        backButton.action = #selector(backClicked)
-        headerView.addSubview(backButton)
-
-        titleLabel.font = NSFont.systemFont(ofSize: 15.5, weight: .semibold)
-        titleLabel.textColor = NSColor(calibratedWhite: 0.90, alpha: 1.0)
-        titleLabel.lineBreakMode = .byTruncatingTail
-        headerView.addSubview(titleLabel)
-
-        playAllButton.bezelStyle = .inline
-        playAllButton.isBordered = false
-        playAllButton.wantsLayer = true
-        playAllButton.layer?.backgroundColor = NSColor(red: 0.98, green: 0.22, blue: 0.35, alpha: 0.95).cgColor
-        playAllButton.layer?.cornerRadius = 16.5
-        let pstyle = NSMutableParagraphStyle()
-        pstyle.alignment = .center
-        let btnAttrs: [NSAttributedString.Key: Any] = [
-            .font: NSFont.systemFont(ofSize: 13.5, weight: .bold),
-            .foregroundColor: NSColor.white,
-            .paragraphStyle: pstyle
-        ]
-        playAllButton.attributedTitle = NSAttributedString(string: "▶ 播放全部", attributes: btnAttrs)
-        playAllButton.target = self
-        playAllButton.action = #selector(playAllClicked)
-        headerView.addSubview(playAllButton)
-
-        // Track List Scroll with FlippedClipView
+        // Track List Scroll with FlippedClipView (added first so scrolled tracks pass underneath the pinned Liquid Glass header)
         let clip = FlippedClipView()
         clip.drawsBackground = false
         scrollView.contentView = clip
@@ -596,7 +572,7 @@ final class DetailOverlayView: NSView {
         trackStack.orientation = .vertical
         trackStack.alignment = .leading
         trackStack.spacing = 2
-        trackStack.edgeInsets = NSEdgeInsets(top: 3, left: 3, bottom: 6, right: 3)
+        updateTrackStackInsets()
         trackStack.translatesAutoresizingMaskIntoConstraints = false
         scrollView.documentView = trackStack
         addSubview(scrollView)
@@ -606,6 +582,45 @@ final class DetailOverlayView: NSView {
             trackStack.trailingAnchor.constraint(equalTo: scrollView.contentView.trailingAnchor),
             trackStack.topAnchor.constraint(equalTo: scrollView.contentView.topAnchor)
         ])
+
+        // Pinned Liquid Glass Header floating above scrollView
+        headerView.wantsLayer = true
+        headerGlassView.style = .regular
+        headerGlassView.cornerRadius = headerHeight * 0.5
+        headerGlassView.autoresizingMask = [.width, .height]
+        headerView.addSubview(headerGlassView, positioned: .below, relativeTo: nil)
+        addSubview(headerView)
+
+        backButton.title = "← 返回"
+        backButton.font = NSFont.systemFont(ofSize: 13.5, weight: .medium)
+        backButton.bezelStyle = .recessed
+        backButton.isBordered = false
+        backButton.contentTintColor = NSColor(calibratedWhite: 0.90, alpha: 1.0)
+        backButton.target = self
+        backButton.action = #selector(backClicked)
+        headerView.addSubview(backButton)
+
+        titleLabel.font = NSFont.systemFont(ofSize: 14.5, weight: .semibold)
+        titleLabel.textColor = NSColor(calibratedWhite: 0.94, alpha: 1.0)
+        titleLabel.lineBreakMode = .byTruncatingTail
+        headerView.addSubview(titleLabel)
+
+        playAllButton.bezelStyle = .inline
+        playAllButton.isBordered = false
+        playAllButton.wantsLayer = true
+        playAllButton.layer?.backgroundColor = NSColor(red: 0.98, green: 0.22, blue: 0.35, alpha: 0.95).cgColor
+        playAllButton.layer?.cornerRadius = 13
+        let pstyle = NSMutableParagraphStyle()
+        pstyle.alignment = .center
+        let btnAttrs: [NSAttributedString.Key: Any] = [
+            .font: NSFont.systemFont(ofSize: 12.5, weight: .bold),
+            .foregroundColor: NSColor.white,
+            .paragraphStyle: pstyle
+        ]
+        playAllButton.attributedTitle = NSAttributedString(string: "▶ 播放全部", attributes: btnAttrs)
+        playAllButton.target = self
+        playAllButton.action = #selector(playAllClicked)
+        headerView.addSubview(playAllButton)
 
         loadingIndicator.style = .spinning
         loadingIndicator.controlSize = .small
@@ -619,19 +634,33 @@ final class DetailOverlayView: NSView {
         addSubview(emptyLabel)
     }
 
+    private func updateTrackStackInsets() {
+        let topOffset = topContentInset + headerTopGap + headerHeight + 6
+        trackStack.edgeInsets = NSEdgeInsets(top: topOffset, left: 3, bottom: 12, right: 3)
+    }
+
     override func layout() {
         super.layout()
         let w = bounds.width
         let h = bounds.height
+        let headerY = topContentInset + headerTopGap
 
-        headerView.frame = NSRect(x: 0, y: 0, width: w, height: 45)
-        backButton.frame = NSRect(x: 3, y: 4.5, width: 72, height: 36)
-        playAllButton.frame = NSRect(x: w - 126, y: 6, width: 120, height: 33)
-        titleLabel.frame = NSRect(x: 78, y: 9, width: max(10, w - 78 - 132), height: 27)
+        scrollView.frame = bounds
 
-        scrollView.frame = NSRect(x: 0, y: 45, width: w, height: max(10, h - 45))
-        loadingIndicator.frame = NSRect(x: (w - 28) / 2, y: (h - 28) / 2, width: 28, height: 28)
-        emptyLabel.frame = NSRect(x: 0, y: (h - 28) / 2, width: w, height: 28)
+        headerView.frame = NSRect(x: 4, y: headerY, width: max(40, w - 8), height: headerHeight)
+        headerGlassView.frame = headerView.bounds
+        headerGlassView.cornerRadius = headerHeight * 0.5
+
+        let hw = headerView.bounds.width
+        backButton.frame = NSRect(x: 8, y: (headerHeight - 26) / 2, width: 66, height: 26)
+        playAllButton.frame = NSRect(x: hw - 108 - 5, y: (headerHeight - 26) / 2, width: 108, height: 26)
+        playAllButton.layer?.cornerRadius = 13
+        titleLabel.frame = NSRect(x: 76, y: (headerHeight - 20) / 2, width: max(10, hw - 76 - 118), height: 20)
+
+        let contentTop = headerY + headerHeight
+        let contentH = max(10, h - contentTop)
+        loadingIndicator.frame = NSRect(x: (w - 28) / 2, y: contentTop + (contentH - 28) / 2, width: 28, height: 28)
+        emptyLabel.frame = NSRect(x: 0, y: contentTop + (contentH - 28) / 2, width: w, height: 28)
 
         for sub in trackStack.arrangedSubviews {
             sub.widthAnchor.constraint(equalToConstant: max(100, w - 12)).isActive = true
@@ -691,6 +720,14 @@ open class LibraryContentView: NSView {
     public var onPlayAll: (([MusicTrack]) -> Void)?
 
     public private(set) var is2Col: Bool = true
+    public var topContentInset: CGFloat = 0 {
+        didSet {
+            guard oldValue != topContentInset else { return }
+            stackView.edgeInsets = NSEdgeInsets(top: topContentInset + 4, left: 3, bottom: 12, right: 3)
+            detailOverlay.topContentInset = topContentInset
+            needsLayout = true
+        }
+    }
 
     private let titleLabel = NSTextField(labelWithString: "为你推荐")
     private let scrollView = NSScrollView()
@@ -720,7 +757,7 @@ open class LibraryContentView: NSView {
 
         titleLabel.font = NSFont.systemFont(ofSize: 16.5, weight: .bold)
         titleLabel.textColor = DesignTokens.Colors.primaryText
-        addSubview(titleLabel)
+        titleLabel.translatesAutoresizingMaskIntoConstraints = false
 
         // Use FlippedClipView so content always pins to top!
         let clip = FlippedClipView()
@@ -732,7 +769,7 @@ open class LibraryContentView: NSView {
         stackView.orientation = .vertical
         stackView.alignment = .leading
         stackView.spacing = 6
-        stackView.edgeInsets = NSEdgeInsets(top: 3, left: 3, bottom: 12, right: 3)
+        stackView.edgeInsets = NSEdgeInsets(top: topContentInset + 4, left: 3, bottom: 12, right: 3)
         stackView.translatesAutoresizingMaskIntoConstraints = false
         scrollView.documentView = stackView
         addSubview(scrollView)
@@ -755,6 +792,7 @@ open class LibraryContentView: NSView {
         addSubview(emptyLabel)
 
         // Detail overlay starts hidden
+        detailOverlay.topContentInset = topContentInset
         detailOverlay.isHidden = true
         detailOverlay.onBack = { [weak self] in
             self?.hideDetail()
@@ -771,10 +809,11 @@ open class LibraryContentView: NSView {
 
     open override func layout() {
         super.layout()
-        titleLabel.frame = NSRect(x: 6, y: 3, width: bounds.width - 12, height: 27)
-        scrollView.frame = NSRect(x: 0, y: 33, width: bounds.width, height: max(10, bounds.height - 33))
-        loadingIndicator.frame = NSRect(x: (bounds.width - 28) / 2, y: (bounds.height - 28) / 2, width: 28, height: 28)
-        emptyLabel.frame = NSRect(x: 0, y: (bounds.height - 28) / 2, width: bounds.width, height: 28)
+        scrollView.frame = bounds
+        let contentH = max(10, bounds.height - topContentInset)
+        loadingIndicator.frame = NSRect(x: (bounds.width - 28) / 2, y: topContentInset + (contentH - 28) / 2, width: 28, height: 28)
+        emptyLabel.frame = NSRect(x: 0, y: topContentInset + (contentH - 28) / 2, width: bounds.width, height: 28)
+        detailOverlay.topContentInset = topContentInset
         detailOverlay.frame = bounds
     }
 
@@ -801,6 +840,11 @@ open class LibraryContentView: NSView {
         detailOverlay.isHidden = true
         stackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
         emptyLabel.isHidden = !items.isEmpty
+
+        let headerWidth = max(100, bounds.width - 14)
+        titleLabel.widthAnchor.constraint(equalToConstant: headerWidth).isActive = true
+        titleLabel.heightAnchor.constraint(equalToConstant: 24).isActive = true
+        stackView.addArrangedSubview(titleLabel)
 
         AppLogger.shared.log(
             category: .render,
@@ -890,6 +934,7 @@ open class LibraryContentView: NSView {
     public func showDetail(title: String, tracks: [MusicTrack] = []) {
         AppLogger.shared.log(category: .render, level: .info, message: "展开详情抽屉: \"\(title)\" (曲目数: \(tracks.count))")
         self.currentDetailTracks = tracks
+        detailOverlay.topContentInset = topContentInset
         detailOverlay.configure(title: title, tracks: tracks)
         detailOverlay.frame = bounds
         detailOverlay.isHidden = false

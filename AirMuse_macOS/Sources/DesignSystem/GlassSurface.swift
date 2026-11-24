@@ -163,7 +163,6 @@ open class GlassSurface: NSView {
         composerHostView.isHidden = isMiniStrip
         composer.backgroundLayer.isHidden = isMiniStrip
         composer.sweepLayer.isHidden = isMiniStrip
-        composer.fogLayer.isHidden = isMiniStrip
 
         refreshGlassSurface()
     }

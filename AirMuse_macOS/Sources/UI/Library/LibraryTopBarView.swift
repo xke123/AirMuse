@@ -10,7 +10,7 @@ import Infrastructure
 @MainActor
 open class LibraryTopBarView: NSView {
 
-    private let liquidBackdrop = LiquidGlassControl()
+    private let glassView = NSGlassEffectView(frame: .zero)
 
     public var onTabSelected: ((Int) -> Void)?
     public var onRefresh: (() -> Void)?
@@ -76,20 +76,11 @@ open class LibraryTopBarView: NSView {
     private func setupGlass() {
         wantsLayer = true
 
-        // Use native Liquid Glass as the entire top-bar backdrop.
-        // NSGlassEffectView(.clear) gives the frosted-glass material;
-        // the controls sit on top of it without any manual background colour.
-        let glass = NSGlassEffectView(frame: bounds)
-        glass.style = .clear
-        glass.cornerRadius = 10
-        glass.autoresizingMask = [.width, .height]
-        addSubview(glass, positioned: .below, relativeTo: nil)
-
-        // LiquidGlassControl provides per-element hover capsules in Enhanced mode;
-        // it is kept for button hover feedback on both OS versions.
-        liquidBackdrop.cornerRadius = 10
-        liquidBackdrop.isActive = true
-        addSubview(liquidBackdrop, positioned: .below, relativeTo: nil)
+        // Single-layer native macOS 26+ Liquid Glass floating pill backdrop.
+        glassView.style = .regular
+        glassView.cornerRadius = 17
+        glassView.autoresizingMask = [.width, .height]
+        addSubview(glassView, positioned: .below, relativeTo: nil)
     }
 
     // MARK: - Setup Navigation Mode
@@ -112,7 +103,7 @@ open class LibraryTopBarView: NSView {
         tabSegment.segmentStyle = .capsule
         tabSegment.target = self
         tabSegment.action = #selector(tabChanged(_:))
-        tabSegment.font = NSFont.systemFont(ofSize: 13.5, weight: .medium)
+        tabSegment.font = NSFont.systemFont(ofSize: 12.5, weight: .medium)
         navContainer.addSubview(tabSegment)
 
         // Layout Toggle (⚏ / ☰)
@@ -140,7 +131,7 @@ open class LibraryTopBarView: NSView {
         searchField.focusRingType = .none
         searchField.isBordered = false
         searchField.drawsBackground = false
-        searchField.font = NSFont.systemFont(ofSize: 14.5, weight: .regular)
+        searchField.font = NSFont.systemFont(ofSize: 13.0, weight: .regular)
         searchField.target = self
         searchField.action = #selector(searchQueryChanged(_:))
         searchContainer.addSubview(searchField)
@@ -151,7 +142,7 @@ open class LibraryTopBarView: NSView {
         scopeSegment.setLabel("资料库", forSegment: 1)
         scopeSegment.selectedSegment = 0
         scopeSegment.segmentStyle = .capsule
-        scopeSegment.font = NSFont.systemFont(ofSize: 13, weight: .regular)
+        scopeSegment.font = NSFont.systemFont(ofSize: 12.0, weight: .regular)
         scopeSegment.target = self
         scopeSegment.action = #selector(scopeChanged(_:))
         searchContainer.addSubview(scopeSegment)
@@ -172,11 +163,11 @@ open class LibraryTopBarView: NSView {
         btn.target = self
         btn.action = action
 
-        let cfg = NSImage.SymbolConfiguration(pointSize: 15, weight: .medium)
+        let cfg = NSImage.SymbolConfiguration(pointSize: 13.5, weight: .medium)
         if let img = NSImage(systemSymbolName: symbolName, accessibilityDescription: tooltip) {
             btn.image = img.withSymbolConfiguration(cfg)
         }
-        btn.contentTintColor = NSColor(white: 0.75, alpha: 1.0)
+        btn.contentTintColor = NSColor(white: 0.78, alpha: 1.0)
     }
 
     // MARK: - Layout
@@ -186,13 +177,14 @@ open class LibraryTopBarView: NSView {
         let w = bounds.width
         let h = bounds.height
 
-        liquidBackdrop.frame = bounds
+        glassView.frame = bounds
+        glassView.cornerRadius = h * 0.5
         navContainer.frame = bounds
         searchContainer.frame = bounds
 
         // Nav Mode Layout: Two ends aligned, tab group centered
-        let btnSize: CGFloat = 30
-        let padding: CGFloat = 8
+        let btnSize: CGFloat = 24
+        let padding: CGFloat = 6
 
         // Left end: Refresh Button
         refreshButton.frame = NSRect(x: padding, y: (h - btnSize) / 2, width: btnSize, height: btnSize)
@@ -200,13 +192,14 @@ open class LibraryTopBarView: NSView {
         // Right end: Search Button & Layout Button
         let searchX = w - padding - btnSize
         searchButton.frame = NSRect(x: searchX, y: (h - btnSize) / 2, width: btnSize, height: btnSize)
-        let layoutX = searchButton.frame.minX - 6 - btnSize
+        let layoutX = searchButton.frame.minX - 4 - btnSize
         layoutButton.frame = NSRect(x: layoutX, y: (h - btnSize) / 2, width: btnSize, height: btnSize)
 
         // Center: Tab Segment strictly centered between the window edges
-        let tabW = min(285.0, max(50.0, w - (padding + btnSize * 2 + 16) * 2))
+        let tabH: CGFloat = 26
+        let tabW = min(265.0, max(50.0, w - (padding + btnSize * 2 + 12) * 2))
         let tabX = (w - tabW) / 2
-        tabSegment.frame = NSRect(x: tabX, y: (h - 32) / 2, width: tabW, height: 32)
+        tabSegment.frame = NSRect(x: tabX, y: (h - tabH) / 2, width: tabW, height: tabH)
 
         // Search Mode Layout
         searchBackButton.frame = NSRect(x: padding, y: (h - btnSize) / 2, width: btnSize, height: btnSize)
@@ -214,13 +207,14 @@ open class LibraryTopBarView: NSView {
         let srx = w - padding - btnSize
         searchLayoutButton.frame = NSRect(x: srx, y: (h - btnSize) / 2, width: btnSize, height: btnSize)
 
-        let scopeW: CGFloat = 128
-        let scopeX = searchLayoutButton.frame.minX - 8 - scopeW
-        scopeSegment.frame = NSRect(x: scopeX, y: (h - 28) / 2, width: scopeW, height: 28)
+        let scopeW: CGFloat = 116
+        let scopeH: CGFloat = 24
+        let scopeX = searchLayoutButton.frame.minX - 6 - scopeW
+        scopeSegment.frame = NSRect(x: scopeX, y: (h - scopeH) / 2, width: scopeW, height: scopeH)
 
-        let fieldX = padding + btnSize + 8
-        let fieldW = max(50, scopeX - 8 - fieldX)
-        searchField.frame = NSRect(x: fieldX, y: (h - 28) / 2, width: fieldW, height: 28)
+        let fieldX = padding + btnSize + 6
+        let fieldW = max(50, scopeX - 6 - fieldX)
+        searchField.frame = NSRect(x: fieldX, y: (h - 22) / 2, width: fieldW, height: 22)
     }
 
     // MARK: - Public State Controls

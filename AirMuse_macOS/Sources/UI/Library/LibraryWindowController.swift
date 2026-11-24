@@ -5,6 +5,36 @@ import Playback
 import Providers
 import Infrastructure
 
+// MARK: - LibraryHoverTrackerView
+
+private final class LibraryHoverTrackerView: NSView {
+    var onHoverChanged: ((Bool) -> Void)?
+    private var trackingArea: NSTrackingArea?
+
+    override func hitTest(_ point: NSPoint) -> NSView? { nil }
+
+    override func updateTrackingAreas() {
+        super.updateTrackingAreas()
+        if let existing = trackingArea { removeTrackingArea(existing) }
+        let area = NSTrackingArea(
+            rect: bounds,
+            options: [.mouseEnteredAndExited, .activeAlways, .inVisibleRect],
+            owner: self,
+            userInfo: nil
+        )
+        addTrackingArea(area)
+        trackingArea = area
+    }
+
+    override func mouseEntered(with event: NSEvent) {
+        onHoverChanged?(true)
+    }
+
+    override func mouseExited(with event: NSEvent) {
+        onHoverChanged?(false)
+    }
+}
+
 // MARK: - LibraryWindowController
 
 /// Controls the Library and Search window presentation, Liquid Glass tab navigation, and category content switching.
@@ -22,11 +52,13 @@ open class LibraryWindowController: NSWindowController {
     private let contentView = LibraryContentView()
 
     // Top glass bar controls & aurora fog
+    private let hoverTracker = LibraryHoverTrackerView()
     private let auroraFogView = AuroraGlassFogView()
+    private var isHovering: Bool = false
     private let titleLabel = NSTextField()
-    private let logButton = GlassButton(sprite: nil, size: CGSize(width: 13, height: 13))
-    private let accountButton = GlassButton(sprite: nil, size: CGSize(width: 13, height: 13))
-    private let closeButton = GlassButton(sprite: nil, size: CGSize(width: 13, height: 13))
+    private let logButton = GlassButton(sprite: nil, size: CGSize(width: 13, height: 13), buttonStyle: .glassBar)
+    private let accountButton = GlassButton(sprite: nil, size: CGSize(width: 13, height: 13), buttonStyle: .glassBar)
+    private let closeButton = GlassButton(sprite: nil, size: CGSize(width: 13, height: 13), buttonStyle: .glassBar)
 
     private let coordinator: PlaybackCoordinator
     private var appleMusicProvider: AppleMusicProvider?
@@ -64,8 +96,16 @@ open class LibraryWindowController: NSWindowController {
     private func setupPanelUI() {
         panel.wantsLayer = true
 
-        // Top glass bar aurora fog container
+        // Hover tracker spanning full panel (including top glass bar)
+        hoverTracker.autoresizingMask = [.width, .height]
+        hoverTracker.onHoverChanged = { [weak self] hovering in
+            self?.setHovering(hovering)
+        }
+        panel.addSubview(hoverTracker)
+
+        // Top glass bar aurora fog container (visible on hover)
         auroraFogView.seamEdge = .bottom
+        auroraFogView.alphaValue = 0.0
         panel.addSubview(auroraFogView)
 
         // Top glass bar title: "<Username>的Apple Music"
@@ -102,9 +142,10 @@ open class LibraryWindowController: NSWindowController {
         auroraFogView.addSubview(closeButton)
 
         let container = panel.contentView
-        container.addSubview(topBar)
         container.addSubview(sidebar)
         container.addSubview(contentView)
+        // topBar floats above contentView so scrolled cards pass underneath its Liquid Glass pill
+        container.addSubview(topBar)
 
         panel.onLayout = { [weak self] _ in
             self?.layoutViews()
@@ -130,7 +171,8 @@ open class LibraryWindowController: NSWindowController {
         let topBarBtnY = (capH - wb) * 0.5
         let btnSpacing = 5.0 * s
 
-        // Top glass bar aurora fog view spans the entire top glass bar width
+        // Hover tracker & top glass bar aurora fog view span the entire panel / top glass bar
+        hoverTracker.frame = pBounds
         auroraFogView.frame = NSRect(x: 0, y: pBounds.height - capH, width: pBounds.width, height: capH)
 
         // Right side glass bar buttons
@@ -152,22 +194,38 @@ open class LibraryWindowController: NSWindowController {
         let bounds = panel.contentView.bounds
         guard bounds.width > 20 && bounds.height > 20 else { return }
 
-        let topBarH: CGFloat = 48
+        let topBarH: CGFloat = 34
         let sidebarW: CGFloat = 126
         let padding: CGFloat = 6
 
         topBar.frame = NSRect(x: padding, y: padding, width: bounds.width - padding * 2, height: topBarH)
 
-        let contentY = topBarH + padding * 2
-        let contentH = max(10, bounds.height - contentY - padding)
+        let sidebarY = topBarH + padding * 2
+        let sidebarH = max(10, bounds.height - sidebarY - padding)
+        let fullContentH = max(10, bounds.height - padding * 2)
+        contentView.topContentInset = topBarH + padding
 
         if topBar.isSearchMode {
             sidebar.isHidden = true
-            contentView.frame = NSRect(x: padding, y: contentY, width: bounds.width - padding * 2, height: contentH)
+            contentView.frame = NSRect(x: padding, y: padding, width: bounds.width - padding * 2, height: fullContentH)
         } else {
             sidebar.isHidden = false
-            sidebar.frame = NSRect(x: padding, y: contentY, width: sidebarW, height: contentH)
-            contentView.frame = NSRect(x: sidebarW + padding * 2, y: contentY, width: bounds.width - sidebarW - padding * 3, height: contentH)
+            sidebar.frame = NSRect(x: padding, y: sidebarY, width: sidebarW, height: sidebarH)
+            contentView.frame = NSRect(x: sidebarW + padding * 2, y: padding, width: bounds.width - sidebarW - padding * 3, height: fullContentH)
+        }
+    }
+
+    private func setHovering(_ hovering: Bool) {
+        guard isHovering != hovering else { return }
+        isHovering = hovering
+        let targetAlpha: CGFloat = hovering ? 1.0 : 0.0
+        if MotionCoordinator.shared.isReduceMotionEnabled {
+            auroraFogView.alphaValue = targetAlpha
+        } else {
+            NSAnimationContext.runAnimationGroup { ctx in
+                ctx.duration = MotionTokens.Duration.hoverFade
+                auroraFogView.animator().alphaValue = targetAlpha
+            }
         }
     }
 
@@ -180,7 +238,7 @@ open class LibraryWindowController: NSWindowController {
 
     public func updateTopBarTitle() {
         let s = GlassInteractionCoordinator.shared.uiScale
-        let font = NSFont.systemFont(ofSize: 11.0 * s, weight: .bold)
+        let font = NSFont.systemFont(ofSize: 10.5 * s, weight: .semibold)
         let isLogged = AppleMusicSessionManager.shared.webSessionState.isLoggedIn
             || AppleMusicSessionManager.shared.currentUserToken != nil
 
@@ -194,30 +252,30 @@ open class LibraryWindowController: NSWindowController {
         titleLabel.attributedStringValue = PixelFontRenderer.makeHaloAttributedString(
             text,
             font: font,
-            color: isLogged ? OriginalDesignTokens.Colors.titleSilver : OriginalDesignTokens.Colors.subSilver,
+            color: isLogged ? OriginalDesignTokens.Colors.glassBarForeground : OriginalDesignTokens.Colors.glassBarForegroundMuted,
             alignment: .left
         )
         updateAuroraFog()
     }
 
-    /// Dynamically renders edge-adaptive aurora mist plumes based on title width and button cluster
+    /// Dynamically renders edge-adaptive laser-mist plumes based on title width and button cluster
     private func updateAuroraFog() {
         let s = GlassInteractionCoordinator.shared.uiScale
-        let titlePlume = AuroraGlassFogView.PlumeItem(
-            xMin: titleLabel.frame.minX,
-            xMax: titleLabel.frame.maxX,
-            spreadLeft: 14.0 * s,
-            spreadRight: 32.0 * s,
+        let titlePlume = auroraFogView.makePlume(
+            for: [titleLabel],
+            alignment: .left,
+            anchorSpread: 10.0 * s,
+            tailLength: 56.0 * s,
             peakAlpha: 0.95
         )
-        let buttonsPlume = AuroraGlassFogView.PlumeItem(
-            xMin: logButton.frame.minX,
-            xMax: closeButton.frame.maxX,
-            spreadLeft: 32.0 * s,
-            spreadRight: 14.0 * s,
+        let buttonsPlume = auroraFogView.makePlume(
+            for: [logButton, accountButton, closeButton],
+            alignment: .right,
+            anchorSpread: 10.0 * s,
+            tailLength: 64.0 * s,
             peakAlpha: 1.0
         )
-        auroraFogView.plumes = [titlePlume, buttonsPlume]
+        auroraFogView.plumes = [titlePlume, buttonsPlume].compactMap { $0 }
     }
 
     /// Resolves the authenticated user's display name, falling back to current macOS user if generic.

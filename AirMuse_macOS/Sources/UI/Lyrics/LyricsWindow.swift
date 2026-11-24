@@ -42,8 +42,8 @@ open class LyricsWindow: NSPanel {
     private let panel = GlassPanel()
     private let hoverTracker = LyricsHoverTrackerView()
     private let auroraFogView = AuroraGlassFogView()
-    private let closeButton = GlassButton(sprite: nil, size: CGSize(width: 13, height: 13))
-    private let miniToggleButton = GlassButton(sprite: nil, size: CGSize(width: 13, height: 13))
+    private let closeButton = GlassButton(sprite: nil, size: CGSize(width: 13, height: 13), buttonStyle: .glassBar)
+    private let miniToggleButton = GlassButton(sprite: nil, size: CGSize(width: 13, height: 13), buttonStyle: .glassBar)
 
     public private(set) var isMiniLyricsMode: Bool = false
     private var isHovering: Bool = false
@@ -108,7 +108,7 @@ open class LyricsWindow: NSPanel {
         panel.onLayout = { [weak self] bounds in
             guard let self else { return }
             self.lyricsView.frame = bounds
-            self.hoverTracker.frame = bounds
+            self.hoverTracker.frame = self.panel.bounds
             self.layoutTopBarButtons()
         }
 
@@ -160,18 +160,21 @@ open class LyricsWindow: NSPanel {
         let btnY = (capH - wb) * 0.5
 
         auroraFogView.frame = NSRect(x: 0, y: panel.bounds.height - capH, width: panel.bounds.width, height: capH)
+        auroraFogView.isFogEnabled = !isMiniLyricsMode
         closeButton.frame = NSRect(x: panel.bounds.width - 16.0 * s - wb, y: btnY, width: wb, height: wb)
         miniToggleButton.frame = NSRect(x: closeButton.frame.minX - 5.0 * s - wb, y: btnY, width: wb, height: wb)
 
-        auroraFogView.plumes = [
-            AuroraGlassFogView.PlumeItem(
-                xMin: miniToggleButton.frame.minX,
-                xMax: closeButton.frame.maxX,
-                spreadLeft: 28.0 * s,
-                spreadRight: 14.0 * s,
+        if !isMiniLyricsMode {
+            auroraFogView.setPlume(
+                for: [miniToggleButton, closeButton],
+                alignment: .right,
+                anchorSpread: 10.0 * s,
+                tailLength: 64.0 * s,
                 peakAlpha: 1.0
             )
-        ]
+        } else {
+            auroraFogView.plumes = []
+        }
     }
 
     public func toggleMiniLyricsMode() {

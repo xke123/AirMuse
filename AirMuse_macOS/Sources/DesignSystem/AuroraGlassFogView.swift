@@ -4,48 +4,47 @@ import CoreGraphics
 // MARK: - AuroraGlassFogView
 
 /// A universal, edge-adaptive crystal glass fog bar view replicating the authentic AIRPLAY
-/// aurora-style mist diffusion.
+/// laser-like aurora mist diffusion behind normal-mode glass bar controls and titles.
 ///
 /// Features:
-/// - **Directional Seam Adhesion**: The side touching the dark player/panel body is 100% solid dark
-///   (alpha 1.0), appearing as an organic extension of the dark panel into the crystal glass bar.
-/// - **88% Height Ceiling**: Feathers out smoothly along the Y-axis and strictly hits alpha 0.0 before
-///   reaching the outer edge (≤ 88% bar height, keeping the top/bottom glass reflection visible).
-/// - **Dynamic Aurora Plumes**: Adapts horizontally to arbitrary text lengths and button clusters,
-///   providing dense backing under controls with smooth elliptical wing diffusion on either side.
-/// - **Event Transparency**: Transparent to clicks (`hitTest` returns nil unless a subview is hit),
-///   letting drag handles and panel gestures pass through naturally.
+/// - **Normal-Mode Only**: Automatically skips rendering in mini-strip mode (`isMiniModeDisabled` / height ≤ 10pt).
+/// - **Directional Seam Adhesion**: The side touching the dark player/panel body is 100% solid
+///   (`OriginalDesignTokens.Colors.spillFogDark`), feathering out to alpha 0.0 within ≤ 90% (88%) bar height.
+/// - **Horizontal Laser Trapezoid**: Steep right-trapezoid anchor on the outer edge, elongated laser mist tail
+///   extending toward the bar interior (right-to-left when `.right`, left-to-right when `.left`).
+/// - **Event Transparency**: Transparent to clicks (`hitTest` returns nil unless a subview is hit).
 @MainActor
 open class AuroraGlassFogView: NSView {
 
     public var seamEdge: OriginalGlassRenderer.BarSeamEdge = .bottom {
-        didSet { needsDisplay = true }
-    }
-
-    public struct PlumeItem: Sendable {
-        public var xMin: CGFloat
-        public var xMax: CGFloat
-        public var spreadLeft: CGFloat
-        public var spreadRight: CGFloat
-        public var peakAlpha: CGFloat
-
-        public init(
-            xMin: CGFloat,
-            xMax: CGFloat,
-            spreadLeft: CGFloat = 28.0,
-            spreadRight: CGFloat = 28.0,
-            peakAlpha: CGFloat = 1.0
-        ) {
-            self.xMin = xMin
-            self.xMax = xMax
-            self.spreadLeft = spreadLeft
-            self.spreadRight = spreadRight
-            self.peakAlpha = peakAlpha
+        didSet {
+            guard oldValue != seamEdge else { return }
+            needsDisplay = true
         }
     }
 
+    /// Disables fog rendering (e.g. when the host window switches to mini-bar mode).
+    public var isFogEnabled: Bool = true {
+        didSet {
+            guard oldValue != isFogEnabled else { return }
+            needsDisplay = true
+        }
+    }
+
+    public var barCornerRadius: CGFloat? {
+        didSet {
+            guard oldValue != barCornerRadius else { return }
+            needsDisplay = true
+        }
+    }
+
+    public typealias PlumeItem = OriginalGlassRenderer.AuroraFogPlumeSpec
+
     public var plumes: [PlumeItem] = [] {
-        didSet { needsDisplay = true }
+        didSet {
+            guard oldValue != plumes else { return }
+            needsDisplay = true
+        }
     }
 
     public override init(frame frameRect: NSRect) {
@@ -71,18 +70,16 @@ open class AuroraGlassFogView: NSView {
         return nil
     }
 
-    /// Sets or updates a plume covering the combined bounding box of the given subviews/controls.
-    public func setPlume(
+    /// Computes a `PlumeItem` covering the combined horizontal bounds of `views` in `self` coordinates.
+    public func makePlume(
         for views: [NSView],
-        spreadLeft: CGFloat = 28.0,
-        spreadRight: CGFloat = 28.0,
+        alignment: OriginalGlassRenderer.AuroraFogAlignment,
+        anchorSpread: CGFloat? = nil,
+        tailLength: CGFloat? = nil,
         peakAlpha: CGFloat = 1.0
-    ) {
+    ) -> PlumeItem? {
         let valid = views.filter { !$0.isHidden }
-        guard !valid.isEmpty else {
-            plumes = []
-            return
-        }
+        guard !valid.isEmpty else { return nil }
         var minX: CGFloat = .greatestFiniteMagnitude
         var maxX: CGFloat = -.greatestFiniteMagnitude
         for v in valid {
@@ -90,23 +87,50 @@ open class AuroraGlassFogView: NSView {
             minX = min(minX, rectInSelf.minX)
             maxX = max(maxX, rectInSelf.maxX)
         }
-        plumes = [PlumeItem(xMin: minX, xMax: maxX, spreadLeft: spreadLeft, spreadRight: spreadRight, peakAlpha: peakAlpha)]
+        let s = GlassInteractionCoordinator.shared.uiScale
+        return PlumeItem(
+            xMin: minX,
+            xMax: maxX,
+            alignment: alignment,
+            anchorSpread: anchorSpread ?? (10.0 * s),
+            tailLength: tailLength ?? (64.0 * s),
+            peakAlpha: peakAlpha
+        )
+    }
+
+    /// Convenience for single-cluster bars.
+    public func setPlume(
+        for views: [NSView],
+        alignment: OriginalGlassRenderer.AuroraFogAlignment = .right,
+        anchorSpread: CGFloat? = nil,
+        tailLength: CGFloat? = nil,
+        peakAlpha: CGFloat = 1.0
+    ) {
+        if let item = makePlume(
+            for: views,
+            alignment: alignment,
+            anchorSpread: anchorSpread,
+            tailLength: tailLength,
+            peakAlpha: peakAlpha
+        ) {
+            plumes = [item]
+        } else {
+            plumes = []
+        }
     }
 
     open override func draw(_ dirtyRect: NSRect) {
         super.draw(dirtyRect)
+        guard isFogEnabled, !plumes.isEmpty, bounds.height > 8.0 else { return }
         guard let ctx = NSGraphicsContext.current?.cgContext else { return }
-        for plume in plumes {
-            OriginalGlassRenderer.drawAuroraFogPlume(
-                in: ctx,
-                barBounds: bounds,
-                xMin: plume.xMin,
-                xMax: plume.xMax,
-                seamEdge: seamEdge,
-                spreadLeft: plume.spreadLeft,
-                spreadRight: plume.spreadRight,
-                peakAlpha: plume.peakAlpha
-            )
-        }
+        let s = GlassInteractionCoordinator.shared.uiScale
+        let radius = barCornerRadius ?? (OriginalDesignTokens.BaseMetrics.glassCornerRadius * s)
+        OriginalGlassRenderer.drawAuroraFogPlumes(
+            in: ctx,
+            barBounds: bounds,
+            plumes: plumes,
+            seamEdge: seamEdge,
+            cornerRadius: radius
+        )
     }
 }

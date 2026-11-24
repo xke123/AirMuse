@@ -175,11 +175,11 @@ open class MiniPlayerView: GlassMiniPlayer {
     private let nextButton = GlassButton(image: nil, size: CGSize(width: 16, height: 16), enableLiquidGlassHover: true)
     private let ejectButton = GlassButton(image: nil, size: CGSize(width: 16, height: 16), enableLiquidGlassHover: true)
 
-    private let miniSourceButton = GlassButton(image: nil, size: CGSize(width: 13, height: 13))
-    private let libraryButton = GlassButton(image: nil, size: CGSize(width: 13, height: 13))
-    private let lyricsButton = GlassButton(image: nil, size: CGSize(width: 13, height: 13))
-    private let expandButton = GlassButton(image: nil, size: CGSize(width: 13, height: 13))
-    private let quitButton = GlassButton(image: nil, size: CGSize(width: 13, height: 13))
+    private let miniSourceButton = GlassButton(image: nil, size: CGSize(width: 13, height: 13), buttonStyle: .glassBar)
+    private let libraryButton = GlassButton(image: nil, size: CGSize(width: 13, height: 13), buttonStyle: .glassBar)
+    private let lyricsButton = GlassButton(image: nil, size: CGSize(width: 13, height: 13), buttonStyle: .glassBar)
+    private let expandButton = GlassButton(image: nil, size: CGSize(width: 13, height: 13), buttonStyle: .glassBar)
+    private let quitButton = GlassButton(image: nil, size: CGSize(width: 13, height: 13), buttonStyle: .glassBar)
 
     private var isPlayingState: Bool = false
     private var showRemainingTime: Bool = false

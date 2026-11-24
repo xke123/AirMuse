@@ -186,131 +186,258 @@ public enum OriginalGlassRenderer {
     }
 
     /// Directional edge of the body seam from which the aurora fog spills into the crystal glass bar.
-    public enum BarSeamEdge: Sendable {
+    public enum BarSeamEdge: Sendable, Equatable {
         /// Seam is at the bottom of the bar (e.g. Top Glass Bar). Spills upward from bar's bottom edge into glass.
         case bottom
         /// Seam is at the top of the bar (e.g. Bottom Glass Bar). Spills downward from bar's top edge into glass.
         case top
     }
 
-    /// Draws an edge-adaptive aurora mist plume extending directly from the dark body seam into the crystal glass bar.
-    /// - At the body seam: 100% solid dark tone (alpha 1.0) connecting flush with the dark panel body.
-    /// - Away from the seam: smoothly feathers and decays to 0.0 before reaching 88% of bar height (leaving crystal glass margin).
-    /// - Horizontally: full intensity between `xMin` and `xMax`, with smooth elliptical wings fanning out on both sides.
+    /// Horizontal anchoring and laser-tail extension direction inside a glass bar.
+    public enum AuroraFogAlignment: Sendable, Equatable {
+        /// Anchored on the left (steep right-trapezoid edge), elongated laser mist tail extending right.
+        case left
+        /// Anchored on the right (steep right-trapezoid edge), elongated laser mist tail extending left.
+        case right
+    }
+
+    /// Specification for a single laser-mist plume behind a button cluster or text label.
+    public struct AuroraFogPlumeSpec: Sendable, Equatable {
+        public var xMin: CGFloat
+        public var xMax: CGFloat
+        public var alignment: AuroraFogAlignment
+        public var anchorSpread: CGFloat
+        public var tailLength: CGFloat
+        public var peakAlpha: CGFloat
+
+        public init(
+            xMin: CGFloat,
+            xMax: CGFloat,
+            alignment: AuroraFogAlignment,
+            anchorSpread: CGFloat = 10.0,
+            tailLength: CGFloat = 64.0,
+            peakAlpha: CGFloat = 1.0
+        ) {
+            self.xMin = xMin
+            self.xMax = xMax
+            self.alignment = alignment
+            self.anchorSpread = anchorSpread
+            self.tailLength = tailLength
+            self.peakAlpha = peakAlpha
+        }
+    }
+
+    private static let sRGBColorSpace: CGColorSpace =
+        CGColorSpace(name: CGColorSpace.sRGB) ?? CGColorSpaceCreateDeviceRGB()
+
+    /// Draws one or more edge-adaptive, laser-like right-trapezoid aurora mist plumes into a normal-mode glass bar.
+    /// - Vertical adaptability: 100% solid at the panel seam, strictly ≤ 88% (≤ 90%) of bar height on the outer edge.
+    /// - Horizontal adaptability: Steep right-trapezoid anchor on the outer side, elongated laser tail toward the bar interior.
+    /// - Multi-plume blending: Uses per-pixel `max` across plumes to prevent muddy overlap darkening.
+    public static func drawAuroraFogPlumes(
+        in ctx: CGContext,
+        barBounds: CGRect,
+        plumes: [AuroraFogPlumeSpec],
+        seamEdge: BarSeamEdge,
+        cornerRadius: CGFloat = 0.0
+    ) {
+        let activePlumes = plumes.filter { $0.peakAlpha > 0.015 }
+        guard !activePlumes.isEmpty, barBounds.width > 2.0, barBounds.height > 8.0 else { return }
+
+        let scaleX = max(1.0, abs(ctx.ctm.a))
+        let scaleY = max(1.0, abs(ctx.ctm.d))
+        let pxW = max(1, Int(round(barBounds.width * scaleX)))
+        let pxH = max(1, Int(round(barBounds.height * scaleY)))
+
+        // Unified fog color from OriginalDesignTokens.Colors.spillFogDark in sRGB
+        let fogColor = OriginalDesignTokens.Colors.spillFogDark.usingColorSpace(.sRGB)
+            ?? OriginalDesignTokens.Colors.spillFogDark
+        let baseR = fogColor.redComponent
+        let baseG = fogColor.greenComponent
+        let baseB = fogColor.blueComponent
+
+        let barW = barBounds.width
+        let barH = barBounds.height
+        let maxReachH = barH * 0.88 // Strictly <= 90% of glass bar height
+
+        var bytes = [UInt8](repeating: 0, count: pxW * pxH * 4)
+
+        for row in 0..<pxH {
+            // In CGImage drawn via ctx.draw(_:in:), row 0 is the top (maxY) and row pxH-1 is the bottom (minY)
+            let yFromTop = (CGFloat(row) + 0.5) / CGFloat(pxH) * barH
+            let yFromBottom = barH - yFromTop
+            let distFromSeam = (seamEdge == .bottom) ? yFromBottom : yFromTop
+
+            if distFromSeam >= maxReachH {
+                continue
+            }
+
+            let rowOffset = row * pxW * 4
+            for col in 0..<pxW {
+                let x = barBounds.minX + (CGFloat(col) + 0.5) / CGFloat(pxW) * barW
+                var bestAlpha: CGFloat = 0.0
+
+                for plume in activePlumes {
+                    let cMin = max(barBounds.minX, min(plume.xMin, plume.xMax))
+                    let cMax = min(barBounds.maxX, max(plume.xMin, plume.xMax))
+                    let anchorS = max(1.0, plume.anchorSpread)
+                    let tailL = max(1.0, plume.tailLength)
+
+                    let hAlpha: CGFloat
+                    let localH: CGFloat
+
+                    switch plume.alignment {
+                    case .right:
+                        if x >= cMin && x <= cMax {
+                            hAlpha = 1.0
+                            localH = maxReachH
+                        } else if x > cMax {
+                            let dx = x - cMax
+                            if dx >= anchorS { continue }
+                            let t = dx / anchorS
+                            // Smoothstep drop on the steep right-angled trapezoid edge
+                            hAlpha = 1.0 - (t * t * (3.0 - 2.0 * t))
+                            localH = maxReachH
+                        } else {
+                            let dx = cMin - x
+                            if dx >= tailL { continue }
+                            let t = dx / tailL
+                            // Elongated laser tail: linear trapezoid taper + smooth power falloff
+                            localH = maxReachH * (1.0 - 0.82 * t)
+                            hAlpha = pow(1.0 - t, 1.75)
+                        }
+
+                    case .left:
+                        if x >= cMin && x <= cMax {
+                            hAlpha = 1.0
+                            localH = maxReachH
+                        } else if x < cMin {
+                            let dx = cMin - x
+                            if dx >= anchorS { continue }
+                            let t = dx / anchorS
+                            hAlpha = 1.0 - (t * t * (3.0 - 2.0 * t))
+                            localH = maxReachH
+                        } else {
+                            let dx = x - cMax
+                            if dx >= tailL { continue }
+                            let t = dx / tailL
+                            localH = maxReachH * (1.0 - 0.82 * t)
+                            hAlpha = pow(1.0 - t, 1.75)
+                        }
+                    }
+
+                    guard localH > 0.5, distFromSeam < localH else { continue }
+                    let vNorm = distFromSeam / localH
+                    let vBase = max(0.0, 1.0 - pow(vNorm, 2.1))
+                    let vAlpha = pow(vBase, 1.8)
+
+                    let candidate = plume.peakAlpha * hAlpha * vAlpha
+                    if candidate > bestAlpha {
+                        bestAlpha = candidate
+                    }
+                }
+
+                if bestAlpha > 0.002 {
+                    let a = min(1.0, bestAlpha)
+                    let idx = rowOffset + col * 4
+                    bytes[idx]     = UInt8((baseR * a * 255.0).rounded())
+                    bytes[idx + 1] = UInt8((baseG * a * 255.0).rounded())
+                    bytes[idx + 2] = UInt8((baseB * a * 255.0).rounded())
+                    bytes[idx + 3] = UInt8((a * 255.0).rounded())
+                }
+            }
+        }
+
+        let data = Data(bytes)
+        guard let provider = CGDataProvider(data: data as CFData),
+              let fogImage = CGImage(
+                width: pxW,
+                height: pxH,
+                bitsPerComponent: 8,
+                bitsPerPixel: 32,
+                bytesPerRow: pxW * 4,
+                space: sRGBColorSpace,
+                bitmapInfo: CGBitmapInfo(rawValue: CGImageAlphaInfo.premultipliedLast.rawValue),
+                provider: provider,
+                decode: nil,
+                shouldInterpolate: true,
+                intent: .defaultIntent
+              ) else { return }
+
+        ctx.saveGState()
+        if cornerRadius > 0.5 {
+            let clipPath = makeBarClipPath(rect: barBounds, cornerRadius: cornerRadius, seamEdge: seamEdge)
+            ctx.addPath(clipPath)
+            ctx.clip()
+        } else {
+            ctx.clip(to: barBounds)
+        }
+        ctx.draw(fogImage, in: barBounds)
+        ctx.restoreGState()
+    }
+
+    private static func makeBarClipPath(rect: CGRect, cornerRadius r: CGFloat, seamEdge: BarSeamEdge) -> CGPath {
+        let clampedR = min(r, min(rect.width * 0.5, rect.height * 0.5))
+        let path = CGMutablePath()
+        let minX = rect.minX
+        let maxX = rect.maxX
+        let minY = rect.minY
+        let maxY = rect.maxY
+
+        if seamEdge == .bottom {
+            // Top bar: bottom corners are square (flush with panel), top corners are rounded
+            path.move(to: CGPoint(x: minX, y: minY))
+            path.addLine(to: CGPoint(x: maxX, y: minY))
+            path.addLine(to: CGPoint(x: maxX, y: maxY - clampedR))
+            path.addQuadCurve(to: CGPoint(x: maxX - clampedR, y: maxY), control: CGPoint(x: maxX, y: maxY))
+            path.addLine(to: CGPoint(x: minX + clampedR, y: maxY))
+            path.addQuadCurve(to: CGPoint(x: minX, y: maxY - clampedR), control: CGPoint(x: minX, y: maxY))
+            path.closeSubpath()
+        } else {
+            // Bottom bar: top corners are square (flush with panel), bottom corners are rounded
+            path.move(to: CGPoint(x: minX, y: maxY))
+            path.addLine(to: CGPoint(x: maxX, y: maxY))
+            path.addLine(to: CGPoint(x: maxX, y: minY + clampedR))
+            path.addQuadCurve(to: CGPoint(x: maxX - clampedR, y: minY), control: CGPoint(x: maxX, y: minY))
+            path.addLine(to: CGPoint(x: minX + clampedR, y: minY))
+            path.addQuadCurve(to: CGPoint(x: minX, y: minY + clampedR), control: CGPoint(x: minX, y: minY))
+            path.closeSubpath()
+        }
+        return path
+    }
+
+    /// Convenience single-plume wrapper.
     public static func drawAuroraFogPlume(
         in ctx: CGContext,
         barBounds: CGRect,
         xMin: CGFloat,
         xMax: CGFloat,
         seamEdge: BarSeamEdge,
-        spreadLeft: CGFloat? = nil,
-        spreadRight: CGFloat? = nil,
-        peakAlpha: CGFloat = 1.0
+        alignment: AuroraFogAlignment? = nil,
+        anchorSpread: CGFloat = 10.0,
+        tailLength: CGFloat = 64.0,
+        peakAlpha: CGFloat = 1.0,
+        cornerRadius: CGFloat = 0.0
     ) {
-        guard peakAlpha > 0.015, barBounds.width > 2, barBounds.height > 2 else { return }
-
-        ctx.saveGState()
-        ctx.clip(to: barBounds)
-
-        let cs = CGColorSpaceCreateDeviceRGB()
-
-        let reachH = barBounds.height * 0.88
-        let seamY: CGFloat = (seamEdge == .bottom) ? barBounds.minY : barBounds.maxY
-        let outerY: CGFloat = (seamEdge == .bottom) ? (seamY + reachH) : (seamY - reachH)
-
-        let sL = max(1.0, spreadLeft ?? max(24.0, barBounds.height * 1.2))
-        let sR = max(1.0, spreadRight ?? max(24.0, barBounds.height * 1.2))
-
-        let darkR: CGFloat = 10.0 / 255.0
-        let darkG: CGFloat = 12.0 / 255.0
-        let darkB: CGFloat = 16.0 / 255.0
-
-        // Vertical decay colors: solid 1.0 at seam to 0.0 at 88% height
-        let colors = [
-            CGColor(srgbRed: darkR, green: darkG, blue: darkB, alpha: peakAlpha),
-            CGColor(srgbRed: darkR, green: darkG, blue: darkB, alpha: peakAlpha * 0.90),
-            CGColor(srgbRed: darkR, green: darkG, blue: darkB, alpha: peakAlpha * 0.58),
-            CGColor(srgbRed: darkR, green: darkG, blue: darkB, alpha: peakAlpha * 0.20),
-            CGColor(srgbRed: darkR, green: darkG, blue: darkB, alpha: peakAlpha * 0.04),
-            CGColor(srgbRed: darkR, green: darkG, blue: darkB, alpha: 0.0)
-        ]
-        let locations: [CGFloat] = [0.0, 0.30, 0.58, 0.78, 0.92, 1.0]
-
-        guard let grad = CGGradient(colorsSpace: cs, colors: colors as CFArray, locations: locations) else {
-            ctx.restoreGState()
-            return
-        }
-
-        let clampedXMin = max(barBounds.minX, min(xMin, xMax))
-        let clampedXMax = min(barBounds.maxX, max(xMin, xMax))
-        let centerW = max(0, clampedXMax - clampedXMin)
-
-        // 1. Center rectangular section [clampedXMin, clampedXMax] with purely vertical linear gradient
-        if centerW > 0.5 {
-            let centerRect = CGRect(
-                x: clampedXMin,
-                y: min(seamY, outerY),
-                width: centerW,
-                height: reachH
-            )
-            ctx.saveGState()
-            ctx.clip(to: centerRect)
-            ctx.drawLinearGradient(
-                grad,
-                start: CGPoint(x: clampedXMin, y: seamY),
-                end: CGPoint(x: clampedXMin, y: outerY),
-                options: []
-            )
-            ctx.restoreGState()
-        }
-
-        // 2. Left elliptical fan [clampedXMin - sL, clampedXMin]
-        if sL > 1.0 {
-            let leftRect = CGRect(
-                x: clampedXMin - sL,
-                y: min(seamY, outerY),
-                width: sL,
-                height: reachH
-            )
-            ctx.saveGState()
-            ctx.clip(to: leftRect)
-            ctx.translateBy(x: clampedXMin, y: seamY)
-            ctx.scaleBy(x: 1.0, y: reachH / sL)
-            ctx.drawRadialGradient(
-                grad,
-                startCenter: .zero,
-                startRadius: 0,
-                endCenter: .zero,
-                endRadius: sL,
-                options: []
-            )
-            ctx.restoreGState()
-        }
-
-        // 3. Right elliptical fan [clampedXMax, clampedXMax + sR]
-        if sR > 1.0 {
-            let rightRect = CGRect(
-                x: clampedXMax,
-                y: min(seamY, outerY),
-                width: sR,
-                height: reachH
-            )
-            ctx.saveGState()
-            ctx.clip(to: rightRect)
-            ctx.translateBy(x: clampedXMax, y: seamY)
-            ctx.scaleBy(x: 1.0, y: reachH / sR)
-            ctx.drawRadialGradient(
-                grad,
-                startCenter: .zero,
-                startRadius: 0,
-                endCenter: .zero,
-                endRadius: sR,
-                options: []
-            )
-            ctx.restoreGState()
-        }
-
-        ctx.restoreGState()
+        let resolvedAlignment: AuroraFogAlignment = alignment ?? {
+            let center = (xMin + xMax) * 0.5
+            return (center >= barBounds.midX) ? .right : .left
+        }()
+        let spec = AuroraFogPlumeSpec(
+            xMin: xMin,
+            xMax: xMax,
+            alignment: resolvedAlignment,
+            anchorSpread: anchorSpread,
+            tailLength: tailLength,
+            peakAlpha: peakAlpha
+        )
+        drawAuroraFogPlumes(
+            in: ctx,
+            barBounds: barBounds,
+            plumes: [spec],
+            seamEdge: seamEdge,
+            cornerRadius: cornerRadius
+        )
     }
 
     /// Legacy bridge method maintaining backwards compatibility.
@@ -323,14 +450,16 @@ public enum OriginalGlassRenderer {
         fromBottom: Bool = true,
         peakAlpha: CGFloat
     ) {
+        let alignment: AuroraFogAlignment = (anchorX >= barClip.midX) ? .right : .left
         drawAuroraFogPlume(
             in: ctx,
             barBounds: barClip,
             xMin: anchorX - leftSpan,
             xMax: anchorX + rightSpan,
             seamEdge: fromBottom ? .bottom : .top,
-            spreadLeft: leftSpan * 0.45,
-            spreadRight: rightSpan * 0.45,
+            alignment: alignment,
+            anchorSpread: min(leftSpan, rightSpan) * 0.35,
+            tailLength: max(leftSpan, rightSpan) * 0.85,
             peakAlpha: peakAlpha
         )
     }

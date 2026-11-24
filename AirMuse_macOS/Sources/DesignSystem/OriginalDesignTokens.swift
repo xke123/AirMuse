@@ -17,11 +17,11 @@ public enum OriginalDesignTokens {
 
     /// 1× Original logical geometry (DIP) before applying `uiScale`.
     public enum BaseMetrics {
-        // Glass Frame (from WINDOWGLASS 30×40 & disassembly 0x47DA6A, 0x47BB2F)
+        // Glass Frame (from WINDOWGLASS 30×40 & disassembly 0x47DA6A, 0x47BB2F; cap height reduced by 1/4: 20 -> 15)
         public static let glassBorderThickness: CGFloat = 5.0
-        public static let glassCapHeight: CGFloat       = 20.0
+        public static let glassCapHeight: CGFloat       = 15.0
         public static let glassCornerCapWidth: CGFloat  = 15.0
-        public static let glassTotalVFrame: CGFloat     = 40.0
+        public static let glassTotalVFrame: CGFloat     = 30.0
         public static let glassCornerRadius: CGFloat    = 4.0
         public static let miniCornerRadius: CGFloat     = 3.2
 
@@ -33,7 +33,7 @@ public enum OriginalDesignTokens {
         public static let lyricsWindowWidth: CGFloat    = 330.0
         public static let lyricsWindowHeight: CGFloat   = 284.0
         public static let libraryWindowWidth: CGFloat   = 330.0
-        public static let libraryWindowHeight: CGFloat  = 380.0
+        public static let libraryWindowHeight: CGFloat  = 390.0
 
         // Dock & Snap (from DockManager.cpp)
         public static let dockSnapDistance: CGFloat     = 16.0
@@ -70,6 +70,13 @@ public enum OriginalDesignTokens {
         public static let dimSilver = NSColor(srgbRed: 110/255.0, green: 110/255.0, blue: 110/255.0, alpha: 1.0)
         public static let compactHalo = NSColor(srgbRed: 15/255.0, green: 15/255.0, blue: 15/255.0, alpha: 0.78)
         public static let spillFogDark = NSColor(srgbRed: 14/255.0, green: 16/255.0, blue: 20/255.0, alpha: 1.0)
+
+        // Unified Glass Bar Chrome (balanced contrast: neither glaring nor dim)
+        public static let glassBarForeground = NSColor(srgbRed: 214/255.0, green: 218/255.0, blue: 224/255.0, alpha: 0.86)
+        public static let glassBarForegroundMuted = NSColor(srgbRed: 186/255.0, green: 192/255.0, blue: 200/255.0, alpha: 0.72)
+        public static let glassBarForegroundHover = NSColor(srgbRed: 244/255.0, green: 247/255.0, blue: 252/255.0, alpha: 1.0)
+        public static let glassBarForegroundPressed = NSColor(srgbRed: 255/255.0, green: 255/255.0, blue: 255/255.0, alpha: 0.92)
+        public static let glassBarForegroundDisabled = NSColor(srgbRed: 150/255.0, green: 154/255.0, blue: 162/255.0, alpha: 0.38)
 
         // Specular sweep lens flare
         public static let sweepCyan = NSColor(srgbRed: 130/255.0, green: 215/255.0, blue: 255/255.0, alpha: 1.0)
