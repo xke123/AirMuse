@@ -156,9 +156,22 @@ public actor AppleMusicAmpClient {
         req.setValue("https://music.apple.com/", forHTTPHeaderField: "referer")
         req.setValue("zh-Hans-CN", forHTTPHeaderField: "accept-language")
 
+        let start = CFAbsoluteTimeGetCurrent()
+        AppLogger.shared.log(
+            category: .ampAPI,
+            level: .info,
+            message: "发起会话校验请求: GET /v1/me/storefront"
+        )
+
         do {
             let (data, response) = try await session.data(for: req)
+            let durationMs = Int((CFAbsoluteTimeGetCurrent() - start) * 1000)
             let statusCode = (response as? HTTPURLResponse)?.statusCode ?? 0
+            AppLogger.shared.log(
+                category: .ampAPI,
+                level: statusCode == 200 ? .info : .warn,
+                message: "会话校验响应 [HTTP \(statusCode)] (耗时: \(durationMs)ms, 大小: \(data.count) 字节)"
+            )
             if statusCode == 200 {
                 var storefrontId: String? = nil
                 var accountName: String? = nil
@@ -180,6 +193,12 @@ public actor AppleMusicAmpClient {
         } catch let err as AppleMusicSessionError {
             throw err
         } catch {
+            let durationMs = Int((CFAbsoluteTimeGetCurrent() - start) * 1000)
+            AppLogger.shared.log(
+                category: .ampAPI,
+                level: .warn,
+                message: "会话校验请求异常 (耗时: \(durationMs)ms): \(error.localizedDescription)"
+            )
             if (error as? URLError)?.code == .notConnectedToInternet {
                 throw AppleMusicSessionError.networkUnavailable
             }

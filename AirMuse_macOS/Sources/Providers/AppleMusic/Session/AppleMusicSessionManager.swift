@@ -68,6 +68,7 @@ public final class AppleMusicSessionManager: NSObject {
     private static let userDefaultsStorefrontKey = "com.airmuse.apple_music.storefront"
     private static let keychainTokenKey = "media_user_token"
     private static let keychainStorefrontKey = "storefront_id"
+    private static let keychainDevTokenKey = "developer_token"
     private static let officialAppleMusicURL = URL(string: "https://music.apple.com")!
     private static let officialLoginURL = URL(string: "https://music.apple.com/login")!
 
@@ -113,6 +114,15 @@ public final class AppleMusicSessionManager: NSObject {
 
     /// Restores previously saved session from private storage and verifies it against Apple's live endpoint.
     public func restoreSessionFromStorage() async {
+        // 0. Fast-path: restore cached Developer Token from local private store (0ms)
+        if self.capturedDeveloperToken == nil,
+           let cachedDevToken = try? sessionStore.load(key: Self.keychainDevTokenKey),
+           !cachedDevToken.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            self.capturedDeveloperToken = cachedDevToken
+            await ampClient.setDeveloperToken(cachedDevToken)
+            AppLogger.shared.log(category: .auth, level: .info, message: "[会话恢复] 从本地安全存储命中 Developer Token (0ms)")
+        }
+
         // 1. Try reading from private sandboxed store (POSIX 0600, no Keychain prompts)
         var savedToken = try? sessionStore.load(key: Self.keychainTokenKey)
         let savedStorefront = (try? sessionStore.load(key: Self.keychainStorefrontKey))
@@ -156,30 +166,69 @@ public final class AppleMusicSessionManager: NSObject {
 
         self.currentUserToken = token
         self.currentStorefront = savedStorefront
-        self.webSessionState = .verifying(tokenSnippet: String(token.prefix(8)))
-        await syncTokenToCookieStore(token: token)
 
-        AppLogger.shared.log(
-            category: .auth,
-            level: .info,
-            message: "从私有安全存储中发现已存 Apple Music 令牌，正在向 Apple 官方验证有效性..."
-        )
+        let tRestore0 = ProcessInfo.processInfo.systemUptime
 
-        // If developer token is already known, verify immediately; otherwise await page probe
+        // Optimistic fast-path: if both UserToken & Developer Token are already cached locally,
+        // enter .loggedIn immediately (0ms) and verify silently in the background.
         if let devToken = capturedDeveloperToken {
-            await verifyAndApplyToken(token, devToken: devToken, generationSnapshot: generation)
+            let sf = savedStorefront
+            let resolvedDisplayName = sf.map { "Apple Music 会员 (\($0.uppercased()))" } ?? "Apple Music 用户"
+            let optimisticAccount = MusicAccount(
+                id: UUID().uuidString,
+                providerID: "apple_music",
+                displayName: resolvedDisplayName,
+                email: nil,
+                avatarURL: nil,
+                isAuthenticated: true,
+                subscriptionTier: .individual
+            )
+            self.currentAccount = optimisticAccount
+            await ampClient.setUserToken(token)
+            await ampClient.setDeveloperToken(devToken)
+            await ampClient.setStorefront(sf)
+            await syncTokenToCookieStore(token: token)
+            self.webPlayer.setUserToken(token)
+            self.webSessionState = .loggedIn(account: optimisticAccount, storefront: sf)
+            self.webPlayer.preload()
+
+            AppLogger.shared.log(
+                category: .auth,
+                level: .info,
+                message: "[会话恢复] 本地双凭据齐全，已乐观进入已登录态 (0ms)，后台静默校验中...",
+                details: "Storefront: \(sf ?? "cn")"
+            )
+
+            let genSnapshot = self.generation
+            Task { @MainActor [weak self] in
+                await self?.verifySilentlyInBackground(token: token, devToken: devToken, generationSnapshot: genSnapshot)
+            }
         } else {
+            self.webSessionState = .verifying(tokenSnippet: String(token.prefix(8)))
+            await syncTokenToCookieStore(token: token)
+            self.webPlayer.setUserToken(token)
+            self.webPlayer.preload()
+            AppLogger.shared.log(
+                category: .auth,
+                level: .info,
+                message: "从私有安全存储中发现已存 Apple Music 令牌，正在向 Apple 官方验证有效性..."
+            )
             // First try silent direct token resolution via AmpClient
+            let tDev0 = ProcessInfo.processInfo.systemUptime
             if let clientDevToken = try? await ampClient.ensureDeveloperToken() {
+                AppLogger.shared.log(category: .auth, level: .info, message: "[会话恢复] 获取 Developer Token 成功（耗时 \(Int((ProcessInfo.processInfo.systemUptime - tDev0) * 1000))ms）")
                 self.capturedDeveloperToken = clientDevToken
+                try? sessionStore.save(clientDevToken, forKey: Self.keychainDevTokenKey)
                 await verifyAndApplyToken(token, devToken: clientDevToken, generationSnapshot: generation)
             } else {
+                AppLogger.shared.log(category: .auth, level: .warn, message: "[会话恢复] ensureDeveloperToken 失败，回退网页探针（耗时 \(Int((ProcessInfo.processInfo.systemUptime - tDev0) * 1000))ms）")
                 // Fallback to WKWebView silent probe on official page
                 probeDeveloperTokenFromOfficialPage { [weak self] capturedDevToken in
                     guard let self else { return }
                     Task { @MainActor in
                         if let capturedDevToken {
                             self.capturedDeveloperToken = capturedDevToken
+                            try? self.sessionStore.save(capturedDevToken, forKey: Self.keychainDevTokenKey)
                             await self.ampClient.setDeveloperToken(capturedDevToken)
                             await self.verifyAndApplyToken(token, devToken: capturedDevToken, generationSnapshot: self.generation)
                         } else {
@@ -190,6 +239,7 @@ public final class AppleMusicSessionManager: NSObject {
                 }
             }
         }
+        AppLogger.shared.log(category: .auth, level: .info, message: "[会话恢复] restoreSessionFromStorage 总耗时 \(Int((ProcessInfo.processInfo.systemUptime - tRestore0) * 1000))ms")
     }
 
     // MARK: - Web Login Flow
@@ -296,6 +346,7 @@ public final class AppleMusicSessionManager: NSObject {
     public func resetSession() async {
         await signOut()
         capturedDeveloperToken = nil
+        try? sessionStore.delete(key: Self.keychainDevTokenKey)
         await ampClient.setDeveloperToken(nil)
         loginWebView?.stopLoading()
         loginWebView = nil
@@ -336,6 +387,7 @@ public final class AppleMusicSessionManager: NSObject {
                     UserDefaults.standard.set(sf, forKey: Self.userDefaultsStorefrontKey)
                 }
                 try? sessionStore.save(token, forKey: Self.keychainTokenKey)
+                try? sessionStore.save(devToken, forKey: Self.keychainDevTokenKey)
                 if let sf = storefront {
                     try? sessionStore.save(sf, forKey: Self.keychainStorefrontKey)
                 }
@@ -400,13 +452,67 @@ public final class AppleMusicSessionManager: NSObject {
         }
     }
 
+    /// Runs silent token verification after an optimistic local session restore.
+    /// Only triggers expiration if Apple explicitly rejects the token (401/403 or invalid).
+    private func verifySilentlyInBackground(token: String, devToken: String, generationSnapshot: Int) async {
+        guard generation == generationSnapshot else { return }
+        do {
+            let (isValid, storefront, accountName) = try await ampClient.verifyUserToken(userToken: token, devToken: devToken)
+            guard generation == generationSnapshot else { return }
+            if isValid {
+                try? sessionStore.save(token, forKey: Self.keychainTokenKey)
+                try? sessionStore.save(devToken, forKey: Self.keychainDevTokenKey)
+                if let sf = storefront {
+                    UserDefaults.standard.set(sf, forKey: Self.userDefaultsStorefrontKey)
+                    try? sessionStore.save(sf, forKey: Self.keychainStorefrontKey)
+                }
+                await ampClient.setStorefront(storefront)
+
+                let resolvedName: String = {
+                    if let name = accountName, !name.trimmingCharacters(in: .whitespaces).isEmpty { return name }
+                    if let sf = storefront { return "Apple Music 会员 (\(sf.uppercased()))" }
+                    return "Apple Music 用户"
+                }()
+                let needsStateRefresh = (storefront != self.currentStorefront) || (resolvedName != self.currentAccount?.displayName)
+                self.currentStorefront = storefront
+                if needsStateRefresh {
+                    let updatedAccount = MusicAccount(
+                        id: self.currentAccount?.id ?? UUID().uuidString,
+                        providerID: "apple_music",
+                        displayName: resolvedName,
+                        email: nil,
+                        avatarURL: nil,
+                        isAuthenticated: true,
+                        subscriptionTier: .individual
+                    )
+                    self.currentAccount = updatedAccount
+                    self.webSessionState = .loggedIn(account: updatedAccount, storefront: storefront)
+                }
+                AppLogger.shared.log(category: .auth, level: .info, message: "[会话恢复] 后台静默会话校验通过 (Storefront: \(storefront ?? "未知"))")
+            } else {
+                handleTokenExpiration(reason: "服务端拒绝了该用户令牌")
+            }
+        } catch let err as AppleMusicSessionError {
+            guard generation == generationSnapshot else { return }
+            if case .tokenVerificationFailed(let code, let msg) = err, code == 401 || code == 403 {
+                handleTokenExpiration(reason: "Apple 服务端返回鉴权失效 (HTTP \(code)): \(msg)")
+            } else {
+                AppLogger.shared.log(category: .auth, level: .warn, message: "[会话恢复] 后台静默校验未完成（保持当前离线/乐观会话）: \(err.localizedDescription)")
+            }
+        } catch {
+            AppLogger.shared.log(category: .auth, level: .warn, message: "[会话恢复] 后台静默校验异常（保持当前乐观会话）: \(error.localizedDescription)")
+        }
+    }
+
     private func handleTokenExpiration(reason: String) {
         currentUserToken = nil
         currentAccount = nil
+        capturedDeveloperToken = nil
         UserDefaults.standard.removeObject(forKey: Self.userDefaultsTokenKey)
         UserDefaults.standard.removeObject(forKey: Self.userDefaultsStorefrontKey)
         try? sessionStore.delete(key: Self.keychainTokenKey)
         try? sessionStore.delete(key: Self.keychainStorefrontKey)
+        try? sessionStore.delete(key: Self.keychainDevTokenKey)
         Task {
             await ampClient.setUserToken(nil)
         }
@@ -548,6 +654,7 @@ extension AppleMusicSessionManager: WKScriptMessageHandler {
         if message.name == "appleMusicDevToken", let token = message.body as? String, !token.isEmpty {
             if self.capturedDeveloperToken != token {
                 self.capturedDeveloperToken = token
+                try? self.sessionStore.save(token, forKey: Self.keychainDevTokenKey)
                 AppLogger.shared.log(category: .auth, level: .info, message: "成功从 Apple 官方页面捕获 Developer Token (\(token.count) 字符)")
                 Task {
                     await ampClient.setDeveloperToken(token)

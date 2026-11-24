@@ -39,6 +39,8 @@ public actor AppleMusicProvider:
     public let sessionAdapter: any AppleMusicSessionAdapter
     private let ampClient: AppleMusicAmpClient
     private var currentPlayingTrack: MusicTrack?
+    private var catalogIDCache: [String: String] = [:]
+    private var currentVolume: Float = 1.0
 
     private enum ActiveEngine: Sendable {
         case none
@@ -396,6 +398,8 @@ public actor AppleMusicProvider:
 
         // 1. Fail-Fast 契约：已登录 Web 会话时严格走官方 WebKit 全曲播放，禁止静默降级为 30s 试听流
         if await sessionAdapter.webSessionState.isLoggedIn {
+            self.activeEngine = .webPlayer
+            await sessionAdapter.beginTrackTransition()
             let success: Bool
             if isStation {
                 AppLogger.shared.log(category: .playback, level: .info, message: "Apple Music Web 播放器接入电台: \(track.title)")
@@ -403,7 +407,10 @@ public actor AppleMusicProvider:
             } else {
                 var targetID = rawID
                 if targetID.hasPrefix("i.") || targetID.hasPrefix("a.") {
-                    if let resolved = await ampClient.resolveCatalogSongID(librarySongID: targetID) {
+                    if let cached = catalogIDCache[targetID] {
+                        targetID = cached
+                    } else if let resolved = await ampClient.resolveCatalogSongID(librarySongID: targetID) {
+                        catalogIDCache[targetID] = resolved
                         targetID = resolved
                     }
                 }
@@ -531,28 +538,44 @@ public actor AppleMusicProvider:
     }
 
     public func setVolume(_ volume: Float) async throws {
-        try? await sessionAdapter.setVolume(volume)
+        currentVolume = min(max(volume, 0), 1)
+        try? await sessionAdapter.setVolume(currentVolume)
     }
 
     public func getState() async -> PlaybackState {
         switch activeEngine {
         case .webPlayer:
-            let (pos, dur, isPlaying) = await sessionAdapter.currentPlaybackPosition()
+            let snap = await sessionAdapter.currentPlaybackSnapshot()
             let trackDur: Int64
             if let ct = currentPlayingTrack, ct.durationMs > 0 {
                 trackDur = ct.durationMs
-            } else if dur > 0 {
-                trackDur = Int64(dur * 1000)
+            } else if snap.duration > 0 {
+                trackDur = Int64(snap.duration * 1000)
             } else {
                 trackDur = 0
             }
+            let resolvedStatus: PlaybackStatus
+            let effectivePlaying: Bool
+            if snap.hasStartedAudio && snap.isPlaying {
+                resolvedStatus = .playing
+                effectivePlaying = true
+            } else if !snap.hasStartedAudio && (snap.isBuffering || snap.isPlaying) {
+                resolvedStatus = snap.isBuffering ? .buffering : .loading
+                effectivePlaying = false
+            } else if snap.isBuffering {
+                resolvedStatus = .buffering
+                effectivePlaying = false
+            } else {
+                resolvedStatus = .paused
+                effectivePlaying = false
+            }
             return PlaybackState(
-                status: isPlaying ? .playing : .paused,
-                isPlaying: isPlaying,
-                positionMs: Int64(pos * 1000),
+                status: resolvedStatus,
+                isPlaying: effectivePlaying,
+                positionMs: snap.hasStartedAudio ? Int64(snap.position * 1000) : 0,
                 durationMs: trackDur,
-                volume: 1.0,
-                isMuted: false,
+                volume: snap.volume,
+                isMuted: snap.volume <= 0.001,
                 repeatMode: .off,
                 shuffleEnabled: false,
                 currentTrack: currentPlayingTrack,

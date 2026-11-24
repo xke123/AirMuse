@@ -186,6 +186,110 @@ final class TimeFontDisplayView: NSView {
     }
 }
 
+// MARK: - StreamLoadingBarView
+
+/// Animated capsule loading indicator shown in the progress-bar slot while audio stream is loading.
+@MainActor
+final class StreamLoadingBarView: NSView {
+    var statusText: String = "正在加载歌曲…" {
+        didSet {
+            if oldValue != statusText { needsDisplay = true }
+        }
+    }
+    private var phase: CGFloat = 0
+    private var animTask: Task<Void, Never>?
+    private var isAnimating: Bool = false
+
+    deinit {
+        animTask?.cancel()
+    }
+
+    func startAnimating() {
+        guard !isAnimating else { return }
+        isAnimating = true
+        if MotionCoordinator.shared.isReduceMotionEnabled {
+            phase = 0.5
+            needsDisplay = true
+            return
+        }
+        animTask?.cancel()
+        animTask = Task { @MainActor [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .milliseconds(33))
+                guard !Task.isCancelled, let self, self.isAnimating else { break }
+                self.phase += 0.032
+                if self.phase > 1.35 { self.phase = -0.35 }
+                self.needsDisplay = true
+            }
+        }
+    }
+
+    func stopAnimating() {
+        isAnimating = false
+        animTask?.cancel()
+        animTask = nil
+    }
+
+    override func draw(_ dirtyRect: NSRect) {
+        guard let ctx = NSGraphicsContext.current?.cgContext else { return }
+        let s = GlassInteractionCoordinator.shared.uiScale
+        let w = bounds.width
+        let h = bounds.height
+        guard w > 12, h > 4 else { return }
+
+        let barH = max(5.0, h * 0.43)
+        let barRect = CGRect(x: 0, y: (h - barH) * 0.5, width: w, height: barH)
+        let radius = barH * 0.5
+        let path = CGPath(roundedRect: barRect, cornerWidth: radius, cornerHeight: radius, transform: nil)
+
+        ctx.saveGState()
+        ctx.addPath(path)
+        ctx.setFillColor(CGColor(srgbRed: 1, green: 1, blue: 1, alpha: 0.11))
+        ctx.fillPath()
+
+        ctx.addPath(path)
+        ctx.clip()
+
+        let segW = max(36.0 * s, w * 0.34)
+        let centerX = phase * w
+        let gradStart = CGPoint(x: centerX - segW * 0.5, y: barRect.midY)
+        let gradEnd = CGPoint(x: centerX + segW * 0.5, y: barRect.midY)
+        let cs = CGColorSpace(name: CGColorSpace.sRGB) ?? CGColorSpaceCreateDeviceRGB()
+        let colors = [
+            CGColor(srgbRed: 130/255.0, green: 215/255.0, blue: 255/255.0, alpha: 0.0),
+            CGColor(srgbRed: 130/255.0, green: 215/255.0, blue: 255/255.0, alpha: 0.55),
+            CGColor(srgbRed: 245/255.0, green: 250/255.0, blue: 255/255.0, alpha: 0.85),
+            CGColor(srgbRed: 130/255.0, green: 215/255.0, blue: 255/255.0, alpha: 0.55),
+            CGColor(srgbRed: 130/255.0, green: 215/255.0, blue: 255/255.0, alpha: 0.0)
+        ] as CFArray
+        let locs: [CGFloat] = [0.0, 0.25, 0.5, 0.75, 1.0]
+        if let grad = CGGradient(colorsSpace: cs, colors: colors, locations: locs) {
+            ctx.drawLinearGradient(grad, start: gradStart, end: gradEnd, options: [])
+        }
+        ctx.restoreGState()
+
+        ctx.saveGState()
+        ctx.addPath(path)
+        ctx.setStrokeColor(CGColor(srgbRed: 1, green: 1, blue: 1, alpha: 0.20))
+        ctx.setLineWidth(0.6)
+        ctx.strokePath()
+        ctx.restoreGState()
+
+        let label = statusText
+        let font = NSFont.systemFont(ofSize: 9.0 * s, weight: .medium)
+        let attr = PixelFontRenderer.makeHaloAttributedString(
+            label,
+            font: font,
+            color: OriginalDesignTokens.Colors.highlightSilver,
+            alignment: .center,
+            alpha: 0.92
+        )
+        let strSize = attr.size()
+        let textRect = NSRect(x: (w - strSize.width) * 0.5, y: (h - strSize.height) * 0.5, width: strSize.width, height: strSize.height)
+        attr.draw(in: textRect)
+    }
+}
+
 // MARK: - PlayerView
 
 /// 1:1 restoration of the AIRPLAY-zion floating main player (330×106 @ 1×, 495×159 @ 1.5×).
@@ -256,7 +360,8 @@ open class PlayerView: GlassSurface {
     private let libraryButton = GlassButton(image: nil, size: CGSize(width: 13, height: 13), buttonStyle: .glassBar)
     private let lyricsButton = GlassButton(image: nil, size: CGSize(width: 13, height: 13), buttonStyle: .glassBar)
 
-    // Always-visible body progress & time
+    // Always-visible body progress & time (replaced by dynamic loading bar while awaiting audio stream)
+    private let streamLoadingView = StreamLoadingBarView()
     private let progressView = CapsuleProgressView()
     private let currentTimeView = TimeFontDisplayView()
     private let durationTimeView = TimeFontDisplayView()
@@ -318,12 +423,12 @@ open class PlayerView: GlassSurface {
 
         titleLabel.textColor = OriginalDesignTokens.Colors.titleSilver
         titleLabel.lineBreakMode = .byTruncatingTail
-        titleLabel.alignment = .left
+        titleLabel.alignment = .center
         idleContainer.addSubview(titleLabel)
 
         artistLabel.textColor = OriginalDesignTokens.Colors.subSilver
         artistLabel.lineBreakMode = .byTruncatingTail
-        artistLabel.alignment = .left
+        artistLabel.alignment = .center
         idleContainer.addSubview(artistLabel)
 
         // Hover controls container
@@ -434,6 +539,8 @@ open class PlayerView: GlassSurface {
             let targetMs = Int64(Double(ratio) * Double(self.currentDurationMs))
             self.onSeek?(targetMs)
         }
+        streamLoadingView.isHidden = true
+        addSubview(streamLoadingView)
         addSubview(progressView)
 
         currentTimeView.alignment = .right
@@ -693,8 +800,9 @@ open class PlayerView: GlassSurface {
         // 5. Volume segments (far right of right column)
         volumeView.frame = NSRect(x: w - 23.0 * s, y: appKitY(topY: 32.0 * s, height: 38.0 * s), width: 14.0 * s, height: 38.0 * s)
 
-        // 6. Right Column Lower: Progress bar & TIMEFONT digital clock
+        // 6. Right Column Lower: Progress bar & TIMEFONT digital clock (or StreamLoadingBarView while loading)
         let progY = appKitY(topY: 64.0 * s, height: 14.0 * s)
+        streamLoadingView.frame = NSRect(x: rightColLeft, y: progY, width: rightColW, height: 14.0 * s)
         let timeW = 36.0 * s
         currentTimeView.frame = NSRect(x: rightColLeft, y: progY, width: timeW, height: 14.0 * s)
         durationTimeView.frame = NSRect(x: rightColRight - timeW, y: progY, width: timeW, height: 14.0 * s)
@@ -715,24 +823,40 @@ open class PlayerView: GlassSurface {
 
         if let track = state.currentTrack {
             titleLabel.attributedStringValue = PixelFontRenderer.makeHaloAttributedString(
-                track.title, font: titleFont, color: OriginalDesignTokens.Colors.titleSilver, alignment: .left
+                track.title, font: titleFont, color: OriginalDesignTokens.Colors.titleSilver, alignment: .center
             )
             if state.status == .failed, let err = state.errorMessage, !err.isEmpty {
                 artistLabel.attributedStringValue = PixelFontRenderer.makeHaloAttributedString(
-                    err, font: subFont, color: .systemRed, alignment: .left
+                    err, font: subFont, color: .systemRed, alignment: .center
                 )
             } else {
                 artistLabel.attributedStringValue = PixelFontRenderer.makeHaloAttributedString(
-                    track.artistName, font: subFont, color: OriginalDesignTokens.Colors.subSilver, alignment: .left
+                    track.artistName, font: subFont, color: OriginalDesignTokens.Colors.subSilver, alignment: .center
                 )
             }
         } else {
             titleLabel.attributedStringValue = PixelFontRenderer.makeHaloAttributedString(
-                "AirMuse Ready", font: titleFont, color: OriginalDesignTokens.Colors.titleSilver, alignment: .left
+                "AirMuse Ready", font: titleFont, color: OriginalDesignTokens.Colors.titleSilver, alignment: .center
             )
             artistLabel.attributedStringValue = PixelFontRenderer.makeHaloAttributedString(
-                state.sourceName, font: subFont, color: OriginalDesignTokens.Colors.subSilver, alignment: .left
+                state.sourceName, font: subFont, color: OriginalDesignTokens.Colors.subSilver, alignment: .center
             )
+        }
+
+        let isAwaitingStream = (state.status == .loading || state.status == .buffering) && !state.isPlaying
+        if isAwaitingStream {
+            streamLoadingView.statusText = (state.status == .buffering) ? "正在缓冲音频…" : "正在请求曲目…"
+            streamLoadingView.isHidden = false
+            streamLoadingView.startAnimating()
+            progressView.isHidden = true
+            currentTimeView.isHidden = true
+            durationTimeView.isHidden = true
+        } else {
+            streamLoadingView.stopAnimating()
+            streamLoadingView.isHidden = true
+            progressView.isHidden = false
+            currentTimeView.isHidden = false
+            durationTimeView.isHidden = false
         }
 
         if !isScrubbing {

@@ -60,10 +60,11 @@ open class AuroraGlassFogView: NSView {
     }
 
     open override func hitTest(_ point: NSPoint) -> NSView? {
-        // Forward hit tests to clickable subviews (like buttons inside this view)
+        // `point` is in superview coordinates; convert to `self` before forwarding to subviews
+        let localPoint = convert(point, from: superview)
+        guard bounds.contains(localPoint) else { return nil }
         for sub in subviews.reversed() where !sub.isHidden {
-            let pt = sub.convert(point, from: self)
-            if let hit = sub.hitTest(pt) {
+            if let hit = sub.hitTest(localPoint) {
                 return hit
             }
         }

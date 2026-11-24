@@ -23,6 +23,38 @@ done
 
 cd "$PKG_DIR"
 
+# ── 1. Stop currently running AirMuse process ────────────────────────────────
+stop_running_app() {
+  local pids
+  pids="$(pgrep -x "$APP_NAME" 2>/dev/null || true)"
+  if [[ -z "$pids" ]]; then
+    # Fallback for restricted shells where pgrep cannot query sysmond
+    killall -TERM "$APP_NAME" >/dev/null 2>&1 && sleep 0.5 || true
+    killall -KILL "$APP_NAME" >/dev/null 2>&1 || true
+    return 0
+  fi
+
+  echo "🛑 Stopping running $APP_NAME (PID: $(echo "$pids" | tr '\n' ' ' | sed 's/ *$//')) …"
+  pkill -TERM -x "$APP_NAME" >/dev/null 2>&1 || true
+
+  local waited=0
+  while pgrep -x "$APP_NAME" >/dev/null 2>&1 && [[ "$waited" -lt 15 ]]; do
+    sleep 0.1
+    waited=$((waited + 1))
+  done
+
+  if pgrep -x "$APP_NAME" >/dev/null 2>&1; then
+    echo "⚠️ Force killing $APP_NAME …"
+    pkill -KILL -x "$APP_NAME" >/dev/null 2>&1 || true
+    sleep 0.2
+  fi
+
+  echo "✅ Previous $APP_NAME process stopped"
+}
+
+stop_running_app
+
+# ── 2. Build & bundle ────────────────────────────────────────────────────────
 echo "🔨 Building AirMuse (${CONFIG}) …"
 swift build --disable-sandbox -c "$CONFIG" --product "$APP_NAME" 2>&1
 echo "✅ Build succeeded (${CONFIG})"
@@ -103,9 +135,16 @@ PLIST
 # Ad-hoc sign bundle so macOS allows launching when double-clicked
 codesign --force --deep --sign - "$APP_BUNDLE" 2>/dev/null || true
 
+# Refresh LaunchServices registration so macOS does not reuse a stale bundle cache
+LSREGISTER="/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister"
+if [[ -x "$LSREGISTER" ]]; then
+  "$LSREGISTER" -f "$APP_BUNDLE" >/dev/null 2>&1 || true
+fi
+
 echo "📦 App bundle created at: $APP_BUNDLE"
 
+# ── 3. Launch ────────────────────────────────────────────────────────────────
 if $AUTO_OPEN; then
   echo "🚀 Launching $APP_NAME …"
-  open "$APP_BUNDLE"
+  open -n "$APP_BUNDLE"
 fi

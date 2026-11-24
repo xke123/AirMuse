@@ -21,6 +21,7 @@ public actor PlaybackCoordinator {
     private var activeProviderID: String?
     private var currentQueue: PlaybackQueue = PlaybackQueue()
     private var lastSkipTime: Date?
+    private var playGeneration: Int = 0
 
     // MARK: - Task handles
 
@@ -100,7 +101,7 @@ public actor PlaybackCoordinator {
 
     public func skipToNext() async throws {
         let now = Date()
-        if let last = lastSkipTime, now.timeIntervalSince(last) < 1.5 {
+        if let last = lastSkipTime, now.timeIntervalSince(last) < 0.35 {
             return
         }
         lastSkipTime = now
@@ -135,16 +136,56 @@ public actor PlaybackCoordinator {
     }
 
     public func playTrack(_ track: MusicTrack, in queue: PlaybackQueue) async throws {
+        playGeneration += 1
+        let myGen = playGeneration
         self.currentQueue = queue
         let targetProviderID = track.providerID.isEmpty ? "apple_music" : track.providerID
+
+        // Optimistic UI update: immediately show track info & loading bar and trigger parallel lyrics/artwork fetch
+        let prevState = await store.state
+        let optimisticState = PlaybackState(
+            status: .loading,
+            isPlaying: false,
+            positionMs: 0,
+            durationMs: track.durationMs,
+            volume: prevState.volume,
+            isMuted: prevState.isMuted,
+            repeatMode: prevState.repeatMode,
+            shuffleEnabled: prevState.shuffleEnabled,
+            currentTrack: track,
+            providerID: targetProviderID,
+            sourceName: targetProviderID == "apple_music" ? "Apple Music" : targetProviderID,
+            artworkData: nil,
+            timestampDate: .now
+        )
+        await store.update(state: optimisticState)
+
         if activeProviderID == nil || activeProviderID != targetProviderID {
             try? await activate(providerID: targetProviderID)
         }
+        guard myGen == playGeneration else { return }
+
         let p = try activeProvider()
-        try await p.playTrack(track, in: queue)
+        do {
+            try await p.playTrack(track, in: queue)
+        } catch {
+            if myGen == playGeneration {
+                var failed = await store.state
+                failed.status = .failed
+                failed.isPlaying = false
+                failed.errorMessage = error.localizedDescription
+                await store.update(state: failed)
+            }
+            throw error
+        }
+        guard myGen == playGeneration else { return }
+
         var state = await p.getState()
         if state.durationMs == 0 && track.durationMs > 0 {
             state.durationMs = track.durationMs
+        }
+        if !state.isPlaying && state.positionMs == 0 && state.status == .paused {
+            state.status = .loading
         }
         state.currentTrack = track
         await store.update(state: state)

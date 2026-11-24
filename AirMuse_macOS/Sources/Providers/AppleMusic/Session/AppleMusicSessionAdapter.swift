@@ -24,6 +24,7 @@ public protocol AppleMusicSessionAdapter: Sendable {
     func reauthenticate() async throws
 
     // Web Player Playback
+    func beginTrackTransition() async
     func playTrack(id: String, type: String) async throws -> Bool
     func play() async throws -> Bool
     func pause() async throws -> Bool
@@ -34,6 +35,7 @@ public protocol AppleMusicSessionAdapter: Sendable {
     func skipToPrevious() async throws
     func setVolume(_ volume: Float) async throws
     func currentPlaybackPosition() async -> (position: Double, duration: Double, isPlaying: Bool)
+    func currentPlaybackSnapshot() async -> (position: Double, duration: Double, isPlaying: Bool, isBuffering: Bool, hasStartedAudio: Bool, volume: Float)
 }
 
 // MARK: - AppleMusicWebSessionAdapter
@@ -97,6 +99,10 @@ public final class AppleMusicWebSessionAdapter: AppleMusicSessionAdapter, @unche
         await manager.reauthenticate()
     }
 
+    public func beginTrackTransition() async {
+        await manager.webPlayer.beginTrackTransition()
+    }
+
     public func playTrack(id: String, type: String) async throws -> Bool {
         switch type {
         case "station":
@@ -144,6 +150,10 @@ public final class AppleMusicWebSessionAdapter: AppleMusicSessionAdapter, @unche
 
     public func currentPlaybackPosition() async -> (position: Double, duration: Double, isPlaying: Bool) {
         await (manager.webPlayer.currentPosition, manager.webPlayer.currentDuration, manager.webPlayer.isPlaying)
+    }
+
+    public func currentPlaybackSnapshot() async -> (position: Double, duration: Double, isPlaying: Bool, isBuffering: Bool, hasStartedAudio: Bool, volume: Float) {
+        await (manager.webPlayer.currentPosition, manager.webPlayer.currentDuration, manager.webPlayer.isPlaying, manager.webPlayer.isBuffering, manager.webPlayer.hasStartedAudio, manager.webPlayer.currentVolume)
     }
 }
 
@@ -207,6 +217,7 @@ public final class AppleMusicKitSessionAdapter: AppleMusicSessionAdapter, Sendab
         throw AppleMusicSessionError.developerTokenMissing
     }
 
+    public func beginTrackTransition() async {}
     public func playTrack(id: String, type: String) async throws -> Bool { false }
     public func play() async throws -> Bool { false }
     public func pause() async throws -> Bool { false }
@@ -218,5 +229,9 @@ public final class AppleMusicKitSessionAdapter: AppleMusicSessionAdapter, Sendab
     public func setVolume(_ volume: Float) async throws {}
     public func currentPlaybackPosition() async -> (position: Double, duration: Double, isPlaying: Bool) {
         (0, 0, false)
+    }
+
+    public func currentPlaybackSnapshot() async -> (position: Double, duration: Double, isPlaying: Bool, isBuffering: Bool, hasStartedAudio: Bool, volume: Float) {
+        (0, 0, false, false, false, 1.0)
     }
 }

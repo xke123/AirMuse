@@ -15,8 +15,17 @@ public final class AppleMusicWebPlayer: NSObject, WKNavigationDelegate, WKScript
     public let dataStore: WKWebsiteDataStore
     public private(set) var webView: WKWebView?
 
-    public private(set) var isReady: Bool = false
+    public private(set) var isReady: Bool = false {
+        didSet {
+            if isReady {
+                resumeReadyWaiters()
+            }
+        }
+    }
     public private(set) var isPlaying: Bool = false
+    public private(set) var isBuffering: Bool = false
+    public private(set) var hasStartedAudio: Bool = false
+    public private(set) var currentVolume: Float = 1.0
     public private(set) var currentPosition: Double = 0
     public private(set) var currentDuration: Double = 0
     public private(set) var currentTrackTitle: String = ""
@@ -43,13 +52,18 @@ public final class AppleMusicWebPlayer: NSObject, WKNavigationDelegate, WKScript
                     try {
                         localStorage.setItem('media-user-token', t);
                         localStorage.setItem('music.userToken', t);
-                        document.cookie = 'media-user-token=' + encodeURIComponent(t) + '; domain=.music.apple.com; path=/; max-age=31536000; SameSite=Lax';
-                        document.cookie = 'media-user-token=' + encodeURIComponent(t) + '; domain=.apple.com; path=/; max-age=31536000; SameSite=Lax';
+                        if (!document.cookie.includes('media-user-token=')) {
+                            document.cookie = 'media-user-token=' + t + '; domain=.music.apple.com; path=/; max-age=31536000; Secure; SameSite=Lax';
+                            document.cookie = 'media-user-token=' + t + '; domain=.apple.com; path=/; max-age=31536000; Secure; SameSite=Lax';
+                        }
                     } catch(e) {}
                     var mk = window.MusicKit && window.MusicKit.getInstance ? window.MusicKit.getInstance() : null;
                     if (mk) {
-                        mk.musicUserToken = t;
-                        return !!mk.isAuthorized;
+                        var wasAuthorized = !!mk.isAuthorized;
+                        if (!mk.musicUserToken) {
+                            mk.musicUserToken = t;
+                        }
+                        return wasAuthorized;
                     }
                 } catch(e) {}
                 return false;
@@ -68,20 +82,6 @@ public final class AppleMusicWebPlayer: NSObject, WKNavigationDelegate, WKScript
         }
     }
 
-    private var tokenInjectionJS: String {
-        guard let token = userToken, !token.isEmpty else { return "" }
-        let tokenLiteral = Self.jsStringLiteral(token)
-        return """
-        var uToken = \(tokenLiteral);
-        if (uToken && !document.cookie.includes('media-user-token')) {
-            document.cookie = 'media-user-token=' + encodeURIComponent(uToken) + '; domain=.music.apple.com; path=/; max-age=31536000; SameSite=Lax';
-        }
-        if (uToken && !mk.musicUserToken) {
-            mk.musicUserToken = uToken;
-        }
-        """
-    }
-
     public var onPlaybackStateChanged: ((Bool) -> Void)?
     public var onTimeChanged: ((Double, Double) -> Void)?
     public var onTrackChanged: ((String, String) -> Void)?
@@ -90,10 +90,12 @@ public final class AppleMusicWebPlayer: NSObject, WKNavigationDelegate, WKScript
 
     private var isNavigating: Bool = false
     private var didReloadForAuth: Bool = false
+    private var isExecutingPlayScript: Bool = false
     private var playCommandGeneration: Int = 0
     private var lastNotifiedPosition: Double = -1
     private var trackPlaybackStartTime: Date?
     private var lastPlaybackEndedTime: Date?
+    private var readyWaiters: [CheckedContinuation<Void, Never>] = []
     private static let officialWebURL = URL(string: "https://music.apple.com")!
     private let messageHandlerName = "airmusePlayerBridge"
 
@@ -130,6 +132,7 @@ public final class AppleMusicWebPlayer: NSObject, WKNavigationDelegate, WKScript
             }
 
             function notifyTime() {
+                if (window.__airmuseTransitioning) return;
                 var mk = window.MusicKit && window.MusicKit.getInstance ? window.MusicKit.getInstance() : null;
                 var item = mk ? mk.nowPlayingItem : null;
                 var cur = 0;
@@ -157,11 +160,7 @@ public final class AppleMusicWebPlayer: NSObject, WKNavigationDelegate, WKScript
                 if (item && item.attributes && item.attributes.durationInMillis) {
                     dur = item.attributes.durationInMillis / 1000.0;
                 }
-                // Strict completion rule:
-                // 1. Duration must be at least 15s (guards against uninitialized audio or empty items)
-                // 2. Played at least 10s into the track
-                // 3. Current time is within 3.5s of track duration
-                if (dur > 15 && cur >= (dur - 3.5) && cur > 10) {
+                if (dur > 3.0 && cur >= (dur - 2.5) && cur > 2.0) {
                     post('playbackEnded', {
                         currentPlaybackTime: cur,
                         currentPlaybackDuration: dur,
@@ -189,7 +188,6 @@ public final class AppleMusicWebPlayer: NSObject, WKNavigationDelegate, WKScript
                             playbackState: rawState
                         });
                         notifyTime();
-                        // Only ended (5) or completed (9) can signify track ending.
                         if (rawState === 5 || rawState === 9) {
                             checkTrackEnded('musickit_state');
                         }
@@ -199,10 +197,14 @@ public final class AppleMusicWebPlayer: NSObject, WKNavigationDelegate, WKScript
 
                     mk.addEventListener('nowPlayingItemDidChange', function() {
                         var item = mk.nowPlayingItem;
+                        var metaDur = (item && item.attributes && item.attributes.durationInMillis) ? (item.attributes.durationInMillis / 1000.0) : 0;
                         post('nowPlayingItemDidChange', {
                             title: item ? (item.title || item.name || '') : '',
                             artistName: item ? (item.artistName || '') : '',
-                            id: item ? (item.id || '') : ''
+                            id: item ? (item.id || '') : '',
+                            isAuthorized: !!mk.isAuthorized,
+                            playbackDuration: mk.currentPlaybackDuration || 0,
+                            metaDuration: metaDur
                         });
                         notifyTime();
                     });
@@ -219,7 +221,7 @@ public final class AppleMusicWebPlayer: NSObject, WKNavigationDelegate, WKScript
             if (!hookMusicKit()) {
                 var timer = setInterval(function() {
                     if (hookMusicKit()) clearInterval(timer);
-                }, 300);
+                }, 150);
             }
         })();
         """
@@ -247,15 +249,17 @@ public final class AppleMusicWebPlayer: NSObject, WKNavigationDelegate, WKScript
                         try { localStorage.setItem('media-user-token', t); } catch(e) {}
                         try { localStorage.setItem('music.userToken', t); } catch(e) {}
                         try {
-                            document.cookie = 'media-user-token=' + encodeURIComponent(t) + '; domain=.music.apple.com; path=/; max-age=31536000; SameSite=Lax';
-                            document.cookie = 'media-user-token=' + encodeURIComponent(t) + '; domain=.apple.com; path=/; max-age=31536000; SameSite=Lax';
+                            if (!document.cookie.includes('media-user-token=')) {
+                                document.cookie = 'media-user-token=' + t + '; domain=.music.apple.com; path=/; max-age=31536000; Secure; SameSite=Lax';
+                                document.cookie = 'media-user-token=' + t + '; domain=.apple.com; path=/; max-age=31536000; Secure; SameSite=Lax';
+                            }
                         } catch(e) {}
                     }
                 } catch(e) {}
                 try {
                     var cookieMatch = document.cookie.match(/media-user-token=([^;]+)/);
                     if (cookieMatch && cookieMatch[1]) {
-                        var cVal = decodeURIComponent(cookieMatch[1]);
+                        var cVal = cookieMatch[1].includes('%') ? decodeURIComponent(cookieMatch[1]) : cookieMatch[1];
                         try { localStorage.setItem('media-user-token', cVal); } catch(e) {}
                         try { localStorage.setItem('music.userToken', cVal); } catch(e) {}
                     }
@@ -283,6 +287,29 @@ public final class AppleMusicWebPlayer: NSObject, WKNavigationDelegate, WKScript
         guard !isNavigating else { return }
         let wv = ensureWebView()
         if wv.url == nil {
+            // Ensure document-start token script is present even if attach() created WKWebView before restoreSessionFromStorage()
+            if let token = self.userToken, !token.isEmpty {
+                let lit = Self.jsStringLiteral(token)
+                let tokenStartJS = """
+                (function() {
+                    try {
+                        var t = \(lit);
+                        if (t) {
+                            try { localStorage.setItem('media-user-token', t); } catch(e) {}
+                            try { localStorage.setItem('music.userToken', t); } catch(e) {}
+                            try {
+                                if (!document.cookie.includes('media-user-token=')) {
+                                    document.cookie = 'media-user-token=' + t + '; domain=.music.apple.com; path=/; max-age=31536000; Secure; SameSite=Lax';
+                                    document.cookie = 'media-user-token=' + t + '; domain=.apple.com; path=/; max-age=31536000; Secure; SameSite=Lax';
+                                }
+                            } catch(e) {}
+                        }
+                    } catch(e) {}
+                })();
+                """
+                let extraScript = WKUserScript(source: tokenStartJS, injectionTime: .atDocumentStart, forMainFrameOnly: false)
+                wv.configuration.userContentController.addUserScript(extraScript)
+            }
             isNavigating = true
             let storefront = AppleMusicSessionManager.shared.currentStorefront ?? "cn"
             let targetURL = URL(string: "https://music.apple.com/\(storefront)/browse") ?? Self.officialWebURL
@@ -308,19 +335,37 @@ public final class AppleMusicWebPlayer: NSObject, WKNavigationDelegate, WKScript
 
     // MARK: - Playback Commands
 
+    /// Immediately resets playback state before switching to a new track so stale events from the previous song cannot leak through.
+    public func beginTrackTransition() {
+        playCommandGeneration += 1
+        isExecutingPlayScript = true
+        isBuffering = true
+        isPlaying = false
+        hasStartedAudio = false
+        currentPosition = 0
+        currentDuration = 0
+        lastNotifiedPosition = -1
+        trackPlaybackStartTime = nil
+        onStateChanged?()
+    }
+
     /// Plays a catalog or library song by ID from 0:00 with full audio quality
     public func playSong(id: String) async throws -> Bool {
         preload()
         let js = """
         try {
+            window.__airmusePlayCmdId = cmdId;
+            window.__airmuseTransitioning = true;
             var mk = window.MusicKit && window.MusicKit.getInstance ? window.MusicKit.getInstance() : null;
-            if (!mk) return { ok: false, error: "MusicKit not loaded" };
+            if (!mk) { window.__airmuseTransitioning = false; return { ok: false, error: "MusicKit not loaded" }; }
             if (uToken && !mk.musicUserToken) {
                 mk.musicUserToken = uToken;
             }
             if (!mk.isAuthorized) {
+                window.__airmuseTransitioning = false;
                 return { ok: false, error: "WEB_NOT_AUTHORIZED" };
             }
+            mk.volume = targetVol;
             if (mk.isPlaying) {
                 try { mk.stop(); } catch(e) {}
             }
@@ -335,14 +380,20 @@ public final class AppleMusicWebPlayer: NSObject, WKNavigationDelegate, WKScript
                     await mk.setQueue({ songs: [cleanId] });
                 }
             }
-            var p = mk.play();
-            if (p && p.catch) { p.catch(function(e) { console.warn("mk.play err", e); }); }
+            if (window.__airmusePlayCmdId !== cmdId) {
+                return { ok: false, cancelled: true };
+            }
+            window.__airmuseTransitioning = false;
+            await Promise.race([
+                Promise.resolve(mk.play()),
+                new Promise(function(resolve) { setTimeout(resolve, 1500); })
+            ]);
             return { ok: true };
         } catch(e) {
             return { ok: false, error: String(e && e.message ? e.message : e) };
         }
         """
-        return try await executePlayScript(js, arguments: ["trackId": id, "uToken": userToken ?? ""], description: "单曲 [\(id)]")
+        return try await executePlayScript(js, arguments: ["trackId": id, "uToken": userToken ?? "", "targetVol": Double(currentVolume)], description: "单曲 [\(id)]")
     }
 
     /// Plays a radio station by ID
@@ -350,6 +401,7 @@ public final class AppleMusicWebPlayer: NSObject, WKNavigationDelegate, WKScript
         preload()
         let js = """
         try {
+            window.__airmusePlayCmdId = cmdId;
             var mk = window.MusicKit && window.MusicKit.getInstance ? window.MusicKit.getInstance() : null;
             if (!mk) return { ok: false, error: "MusicKit not loaded" };
             if (uToken && !mk.musicUserToken) {
@@ -358,18 +410,24 @@ public final class AppleMusicWebPlayer: NSObject, WKNavigationDelegate, WKScript
             if (!mk.isAuthorized) {
                 return { ok: false, error: "WEB_NOT_AUTHORIZED" };
             }
+            mk.volume = targetVol;
             if (mk.isPlaying) {
                 try { mk.stop(); } catch(e) {}
             }
             await mk.setQueue({ station: String(trackId) });
-            var p = mk.play();
-            if (p && p.catch) { p.catch(function(e) { console.warn("mk.play err", e); }); }
+            if (window.__airmusePlayCmdId !== cmdId) {
+                return { ok: false, cancelled: true };
+            }
+            await Promise.race([
+                Promise.resolve(mk.play()),
+                new Promise(function(resolve) { setTimeout(resolve, 1500); })
+            ]);
             return { ok: true };
         } catch(e) {
             return { ok: false, error: String(e && e.message ? e.message : e) };
         }
         """
-        return try await executePlayScript(js, arguments: ["trackId": id, "uToken": userToken ?? ""], description: "广播电台 [\(id)]")
+        return try await executePlayScript(js, arguments: ["trackId": id, "uToken": userToken ?? "", "targetVol": Double(currentVolume)], description: "广播电台 [\(id)]")
     }
 
     /// Plays a playlist starting at index
@@ -377,6 +435,7 @@ public final class AppleMusicWebPlayer: NSObject, WKNavigationDelegate, WKScript
         preload()
         let js = """
         try {
+            window.__airmusePlayCmdId = cmdId;
             var mk = window.MusicKit && window.MusicKit.getInstance ? window.MusicKit.getInstance() : null;
             if (!mk) return { ok: false, error: "MusicKit not loaded" };
             if (uToken && !mk.musicUserToken) {
@@ -385,6 +444,7 @@ public final class AppleMusicWebPlayer: NSObject, WKNavigationDelegate, WKScript
             if (!mk.isAuthorized) {
                 return { ok: false, error: "WEB_NOT_AUTHORIZED" };
             }
+            mk.volume = targetVol;
             if (mk.isPlaying) {
                 try { mk.stop(); } catch(e) {}
             }
@@ -395,14 +455,19 @@ public final class AppleMusicWebPlayer: NSObject, WKNavigationDelegate, WKScript
             } catch(e1) {
                 await mk.setQueue({ playlist: rawId, startWith: startIndex });
             }
-            var p = mk.play();
-            if (p && p.catch) { p.catch(function(e) { console.warn("mk.play err", e); }); }
+            if (window.__airmusePlayCmdId !== cmdId) {
+                return { ok: false, cancelled: true };
+            }
+            await Promise.race([
+                Promise.resolve(mk.play()),
+                new Promise(function(resolve) { setTimeout(resolve, 1500); })
+            ]);
             return { ok: true };
         } catch(e) {
             return { ok: false, error: String(e && e.message ? e.message : e) };
         }
         """
-        return try await executePlayScript(js, arguments: ["trackId": id, "startIndex": startIndex, "uToken": userToken ?? ""], description: "歌单 [\(id)]")
+        return try await executePlayScript(js, arguments: ["trackId": id, "startIndex": startIndex, "uToken": userToken ?? "", "targetVol": Double(currentVolume)], description: "歌单 [\(id)]")
     }
 
     /// Plays an album starting at index
@@ -410,6 +475,7 @@ public final class AppleMusicWebPlayer: NSObject, WKNavigationDelegate, WKScript
         preload()
         let js = """
         try {
+            window.__airmusePlayCmdId = cmdId;
             var mk = window.MusicKit && window.MusicKit.getInstance ? window.MusicKit.getInstance() : null;
             if (!mk) return { ok: false, error: "MusicKit not loaded" };
             if (uToken && !mk.musicUserToken) {
@@ -418,6 +484,7 @@ public final class AppleMusicWebPlayer: NSObject, WKNavigationDelegate, WKScript
             if (!mk.isAuthorized) {
                 return { ok: false, error: "WEB_NOT_AUTHORIZED" };
             }
+            mk.volume = targetVol;
             if (mk.isPlaying) {
                 try { mk.stop(); } catch(e) {}
             }
@@ -428,14 +495,19 @@ public final class AppleMusicWebPlayer: NSObject, WKNavigationDelegate, WKScript
             } catch(e1) {
                 await mk.setQueue({ album: rawId, startWith: startIndex });
             }
-            var p = mk.play();
-            if (p && p.catch) { p.catch(function(e) { console.warn("mk.play err", e); }); }
+            if (window.__airmusePlayCmdId !== cmdId) {
+                return { ok: false, cancelled: true };
+            }
+            await Promise.race([
+                Promise.resolve(mk.play()),
+                new Promise(function(resolve) { setTimeout(resolve, 1500); })
+            ]);
             return { ok: true };
         } catch(e) {
             return { ok: false, error: String(e && e.message ? e.message : e) };
         }
         """
-        return try await executePlayScript(js, arguments: ["trackId": id, "startIndex": startIndex, "uToken": userToken ?? ""], description: "专辑 [\(id)]")
+        return try await executePlayScript(js, arguments: ["trackId": id, "startIndex": startIndex, "uToken": userToken ?? "", "targetVol": Double(currentVolume)], description: "专辑 [\(id)]")
     }
 
     /// Explicitly pauses playback
@@ -458,6 +530,7 @@ public final class AppleMusicWebPlayer: NSObject, WKNavigationDelegate, WKScript
         if paused {
             self.trackPlaybackStartTime = nil
             self.isPlaying = false
+            self.isBuffering = false
             onPlaybackStateChanged?(false)
             onStateChanged?()
         }
@@ -484,6 +557,7 @@ public final class AppleMusicWebPlayer: NSObject, WKNavigationDelegate, WKScript
         if started {
             self.trackPlaybackStartTime = Date()
             self.isPlaying = true
+            self.isBuffering = false
             onPlaybackStateChanged?(true)
             onStateChanged?()
         }
@@ -523,6 +597,8 @@ public final class AppleMusicWebPlayer: NSObject, WKNavigationDelegate, WKScript
         _ = try? await wv.evaluateJavaScript(js)
         self.trackPlaybackStartTime = nil
         self.isPlaying = false
+        self.isBuffering = false
+        self.hasStartedAudio = false
         onPlaybackStateChanged?(false)
         onStateChanged?()
     }
@@ -587,17 +663,19 @@ public final class AppleMusicWebPlayer: NSObject, WKNavigationDelegate, WKScript
 
     /// Sets playback volume (0.0 ... 1.0)
     public func setVolume(_ volume: Float) async throws {
+        let clamped = min(max(volume, 0.0), 1.0)
+        self.currentVolume = clamped
         guard let wv = webView else { return }
-        let clamped = max(0.0, min(1.0, Double(volume)))
         let js = """
         (function() {
             try {
                 var mk = window.MusicKit && window.MusicKit.getInstance ? window.MusicKit.getInstance() : null;
-                if (mk) mk.volume = \(clamped);
+                if (mk) mk.volume = \(Double(clamped));
             } catch(e) {}
         })();
         """
         _ = try? await wv.evaluateJavaScript(js)
+        onStateChanged?()
     }
 
     /// Clean reset of player on sign-out
@@ -608,69 +686,117 @@ public final class AppleMusicWebPlayer: NSObject, WKNavigationDelegate, WKScript
         webView = nil
         isReady = false
         isPlaying = false
+        isBuffering = false
+        hasStartedAudio = false
         currentPosition = 0
         currentDuration = 0
         currentTrackTitle = ""
         currentArtistName = ""
         isNavigating = false
         didReloadForAuth = false
+        isExecutingPlayScript = false
         playCommandGeneration += 1
         trackPlaybackStartTime = nil
         lastPlaybackEndedTime = nil
+        resumeReadyWaiters()
         AppLogger.shared.log(category: .playback, level: .info, message: "Apple Music Web 播放器已重置释放")
     }
 
-    // MARK: - Private Execution Helper
+    // MARK: - Ready Waiter & Private Execution Helper
+
+    private func resumeReadyWaiters() {
+        let waiters = readyWaiters
+        readyWaiters.removeAll()
+        for cont in waiters {
+            cont.resume()
+        }
+    }
+
+    private func waitUntilReady(timeoutSeconds: Double) async {
+        if isReady { return }
+        let timeoutTask = Task { @MainActor [weak self] in
+            try? await Task.sleep(for: .seconds(timeoutSeconds))
+            self?.resumeReadyWaiters()
+        }
+        await withCheckedContinuation { (cont: CheckedContinuation<Void, Never>) in
+            if self.isReady {
+                cont.resume()
+            } else {
+                self.readyWaiters.append(cont)
+            }
+        }
+        timeoutTask.cancel()
+    }
 
     private func executePlayScript(_ script: String, arguments: [String: Any], description: String) async throws -> Bool {
         let wv = ensureWebView()
         playCommandGeneration += 1
         let myGen = playCommandGeneration
 
-        // Eagerly establish playback intent to prevent momentary flashing to paused state
-        self.isPlaying = true
+        // Establish loading/buffering state until audio actually starts playing
+        self.isBuffering = true
+        self.isPlaying = false
+        self.hasStartedAudio = false
         self.currentPosition = 0
         self.trackPlaybackStartTime = Date()
-        onPlaybackStateChanged?(true)
+        self.isExecutingPlayScript = true
+        defer {
+            if myGen == playCommandGeneration {
+                self.isExecutingPlayScript = false
+            }
+        }
+        onStateChanged?()
 
-        // Wait up to 8.0s for web page & MusicKit JS to be responsive, using callAsyncJavaScript so Promises are awaited
+        if !isReady {
+            await waitUntilReady(timeoutSeconds: 4.0)
+            guard myGen == playCommandGeneration else { return false }
+        }
+
+        var argsWithGen = arguments
+        argsWithGen["cmdId"] = myGen
+
+        // Poll up to ~4.8s (24 × 200ms) for MusicKit JS instance if page just finished loading
         var retries = 0
-        while retries < 16 {
+        while retries < 24 {
             try Task.checkCancellation()
             guard myGen == playCommandGeneration else { return false }
             do {
-                let res = try await wv.callAsyncJavaScript(script, arguments: arguments, in: nil, contentWorld: .page)
+                let res = try await wv.callAsyncJavaScript(script, arguments: argsWithGen, in: nil, contentWorld: .page)
                 guard myGen == playCommandGeneration else { return false }
                 if let dict = res as? [String: Any], let ok = dict["ok"] as? Bool, ok {
-                    self.isPlaying = true
-                    self.currentPosition = 0
                     self.trackPlaybackStartTime = Date()
-                    onPlaybackStateChanged?(true)
                     AppLogger.shared.log(category: .playback, level: .info, message: "Web 播放器指令执行成功: \(description)")
+                    onStateChanged?()
                     return true
+                } else if let dict = res as? [String: Any], let cancelled = dict["cancelled"] as? Bool, cancelled {
+                    return false
                 } else if let dict = res as? [String: Any], let err = dict["error"] as? String {
                     if err == "WEB_NOT_AUTHORIZED" {
                         AppLogger.shared.log(category: .playback, level: .error, message: "Web 端 MusicKit 未处于授权状态 (isAuthorized=false)，已中止播放")
                         self.isPlaying = false
+                        self.isBuffering = false
                         self.trackPlaybackStartTime = nil
                         onPlaybackStateChanged?(false)
+                        onStateChanged?()
                         if !AppleMusicSessionManager.shared.webSessionState.isLoggedIn {
                             NotificationCenter.default.post(name: .appleMusicRequiresAuthentication, object: nil)
                         }
                         return false
                     }
-                    AppLogger.shared.log(category: .playback, level: .warn, message: "Web 播放器暂未就绪 (\(err))，正在重试... [\(retries + 1)/16]")
+                    AppLogger.shared.log(category: .playback, level: .warn, message: "Web 播放器暂未就绪 (\(err))，正在重试... [\(retries + 1)/24]")
                 }
             } catch {
                 guard myGen == playCommandGeneration else { return false }
                 AppLogger.shared.log(category: .playback, level: .warn, message: "Web 播放器异步调用异常: \(error.localizedDescription)，重试中...")
             }
-            try? await Task.sleep(nanoseconds: 500_000_000)
+            try? await Task.sleep(for: .milliseconds(200))
             retries += 1
         }
         self.isPlaying = false
+        self.isBuffering = false
         self.trackPlaybackStartTime = nil
         onPlaybackStateChanged?(false)
+        onStateChanged?()
         return false
     }
 
@@ -709,34 +835,43 @@ public final class AppleMusicWebPlayer: NSObject, WKNavigationDelegate, WKScript
 
         case "playbackStateDidChange":
             let rawState = body["playbackState"] as? Int ?? -1
-            let isBuffering = body["isBuffering"] as? Bool ?? (rawState == 1 || rawState == 7 || rawState == 8)
-            let isPaused = body["isPaused"] as? Bool ?? (rawState == 3 || rawState == 4 || rawState == 0)
+            let buffering = body["isBuffering"] as? Bool ?? (rawState == 1 || rawState == 7 || rawState == 8)
+            let paused = body["isPaused"] as? Bool ?? (rawState == 3 || rawState == 4 || rawState == 0)
             let playing = body["isPlaying"] as? Bool ?? (rawState == 2)
 
             let previousPlaying = self.isPlaying
+            let previousBuffering = self.isBuffering
+
             if playing {
                 self.isPlaying = true
-            } else if isPaused {
-                // Initial buffer guard: during the first 6.0s of playback start, do NOT flip to paused due to transient bridge events
-                if let startTime = self.trackPlaybackStartTime, Date().timeIntervalSince(startTime) < 6.0, previousPlaying {
-                    AppLogger.shared.log(category: .playback, level: .debug, message: "MusicKit 启动缓冲期保持播放态 (rawState: \(rawState))")
-                } else {
+                self.isBuffering = false
+                self.hasStartedAudio = true
+            } else if buffering {
+                self.isBuffering = true
+                if !self.hasStartedAudio {
                     self.isPlaying = false
                 }
-            } else if isBuffering {
-                // Buffering/loading: preserve isPlaying = true if track was already started
-                if previousPlaying {
-                    self.isPlaying = true
+            } else if paused {
+                // Ignore transient stopped/none events emitted by mk.stop()/setQueue while a new track script is executing
+                if self.isExecutingPlayScript && (rawState == 0 || rawState == 4) {
+                    return
                 }
+                self.isPlaying = false
+                self.isBuffering = false
             }
 
-            if self.isPlaying != previousPlaying {
-                AppLogger.shared.log(category: .playback, level: .info, message: "Apple Music 播放状态切换: \(previousPlaying ? "播放中" : "已暂停") -> \(self.isPlaying ? "播放中" : "已暂停") (MusicKit 状态码: \(rawState))")
-                onPlaybackStateChanged?(self.isPlaying)
+            if self.isPlaying != previousPlaying || self.isBuffering != previousBuffering {
+                if self.isPlaying != previousPlaying {
+                    AppLogger.shared.log(category: .playback, level: .info, message: "Apple Music 播放状态切换: \(previousPlaying ? "播放中" : "未播放") -> \(self.isPlaying ? "播放中" : "未播放") (MusicKit 状态码: \(rawState))")
+                    onPlaybackStateChanged?(self.isPlaying)
+                }
                 onStateChanged?()
             }
 
         case "playbackTimeDidChange":
+            if self.isExecutingPlayScript {
+                return
+            }
             let cur = body["currentPlaybackTime"] as? Double ?? 0
             let dur = body["currentPlaybackDuration"] as? Double ?? 0
 
@@ -747,8 +882,13 @@ public final class AppleMusicWebPlayer: NSObject, WKNavigationDelegate, WKScript
 
             self.currentPosition = cur
             if dur > 0 { self.currentDuration = dur }
+            let justStartedAudio = !self.hasStartedAudio && cur > 0.01 && self.isPlaying
+            if cur > 0.01 && self.isPlaying {
+                self.hasStartedAudio = true
+                self.isBuffering = false
+            }
             onTimeChanged?(cur, dur)
-            if abs(cur - lastNotifiedPosition) >= 0.45 {
+            if justStartedAudio || abs(cur - lastNotifiedPosition) >= 0.45 {
                 lastNotifiedPosition = cur
                 onStateChanged?()
             }
@@ -765,37 +905,38 @@ public final class AppleMusicWebPlayer: NSObject, WKNavigationDelegate, WKScript
             let dur = body["currentPlaybackDuration"] as? Double ?? self.currentDuration
             let now = Date()
 
-            // 1. Minimum playtime guard: song must have started at least 8 seconds ago
+            // 1. Minimum playtime guard: song must have started at least 3 seconds ago
             if let startTime = self.trackPlaybackStartTime {
                 let elapsed = now.timeIntervalSince(startTime)
-                if elapsed < 8.0 {
+                if elapsed < 3.0 {
                     AppLogger.shared.log(category: .playback, level: .warn, message: "已拦截虚假完播信号: 歌曲仅启动了 \(String(format: "%.1f", elapsed)) 秒")
                     return
                 }
             }
 
-            // 2. Debounce: minimum 8 seconds between successive ended events
+            // 2. Debounce: minimum 5 seconds between successive ended events
             if let lastEnded = self.lastPlaybackEndedTime {
                 let diff = now.timeIntervalSince(lastEnded)
-                if diff < 8.0 {
-                    AppLogger.shared.log(category: .playback, level: .warn, message: "已拦截高频重复完播信号 (距上次切歌不足 8 秒)")
+                if diff < 5.0 {
+                    AppLogger.shared.log(category: .playback, level: .warn, message: "已拦截高频重复完播信号 (距上次切歌不足 5 秒)")
                     return
                 }
             }
 
             // 3. Proximity check: must have actually reached near completion
-            if dur > 15.0 {
-                guard cur >= (dur - 5.0) || (dur > 0 && (cur / dur) > 0.88) else {
+            if dur > 3.0 {
+                guard cur >= (dur - 2.5) || (dur > 0 && (cur / dur) > 0.88) else {
                     AppLogger.shared.log(category: .playback, level: .warn, message: "已拦截未完播信号: 进度 \(Int(cur))s / \(Int(dur))s")
                     return
                 }
-            } else if cur < 15.0 {
+            } else if cur < 2.0 {
                 return
             }
 
             self.lastPlaybackEndedTime = now
             AppLogger.shared.log(category: .playback, level: .info, message: "Apple Music 曲目自然完播 (有效时长: \(Int(cur))s)，触发自动连播下一首")
             self.isPlaying = false
+            self.isBuffering = false
             self.currentPosition = 0
             onPlaybackStateChanged?(false)
             onPlaybackEnded?()

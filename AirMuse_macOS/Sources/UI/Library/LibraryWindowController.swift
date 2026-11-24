@@ -68,6 +68,7 @@ open class LibraryWindowController: NSWindowController {
 
     private var categoryLoadTask: Task<Void, Never>?
     private var searchTask: Task<Void, Never>?
+    private var isLoadingHomeSidebar: Bool = false
 
     // Dynamic remote categories cached per tab index (0: Home recommendations, 1: Browse editorial, 2: Radio)
     private var loadedEditorialCategories: [Int: [AmpCategory]] = LibraryCacheStore.shared.load() ?? [:]
@@ -307,11 +308,23 @@ open class LibraryWindowController: NSWindowController {
         Task { @MainActor [weak self] in
             guard let self else { return }
             self.updateTopBarTitle()
-            if let state = notif.userInfo?["state"] as? AppleMusicWebSessionState, case .loggedOut = state {
+            guard let state = notif.userInfo?["state"] as? AppleMusicWebSessionState else { return }
+            switch state {
+            case .verifying, .loggingIn, .unknown:
+                return
+            case .loggedOut, .expired:
                 LibraryCacheStore.shared.clear()
+                self.loadedEditorialCategories.removeAll()
+                self.handleTabSelected(self.activeTabIndex)
+            case .loggedIn:
+                if self.activeTabIndex == 0 && (self.loadedEditorialCategories[0]?.isEmpty == false) {
+                    self.loadDynamicHomeSidebar()
+                } else {
+                    self.handleTabSelected(self.activeTabIndex)
+                }
+            case .error:
+                return
             }
-            self.loadedEditorialCategories.removeAll()
-            self.handleTabSelected(self.activeTabIndex)
         }
     }
 
@@ -357,26 +370,13 @@ open class LibraryWindowController: NSWindowController {
             self?.onClose?()
         }
 
-        // Observe Apple Music Session changes (login / logout / token refreshed)
+        // Observe Apple Music Session changes via a single notification path
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(handleSessionStateNotification(_:)),
             name: AppleMusicSessionManager.sessionStateDidChangeNotification,
             object: nil
         )
-
-        AppleMusicSessionManager.shared.onStateChanged = { [weak self] state in
-            Task { @MainActor [weak self] in
-                guard let self else { return }
-                self.updateTopBarTitle()
-                AppLogger.shared.log(category: .auth, level: .info, message: "Apple Music 会话状态变更，重置缓存并刷新当前页面")
-                if case .loggedOut = state {
-                    LibraryCacheStore.shared.clear()
-                }
-                self.loadedEditorialCategories.removeAll()
-                self.handleTabSelected(self.activeTabIndex)
-            }
-        }
 
         // Sidebar Events
         sidebar.onCategorySelected = { [weak self] categoryIndex in
@@ -526,8 +526,12 @@ open class LibraryWindowController: NSWindowController {
     }
 
     private func loadDynamicHomeSidebar() {
-        guard let provider = appleMusicProvider else { return }
+        guard !isLoadingHomeSidebar, let provider = appleMusicProvider else { return }
+        isLoadingHomeSidebar = true
         Task { [weak self] in
+            defer {
+                Task { @MainActor [weak self] in self?.isLoadingHomeSidebar = false }
+            }
             guard let self else { return }
             guard let recs = try? await provider.fetchRecommendations(), !recs.isEmpty else { return }
             await MainActor.run {
