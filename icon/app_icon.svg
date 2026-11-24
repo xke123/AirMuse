@@ -1,0 +1,96 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <defs>
+    <!-- Background Gradient -->
+    <linearGradient id="bg-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0a0d1a" />
+      <stop offset="50%" stop-color="#10152e" />
+      <stop offset="100%" stop-color="#18102d" />
+    </linearGradient>
+
+    <!-- Unified Gradient for Single-Fill Modes -->
+    <linearGradient id="unified-grad" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#00f2fe" />
+      <stop offset="30%" stop-color="#38e8c6" />
+      <stop offset="65%" stop-color="#8b5cf6" />
+      <stop offset="100%" stop-color="#ff007a" />
+    </linearGradient>
+
+    <linearGradient id="note-grad-0" x1="0%" y1="100%" x2="0%" y2="0%">
+      <stop offset="0%" stop-color="#00f2fe" />
+      <stop offset="100%" stop-color="#00c4fe" />
+    </linearGradient>
+    <linearGradient id="note-grad-1" x1="0%" y1="100%" x2="0%" y2="0%">
+      <stop offset="0%" stop-color="#38e8c6" />
+      <stop offset="100%" stop-color="#05dfd7" />
+    </linearGradient>
+    <linearGradient id="note-grad-2" x1="0%" y1="100%" x2="0%" y2="0%">
+      <stop offset="0%" stop-color="#8b5cf6" />
+      <stop offset="100%" stop-color="#7038e8" />
+    </linearGradient>
+    <linearGradient id="note-grad-3" x1="0%" y1="100%" x2="0%" y2="0%">
+      <stop offset="0%" stop-color="#ff007a" />
+      <stop offset="100%" stop-color="#e00065" />
+    </linearGradient>
+
+    <!-- Center Point Glow -->
+    <radialGradient id="center-glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#00f2fe" stop-opacity="0.6" />
+      <stop offset="50%" stop-color="#00f2fe" stop-opacity="0.15" />
+      <stop offset="100%" stop-color="#00f2fe" stop-opacity="0" />
+    </radialGradient>
+
+    <!-- Outer Ambient Aura -->
+    <radialGradient id="ambient-aura" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#00f2fe" stop-opacity="0.25" />
+      <stop offset="60%" stop-color="#ff007a" stop-opacity="0.08" />
+      <stop offset="100%" stop-color="#0a0d1a" stop-opacity="0" />
+    </radialGradient>
+
+    <!-- Glow Filter -->
+    <filter id="soft-glow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="10" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+
+    <!-- Official Apple SF Symbol `music.note` (Master Symbol) -->
+    <!-- Extracted directly from macOS CoreGlyphs (San Francisco Regular) -->
+    <g id="sf-symbol-note">
+      <path d="M 119.07 45.16 L 119.07 8.47 C 119.07 3.36, 114.93 0.00, 109.87 1.05 L 59.78 11.95 C 53.52 13.33, 50.18 16.64, 50.18 22.13 L 50.27 130.79 C 50.81 135.55, 48.48 138.67, 44.22 139.46 L 28.69 142.70 C 9.19 146.84, 0.00 156.74, 0.00 171.63 C 0.00 186.57, 11.50 196.99, 27.68 196.99 C 42.08 196.99, 63.51 186.42, 63.51 157.99 L 63.51 68.68 C 63.51 63.45, 64.52 62.45, 69.18 61.51 L 113.80 51.61 C 116.96 50.88, 119.07 48.45, 119.07 45.16 Z" />
+    </g>
+
+    <!-- Mirrored SF Symbol Note (For Symmetrical Wings) -->
+    <g id="sf-symbol-note-mirrored">
+      <path d="M 119.07 45.16 L 119.07 8.47 C 119.07 3.36, 114.93 0.00, 109.87 1.05 L 59.78 11.95 C 53.52 13.33, 50.18 16.64, 50.18 22.13 L 50.27 130.79 C 50.81 135.55, 48.48 138.67, 44.22 139.46 L 28.69 142.70 C 9.19 146.84, 0.00 156.74, 0.00 171.63 C 0.00 186.57, 11.50 196.99, 27.68 196.99 C 42.08 196.99, 63.51 186.42, 63.51 157.99 L 63.51 68.68 C 63.51 63.45, 64.52 62.45, 69.18 61.51 L 113.80 51.61 C 116.96 50.88, 119.07 48.45, 119.07 45.16 Z" transform="translate(63.5, 0) scale(-1, 1)" />
+    </g>
+  </defs>
+  <!-- macOS App Icon Squircle Background -->
+  <rect width="1024" height="1024" rx="224" fill="url(#bg-grad)" />
+  <rect width="1024" height="1024" rx="224" fill="none" stroke="rgba(255, 255, 255, 0.12)" stroke-width="2" />
+  <!-- Ambient Atmospheric Aura -->
+  <circle cx="512.0" cy="545.6" r="420" fill="url(#ambient-aura)" />
+  <!-- Center Glow anchoring the Clustered Beans (豆子集中点) -->
+  <circle cx="512.0" cy="665.6" r="260" fill="url(#center-glow)" />
+  <!-- Subtle Convergence Orbit Ring -->
+  <circle cx="512.0" cy="665.6" r="45" fill="none" stroke="#8b5cf6" stroke-width="1.5" stroke-dasharray="4 6" opacity="0.4" />
+  <!-- 4 Official Apple SF Symbol `music.note` Eighth Notes Fanning Out 120.0° -->
+  <g filter="url(#soft-glow)">
+    <g transform="translate(498.14, 657.60) rotate(-60.00) scale(2.12) translate(-31.75, -168.00)" fill="url(#note-grad-0)" stroke="#0a0d1a" stroke-width="2.5">
+      <use href="#sf-symbol-note-mirrored" />
+    </g>
+    <g transform="translate(506.53, 650.56) rotate(-20.00) scale(2.12) translate(-31.75, -168.00)" fill="url(#note-grad-1)" stroke="#0a0d1a" stroke-width="2.5">
+      <use href="#sf-symbol-note-mirrored" />
+    </g>
+    <g transform="translate(517.47, 650.56) rotate(20.00) scale(2.12) translate(-31.75, -168.00)" fill="url(#note-grad-2)" stroke="#0a0d1a" stroke-width="2.5">
+      <use href="#sf-symbol-note" />
+    </g>
+    <g transform="translate(525.86, 657.60) rotate(60.00) scale(2.12) translate(-31.75, -168.00)" fill="url(#note-grad-3)" stroke="#0a0d1a" stroke-width="2.5">
+      <use href="#sf-symbol-note" />
+    </g>
+  </g>
+  <!-- Central Luminous Focal Bead -->
+  <circle cx="512.0" cy="665.6" r="8" fill="#ffffff" opacity="0.95" filter="url(#soft-glow)" />
+  <circle cx="512.0" cy="665.6" r="16" fill="none" stroke="#00f2fe" stroke-width="2" opacity="0.6" />
+</svg>
