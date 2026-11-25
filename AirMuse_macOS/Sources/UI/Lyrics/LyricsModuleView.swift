@@ -48,6 +48,7 @@ open class LyricsModuleView: NSView {
 
     public private(set) var isMiniLyricsMode: Bool = false
     private var isHovering: Bool = false
+    private var lastDoubleClickTime: TimeInterval = 0
 
     public var onClose: (() -> Void)?
     public var onMiniModeDidChange: (() -> Void)?
@@ -253,5 +254,41 @@ open class LyricsModuleView: NSView {
 
     public func clearScrollPresentation() {
         panel.clearScrollPresentation()
+    }
+
+    open override func mouseUp(with event: NSEvent) {
+        super.mouseUp(with: event)
+        guard event.clickCount == 2 else { return }
+        let localPt = convert(event.locationInWindow, from: nil)
+        guard isPointInGlassBar(localPt) else { return }
+        let now = ProcessInfo.processInfo.systemUptime
+        guard now - lastDoubleClickTime >= MotionTokens.Thresholds.doubleClickDebounce else { return }
+        lastDoubleClickTime = now
+        toggleMiniLyricsMode()
+    }
+
+    private func isPointInGlassBar(_ point: NSPoint) -> Bool {
+        guard bounds.contains(point), !containsInteractiveControl(in: self, at: point) else {
+            return false
+        }
+        if isMiniLyricsMode {
+            return true
+        }
+        let capH = OriginalDesignTokens.BaseMetrics.glassCapHeight * GlassInteractionCoordinator.shared.uiScale
+        return point.y >= bounds.height - capH || point.y <= capH
+    }
+
+    private func containsInteractiveControl(in view: NSView, at point: NSPoint) -> Bool {
+        for sub in view.subviews where !sub.isHidden {
+            let subPt = sub.convert(point, from: view)
+            guard sub.bounds.contains(subPt) else { continue }
+            if sub is NSControl || sub is GlassButton {
+                return true
+            }
+            if containsInteractiveControl(in: sub, at: subPt) {
+                return true
+            }
+        }
+        return false
     }
 }

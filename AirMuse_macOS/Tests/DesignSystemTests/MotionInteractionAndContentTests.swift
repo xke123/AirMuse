@@ -377,5 +377,76 @@ struct MotionInteractionAndContentTests {
         #expect(toggleHit is GlassButton)
         #expect(closeHit !== toggleHit)
     }
+
+    @Test("LyricsModuleView double-clicking top or bottom glass bar toggles mini mode, ignoring body and buttons")
+    func testLyricsGlassBarDoubleClickTogglesMiniMode() {
+        let savedRM = MotionAccessibility.shared.reduceMotionOverride
+        defer { MotionAccessibility.shared.reduceMotionOverride = savedRM }
+        MotionAccessibility.shared.reduceMotionOverride = true
+
+        let s = GlassInteractionCoordinator.shared.uiScale
+        let normalSize = NSSize(
+            width: OriginalDesignTokens.BaseMetrics.lyricsWindowWidth * s,
+            height: OriginalDesignTokens.BaseMetrics.lyricsWindowHeight * s
+        )
+        let miniSize = NSSize(
+            width: OriginalDesignTokens.BaseMetrics.lyricsWindowWidth * s,
+            height: OriginalDesignTokens.BaseMetrics.miniBarStandardHeight * s
+        )
+        let win = NSWindow(contentRect: NSRect(origin: .zero, size: normalSize), styleMask: .borderless, backing: .buffered, defer: false)
+        let module = LyricsModuleView(frame: NSRect(origin: .zero, size: normalSize))
+        win.contentView?.addSubview(module)
+        module.setHovering(true, immediate: true)
+        module.layoutSubtreeIfNeeded()
+
+        func makeDoubleClick(at pt: NSPoint) -> NSEvent {
+            NSEvent.mouseEvent(
+                with: .leftMouseUp,
+                location: pt,
+                modifierFlags: [],
+                timestamp: ProcessInfo.processInfo.systemUptime,
+                windowNumber: win.windowNumber,
+                context: nil,
+                eventNumber: 1,
+                clickCount: 2,
+                pressure: 0
+            )!
+        }
+
+        // 1. Middle body double-click must NOT toggle
+        let bodyPt = NSPoint(x: normalSize.width * 0.5, y: normalSize.height * 0.5)
+        module.mouseUp(with: makeDoubleClick(at: bodyPt))
+        #expect(module.isMiniLyricsMode == false)
+
+        // 2. Close button double-click must NOT toggle
+        let wb = 13.0 * s
+        let capH = OriginalDesignTokens.BaseMetrics.glassCapHeight * s
+        let closePt = NSPoint(x: normalSize.width - 16.0 * s - wb * 0.5, y: normalSize.height - capH * 0.5)
+        module.mouseUp(with: makeDoubleClick(at: closePt))
+        #expect(module.isMiniLyricsMode == false)
+
+        // 3. Top glass bar double-click toggles Normal -> Mini
+        let topBarPt = NSPoint(x: normalSize.width * 0.3, y: normalSize.height - capH * 0.5)
+        module.mouseUp(with: makeDoubleClick(at: topBarPt))
+        #expect(module.isMiniLyricsMode == true)
+
+        // Resize to mini bar & wait past debounce, then double-click lower half of mini bar to restore Normal
+        module.frame = NSRect(origin: .zero, size: miniSize)
+        win.setFrame(NSRect(origin: .zero, size: miniSize), display: false)
+        module.layoutSubtreeIfNeeded()
+        Thread.sleep(forTimeInterval: MotionTokens.Thresholds.doubleClickDebounce + 0.02)
+        let miniBarLowerPt = NSPoint(x: miniSize.width * 0.3, y: miniSize.height * 0.25)
+        module.mouseUp(with: makeDoubleClick(at: miniBarLowerPt))
+        #expect(module.isMiniLyricsMode == false)
+
+        // 4. Bottom glass bar double-click toggles Normal -> Mini
+        module.frame = NSRect(origin: .zero, size: normalSize)
+        win.setFrame(NSRect(origin: .zero, size: normalSize), display: false)
+        module.layoutSubtreeIfNeeded()
+        Thread.sleep(forTimeInterval: MotionTokens.Thresholds.doubleClickDebounce + 0.02)
+        let bottomBarPt = NSPoint(x: normalSize.width * 0.3, y: capH * 0.5)
+        module.mouseUp(with: makeDoubleClick(at: bottomBarPt))
+        #expect(module.isMiniLyricsMode == true)
+    }
 }
 }

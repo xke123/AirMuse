@@ -38,9 +38,13 @@ private final class ModuleTopBarDragHandle: NSView {
     var onDragBegan: (() -> Void)?
     var onDragChanged: ((NSPoint) -> Void)?
     var onDragEnded: (() -> Void)?
+    var onDragCancelled: (() -> Void)?
+    var onDoubleClicked: (() -> Void)?
 
     private var dragStartMouse: NSPoint = .zero
     private var isDragging = false
+    private var didDrag = false
+    private var lastDoubleClickTime: TimeInterval = 0
 
     override var mouseDownCanMoveWindow: Bool { false }
 
@@ -71,6 +75,7 @@ private final class ModuleTopBarDragHandle: NSView {
     override func mouseDown(with event: NSEvent) {
         dragStartMouse = NSEvent.mouseLocation
         isDragging = true
+        didDrag = false
         onDragBegan?()
     }
 
@@ -78,13 +83,29 @@ private final class ModuleTopBarDragHandle: NSView {
         guard isDragging else { return }
         let cur = NSEvent.mouseLocation
         let delta = NSPoint(x: cur.x - dragStartMouse.x, y: cur.y - dragStartMouse.y)
-        onDragChanged?(delta)
+        if hypot(delta.x, delta.y) >= 2.0 {
+            didDrag = true
+        }
+        if didDrag {
+            onDragChanged?(delta)
+        }
     }
 
     override func mouseUp(with event: NSEvent) {
         guard isDragging else { return }
         isDragging = false
-        onDragEnded?()
+        if didDrag {
+            onDragEnded?()
+            return
+        }
+        onDragCancelled?()
+        if event.clickCount == 2, let onDoubleClicked {
+            let now = ProcessInfo.processInfo.systemUptime
+            if now - lastDoubleClickTime >= MotionTokens.Thresholds.doubleClickDebounce {
+                lastDoubleClickTime = now
+                onDoubleClicked()
+            }
+        }
     }
 }
 
@@ -301,6 +322,9 @@ public final class UnifiedStageController {
 
         wireDragHandle(lyricsDragHandle, for: .lyrics)
         wireDragHandle(libraryDragHandle, for: .library)
+        lyricsDragHandle.onDoubleClicked = { [weak self] in
+            self?.lyricsView.toggleMiniLyricsMode()
+        }
 
         NotificationCenter.default.addObserver(
             self,
@@ -387,6 +411,12 @@ public final class UnifiedStageController {
             self.activeSnapResult = nil
             self.hideSnapPreviewLayer()
             self.snapDroppedModule(kind, droppedOrigin: droppedOrigin, precomputedSnap: snap)
+        }
+        handle.onDragCancelled = { [weak self] in
+            guard let self, self.activeDragModule == kind else { return }
+            self.activeDragModule = nil
+            self.activeSnapResult = nil
+            self.hideSnapPreviewLayer()
         }
     }
 
@@ -484,7 +514,7 @@ public final class UnifiedStageController {
             lyricsView.frame = targetLayout.lyricsFrame
             lyricsView.layoutSubtreeIfNeeded()
             lyricsView.refreshGlass()
-            lyricsDragHandle.frame = NSRect(x: 0, y: targetLayout.lyricsFrame.height - capH, width: targetLayout.lyricsFrame.width, height: capH)
+            lyricsDragHandle.frame = lyricsDragHandleFrame(for: targetLayout.lyricsFrame.size, capHeight: capH)
         }
         if showLibrary {
             libraryCtrl.moduleView.isHidden = false
@@ -1009,7 +1039,7 @@ public final class UnifiedStageController {
                 self.lyricsView.frame = localLyrics
                 if sizeChanged { self.lyricsView.needsLayout = true }
                 let capH = OriginalDesignTokens.BaseMetrics.glassCapHeight * s
-                self.lyricsDragHandle.frame = NSRect(x: 0, y: localLyrics.height - capH, width: localLyrics.width, height: capH)
+                self.lyricsDragHandle.frame = self.lyricsDragHandleFrame(for: localLyrics.size, capHeight: capH)
                 hitFrames.append(localLyrics)
             }
             if self.isLibraryVisible {
@@ -1115,7 +1145,7 @@ public final class UnifiedStageController {
             lyricsView.frame = localFullFrame
             lyricsView.layoutSubtreeIfNeeded()
             lyricsView.refreshGlass()
-            lyricsDragHandle.frame = NSRect(x: 0, y: localFullFrame.height - capH, width: localFullFrame.width, height: capH)
+            lyricsDragHandle.frame = lyricsDragHandleFrame(for: localFullFrame.size, capHeight: capH)
         } else {
             libraryCtrl.moduleView.isHidden = false
             libraryCtrl.moduleView.frame = localFullFrame
@@ -1135,7 +1165,7 @@ public final class UnifiedStageController {
             lyricsView.clearScrollPresentation()
             lyricsView.contentContainerView.alphaValue = 1.0
             lyricsView.frame = lyrLocal
-            lyricsDragHandle.frame = NSRect(x: 0, y: lyrLocal.height - capH, width: lyrLocal.width, height: capH)
+            lyricsDragHandle.frame = lyricsDragHandleFrame(for: lyrLocal.size, capHeight: capH)
             liveLyricsScreenRect = targetLayout.lyricsFrame.offsetBy(dx: targetHost.minX, dy: targetHost.minY)
             liveLyricsRevealProgress = 1.0
         } else if kind == .lyrics && isLibraryVisible {
@@ -1274,7 +1304,7 @@ public final class UnifiedStageController {
             self.lyricsView.isHidden = false
             self.lyricsView.frame = localLyrics
             self.lyricsView.needsLayout = true
-            self.lyricsDragHandle.frame = NSRect(x: 0, y: localLyrics.height - capH, width: localLyrics.width, height: capH)
+            self.lyricsDragHandle.frame = self.lyricsDragHandleFrame(for: localLyrics.size, capHeight: capH)
 
             var hits: [NSRect] = [playerLocal, localLyrics]
             if self.isLibraryVisible {
@@ -1443,9 +1473,6 @@ public final class UnifiedStageController {
         let lyricsSize = lyricsView.preferredSize(for: s)
         var librarySize = libraryCtrl.preferredSize(for: s)
         librarySize.width = playerSize.width
-        if !playerCtrl.isMiniMode && isLyricsVisible && customLyricsOffset == nil && customLibraryOffset == nil {
-            librarySize.height = playerSize.height + lyricsSize.height
-        }
         return (playerSize, lyricsSize, librarySize)
     }
 
@@ -1554,7 +1581,7 @@ public final class UnifiedStageController {
                 lyricsView.needsLayout = true
             }
             Self.applyModuleShadow(to: lyricsView, bounds: NSRect(origin: .zero, size: output.lyricsFrame.size), cornerRadius: OriginalDesignTokens.BaseMetrics.glassCornerRadius * s)
-            lyricsDragHandle.frame = NSRect(x: 0, y: output.lyricsFrame.height - capH, width: output.lyricsFrame.width, height: capH)
+            lyricsDragHandle.frame = lyricsDragHandleFrame(for: output.lyricsFrame.size, capHeight: capH)
         }
 
         let wasLibraryHidden = libraryCtrl.moduleView.isHidden
@@ -1586,6 +1613,11 @@ public final class UnifiedStageController {
         _ = prevHostSize
         hostWindow.refreshMenuStates()
         isAdjustingFrame = false
+    }
+
+    private func lyricsDragHandleFrame(for lyricsSize: NSSize, capHeight: CGFloat) -> NSRect {
+        let h = lyricsView.isMiniLyricsMode ? lyricsSize.height : capHeight
+        return NSRect(x: 0, y: lyricsSize.height - h, width: lyricsSize.width, height: h)
     }
 
     private static func applyModuleShadow(to view: NSView, bounds: CGRect, cornerRadius: CGFloat) {
