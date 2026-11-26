@@ -43,6 +43,7 @@ public struct MediaCardItem: Identifiable, Sendable {
     public let track: MusicTrack?
     public let albumID: String?
     public let playlistID: String?
+    public let browseCategoryID: String?
 
     public init(
         id: String,
@@ -53,7 +54,8 @@ public struct MediaCardItem: Identifiable, Sendable {
         duration: String? = nil,
         track: MusicTrack? = nil,
         albumID: String? = nil,
-        playlistID: String? = nil
+        playlistID: String? = nil,
+        browseCategoryID: String? = nil
     ) {
         self.id = id
         self.title = title
@@ -64,6 +66,7 @@ public struct MediaCardItem: Identifiable, Sendable {
         self.track = track
         self.albumID = albumID
         self.playlistID = playlistID
+        self.browseCategoryID = browseCategoryID
     }
 }
 
@@ -820,8 +823,10 @@ open class LibraryContentView: NSView {
     public var onItemClicked: ((MediaCardItem) -> Void)?
     public var onTrackSelected: ((MusicTrack) -> Void)?
     public var onPlayAll: (([MusicTrack]) -> Void)?
+    public var onReachedBottom: (() -> Void)?
 
     public private(set) var is2Col: Bool = true
+    public private(set) var columnCountOverride: Int? = nil
     public var topContentInset: CGFloat = 0 {
         didSet {
             guard oldValue != topContentInset else { return }
@@ -846,6 +851,14 @@ open class LibraryContentView: NSView {
 
     public var currentDetailTracksList: [MusicTrack] { currentDetailTracks }
     public var displayedItems: [MediaCardItem] { currentItems }
+    public var currentTitleText: String { titleLabel.stringValue }
+    public var currentScrollOrigin: NSPoint { scrollView.contentView.bounds.origin }
+
+    public func restoreScrollOrigin(_ origin: NSPoint) {
+        layoutSubtreeIfNeeded()
+        scrollView.contentView.scroll(to: origin)
+        scrollView.reflectScrolledClipView(scrollView.contentView)
+    }
 
     public override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
@@ -867,9 +880,16 @@ open class LibraryContentView: NSView {
         // Use FlippedClipView so content always pins to top!
         let clip = FlippedClipView()
         clip.drawsBackground = false
+        clip.postsBoundsChangedNotifications = true
         scrollView.contentView = clip
         scrollView.drawsBackground = false
         scrollView.applySubtleOverlayScrollbar()
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleScrollBoundsChanged),
+            name: NSView.boundsDidChangeNotification,
+            object: clip
+        )
 
         stackView.orientation = .vertical
         stackView.alignment = .leading
@@ -940,6 +960,29 @@ open class LibraryContentView: NSView {
         displayItems(self.currentItems)
     }
 
+    public func setColumnCountOverride(_ count: Int?) {
+        guard columnCountOverride != count else { return }
+        columnCountOverride = count
+    }
+
+    public func appendItems(_ moreItems: [MediaCardItem]) {
+        guard !moreItems.isEmpty else { return }
+        let savedOrigin = scrollView.contentView.bounds.origin
+        let merged = currentItems + moreItems
+        displayItems(merged, animated: false)
+        scrollView.contentView.scroll(to: savedOrigin)
+        scrollView.reflectScrolledClipView(scrollView.contentView)
+    }
+
+    @objc private func handleScrollBoundsChanged() {
+        guard let docView = scrollView.documentView, !currentItems.isEmpty, detailOverlay.isHidden else { return }
+        let visibleMaxY = scrollView.contentView.bounds.maxY
+        let docH = docView.bounds.height
+        if docH > 0, visibleMaxY >= docH - 120 {
+            onReachedBottom?()
+        }
+    }
+
     public func displayItems(_ items: [MediaCardItem], animated: Bool = false) {
         self.currentItems = items
         detailOverlay.isHidden = true
@@ -987,44 +1030,39 @@ open class LibraryContentView: NSView {
 
         let availableWidth = max(100, bounds.width - 14)
 
-        if is2Col {
-            // 2-Column Grid Layout
-            let cardWidth = (availableWidth - 9) / 2
-            let cardHeight = cardWidth + 54
+        let cols = columnCountOverride ?? (is2Col ? 2 : 1)
+        if cols >= 2 {
+            let spacing: CGFloat = 9
+            let cardWidth = max(40, (availableWidth - spacing * CGFloat(cols - 1)) / CGFloat(cols))
+            let cardHeight = cardWidth + (cols >= 3 ? 46 : 54)
 
             var i = 0
             while i < items.count {
                 let rowStack = NSStackView()
                 rowStack.orientation = .horizontal
-                rowStack.spacing = 9
+                rowStack.spacing = spacing
                 rowStack.distribution = .fillEqually
                 rowStack.translatesAutoresizingMaskIntoConstraints = false
                 rowStack.heightAnchor.constraint(equalToConstant: cardHeight).isActive = true
                 rowStack.widthAnchor.constraint(equalToConstant: availableWidth).isActive = true
 
-                let item1 = items[i]
-                let card1 = MediaGridCardView(item: item1)
-                card1.onClick = { [weak self] in
-                    self?.onItemClicked?(item1)
-                }
-                rowStack.addArrangedSubview(card1)
-
-                if i + 1 < items.count {
-                    let item2 = items[i + 1]
-                    let card2 = MediaGridCardView(item: item2)
-                    card2.onClick = { [weak self] in
-                        self?.onItemClicked?(item2)
+                for col in 0..<cols {
+                    if i + col < items.count {
+                        let item = items[i + col]
+                        let card = MediaGridCardView(item: item)
+                        card.onClick = { [weak self] in
+                            self?.onItemClicked?(item)
+                        }
+                        rowStack.addArrangedSubview(card)
+                    } else {
+                        let spacer = NSView()
+                        spacer.translatesAutoresizingMaskIntoConstraints = false
+                        rowStack.addArrangedSubview(spacer)
                     }
-                    rowStack.addArrangedSubview(card2)
-                } else {
-                    // Placeholder spacer view to balance grid
-                    let spacer = NSView()
-                    spacer.translatesAutoresizingMaskIntoConstraints = false
-                    rowStack.addArrangedSubview(spacer)
                 }
 
                 stackView.addArrangedSubview(rowStack)
-                i += 2
+                i += cols
             }
         } else {
             // 1-Column Row Layout (66px)

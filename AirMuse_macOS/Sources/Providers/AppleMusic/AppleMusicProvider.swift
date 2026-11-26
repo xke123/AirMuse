@@ -175,19 +175,31 @@ public actor AppleMusicProvider:
 
     public func searchCatalog(query: String, limit: Int) async throws -> MusicSearchResult {
         do {
-            try requireAuthorization()
-            var request = MusicCatalogSearchRequest(term: query,
-                                                    types: [Song.self, Album.self, Artist.self])
-            request.limit = limit
-            let response = try await request.response()
-            return MusicSearchResult(
-                tracks:  response.songs.map(\.asMusicTrack),
-                albums:  response.albums.map(\.asMusicAlbum),
-                artists: response.artists.map(\.asMusicArtist)
-            )
+            let ampResult = try await ampClient.search(term: query, limit: limit)
+            if !ampResult.isEmpty {
+                return ampResult
+            }
+        } catch is CancellationError {
+            throw CancellationError()
+        } catch let urlError as URLError where urlError.code == .cancelled {
+            throw CancellationError()
         } catch {
-            return try await ampClient.search(term: query, limit: limit)
+            if let nsErr = error as NSError?, nsErr.domain == NSURLErrorDomain, nsErr.code == NSURLErrorCancelled {
+                throw CancellationError()
+            }
+            AppLogger.shared.log(category: .ampAPI, level: .warn, message: "AMP 目录搜索失败，尝试 MusicKit 回退: \(error.localizedDescription)")
         }
+
+        try requireAuthorization()
+        var request = MusicCatalogSearchRequest(term: query,
+                                                types: [Song.self, Album.self, Artist.self])
+        request.limit = limit
+        let response = try await request.response()
+        return MusicSearchResult(
+            tracks:  response.songs.map(\.asMusicTrack),
+            albums:  response.albums.map(\.asMusicAlbum),
+            artists: response.artists.map(\.asMusicArtist)
+        )
     }
 
     private func currentStorefrontAndAccount() async -> (storefront: String, accountID: String?) {
@@ -385,6 +397,21 @@ public actor AppleMusicProvider:
         return try await ampClient.fetchArtistTopSongs(artistID: artistID, isLibrary: isLibrary, generation: gen)
     }
 
+    public func fetchArtistDetail(artistID: String, isLibrary: Bool? = nil) async throws -> MusicArtistDetail {
+        let gen = await sessionAdapter.currentGeneration
+        return try await ampClient.fetchArtistDetail(artistID: artistID, isLibrary: isLibrary, generation: gen)
+    }
+
+    public func setArtistRating(artistID: String, value: Int?) async throws {
+        let gen = await sessionAdapter.currentGeneration
+        try await ampClient.setArtistRating(artistID: artistID, value: value, generation: gen)
+    }
+
+    public func fetchArtistStation(artistID: String) async throws -> MusicStation? {
+        let gen = await sessionAdapter.currentGeneration
+        return try await ampClient.fetchArtistStation(artistID: artistID, generation: gen)
+    }
+
     public func fetchEditorialCategories(name: String = "music") async throws -> [AmpCategory] {
         let client = self.ampClient
         return try await loadCachedPublic(
@@ -408,7 +435,12 @@ public actor AppleMusicProvider:
         guard await sessionAdapter.webSessionState.isLoggedIn else {
             return MusicSearchResult()
         }
-        return try await ampClient.searchLibrary(term: query, limit: 30, generation: gen)
+        return try await ampClient.searchLibrary(term: query, limit: 25, generation: gen)
+    }
+
+    public func fetchSearchPage(nextPath: String, isLibrary: Bool, limit: Int = 25) async throws -> (items: [MusicSearchItem], nextURL: String?) {
+        let gen = await sessionAdapter.currentGeneration
+        return try await ampClient.fetchSearchPage(nextPath: nextPath, isLibrary: isLibrary, limit: limit, generation: gen)
     }
 
     // MARK: - MusicLibraryProvider

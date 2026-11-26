@@ -49,6 +49,7 @@ open class LibraryWindowController: NSWindowController {
     public var onToggleLog: (() -> Void)?
     public var onToggleAccount: (() -> Void)?
     public var onClose: (() -> Void)?
+    public var onArtistSelected: ((_ artistID: String, _ isLibrary: Bool) -> Void)?
 
     private let panel = GlassPanel()
     public var moduleView: GlassPanel { panel }
@@ -56,6 +57,9 @@ open class LibraryWindowController: NSWindowController {
     private let topBar = LibraryTopBarView()
     private let sidebar = LibrarySidebarView()
     private let contentView = LibraryContentView()
+    private let searchHistoryStore = SearchHistoryStore()
+    private let searchHistoryExpand = SearchHistoryExpandView()
+    private let artistSidebarHeader = ArtistSidebarHeaderView()
 
     // Top glass bar controls & aurora fog
     private let hoverTracker = LibraryHoverTrackerView()
@@ -77,14 +81,37 @@ open class LibraryWindowController: NSWindowController {
 
     private var categoryLoadTask: Task<Void, Never>?
     private var searchTask: Task<Void, Never>?
+    private var searchPageTask: Task<Void, Never>?
+    private var browseLoadTask: Task<Void, Never>?
     private var categoryGeneration: UInt64 = 0
     private var searchGeneration: UInt64 = 0
     private var detailGeneration: UInt64 = 0
+    private var artistGeneration: UInt64 = 0
     private var detailLoadTask: Task<Void, Never>?
+    private var artistLoadTask: Task<Void, Never>?
     private var isLoadingHomeSidebar: Bool = false
 
     // Dynamic remote categories cached per tab index (0: Home recommendations, 1: Browse editorial, 2: Radio)
     private var loadedEditorialCategories: [Int: [AmpCategory]] = [:]
+    private var loadedSearchBrowseCategories: [AmpCategory] = []
+    private var searchSections: [SearchSection] = []
+    private var activeSearchSectionIndex: Int = 0
+    private var isSearchResultsActive: Bool = false
+    private var isLoadingNextSearchPage: Bool = false
+    private var artistStack: [MusicArtistDetail] = []
+    private var activeArtistSectionIndex: Int = 0
+    private var savedArtistOrigin: ArtistOriginSnapshot?
+
+    private struct ArtistOriginSnapshot {
+        let tabIndex: Int
+        let categoryIndex: Int
+        let title: String
+        let items: [MediaCardItem]
+        let columnCountOverride: Int?
+        let scrollOrigin: NSPoint
+        let isSearchMode: Bool
+        let isSearchResultsActive: Bool
+    }
 
     public init(coordinator: PlaybackCoordinatorV2, sessionCoordinator: SessionCoordinator? = nil, appleMusicProvider: AppleMusicProvider? = nil) {
         self.coordinator = coordinator
@@ -102,7 +129,10 @@ open class LibraryWindowController: NSWindowController {
         sessionTask?.cancel()
         categoryLoadTask?.cancel()
         searchTask?.cancel()
+        searchPageTask?.cancel()
+        browseLoadTask?.cancel()
         detailLoadTask?.cancel()
+        artistLoadTask?.cancel()
         MotionCoordinator.shared.cancel(key: TransitionKey(owner: "LibraryWindow-\(ObjectIdentifier(self).hashValue)", channel: "hover"))
     }
 
@@ -167,9 +197,12 @@ open class LibraryWindowController: NSWindowController {
 
         let container = panel.contentView
         container.addSubview(sidebar)
+        artistSidebarHeader.isHidden = true
+        container.addSubview(artistSidebarHeader)
         container.addSubview(contentView)
         // topBar floats above contentView so scrolled cards pass underneath its Liquid Glass pill
         container.addSubview(topBar)
+        container.addSubview(searchHistoryExpand)
 
         panel.onLayout = { [weak self] _ in
             self?.layoutViews()
@@ -229,14 +262,36 @@ open class LibraryWindowController: NSWindowController {
         let fullContentH = max(10, bounds.height - padding * 2)
         contentView.topContentInset = topBarH + padding
 
-        if topBar.isSearchMode {
+        if (topBar.isSearchMode && !isSearchResultsActive) && !topBar.isArtistMode {
             sidebar.isHidden = true
+            artistSidebarHeader.isHidden = true
             contentView.frame = NSRect(x: padding, y: padding, width: bounds.width - padding * 2, height: fullContentH)
+        } else if topBar.isArtistMode {
+            let headerH = artistSidebarHeader.currentPreferredHeight
+            let headerGap: CGFloat = 6
+            artistSidebarHeader.isHidden = false
+            artistSidebarHeader.frame = NSRect(x: padding, y: sidebarY, width: sidebarW, height: headerH)
+            sidebar.isHidden = false
+            sidebar.frame = NSRect(x: padding, y: sidebarY + headerH + headerGap, width: sidebarW, height: max(40, sidebarH - headerH - headerGap))
+            contentView.frame = NSRect(x: sidebarW + padding * 2, y: padding, width: bounds.width - sidebarW - padding * 3, height: fullContentH)
         } else {
+            artistSidebarHeader.isHidden = true
             sidebar.isHidden = false
             sidebar.frame = NSRect(x: padding, y: sidebarY, width: sidebarW, height: sidebarH)
             contentView.frame = NSRect(x: sidebarW + padding * 2, y: padding, width: bounds.width - sidebarW - padding * 3, height: fullContentH)
         }
+
+        topBar.layoutSubtreeIfNeeded()
+        let expandH = searchHistoryExpand.preferredHeight
+        let boxFrame = topBar.searchBoxFrame
+        let expandX = boxFrame.width > 20 ? (topBar.frame.minX + boxFrame.minX) : padding
+        let expandW = boxFrame.width > 20 ? boxFrame.width : (bounds.width - padding * 2)
+        searchHistoryExpand.frame = NSRect(
+            x: expandX,
+            y: topBar.frame.maxY + 4,
+            width: expandW,
+            height: expandH
+        )
     }
 
     private func setHovering(_ hovering: Bool) {
@@ -375,10 +430,77 @@ open class LibraryWindowController: NSWindowController {
             self.contentView.setLayout2Col(is2Col)
         }
 
+        topBar.onSearchModeChanged = { [weak self] active in
+            guard let self else { return }
+            if active {
+                self.enterSearchEmptyState()
+            } else {
+                self.exitSearchModeCleanup()
+            }
+        }
+
         topBar.onSearchQuery = { [weak self] query, scope in
             let scopeName = (scope == 0) ? "Apple Music 全球曲库" : "个人资料库"
             AppLogger.shared.log(category: .userAction, level: .info, message: "用户提交搜索: \"\(query)\" (检索范围: \(scopeName))")
             self?.performSearch(query: query, scope: scope)
+        }
+
+        topBar.onSearchSubmit = { [weak self] query, _ in
+            guard let self else { return }
+            self.searchHistoryStore.add(query)
+            self.searchHistoryExpand.updateQueries(self.searchHistoryStore.items)
+        }
+
+        searchHistoryExpand.onSelectQuery = { [weak self] query in
+            guard let self else { return }
+            self.searchHistoryExpand.setExpanded(false)
+            self.topBar.setSearchQuery(query, submit: true)
+        }
+
+        searchHistoryExpand.onDeleteQuery = { [weak self] query in
+            guard let self else { return }
+            self.searchHistoryStore.remove(query)
+            self.searchHistoryExpand.updateQueries(self.searchHistoryStore.items)
+            self.layoutViews()
+            if self.searchHistoryStore.items.isEmpty {
+                self.searchHistoryExpand.setExpanded(false)
+            }
+        }
+
+        searchHistoryExpand.onClearAll = { [weak self] in
+            guard let self else { return }
+            self.searchHistoryStore.clearAll()
+            self.searchHistoryExpand.updateQueries([])
+            self.searchHistoryExpand.setExpanded(false)
+            self.layoutViews()
+        }
+
+        contentView.onReachedBottom = { [weak self] in
+            self?.loadNextSearchPageIfNeeded()
+        }
+
+        topBar.onArtistBack = { [weak self] in
+            self?.popArtistPage()
+        }
+
+        topBar.onArtistPlayTop = { [weak self] in
+            self?.playArtistTopSongs()
+        }
+
+        artistSidebarHeader.onInfoClicked = { [weak self] anchor in
+            self?.showArtistInfoPopover(relativeTo: anchor)
+        }
+
+        artistSidebarHeader.onFavoriteClicked = { [weak self] in
+            self?.toggleArtistFavorite()
+        }
+
+        artistSidebarHeader.onMoreClicked = { [weak self] anchor in
+            self?.showArtistMoreMenu(relativeTo: anchor)
+        }
+
+        artistSidebarHeader.onPreferredHeightChanged = { [weak self] in
+            self?.layoutViews()
         }
 
         topBar.onToggleLog = { [weak self] in
@@ -396,13 +518,17 @@ open class LibraryWindowController: NSWindowController {
             self?.onClose?()
         }
 
-
-
         // Sidebar Events
         sidebar.onCategorySelected = { [weak self] categoryIndex in
             guard let self else { return }
-            AppLogger.shared.log(category: .userAction, level: .info, message: "用户切换左侧专区: 索引 \(categoryIndex)")
-            self.handleCategorySelected(categoryIndex)
+            if self.topBar.isArtistMode {
+                self.selectArtistSection(at: categoryIndex)
+            } else if self.topBar.isSearchMode && self.isSearchResultsActive {
+                self.selectSearchSection(at: categoryIndex)
+            } else {
+                AppLogger.shared.log(category: .userAction, level: .info, message: "用户切换左侧专区: 索引 \(categoryIndex)")
+                self.handleCategorySelected(categoryIndex)
+            }
         }
 
         // Content View Events
@@ -1025,24 +1151,118 @@ open class LibraryWindowController: NSWindowController {
 
     // MARK: - Search
 
-    private func performSearch(query: String, scope: Int) {
-        let trimmed = query.trimmingCharacters(in: .whitespaces)
+    private func exitSearchModeCleanup() {
         searchTask?.cancel()
-        searchGeneration &+= 1
-        let expectedGen = searchGeneration
-        guard !trimmed.isEmpty else {
-            handleTabSelected(activeTabIndex)
+        searchPageTask?.cancel()
+        browseLoadTask?.cancel()
+        isLoadingNextSearchPage = false
+        isSearchResultsActive = false
+        searchSections = []
+        activeSearchSectionIndex = 0
+        searchHistoryExpand.setExpanded(false)
+        contentView.setColumnCountOverride(nil)
+        layoutViews()
+    }
+
+    private func enterSearchEmptyState() {
+        searchTask?.cancel()
+        searchPageTask?.cancel()
+        isLoadingNextSearchPage = false
+        isSearchResultsActive = false
+        searchSections = []
+        activeSearchSectionIndex = 0
+
+        searchHistoryExpand.updateQueries(searchHistoryStore.items)
+        contentView.setColumnCountOverride(3)
+        layoutViews()
+        searchHistoryExpand.setExpanded(!searchHistoryStore.items.isEmpty)
+
+        loadSearchBrowseCategories()
+    }
+
+    private func loadSearchBrowseCategories() {
+        contentView.setTitle("类别浏览")
+        if !loadedSearchBrowseCategories.isEmpty {
+            displayBrowseCategories(loadedSearchBrowseCategories)
+            return
+        }
+        if let cached = loadedEditorialCategories[1], !cached.isEmpty {
+            loadedSearchBrowseCategories = cached
+            displayBrowseCategories(cached)
             return
         }
 
+        let fallback = defaultSearchBrowseCategories()
+        displayBrowseCategories(fallback)
+
+        guard let provider = appleMusicProvider else { return }
+        browseLoadTask?.cancel()
+        browseLoadTask = Task { [weak self] in
+            guard let self else { return }
+            guard let fetched = try? await provider.fetchEditorialCategories(name: "music"), !fetched.isEmpty else { return }
+            guard !Task.isCancelled else { return }
+            self.loadedEditorialCategories[1] = fetched
+            self.loadedSearchBrowseCategories = fetched
+            if self.topBar.isSearchMode && !self.isSearchResultsActive {
+                self.displayBrowseCategories(fetched)
+            }
+        }
+    }
+
+    private func displayBrowseCategories(_ categories: [AmpCategory]) {
+        let cards = categories.map { cat in
+            MediaCardItem(
+                id: "browse:\(cat.id)",
+                title: cat.title,
+                subtitle: "\(cat.items.count > 0 ? "\(cat.items.count) 项" : "流派与精选")",
+                type: .chart,
+                artworkURL: cat.items.first?.artworkURL,
+                browseCategoryID: cat.id
+            )
+        }
+        contentView.displayItems(cards, animated: false)
+    }
+
+    private func defaultSearchBrowseCategories() -> [AmpCategory] {
+        let titles = [
+            "流行", "华语流行", "嘻哈/说唱", "摇滚", "R&B/灵魂乐", "电子舞曲",
+            "古典", "爵士", "民谣", "日韩流行", "影视原声", "专注与放松"
+        ]
+        return titles.enumerated().map { idx, title in
+            AmpCategory(id: "default_browse_\(idx)", title: title, items: [])
+        }
+    }
+
+    private func performSearch(query: String, scope: Int) {
+        let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        searchTask?.cancel()
+        searchPageTask?.cancel()
+        isLoadingNextSearchPage = false
+        searchGeneration &+= 1
+        let expectedGen = searchGeneration
+
+        guard !trimmed.isEmpty else {
+            if topBar.isSearchMode {
+                enterSearchEmptyState()
+            } else {
+                exitSearchModeCleanup()
+                handleTabSelected(activeTabIndex)
+            }
+            return
+        }
+
+        searchHistoryExpand.setExpanded(false)
+        isSearchResultsActive = true
+        contentView.setColumnCountOverride(nil)
         layoutViews()
+
         let scopeName = scope == 1 ? "资料库" : "Apple Music"
         contentView.setTitle("搜索: \"\(trimmed)\" (\(scopeName))")
         contentView.setLoading(true)
 
         searchTask = Task { [weak self] in
             guard let self else { return }
-            var items: [MediaCardItem] = []
+            var sections: [SearchSection] = []
             var searchError: Error?
 
             if let provider = self.appleMusicProvider {
@@ -1051,49 +1271,14 @@ open class LibraryWindowController: NSWindowController {
                     if scope == 1 {
                         result = try await provider.searchLibrary(query: trimmed)
                     } else {
-                        result = try await provider.searchCatalog(query: trimmed, limit: 30)
+                        result = try await provider.searchCatalog(query: trimmed, limit: 25)
                     }
-                    let songItems = result.tracks.map { tr in
-                        MediaCardItem(
-                            id: tr.id,
-                            title: tr.title,
-                            subtitle: tr.artistName,
-                            type: .song,
-                            artworkURL: tr.artworkURL,
-                            duration: self.formatDuration(tr.durationSeconds),
-                            track: tr
-                        )
+                    sections = result.sections
+                    if sections.isEmpty && !result.isEmpty {
+                        sections = self.fallbackSections(from: result)
                     }
-                    let albumItems = result.albums.map { al in
-                        MediaCardItem(
-                            id: al.id,
-                            title: al.title,
-                            subtitle: "\(al.artistName) · \(al.trackCount) 首",
-                            type: .album,
-                            artworkURL: al.artworkURL,
-                            albumID: al.id
-                        )
-                    }
-                    let artistItems = result.artists.map { ar in
-                        MediaCardItem(
-                            id: ar.id,
-                            title: ar.name,
-                            subtitle: "艺人",
-                            type: .artist,
-                            artworkURL: ar.artworkURL
-                        )
-                    }
-                    let playlistItems = result.playlists.map { pl in
-                        MediaCardItem(
-                            id: pl.id,
-                            title: pl.name,
-                            subtitle: pl.ownerName ?? "歌单",
-                            type: .playlist,
-                            artworkURL: pl.artworkURL,
-                            playlistID: pl.id
-                        )
-                    }
-                    items = songItems + albumItems + artistItems + playlistItems
+                    // Filter out Music Videos from the search results left sidebar
+                    sections = sections.filter { $0.kind != .musicVideos }
                 } catch is CancellationError {
                     return
                 } catch {
@@ -1106,20 +1291,198 @@ open class LibraryWindowController: NSWindowController {
 
             self.contentView.setLoading(false)
             if let searchError {
+                self.searchSections = []
+                self.sidebar.setCategories([], selectedIndex: 0)
                 self.contentView.setTitle("搜索失败: \(searchError.localizedDescription)")
                 self.contentView.displayItems([], animated: true)
-            } else if items.isEmpty {
+            } else if sections.isEmpty {
+                self.searchSections = []
+                self.sidebar.setCategories([], selectedIndex: 0)
                 self.contentView.setTitle("未找到 \"\(trimmed)\" 的相关结果")
                 self.contentView.displayItems([], animated: true)
             } else {
-                self.contentView.displayItems(items, animated: true)
+                self.searchHistoryStore.add(trimmed)
+                self.searchHistoryExpand.updateQueries(self.searchHistoryStore.items)
+                self.searchSections = sections
+                let sidebarCats = sections.map { sec in
+                    SidebarCategory(id: sec.id, title: sec.title)
+                }
+                self.sidebar.setCategories(sidebarCats, selectedIndex: 0)
+                self.selectSearchSection(at: 0, animated: true)
             }
+        }
+    }
+
+    private func selectSearchSection(at index: Int, animated: Bool = false) {
+        guard index >= 0, index < searchSections.count else { return }
+        searchPageTask?.cancel()
+        isLoadingNextSearchPage = false
+        activeSearchSectionIndex = index
+        let sec = searchSections[index]
+        contentView.setTitle(sec.title)
+        contentView.displayItems(sec.items.map { mediaCardItem(from: $0) }, animated: animated)
+    }
+
+    private func loadNextSearchPageIfNeeded() {
+        guard topBar.isSearchMode,
+              isSearchResultsActive,
+              !isLoadingNextSearchPage,
+              activeSearchSectionIndex >= 0,
+              activeSearchSectionIndex < searchSections.count,
+              let nextURL = searchSections[activeSearchSectionIndex].nextURL,
+              let provider = appleMusicProvider else { return }
+
+        isLoadingNextSearchPage = true
+        let expectedGen = searchGeneration
+        let expectedSecIdx = activeSearchSectionIndex
+        let isLib = topBar.currentSearchScope == 1
+
+        searchPageTask = Task { [weak self] in
+            guard let self else { return }
+            defer {
+                Task { @MainActor [weak self] in
+                    self?.isLoadingNextSearchPage = false
+                }
+            }
+            guard let page = try? await provider.fetchSearchPage(nextPath: nextURL, isLibrary: isLib, limit: 25) else {
+                return
+            }
+            guard !Task.isCancelled,
+                  self.searchGeneration == expectedGen,
+                  self.activeSearchSectionIndex == expectedSecIdx,
+                  expectedSecIdx < self.searchSections.count else { return }
+
+            self.searchSections[expectedSecIdx].items.append(contentsOf: page.items)
+            self.searchSections[expectedSecIdx].nextURL = page.nextURL
+            let appendedCards = page.items.map { self.mediaCardItem(from: $0) }
+            self.contentView.appendItems(appendedCards)
+        }
+    }
+
+    private func fallbackSections(from result: MusicSearchResult) -> [SearchSection] {
+        var out: [SearchSection] = []
+        if !result.tracks.isEmpty {
+            out.append(SearchSection(id: "songs", kind: .songs, items: result.tracks.map { .track($0) }))
+        }
+        if !result.albums.isEmpty {
+            out.append(SearchSection(id: "albums", kind: .albums, items: result.albums.map { .album($0) }))
+        }
+        if !result.artists.isEmpty {
+            out.append(SearchSection(id: "artists", kind: .artists, items: result.artists.map { .artist($0) }))
+        }
+        if !result.playlists.isEmpty {
+            out.append(SearchSection(id: "playlists", kind: .playlists, items: result.playlists.map { .playlist($0) }))
+        }
+        if !result.stations.isEmpty {
+            out.append(SearchSection(id: "stations", kind: .stations, items: result.stations.map { .station($0) }))
+        }
+        return out
+    }
+
+    private func mediaCardItem(from item: MusicSearchItem) -> MediaCardItem {
+        switch item {
+        case .track(let tr):
+            return MediaCardItem(
+                id: tr.id,
+                title: tr.title,
+                subtitle: tr.artistName,
+                type: .song,
+                artworkURL: tr.artworkURL,
+                duration: formatDuration(tr.durationSeconds),
+                track: tr
+            )
+        case .album(let al):
+            return MediaCardItem(
+                id: al.id,
+                title: al.title,
+                subtitle: "\(al.artistName) · \(al.trackCount) 首",
+                type: .album,
+                artworkURL: al.artworkURL,
+                albumID: al.id
+            )
+        case .artist(let ar):
+            return MediaCardItem(
+                id: ar.id,
+                title: ar.name,
+                subtitle: "艺人",
+                type: .artist,
+                artworkURL: ar.artworkURL
+            )
+        case .playlist(let pl):
+            return MediaCardItem(
+                id: pl.id,
+                title: pl.name,
+                subtitle: pl.ownerName ?? "播放列表",
+                type: .playlist,
+                artworkURL: pl.artworkURL,
+                playlistID: pl.id
+            )
+        case .station(let st):
+            return MediaCardItem(
+                id: st.id,
+                title: st.name,
+                subtitle: st.description.isEmpty ? "广播单集" : st.description,
+                type: .radio,
+                artworkURL: st.artworkURL
+            )
+        case .musicVideo(let mv):
+            return MediaCardItem(
+                id: mv.id,
+                title: mv.title,
+                subtitle: "\(mv.artistName) · 音乐视频",
+                type: .song,
+                artworkURL: mv.artworkURL,
+                duration: formatDuration(mv.durationSeconds),
+                track: mv
+            )
+        case .curator(let id, let name, let subtitle, let artworkURL):
+            return MediaCardItem(
+                id: id,
+                title: name,
+                subtitle: subtitle ?? "类别",
+                type: .chart,
+                artworkURL: artworkURL,
+                browseCategoryID: id
+            )
         }
     }
 
     // MARK: - Item Click
 
     private func handleItemClicked(_ item: MediaCardItem) {
+        if let browseID = item.browseCategoryID {
+            if let cat = loadedSearchBrowseCategories.first(where: { $0.id == browseID }), !cat.items.isEmpty {
+                let cards = cat.items.map { ampItem in
+                    let mType: MediaItemType
+                    switch ampItem.type {
+                    case "song": mType = .song
+                    case "album": mType = .album
+                    case "playlist": mType = .playlist
+                    case "station": mType = .radio
+                    case "artist": mType = .artist
+                    default: mType = .chart
+                    }
+                    return MediaCardItem(
+                        id: ampItem.id,
+                        title: ampItem.title,
+                        subtitle: ampItem.subtitle,
+                        type: mType,
+                        artworkURL: ampItem.artworkURL,
+                        duration: ampItem.durationMs != nil ? formatDuration(Double(ampItem.durationMs!) / 1000.0) : nil,
+                        track: ampItem.track,
+                        albumID: ampItem.album?.id,
+                        playlistID: ampItem.playlist?.id
+                    )
+                }
+                contentView.setColumnCountOverride(nil)
+                contentView.setTitle(cat.title)
+                contentView.displayItems(cards, animated: true)
+            } else {
+                topBar.setSearchQuery(item.title, submit: true)
+            }
+            return
+        }
+
         switch item.type {
         case .album:
             let albumID = item.albumID ?? item.id
@@ -1157,20 +1520,12 @@ open class LibraryWindowController: NSWindowController {
 
         case .artist:
             let artistID = item.id
-            let isLib = artistID.hasPrefix("l.") || artistID.hasPrefix("i.")
-            detailGeneration &+= 1
-            let expectedGen = detailGeneration
-            detailLoadTask?.cancel()
-            contentView.showDetail(title: item.title, tracks: [])
-            detailLoadTask = Task { [weak self] in
-                guard let self else { return }
-                var tracks: [MusicTrack] = []
-                if let provider = self.appleMusicProvider {
-                    tracks = (try? await provider.fetchArtistTopSongs(artistID: artistID, isLibrary: isLib)) ?? []
-                }
-                guard !Task.isCancelled, self.detailGeneration == expectedGen else { return }
-                self.contentView.updateDetailTracks(tracks)
+            let isLib = artistID.hasPrefix("r.") || artistID.hasPrefix("l.") || artistID.hasPrefix("i.")
+            if let onArtistSelected {
+                onArtistSelected(artistID, isLib)
+                return
             }
+            openArtistPage(artistID: artistID, isLibrary: isLib, initialName: item.title, artworkURL: item.artworkURL)
 
         case .song, .radio, .chart:
             let allItems = contentView.displayedItems
@@ -1203,6 +1558,294 @@ open class LibraryWindowController: NSWindowController {
                     self.handlePlaybackError(error)
                 }
             }
+        }
+    }
+
+    // MARK: - Artist Personal Page
+
+    public func openArtistPage(
+        artistID: String,
+        isLibrary: Bool,
+        initialName: String? = nil,
+        artworkURL: URL? = nil
+    ) {
+        artistGeneration &+= 1
+        let expectedGen = artistGeneration
+        artistLoadTask?.cancel()
+        detailLoadTask?.cancel()
+        contentView.hideDetail()
+        searchHistoryExpand.setExpanded(false)
+
+        if artistStack.isEmpty {
+            savedArtistOrigin = ArtistOriginSnapshot(
+                tabIndex: activeTabIndex,
+                categoryIndex: activeCategoryIndex,
+                title: contentView.currentTitleText,
+                items: contentView.displayedItems,
+                columnCountOverride: contentView.columnCountOverride,
+                scrollOrigin: contentView.currentScrollOrigin,
+                isSearchMode: topBar.isSearchMode,
+                isSearchResultsActive: isSearchResultsActive
+            )
+        }
+
+        let placeholderArtist = MusicArtist(id: artistID, name: initialName ?? "艺人", artworkURL: artworkURL, providerID: "apple_music", providerArtistID: artistID)
+        let placeholder = MusicArtistDetail(artist: placeholderArtist)
+        artistStack.append(placeholder)
+        activeArtistSectionIndex = 0
+
+        topBar.setArtistMode(true, artistName: placeholderArtist.name)
+        artistSidebarHeader.configure(artworkURL: artworkURL, isFavorited: false)
+        sidebar.setTopHeaderView(nil)
+        sidebar.setCategories([], selectedIndex: 0)
+        contentView.setColumnCountOverride(nil)
+        contentView.setTitle("加载中...")
+        contentView.setLoading(true)
+        contentView.displayItems([], animated: false)
+        layoutViews()
+
+        guard let provider = appleMusicProvider else { return }
+        artistLoadTask = Task { [weak self] in
+            guard let self else { return }
+            do {
+                let detail = try await provider.fetchArtistDetail(artistID: artistID, isLibrary: isLibrary)
+                guard !Task.isCancelled, self.artistGeneration == expectedGen else { return }
+                if !self.artistStack.isEmpty {
+                    self.artistStack[self.artistStack.count - 1] = detail
+                } else {
+                    self.artistStack = [detail]
+                }
+                self.contentView.setLoading(false)
+                self.renderCurrentArtistDetail()
+            } catch is CancellationError {
+                return
+            } catch {
+                guard !Task.isCancelled, self.artistGeneration == expectedGen else { return }
+                self.contentView.setLoading(false)
+                self.contentView.setTitle("加载艺人信息失败")
+            }
+        }
+    }
+
+    private func renderCurrentArtistDetail() {
+        guard let detail = artistStack.last else { return }
+        topBar.setArtistMode(true, artistName: detail.artist.name)
+        artistSidebarHeader.configure(artworkURL: detail.artist.artworkURL, isFavorited: detail.isFavorited)
+        sidebar.setTopHeaderView(nil)
+
+        let cats = detail.views.map { SidebarCategory(id: $0.id, title: $0.title) }
+        let idx = min(activeArtistSectionIndex, max(0, cats.count - 1))
+        activeArtistSectionIndex = idx
+        sidebar.setCategories(cats, selectedIndex: idx)
+        layoutViews()
+
+        if !detail.views.isEmpty {
+            selectArtistSection(at: idx, animated: true)
+        } else {
+            contentView.setTitle(detail.artist.name)
+            contentView.displayItems([], animated: false)
+        }
+    }
+
+    public func popArtistPage() {
+        artistLoadTask?.cancel()
+        detailLoadTask?.cancel()
+        contentView.hideDetail()
+        if !artistStack.isEmpty {
+            artistStack.removeLast()
+        }
+        activeArtistSectionIndex = 0
+
+        if !artistStack.isEmpty {
+            renderCurrentArtistDetail()
+            return
+        }
+
+        sidebar.setTopHeaderView(nil)
+        topBar.setArtistMode(false)
+
+        if let origin = savedArtistOrigin {
+            savedArtistOrigin = nil
+            if origin.isSearchMode {
+                if origin.isSearchResultsActive && !searchSections.isEmpty {
+                    let cats = searchSections.map { SidebarCategory(id: $0.id, title: $0.title) }
+                    let idx = min(activeSearchSectionIndex, max(0, cats.count - 1))
+                    sidebar.setCategories(cats, selectedIndex: idx)
+                    contentView.setColumnCountOverride(origin.columnCountOverride)
+                    layoutViews()
+                    contentView.setTitle(origin.title)
+                    contentView.displayItems(origin.items, animated: false)
+                    contentView.restoreScrollOrigin(origin.scrollOrigin)
+                } else {
+                    contentView.setColumnCountOverride(origin.columnCountOverride)
+                    layoutViews()
+                    contentView.setTitle(origin.title)
+                    contentView.displayItems(origin.items, animated: false)
+                    contentView.restoreScrollOrigin(origin.scrollOrigin)
+                }
+            } else {
+                activeTabIndex = origin.tabIndex
+                activeCategoryIndex = origin.categoryIndex
+                topBar.selectTab(index: origin.tabIndex)
+                sidebar.setCategories(categoriesForTab(origin.tabIndex), selectedIndex: origin.categoryIndex)
+                contentView.setColumnCountOverride(origin.columnCountOverride)
+                layoutViews()
+                contentView.setTitle(origin.title)
+                contentView.displayItems(origin.items, animated: false)
+                contentView.restoreScrollOrigin(origin.scrollOrigin)
+            }
+            return
+        }
+
+        if topBar.isSearchMode {
+            if isSearchResultsActive && !searchSections.isEmpty {
+                let cats = searchSections.map { SidebarCategory(id: $0.id, title: $0.title) }
+                let idx = min(activeSearchSectionIndex, max(0, cats.count - 1))
+                sidebar.setCategories(cats, selectedIndex: idx)
+                layoutViews()
+                selectSearchSection(at: idx)
+            } else {
+                enterSearchEmptyState()
+            }
+        } else {
+            layoutViews()
+            handleTabSelected(activeTabIndex)
+        }
+    }
+
+    private func selectArtistSection(at index: Int, animated: Bool = false) {
+        guard let detail = artistStack.last, index >= 0, index < detail.views.count else { return }
+        activeArtistSectionIndex = index
+        let sec = detail.views[index]
+        contentView.setTitle(sec.title)
+        contentView.displayItems(sec.items.map { mediaCardItem(from: $0) }, animated: animated)
+    }
+
+    private func playArtistTopSongs() {
+        guard let detail = artistStack.last else { return }
+        let topSec = detail.views.first(where: { $0.kind == .topSongs }) ?? detail.views.first
+        let tracks: [MusicTrack] = topSec?.items.compactMap {
+            if case .track(let t) = $0 { return t } else { return nil }
+        } ?? []
+        guard let first = tracks.first else { return }
+        let queue = PlaybackQueue(items: tracks, currentIndex: 0)
+        Task {
+            try? await coordinator.playTrack(first, in: queue)
+        }
+    }
+
+    private func showArtistInfoPopover(relativeTo anchor: NSView) {
+        guard let detail = artistStack.last else { return }
+        let popover = NSPopover()
+        popover.behavior = .transient
+        let vc = NSViewController()
+        let box = NSView(frame: NSRect(x: 0, y: 0, width: 260, height: 170))
+        let nameLbl = NSTextField(labelWithString: detail.artist.name)
+        nameLbl.font = NSFont.systemFont(ofSize: 14, weight: .bold)
+        nameLbl.frame = NSRect(x: 14, y: 136, width: 232, height: 20)
+        box.addSubview(nameLbl)
+
+        let genreText = detail.genreNames.isEmpty ? "Apple Music 艺人" : detail.genreNames.joined(separator: " · ")
+        let genreLbl = NSTextField(labelWithString: genreText)
+        genreLbl.font = NSFont.systemFont(ofSize: 11.5, weight: .medium)
+        genreLbl.textColor = .secondaryLabelColor
+        genreLbl.frame = NSRect(x: 14, y: 114, width: 232, height: 16)
+        box.addSubview(genreLbl)
+
+        let scroll = NSScrollView(frame: NSRect(x: 14, y: 12, width: 232, height: 96))
+        scroll.drawsBackground = false
+        let tv = NSTextView(frame: NSRect(x: 0, y: 0, width: 232, height: 96))
+        tv.isEditable = false
+        tv.drawsBackground = false
+        tv.font = NSFont.systemFont(ofSize: 12)
+        tv.string = detail.editorialNotes ?? "暂无艺人简介。"
+        scroll.documentView = tv
+        box.addSubview(scroll)
+
+        vc.view = box
+        popover.contentViewController = vc
+        popover.show(relativeTo: anchor.bounds, of: anchor, preferredEdge: .maxX)
+    }
+
+    private func toggleArtistFavorite() {
+        guard var detail = artistStack.last, let provider = appleMusicProvider else { return }
+        let nextFav = !detail.isFavorited
+        detail.isFavorited = nextFav
+        if nextFav { detail.isSuggestLess = false }
+        artistStack[artistStack.count - 1] = detail
+        artistSidebarHeader.setFavorited(nextFav)
+
+        let artistID = detail.artist.id
+        Task {
+            do {
+                try await provider.setArtistRating(artistID: artistID, value: nextFav ? 1 : nil)
+            } catch {
+                AppLogger.shared.log(category: .error, level: .warn, message: "收藏艺人操作失败: \(error.localizedDescription)")
+            }
+        }
+    }
+
+    private func showArtistMoreMenu(relativeTo anchor: NSView) {
+        guard let detail = artistStack.last else { return }
+        let isSuggestLess = detail.isSuggestLess
+        let items: [GlassPopoverMenuItem] = [
+            GlassPopoverMenuItem(
+                id: "artist_station",
+                title: "创建艺人电台",
+                symbolName: "dot.radiowaves.left.and.right",
+                action: { [weak self] in
+                    self?.startArtistStation()
+                }
+            ),
+            GlassPopoverMenuItem(
+                id: "artist_suggest_less",
+                title: isSuggestLess ? "取消减少推荐" : "减少推荐",
+                symbolName: "hand.thumbsdown",
+                isSelected: isSuggestLess,
+                action: { [weak self] in
+                    self?.toggleArtistSuggestLess()
+                }
+            )
+        ]
+        let anchorInWindow = anchor.convert(anchor.bounds, to: nil)
+        let anchorInScreen = anchor.window?.convertToScreen(anchorInWindow) ?? anchorInWindow
+        GlassPopoverMenu.shared.present(items: items, relativeTo: anchorInScreen, parentWindow: anchor.window)
+    }
+
+    private func startArtistStation() {
+        guard let detail = artistStack.last, let provider = appleMusicProvider else { return }
+        let artistID = detail.artist.id
+        Task { [weak self] in
+            guard let self else { return }
+            if let station = try? await provider.fetchArtistStation(artistID: artistID) {
+                let track = MusicTrack(
+                    id: station.id,
+                    title: station.name,
+                    artistName: detail.artist.name,
+                    albumTitle: "艺人电台",
+                    durationMs: 0,
+                    artworkURL: station.artworkURL ?? detail.artist.artworkURL,
+                    providerID: "apple_music",
+                    providerTrackID: station.id
+                )
+                let queue = PlaybackQueue(items: [track], currentIndex: 0)
+                try? await self.coordinator.playTrack(track, in: queue)
+            }
+        }
+    }
+
+    private func toggleArtistSuggestLess() {
+        guard var detail = artistStack.last, let provider = appleMusicProvider else { return }
+        let nextLess = !detail.isSuggestLess
+        detail.isSuggestLess = nextLess
+        if nextLess {
+            detail.isFavorited = false
+            artistSidebarHeader.setFavorited(false)
+        }
+        artistStack[artistStack.count - 1] = detail
+        let artistID = detail.artist.id
+        Task {
+            try? await provider.setArtistRating(artistID: artistID, value: nextLess ? -1 : nil)
         }
     }
 

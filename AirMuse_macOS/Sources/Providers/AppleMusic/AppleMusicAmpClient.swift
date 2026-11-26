@@ -452,36 +452,109 @@ public actor AppleMusicAmpClient {
     // MARK: - Public API: Search
 
     public func search(term: String, limit: Int = 25, generation: Int? = nil) async throws -> MusicSearchResult {
-        guard !term.trimmingCharacters(in: .whitespaces).isEmpty,
-              let encoded = term.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
-              let url = URL(string: "https://amp-api.music.apple.com/v1/catalog/\(storefront)/search?term=\(encoded)&types=songs,albums,artists,playlists&limit=\(limit)&relate[songs]=artists&include[songs]=artists&include[albums]=artists&art[url]=f&l=zh-Hans-CN&platform=web") else {
-            return MusicSearchResult()
-        }
+        let trimmed = term.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return MusicSearchResult() }
+        var components = URLComponents()
+        components.scheme = "https"
+        components.host = "amp-api.music.apple.com"
+        components.path = "/v1/catalog/\(storefront)/search"
+        components.queryItems = [
+            URLQueryItem(name: "term", value: trimmed),
+            URLQueryItem(name: "types", value: "songs,albums,artists,playlists,stations,music-videos,apple-curators,curators"),
+            URLQueryItem(name: "limit", value: "\(limit)"),
+            URLQueryItem(name: "with", value: "topResults"),
+            URLQueryItem(name: "relate[songs]", value: "artists"),
+            URLQueryItem(name: "include[songs]", value: "artists"),
+            URLQueryItem(name: "include[albums]", value: "artists"),
+            URLQueryItem(name: "art[url]", value: "f"),
+            URLQueryItem(name: "l", value: "zh-Hans-CN"),
+            URLQueryItem(name: "platform", value: "web")
+        ]
+        guard let url = components.url else { return MusicSearchResult() }
         let data = try await execute(url: url, generation: generation)
         let result = parseSearchResult(data: data)
         AppLogger.shared.log(
             category: .ampAPI,
             level: .info,
-            message: "目录搜索 \"\(term)\" 完成: \(result.tracks.count) 首单曲, \(result.albums.count) 张专辑, \(result.artists.count) 位艺人, \(result.playlists.count) 个歌单"
+            message: "目录搜索 \"\(trimmed)\" 完成: \(result.sections.count) 个分类, \(result.tracks.count) 首单曲, \(result.albums.count) 张专辑, \(result.artists.count) 位艺人, \(result.playlists.count) 个歌单, \(result.stations.count) 个电台"
         )
         return result
     }
 
     public func searchLibrary(term: String, limit: Int = 25, generation: Int? = nil) async throws -> MusicSearchResult {
-        guard !term.trimmingCharacters(in: .whitespaces).isEmpty,
-              let encoded = term.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
-              userToken != nil,
-              let url = URL(string: "https://amp-api.music.apple.com/v1/me/library/search?term=\(encoded)&types=library-songs,library-albums,library-artists,library-playlists&limit=\(limit)&include=catalog&art[url]=f&l=zh-Hans-CN&platform=web") else {
-            return MusicSearchResult()
-        }
+        let trimmed = term.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty, userToken != nil else { return MusicSearchResult() }
+        var components = URLComponents()
+        components.scheme = "https"
+        components.host = "amp-api.music.apple.com"
+        components.path = "/v1/me/library/search"
+        components.queryItems = [
+            URLQueryItem(name: "term", value: trimmed),
+            URLQueryItem(name: "types", value: "library-songs,library-albums,library-artists,library-playlists"),
+            URLQueryItem(name: "limit", value: "\(limit)"),
+            URLQueryItem(name: "include", value: "catalog"),
+            URLQueryItem(name: "art[url]", value: "f"),
+            URLQueryItem(name: "l", value: "zh-Hans-CN"),
+            URLQueryItem(name: "platform", value: "web")
+        ]
+        guard let url = components.url else { return MusicSearchResult() }
         let data = try await execute(url: url, needAuth: true, generation: generation)
         let result = parseLibrarySearchResult(data: data)
         AppLogger.shared.log(
             category: .ampAPI,
             level: .info,
-            message: "资料库搜索 \"\(term)\" 完成: \(result.tracks.count) 首单曲, \(result.albums.count) 张专辑, \(result.artists.count) 位艺人, \(result.playlists.count) 个歌单"
+            message: "资料库搜索 \"\(trimmed)\" 完成: \(result.sections.count) 个分类, \(result.tracks.count) 首单曲, \(result.albums.count) 张专辑, \(result.artists.count) 位艺人, \(result.playlists.count) 个歌单"
         )
         return result
+    }
+
+    /// Fetches the next page of results for a specific search section using the AMP `next` cursor path/URL.
+    public func fetchSearchPage(
+        nextPath: String,
+        isLibrary: Bool,
+        limit: Int = 25,
+        generation: Int? = nil
+    ) async throws -> (items: [MusicSearchItem], nextURL: String?) {
+        let trimmed = nextPath.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return ([], nil) }
+        if isLibrary && userToken == nil { return ([], nil) }
+
+        let base = trimmed.hasPrefix("http") ? trimmed : "https://amp-api.music.apple.com\(trimmed)"
+        var components = URLComponents(string: base)
+        var queryItems = components?.queryItems ?? []
+        if !queryItems.contains(where: { $0.name == "limit" }) {
+            queryItems.append(URLQueryItem(name: "limit", value: "\(limit)"))
+        }
+        if !queryItems.contains(where: { $0.name == "art[url]" }) {
+            queryItems.append(URLQueryItem(name: "art[url]", value: "f"))
+        }
+        if !queryItems.contains(where: { $0.name == "l" }) {
+            queryItems.append(URLQueryItem(name: "l", value: "zh-Hans-CN"))
+        }
+        if !queryItems.contains(where: { $0.name == "platform" }) {
+            queryItems.append(URLQueryItem(name: "platform", value: "web"))
+        }
+        components?.queryItems = queryItems
+        guard let url = components?.url else { return ([], nil) }
+
+        let data = try await execute(url: url, needAuth: isLibrary, generation: generation)
+        guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            return ([], nil)
+        }
+        let rawList: [[String: Any]]
+        if let direct = json["data"] as? [[String: Any]] {
+            rawList = direct
+        } else if let results = json["results"] as? [String: Any],
+                  let firstSection = results.values.compactMap({ $0 as? [String: Any] }).first,
+                  let nested = firstSection["data"] as? [[String: Any]] {
+            rawList = nested
+        } else {
+            rawList = []
+        }
+        let parsed = rawList.compactMap { parseSearchItem(raw: $0, sectionKey: nil) }
+        let next = json["next"] as? String
+            ?? ((json["results"] as? [String: Any])?.values.compactMap({ $0 as? [String: Any] }).first?["next"] as? String)
+        return (parsed, next)
     }
 
     // MARK: - Public API: Personal Recommendations (Listen Now / 听见)
@@ -700,7 +773,7 @@ public actor AppleMusicAmpClient {
     }
 
     public func fetchArtistTopSongs(artistID: String, isLibrary: Bool? = nil, limit: Int = 100, generation: Int? = nil) async throws -> [MusicTrack] {
-        let isLib = isLibrary ?? (artistID.hasPrefix("l.") || artistID.hasPrefix("i."))
+        let isLib = isLibrary ?? (artistID.hasPrefix("r.") || artistID.hasPrefix("l.") || artistID.hasPrefix("i."))
         let urlStr = isLib
             ? "https://amp-api.music.apple.com/v1/me/library/artists/\(artistID)/tracks?limit=\(limit)&l=zh-Hans-CN&platform=web"
             : "https://amp-api.music.apple.com/v1/catalog/\(storefront)/artists/\(artistID)/view/top-songs?limit=\(limit)&l=zh-Hans-CN&platform=web"
@@ -714,6 +787,146 @@ public actor AppleMusicAmpClient {
             message: "拉取\(isLib ? "资料库" : "目录")艺人 [\(artistID)] 曲目列表完成: 共 \(tracks.count) 首"
         )
         return tracks
+    }
+
+    // MARK: - Full Artist Page Detail & Actions
+
+    public func fetchArtistDetail(
+        artistID: String,
+        isLibrary: Bool? = nil,
+        generation: Int? = nil
+    ) async throws -> MusicArtistDetail {
+        let isLib = isLibrary ?? (artistID.hasPrefix("r.") || artistID.hasPrefix("l.") || artistID.hasPrefix("i."))
+        var resolvedCatalogID = artistID
+
+        if isLib {
+            if let catURL = URL(string: "https://amp-api.music.apple.com/v1/me/library/artists/\(artistID)?include=catalog&l=zh-Hans-CN&platform=web"),
+               let catData = try? await execute(url: catURL, needAuth: true, generation: generation),
+               let json = try? JSONSerialization.jsonObject(with: catData) as? [String: Any],
+               let first = (json["data"] as? [[String: Any]])?.first,
+               let rel = (first["relationships"] as? [String: Any])?["catalog"] as? [String: Any],
+               let cid = (rel["data"] as? [[String: Any]])?.first?["id"] as? String {
+                resolvedCatalogID = cid
+            } else {
+                let tracks = (try? await fetchArtistTopSongs(artistID: artistID, isLibrary: true, generation: generation)) ?? []
+                let artist = MusicArtist(id: artistID, name: tracks.first?.artistName ?? "资料库艺人", providerID: "apple_music", providerArtistID: artistID)
+                let sections: [ArtistViewSection] = tracks.isEmpty ? [] : [
+                    ArtistViewSection(id: "top-songs", kind: .topSongs, items: tracks.map { .track($0) })
+                ]
+                return MusicArtistDetail(artist: artist, views: sections)
+            }
+        }
+
+        let viewsParam = "top-songs,latest-release,full-albums,singles,live-albums,compilation-albums,featured-playlists,similar-artists"
+        guard let url = URL(string: "https://amp-api.music.apple.com/v1/catalog/\(storefront)/artists/\(resolvedCatalogID)?views=\(viewsParam)&extend=editorialArtwork,editorialNotes&art[url]=f&l=zh-Hans-CN&platform=web") else {
+            return MusicArtistDetail(artist: MusicArtist(id: resolvedCatalogID, name: "艺人", providerID: "apple_music", providerArtistID: resolvedCatalogID))
+        }
+
+        let data = try await execute(url: url, needAuth: false, generation: generation)
+        var detail = parseArtistDetail(data: data, fallbackID: resolvedCatalogID)
+
+        if userToken != nil,
+           let ratingURL = URL(string: "https://amp-api.music.apple.com/v1/me/ratings/artists/\(resolvedCatalogID)?l=zh-Hans-CN&platform=web"),
+           let ratingData = try? await execute(url: ratingURL, needAuth: true, generation: generation),
+           let rJson = try? JSONSerialization.jsonObject(with: ratingData) as? [String: Any],
+           let rFirst = (rJson["data"] as? [[String: Any]])?.first,
+           let val = (rFirst["attributes"] as? [String: Any])?["value"] as? Int {
+            detail.isFavorited = (val == 1)
+            detail.isSuggestLess = (val == -1)
+        }
+        return detail
+    }
+
+    public func setArtistRating(artistID: String, value: Int?, generation: Int? = nil) async throws {
+        guard userToken != nil,
+              let url = URL(string: "https://amp-api.music.apple.com/v1/me/ratings/artists/\(artistID)?l=zh-Hans-CN&platform=web") else {
+            throw AppleMusicError.notAuthorized
+        }
+        let currentDevToken: String
+        if let dt = devToken, !dt.isEmpty {
+            currentDevToken = dt
+        } else {
+            currentDevToken = try await ensureDeveloperToken()
+        }
+        var req = URLRequest(url: url)
+        req.timeoutInterval = 12
+        req.setValue("Bearer \(currentDevToken)", forHTTPHeaderField: "Authorization")
+        if let ut = userToken { req.setValue(ut, forHTTPHeaderField: "Music-User-Token") }
+        req.setValue("https://music.apple.com", forHTTPHeaderField: "Origin")
+        req.setValue("https://music.apple.com/", forHTTPHeaderField: "Referer")
+
+        if let value {
+            req.httpMethod = "PUT"
+            req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            let payload: [String: Any] = ["type": "rating", "attributes": ["value": value]]
+            req.httpBody = try JSONSerialization.data(withJSONObject: payload)
+        } else {
+            req.httpMethod = "DELETE"
+        }
+
+        let (_, response) = try await session.data(for: req)
+        if let reqGen = generation, reqGen != activeGeneration {
+            throw AppleMusicSessionError.sessionGenerationMismatch
+        }
+        let code = (response as? HTTPURLResponse)?.statusCode ?? 0
+        guard (200...299).contains(code) else {
+            throw URLError(.badServerResponse)
+        }
+    }
+
+    public func fetchArtistStation(artistID: String, generation: Int? = nil) async throws -> MusicStation? {
+        guard let url = URL(string: "https://amp-api.music.apple.com/v1/catalog/\(storefront)/artists/\(artistID)/station?art[url]=f&l=zh-Hans-CN&platform=web") else {
+            return nil
+        }
+        let data = try await execute(url: url, needAuth: false, generation: generation)
+        guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let first = (json["data"] as? [[String: Any]])?.first else {
+            return nil
+        }
+        return parseStationItem(first)
+    }
+
+    private func parseArtistDetail(data: Data, fallbackID: String) -> MusicArtistDetail {
+        guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let first = (json["data"] as? [[String: Any]])?.first else {
+            return MusicArtistDetail(artist: MusicArtist(id: fallbackID, name: "艺人", providerID: "apple_music", providerArtistID: fallbackID))
+        }
+
+        let artist = parseArtistItem(first) ?? MusicArtist(id: fallbackID, name: "艺人", providerID: "apple_music", providerArtistID: fallbackID)
+        let attrs = first["attributes"] as? [String: Any] ?? [:]
+        let genres = attrs["genreNames"] as? [String] ?? []
+        let notesObj = attrs["editorialNotes"] as? [String: Any]
+        let notes = (notesObj?["standard"] as? String) ?? (notesObj?["short"] as? String)
+
+        let viewsDict = first["views"] as? [String: Any] ?? [:]
+        let preferredOrder = [
+            "top-songs", "latest-release", "full-albums", "singles",
+            "live-albums", "compilation-albums", "featured-playlists", "similar-artists"
+        ]
+        var orderedKeys: [String] = []
+        for k in preferredOrder where viewsDict[k] != nil { orderedKeys.append(k) }
+        for k in viewsDict.keys.sorted() where !orderedKeys.contains(k) { orderedKeys.append(k) }
+
+        var sections: [ArtistViewSection] = []
+        for key in orderedKeys {
+            guard let vDict = viewsDict[key] as? [String: Any],
+                  let rawData = vDict["data"] as? [[String: Any]],
+                  !rawData.isEmpty else { continue }
+            let vAttrs = vDict["attributes"] as? [String: Any]
+            let title = vAttrs?["title"] as? String
+            let kind = ArtistViewKind(viewKey: key)
+            let items = rawData.compactMap { parseSearchItem(raw: $0, sectionKey: nil) }
+            guard !items.isEmpty else { continue }
+            let nextURL = vDict["next"] as? String
+            sections.append(ArtistViewSection(id: key, kind: kind, title: title, items: items, nextURL: nextURL))
+        }
+
+        return MusicArtistDetail(
+            artist: artist,
+            editorialNotes: notes,
+            genreNames: genres,
+            views: sections
+        )
     }
 
     // MARK: - Public API: Pagination Support
@@ -920,31 +1133,61 @@ public actor AppleMusicAmpClient {
             return MusicSearchResult()
         }
 
+        let metaOrder = ((json["meta"] as? [String: Any])?["results"] as? [String: Any])?["order"] as? [String] ?? []
+        var orderedKeys: [String] = []
+        for topKey in ["topResults", "top"] where results[topKey] != nil && !orderedKeys.contains(topKey) {
+            orderedKeys.append(topKey)
+        }
+        for key in metaOrder where results[key] != nil && !orderedKeys.contains(key) {
+            orderedKeys.append(key)
+        }
+        for key in results.keys.sorted() where !orderedKeys.contains(key) {
+            orderedKeys.append(key)
+        }
+
         var tracks: [MusicTrack] = []
-        if let songsSection = results["songs"] as? [String: Any],
-           let items = songsSection["data"] as? [[String: Any]] {
-            tracks = items.compactMap { parseTrackItem($0) }
-        }
-
         var albums: [MusicAlbum] = []
-        if let albumsSection = results["albums"] as? [String: Any],
-           let items = albumsSection["data"] as? [[String: Any]] {
-            albums = items.compactMap { parseAlbumItem($0) }
-        }
-
         var artists: [MusicArtist] = []
-        if let artistsSection = results["artists"] as? [String: Any],
-           let items = artistsSection["data"] as? [[String: Any]] {
-            artists = items.compactMap { parseArtistItem($0) }
-        }
-
         var playlists: [MusicPlaylist] = []
-        if let playlistsSection = results["playlists"] as? [String: Any],
-           let items = playlistsSection["data"] as? [[String: Any]] {
-            playlists = items.compactMap { parsePlaylistItem($0) }
+        var stations: [MusicStation] = []
+        var sections: [SearchSection] = []
+
+        for key in orderedKeys {
+            guard let sectionDict = results[key] as? [String: Any],
+                  let rawItems = sectionDict["data"] as? [[String: Any]],
+                  !rawItems.isEmpty else { continue }
+
+            let kind = SearchCategoryKind(ampKey: key)
+            let parsedItems = rawItems.compactMap { parseSearchItem(raw: $0, sectionKey: key) }
+            guard !parsedItems.isEmpty else { continue }
+
+            let nextURL = sectionDict["next"] as? String
+            sections.append(SearchSection(id: key, kind: kind, title: kind.displayTitle, items: parsedItems, nextURL: nextURL))
+
+            switch kind {
+            case .songs:
+                tracks.append(contentsOf: parsedItems.compactMap { if case .track(let t) = $0 { return t } else { return nil } })
+            case .albums:
+                albums.append(contentsOf: parsedItems.compactMap { if case .album(let a) = $0 { return a } else { return nil } })
+            case .artists:
+                artists.append(contentsOf: parsedItems.compactMap { if case .artist(let a) = $0 { return a } else { return nil } })
+            case .playlists:
+                playlists.append(contentsOf: parsedItems.compactMap { if case .playlist(let p) = $0 { return p } else { return nil } })
+            case .stations:
+                stations.append(contentsOf: parsedItems.compactMap { if case .station(let s) = $0 { return s } else { return nil } })
+            default:
+                break
+            }
         }
 
-        return MusicSearchResult(tracks: tracks, albums: albums, artists: artists, playlists: playlists)
+        return MusicSearchResult(
+            tracks: tracks,
+            albums: albums,
+            artists: artists,
+            playlists: playlists,
+            stations: stations,
+            sections: sections
+        )
     }
 
     private func parseLibrarySearchResult(data: Data) -> MusicSearchResult {
@@ -953,31 +1196,109 @@ public actor AppleMusicAmpClient {
             return MusicSearchResult()
         }
 
+        let metaOrder = ((json["meta"] as? [String: Any])?["results"] as? [String: Any])?["order"] as? [String] ?? []
+        var orderedKeys: [String] = []
+        for key in metaOrder where results[key] != nil && !orderedKeys.contains(key) {
+            orderedKeys.append(key)
+        }
+        for key in ["library-songs", "library-albums", "library-artists", "library-playlists"] where results[key] != nil && !orderedKeys.contains(key) {
+            orderedKeys.append(key)
+        }
+        for key in results.keys.sorted() where !orderedKeys.contains(key) {
+            orderedKeys.append(key)
+        }
+
         var tracks: [MusicTrack] = []
-        if let sec = results["library-songs"] as? [String: Any],
-           let items = sec["data"] as? [[String: Any]] {
-            tracks = items.compactMap { parseTrackItem($0) }
-        }
-
         var albums: [MusicAlbum] = []
-        if let sec = results["library-albums"] as? [String: Any],
-           let items = sec["data"] as? [[String: Any]] {
-            albums = items.compactMap { parseAlbumItem($0) }
-        }
-
         var artists: [MusicArtist] = []
-        if let sec = results["library-artists"] as? [String: Any],
-           let items = sec["data"] as? [[String: Any]] {
-            artists = items.compactMap { parseLibraryArtistItem($0) }
-        }
-
         var playlists: [MusicPlaylist] = []
-        if let sec = results["library-playlists"] as? [String: Any],
-           let items = sec["data"] as? [[String: Any]] {
-            playlists = items.compactMap { parsePlaylistItem($0) }
+        var sections: [SearchSection] = []
+
+        for key in orderedKeys {
+            guard let sectionDict = results[key] as? [String: Any],
+                  let rawItems = sectionDict["data"] as? [[String: Any]],
+                  !rawItems.isEmpty else { continue }
+
+            let kind = SearchCategoryKind(ampKey: key)
+            let parsedItems = rawItems.compactMap { parseSearchItem(raw: $0, sectionKey: key) }
+            guard !parsedItems.isEmpty else { continue }
+
+            let nextURL = sectionDict["next"] as? String
+            sections.append(SearchSection(id: key, kind: kind, title: kind.displayTitle, items: parsedItems, nextURL: nextURL))
+
+            switch kind {
+            case .songs:
+                tracks.append(contentsOf: parsedItems.compactMap { if case .track(let t) = $0 { return t } else { return nil } })
+            case .albums:
+                albums.append(contentsOf: parsedItems.compactMap { if case .album(let a) = $0 { return a } else { return nil } })
+            case .artists:
+                artists.append(contentsOf: parsedItems.compactMap { if case .artist(let a) = $0 { return a } else { return nil } })
+            case .playlists:
+                playlists.append(contentsOf: parsedItems.compactMap { if case .playlist(let p) = $0 { return p } else { return nil } })
+            default:
+                break
+            }
         }
 
-        return MusicSearchResult(tracks: tracks, albums: albums, artists: artists, playlists: playlists)
+        return MusicSearchResult(
+            tracks: tracks,
+            albums: albums,
+            artists: artists,
+            playlists: playlists,
+            stations: [],
+            sections: sections
+        )
+    }
+
+    private func parseSearchItem(raw: [String: Any], sectionKey: String?) -> MusicSearchItem? {
+        let itemType = (raw["type"] as? String) ?? sectionKey ?? ""
+        switch itemType {
+        case "songs", "library-songs":
+            return parseTrackItem(raw).map { .track($0) }
+        case "albums", "library-albums":
+            return parseAlbumItem(raw).map { .album($0) }
+        case "artists":
+            return parseArtistItem(raw).map { .artist($0) }
+        case "library-artists":
+            return parseLibraryArtistItem(raw).map { .artist($0) }
+        case "playlists", "library-playlists":
+            return parsePlaylistItem(raw).map { .playlist($0) }
+        case "stations":
+            return parseStationItem(raw).map { .station($0) }
+        case "music-videos":
+            return parseTrackItem(raw).map { .musicVideo($0) }
+        case "apple-curators", "curators":
+            return parseCuratorItem(raw)
+        default:
+            return nil
+        }
+    }
+
+    private func parseCuratorItem(_ item: [String: Any]) -> MusicSearchItem? {
+        guard let id = item["id"] as? String else { return nil }
+        let attrs = item["attributes"] as? [String: Any] ?? [:]
+        let name = attrs["name"] as? String ?? "类别"
+        let notes = (attrs["editorialNotes"] as? [String: Any])?["short"] as? String
+        let rawArt = (attrs["artwork"] as? [String: Any])?["url"] as? String
+        return .curator(id: id, name: name, subtitle: notes ?? "Apple Music 类别", artworkURL: formatArtworkURL(rawArt))
+    }
+
+    private func parseStationItem(_ item: [String: Any]) -> MusicStation? {
+        guard let id = item["id"] as? String else { return nil }
+        let attrs = item["attributes"] as? [String: Any] ?? [:]
+        let name = attrs["name"] as? String ?? "未知电台"
+        let notes = (attrs["editorialNotes"] as? [String: Any])?["short"] as? String
+        let rawArt = (attrs["artwork"] as? [String: Any])?["url"] as? String
+        let isLive = attrs["isLive"] as? Bool ?? false
+        return MusicStation(
+            id: id,
+            name: name,
+            description: notes ?? "Apple Music 广播",
+            artworkURL: formatArtworkURL(rawArt),
+            isLive: isLive,
+            providerID: "apple_music",
+            providerStationID: id
+        )
     }
 
     private func parseRecentlyAdded(data: Data) -> [AmpCategoryItem] {

@@ -280,6 +280,8 @@ open class LibrarySidebarView: NSVisualEffectView {
     private var categoryViews: [SidebarCategoryItemView] = []
     public private(set) var selectedIndex: Int = 0
     public private(set) var categories: [SidebarCategory] = []
+    private var topHeaderView: NSView?
+    private var topHeaderHeight: CGFloat = 0
 
     public override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
@@ -349,7 +351,22 @@ open class LibrarySidebarView: NSVisualEffectView {
 
     open override func layout() {
         super.layout()
-        scrollView.frame = bounds
+        let h = max(0, min(topHeaderHeight, bounds.height))
+        topHeaderView?.frame = NSRect(x: 0, y: 0, width: bounds.width, height: h)
+        scrollView.frame = NSRect(x: 0, y: h, width: bounds.width, height: max(0, bounds.height - h))
+    }
+
+    public func setTopHeaderView(_ header: NSView?, height: CGFloat = 0) {
+        if topHeaderView !== header {
+            topHeaderView?.removeFromSuperview()
+            topHeaderView = header
+            if let header {
+                addSubview(header)
+            }
+        }
+        topHeaderHeight = (header != nil) ? max(0, height) : 0
+        needsLayout = true
+        layoutSubtreeIfNeeded()
     }
 
     public func setCategories(_ categories: [SidebarCategory], selectedIndex: Int = 0) {
