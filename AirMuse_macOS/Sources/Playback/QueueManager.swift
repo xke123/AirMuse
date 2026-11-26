@@ -5,7 +5,9 @@ import Domain
 
 public enum QueueAdvancementResult: Sendable, Equatable {
     case play(entry: QueueEntry, isRepeatOne: Bool)
+    case waitingForPage(batchID: UUID)
     case seekToZero
+    case exhausted
     case stop
 }
 
@@ -37,6 +39,7 @@ public struct QueuePersistencePayload: Codable, Sendable, Equatable {
     public let upcomingOrder: [UUID]
     public let history: [QueueEntry]
     public let currentEntryID: UUID?
+    public let activeTarget: PlaybackTarget?
     public let shuffleEnabled: Bool
     public let repeatMode: PlaybackState.RepeatMode
     public let owner: QueueOwner
@@ -48,6 +51,7 @@ public struct QueuePersistencePayload: Codable, Sendable, Equatable {
         upcomingOrder: [UUID],
         history: [QueueEntry],
         currentEntryID: UUID?,
+        activeTarget: PlaybackTarget? = nil,
         shuffleEnabled: Bool,
         repeatMode: PlaybackState.RepeatMode,
         owner: QueueOwner
@@ -58,6 +62,7 @@ public struct QueuePersistencePayload: Codable, Sendable, Equatable {
         self.upcomingOrder = upcomingOrder
         self.history = history
         self.currentEntryID = currentEntryID
+        self.activeTarget = activeTarget
         self.shuffleEnabled = shuffleEnabled
         self.repeatMode = repeatMode
         self.owner = owner
@@ -69,58 +74,80 @@ public struct QueuePersistencePayload: Codable, Sendable, Equatable {
 /// Authoritative, synchronous value-type queue state machine owned exclusively by `PlaybackCoordinatorV2`.
 /// Guarantees:
 /// - Every entry has a unique `UUID` and `PlaybackOrigin`.
-/// - `upcomingOrder` is 100% identical to what `advanceNext` consumes.
-/// - `history` is independent of `baselineOrder` (deleted/cleared entries stay in bounded history without resurrecting in repeat).
-/// - Reservation / confirmation separation: only confirmed playback enters history.
+/// - Logical `batchTail` sentinels keep pagination boundaries stable even if anchor tracks are consumed or deleted.
+/// - `ReservationRecord` isolates pending/failed playback from `confirmedCurrent` and `history`.
+/// - `requestedShuffle` vs `effectiveShuffle` prevents premature/partial shuffle during large collection loading.
 public struct QueueManager: Sendable {
 
     private enum PendingSource: Equatable {
-        case newQueue
+        case replace
+        case interrupt
         case next
         case previous
-        case directPlay
+        case directPlay(originalUpcomingIndex: Int?)
         case repeatOne
+    }
+
+    private enum QueueSlot: Equatable, Sendable {
+        case entry(UUID)
+        case batchTail(UUID)
+
+        var entryID: UUID? {
+            if case .entry(let id) = self { return id }
+            return nil
+        }
+
+        var batchID: UUID? {
+            if case .batchTail(let id) = self { return id }
+            return nil
+        }
+    }
+
+    private struct ReservationRecord: Sendable {
+        let id: UUID
+        var entry: QueueEntry
+        let source: PendingSource
+        let previousConfirmed: QueueEntry?
+        let forwardCandidate: QueueEntry?
+        var isFailed: Bool = false
     }
 
     private struct UndoRecord: Sendable {
         let queueID: UUID
         let sessionScope: String
         let postEditRevision: UInt64
-        let previousBaselineOrder: [UUID]
-        let previousUpcomingOrder: [UUID]
+        let previousBaselineSlots: [QueueSlot]
+        let previousUpcomingSlots: [QueueSlot]
         let removedEntries: [UUID: QueueEntry]
         let description: String
-    }
-
-    private struct BatchAnchor: Sendable {
-        let batchID: UUID
-        var lastEntryID: UUID?
-        var isInvalidated: Bool = false
     }
 
     public static let maxHistoryCount = 200
 
     public private(set) var queueID: UUID = UUID()
     public private(set) var revision: UInt64 = 0
+    public private(set) var destructiveEpoch: UInt64 = 0
     public private(set) var sessionScope: String = ""
     public private(set) var owner: QueueOwner = .localCoordinator
+    public private(set) var activeTarget: PlaybackTarget?
     public private(set) var capabilities: QueueCapabilities = .fullLocal
     public private(set) var loadingState: QueueLoadingState = .idle
+    public private(set) var playbackPhase: QueuePlaybackPhase = .idle
 
     private var entriesByID: [UUID: QueueEntry] = [:]
-    private var baselineOrder: [UUID] = []
-    private var upcomingOrder: [UUID] = []
+    private var baselineSlots: [QueueSlot] = []
+    private var upcomingSlots: [QueueSlot] = []
     private var history: [QueueEntry] = []
 
-    public private(set) var confirmedCurrentID: UUID?
-    public private(set) var pendingReservationID: UUID?
-    private var pendingSource: PendingSource?
-    private var lastFailedTarget: QueueEntry?
+    private var confirmedCurrent: QueueEntry?
+    private var reservation: ReservationRecord?
 
-    public private(set) var shuffleEnabled: Bool = false
+    public private(set) var requestedShuffle: Bool = false
+    public private(set) var effectiveShuffle: Bool = false
+    public var shuffleEnabled: Bool { requestedShuffle }
     public private(set) var repeatMode: PlaybackState.RepeatMode = .off
 
-    private var batchAnchors: [UUID: BatchAnchor] = [:]
+    private var activeBatches: Set<UUID> = []
     private var undoRecord: UndoRecord?
 
     public init() {}
@@ -128,22 +155,43 @@ public struct QueueManager: Sendable {
     // MARK: - Accessors
 
     public var confirmedCurrentEntry: QueueEntry? {
-        guard let id = confirmedCurrentID else { return nil }
-        return entriesByID[id]
+        confirmedCurrent
     }
 
     public var pendingTargetEntry: QueueEntry? {
-        guard let id = pendingReservationID else { return nil }
-        return entriesByID[id]
+        reservation?.entry
     }
 
-    /// The effective target entry (pending if preparing/buffering, otherwise confirmed current).
+    public var pendingReservationID: UUID? {
+        reservation?.entry.id
+    }
+
+    public var confirmedCurrentID: UUID? {
+        confirmedCurrent?.id
+    }
+
+    public var isPendingTargetFailed: Bool {
+        reservation?.isFailed ?? false
+    }
+
+    /// The effective target entry (pending if preparing/buffering/failed, otherwise confirmed current).
     public var activeTargetEntry: QueueEntry? {
-        pendingTargetEntry ?? confirmedCurrentEntry
+        reservation?.entry ?? confirmedCurrent
     }
 
     public var upcomingEntries: [QueueEntry] {
-        upcomingOrder.compactMap { entriesByID[$0] }
+        upcomingSlots.compactMap { slot in
+            guard case .entry(let id) = slot else { return nil }
+            return entriesByID[id]
+        }
+    }
+
+    private var baselineEntryIDs: [UUID] {
+        baselineSlots.compactMap(\.entryID)
+    }
+
+    private var upcomingEntryIDs: [UUID] {
+        upcomingSlots.compactMap(\.entryID)
     }
 
     public var historyEntries: [QueueEntry] {
@@ -152,6 +200,14 @@ public struct QueueManager: Sendable {
 
     public func entry(for id: UUID) -> QueueEntry? {
         entriesByID[id]
+    }
+
+    public var hasActiveBatch: Bool {
+        !activeBatches.isEmpty
+    }
+
+    public var canClearUpcoming: Bool {
+        capabilities.canClear && (!upcomingEntryIDs.isEmpty || !baselineEntryIDs.isEmpty || !activeBatches.isEmpty)
     }
 
     public func makeSnapshot() -> QueueSnapshot {
@@ -168,11 +224,12 @@ public struct QueueManager: Sendable {
             undoDesc = nil
         }
 
+        let upcoming = upcomingEntries
         let canGoNextNow: Bool = switch owner {
         case .remoteEngine:
             capabilities.canSkipNext
         case .localCoordinator:
-            !upcomingOrder.isEmpty || (repeatMode == .all && !baselineOrder.isEmpty)
+            !upcoming.isEmpty || (repeatMode == .all && !baselineEntryIDs.isEmpty)
         }
 
         let canGoPrevNow: Bool = switch owner {
@@ -185,18 +242,25 @@ public struct QueueManager: Sendable {
         return QueueSnapshot(
             queueID: queueID,
             revision: revision,
+            destructiveEpoch: destructiveEpoch,
             sessionScope: sessionScope,
             owner: owner,
-            confirmedCurrent: confirmedCurrentEntry,
-            pendingTarget: pendingTargetEntry,
-            upcomingEntries: upcomingEntries,
+            activeTarget: activeTarget,
+            confirmedCurrent: confirmedCurrent,
+            pendingTarget: reservation?.entry,
+            isPendingTargetFailed: reservation?.isFailed ?? false,
+            upcomingEntries: upcoming,
             historyCount: history.count,
             canGoPrevious: canGoPrevNow,
             canGoNext: canGoNextNow,
-            shuffleEnabled: shuffleEnabled,
+            canClearUpcoming: canClearUpcoming,
+            shuffleEnabled: requestedShuffle,
+            requestedShuffle: requestedShuffle,
+            effectiveShuffle: effectiveShuffle,
             repeatMode: repeatMode,
             capabilities: capabilities,
             loadingState: loadingState,
+            playbackPhase: playbackPhase,
             canUndo: canUndoNow,
             undoDescription: undoDesc
         )
@@ -209,22 +273,30 @@ public struct QueueManager: Sendable {
         undoRecord = nil
     }
 
+    public mutating func setPlaybackPhase(_ phase: QueuePlaybackPhase) {
+        playbackPhase = phase
+    }
+
     public mutating func resetForSessionInvalidation(newScope: String) {
         queueID = UUID()
         revision &+= 1
+        destructiveEpoch &+= 1
         sessionScope = newScope
         owner = .localCoordinator
+        activeTarget = nil
         capabilities = .fullLocal
         loadingState = .idle
+        playbackPhase = .idle
         entriesByID.removeAll()
-        baselineOrder.removeAll()
-        upcomingOrder.removeAll()
+        baselineSlots.removeAll()
+        upcomingSlots.removeAll()
         history.removeAll()
-        confirmedCurrentID = nil
-        pendingReservationID = nil
-        pendingSource = nil
-        lastFailedTarget = nil
-        batchAnchors.removeAll()
+        confirmedCurrent = nil
+        reservation = nil
+        requestedShuffle = false
+        effectiveShuffle = false
+        repeatMode = .off
+        activeBatches.removeAll()
         undoRecord = nil
     }
 
@@ -238,152 +310,280 @@ public struct QueueManager: Sendable {
         revision &+= 1
     }
 
-    // MARK: - Replace Queue (Play from Library / New Context)
+    // MARK: - Replace & Interrupt (1.1 Unified Intents)
 
-    /// Replaces the current queue with a new set of entries starting at `startIndex`.
-    /// When `startPlayback` is true, `entries[startIndex]` becomes `pendingReservationID` and
-    /// `upcomingOrder` contains the remaining entries after `startIndex` (or shuffled if `shuffleEnabled`).
+    /// `replaceAndPlay` / `replaceQueue`: replaces upcoming and cycle members with `entries`,
+    /// preserving the previous `confirmedCurrent` inside `reservation.previousConfirmed` until confirmed.
     public mutating func replaceQueue<R: RandomNumberGenerator>(
         entries: [QueueEntry],
         startIndex: Int = 0,
         owner: QueueOwner = .localCoordinator,
+        target: PlaybackTarget? = nil,
         capabilities: QueueCapabilities? = nil,
         loadingState: QueueLoadingState = .idle,
         batchID: UUID? = nil,
         startPlayback: Bool = true,
         using rng: inout R
     ) -> QueueEntry? {
+        let prevConfirmed = confirmedCurrent
+
         queueID = UUID()
         revision &+= 1
+        destructiveEpoch &+= 1
         self.owner = owner
         self.capabilities = capabilities ?? (owner == .remoteEngine ? .remoteStationDefault : .fullLocal)
         self.loadingState = loadingState
 
         entriesByID.removeAll()
-        baselineOrder.removeAll()
-        upcomingOrder.removeAll()
-        batchAnchors.removeAll()
+        baselineSlots.removeAll()
+        upcomingSlots.removeAll()
+        activeBatches.removeAll()
         undoRecord = nil
-        lastFailedTarget = nil
-
-        // Preserve existing confirmedCurrent in history if we are replacing with a new playing track
-        if startPlayback, let prevConfirmed = confirmedCurrentID, let prevEntry = entriesByIDSnapshotForHistory(prevConfirmed) {
-            appendToHistory(prevEntry)
-        }
-        confirmedCurrentID = nil
-        pendingReservationID = nil
-        pendingSource = nil
+        confirmedCurrent = nil
+        reservation = nil
 
         guard !entries.isEmpty else {
+            self.activeTarget = nil
+            self.playbackPhase = .idle
             return nil
         }
 
         for entry in entries {
             entriesByID[entry.id] = entry
-            baselineOrder.append(entry.id)
+            baselineSlots.append(.entry(entry.id))
         }
 
-        if let batchID {
-            batchAnchors[batchID] = BatchAnchor(batchID: batchID, lastEntryID: entries.last?.id, isInvalidated: false)
+        if let batchID, loadingState.isLoading {
+            activeBatches.insert(batchID)
+            baselineSlots.append(.batchTail(batchID))
         }
 
         let safeIndex = min(max(0, startIndex), entries.count - 1)
         if startPlayback {
-            let target = entries[safeIndex]
-            pendingReservationID = target.id
-            pendingSource = .newQueue
-            // Upcoming starts with items after safeIndex; items before safeIndex remain in baselineOrder for repeat-all.
-            var remaining = Array(entries[(safeIndex + 1)...].map(\.id))
-            if shuffleEnabled && owner == .localCoordinator {
-                // In shuffle mode, shuffle all other baseline members as the current round's upcoming
-                var others = baselineOrder.filter { $0 != target.id }
-                others.shuffle(using: &rng)
-                remaining = others
+            let chosen = entries[safeIndex]
+            self.activeTarget = target ?? PlaybackTarget(
+                kind: owner == .remoteEngine ? .station : .song,
+                providerResourceID: chosen.track.providerTrackID.isEmpty ? chosen.track.id : chosen.track.providerTrackID,
+                title: chosen.track.title
+            )
+            self.playbackPhase = .preparing
+
+            reservation = ReservationRecord(
+                id: UUID(),
+                entry: chosen,
+                source: .replace,
+                previousConfirmed: prevConfirmed,
+                forwardCandidate: nil
+            )
+
+            var remainingSlots: [QueueSlot] = entries[(safeIndex + 1)...].map { .entry($0.id) }
+            if let batchID, loadingState.isLoading {
+                remainingSlots.append(.batchTail(batchID))
             }
-            upcomingOrder = remaining
+
+            if requestedShuffle && owner == .localCoordinator {
+                if loadingState.isLoading {
+                    // Defer full shuffle until pagination finishes (P1-02)
+                    effectiveShuffle = false
+                } else {
+                    var others = entries.filter { $0.id != chosen.id }.map { QueueSlot.entry($0.id) }
+                    others.shuffle(using: &rng)
+                    remainingSlots = others
+                    effectiveShuffle = true
+                }
+            } else {
+                effectiveShuffle = false
+            }
+
+            upcomingSlots = remainingSlots
             pruneUnreferencedEntries()
-            return target
+            return chosen
         } else {
-            var allIDs = entries.map(\.id)
-            if shuffleEnabled && owner == .localCoordinator {
-                allIDs.shuffle(using: &rng)
+            self.activeTarget = nil
+            var allSlots = entries.map { QueueSlot.entry($0.id) }
+            if let batchID, loadingState.isLoading {
+                allSlots.append(.batchTail(batchID))
             }
-            upcomingOrder = allIDs
+            if requestedShuffle && owner == .localCoordinator && !loadingState.isLoading {
+                allSlots.shuffle(using: &rng)
+                effectiveShuffle = true
+            } else {
+                effectiveShuffle = false
+            }
+            upcomingSlots = allSlots
             pruneUnreferencedEntries()
             return nil
         }
     }
 
-    private func entriesByIDSnapshotForHistory(_ id: UUID) -> QueueEntry? {
-        entriesByID[id]
+    /// `interruptAndPlay`: immediately plays `entries[0]` and places `entries[1...]` before existing upcoming entries.
+    /// Does not replace `queueID` or clear `history`.
+    public mutating func interruptAndPlay(_ entries: [QueueEntry], batchID: UUID? = nil) throws -> QueueEntry {
+        guard !entries.isEmpty else { throw QueueEditError.emptyBatch }
+        if owner == .remoteEngine {
+            throw QueueEditError.remoteQueueRequiresSwitch(stationTitle: activeTargetEntry?.track.title)
+        }
+        for e in entries where e.origin.kind == .station {
+            throw QueueEditError.remoteStationMixedNotAllowed
+        }
+
+        undoRecord = nil
+
+        // Cancel any unconfirmed reservation cleanly before interrupting
+        let baseConfirmed = cancelPendingReservationForSameQueue()
+
+        for entry in entries {
+            entriesByID[entry.id] = entry
+        }
+
+        let head = entries[0]
+        let tail = Array(entries.dropFirst())
+        let tailSlots = tail.map { QueueSlot.entry($0.id) }
+        if !tailSlots.isEmpty {
+            upcomingSlots.insert(contentsOf: tailSlots, at: 0)
+        }
+
+        // Insert entire batch into baselineSlots after baseConfirmed (or at 0)
+        let allNewSlots = entries.map { QueueSlot.entry($0.id) }
+        if let baseID = baseConfirmed?.id, let idx = baselineSlots.firstIndex(of: .entry(baseID)) {
+            baselineSlots.insert(contentsOf: allNewSlots, at: idx + 1)
+        } else {
+            baselineSlots.insert(contentsOf: allNewSlots, at: 0)
+        }
+
+        if let batchID, loadingState.isLoading {
+            activeBatches.insert(batchID)
+        }
+
+        activeTarget = PlaybackTarget(
+            kind: .song,
+            providerResourceID: head.track.providerTrackID.isEmpty ? head.track.id : head.track.providerTrackID,
+            title: head.track.title
+        )
+        playbackPhase = .preparing
+        reservation = ReservationRecord(
+            id: UUID(),
+            entry: head,
+            source: .interrupt,
+            previousConfirmed: baseConfirmed,
+            forwardCandidate: nil
+        )
+        revision &+= 1
+        return head
     }
 
-    // MARK: - Confirmation & Failure
+    // MARK: - Confirmation & Failure (P0-02)
 
     /// Called when the engine confirms playback has actually started for `entryID`.
+    /// Finalizes `reservation` at most once and records `previousConfirmed` in `history`.
     public mutating func confirmEntry(_ entryID: UUID) {
-        if let prevID = confirmedCurrentID, prevID != entryID {
-            if pendingSource != .previous, let prevEntry = entriesByID[prevID] {
-                appendToHistory(prevEntry)
-            }
+        guard let res = reservation, res.entry.id == entryID else {
+            // Already confirmed or mismatched reservation
+            return
         }
-        confirmedCurrentID = entryID
-        if pendingReservationID == entryID {
-            pendingReservationID = nil
-            pendingSource = nil
+
+        if res.source != .previous && res.source != .repeatOne, let prev = res.previousConfirmed {
+            appendToHistory(prev)
         }
-        lastFailedTarget = nil
+
+        entriesByID[res.entry.id] = res.entry
+        confirmedCurrent = res.entry
+        reservation = nil
+        playbackPhase = .playing
         revision &+= 1
         pruneUnreferencedEntries()
     }
 
     /// Updates metadata for the confirmed remote station track (e.g. MusicKit itemChanged)
-    /// while preserving its `PlaybackOrigin` and `UUID`.
+    /// while preserving `PlaybackOrigin`, `UUID`, and `activeTarget` (the station resource ID).
     public mutating func updateRemoteCurrentTrack(_ track: MusicTrack) {
         guard owner == .remoteEngine else { return }
-        if let id = pendingReservationID ?? confirmedCurrentID, let existing = entriesByID[id] {
+        if var res = reservation {
             let updated = QueueEntry(
-                id: existing.id,
+                id: res.entry.id,
                 track: track,
-                origin: existing.origin,
-                batchID: existing.batchID,
-                addedAt: existing.addedAt
+                origin: res.entry.origin,
+                batchID: res.entry.batchID,
+                addedAt: res.entry.addedAt
             )
-            entriesByID[id] = updated
-            if pendingReservationID == id {
-                confirmedCurrentID = id
-                pendingReservationID = nil
-                pendingSource = nil
-            }
+            res.entry = updated
+            entriesByID[updated.id] = updated
+            confirmedCurrent = updated
+            reservation = nil
+            playbackPhase = .playing
+            revision &+= 1
+        } else if let cur = confirmedCurrent {
+            let updated = QueueEntry(
+                id: cur.id,
+                track: track,
+                origin: cur.origin,
+                batchID: cur.batchID,
+                addedAt: cur.addedAt
+            )
+            entriesByID[updated.id] = updated
+            confirmedCurrent = updated
+            playbackPhase = .playing
             revision &+= 1
         }
     }
 
-    /// Marks the pending reservation as failed without adding it to history or faking confirmedCurrent.
+    /// Marks the pending reservation as failed without adding it to history or faking `confirmedCurrent`.
     public mutating func markPendingFailed() {
-        if let pendingID = pendingReservationID {
-            lastFailedTarget = entriesByID[pendingID]
-        }
+        guard reservation != nil else { return }
+        reservation?.isFailed = true
+        playbackPhase = .failed
         revision &+= 1
     }
 
-    /// Clears pending reservation on explicit stop without touching confirmed history.
+    /// Cancels reservation on explicit user stop; unconfirmed `.next` / `.directPlay` entries return to upcoming.
     public mutating func clearPendingOnStop() {
-        pendingReservationID = nil
-        pendingSource = nil
-        revision &+= 1
-        pruneUnreferencedEntries()
+        defer {
+            playbackPhase = .stoppedByUser
+            revision &+= 1
+            pruneUnreferencedEntries()
+        }
+        guard let res = reservation else { return }
+        reservation = nil
+
+        switch res.source {
+        case .next:
+            if !res.isFailed && baselineSlots.contains(.entry(res.entry.id)) {
+                entriesByID[res.entry.id] = res.entry
+                upcomingSlots.insert(.entry(res.entry.id), at: 0)
+            }
+        case .directPlay(let origIdx):
+            if !res.isFailed && baselineSlots.contains(.entry(res.entry.id)) {
+                entriesByID[res.entry.id] = res.entry
+                let insertAt = min(origIdx ?? 0, upcomingSlots.count)
+                upcomingSlots.insert(.entry(res.entry.id), at: insertAt)
+            }
+        case .previous:
+            rollbackPreviousReservation(res)
+        case .replace, .interrupt, .repeatOne:
+            break
+        }
     }
 
     // MARK: - Advancement & History (Q02, Q03, Q04, Q05, Q16)
 
-    /// Advances on natural track end. Respects `.one`, `.all`, and `shuffleEnabled`.
+    /// Advances on natural track end. Respects `.one`, `.all`, `requestedShuffle`, and unfinished batch boundaries.
     public mutating func advanceOnNaturalEnd<R: RandomNumberGenerator>(using rng: inout R) -> QueueAdvancementResult {
         guard owner == .localCoordinator else { return .stop }
 
-        if repeatMode == .one, let current = confirmedCurrentEntry ?? pendingTargetEntry {
-            pendingReservationID = current.id
-            pendingSource = .repeatOne
+        if repeatMode == .one, let current = confirmedCurrent ?? reservation?.entry {
+            reservation = ReservationRecord(
+                id: UUID(),
+                entry: current,
+                source: .repeatOne,
+                previousConfirmed: confirmedCurrent,
+                forwardCandidate: nil
+            )
+            activeTarget = PlaybackTarget(
+                kind: .song,
+                providerResourceID: current.track.providerTrackID.isEmpty ? current.track.id : current.track.providerTrackID,
+                title: current.track.title
+            )
+            playbackPhase = .preparing
             revision &+= 1
             return .play(entry: current, isRepeatOne: true)
         }
@@ -391,49 +591,102 @@ public struct QueueManager: Sendable {
         return advanceNext(using: &rng)
     }
 
-    /// Manual Next (ignores repeat-one, consumes upcoming or regenerates repeat-all cycle).
-    public mutating func advanceNext<R: RandomNumberGenerator>(using rng: inout R) -> QueueAdvancementResult {
+    /// Manual Next (ignores repeat-one, skips any unconfirmed/failed reservation without adding it to history,
+    /// and respects unfinished pagination batch boundaries).
+    public mutating func advanceNext<R: RandomNumberGenerator>(using rng: inout R, allowCrossBatchBoundary: Bool = false) -> QueueAdvancementResult {
         guard owner == .localCoordinator else { return .stop }
 
-        // If a pending reservation from .previous or .directPlay wasn't confirmed, handle cleanly:
-        // For rapid Next -> Next, the skipped pending entry was already popped from upcomingOrder.
-        if !upcomingOrder.isEmpty {
-            let nextID = upcomingOrder.removeFirst()
-            guard let nextEntry = entriesByID[nextID] else {
-                return advanceNext(using: &rng)
-            }
-            pendingReservationID = nextEntry.id
-            pendingSource = .next
-            revision &+= 1
-            return .play(entry: nextEntry, isRepeatOne: false)
-        }
+        // If a reservation was pending/failed, it is explicitly skipped (never enters history).
+        let baseConfirmed = confirmedCurrent
+        reservation = nil
 
-        if repeatMode == .all, !baselineOrder.isEmpty {
-            var nextRound = baselineOrder
-            if shuffleEnabled {
-                nextRound.shuffle(using: &rng)
-                if nextRound.count > 1,
-                   let currentID = confirmedCurrentID ?? pendingReservationID,
-                   nextRound.first == currentID {
-                    let swapIdx = Int.random(in: 1..<nextRound.count, using: &rng)
-                    nextRound.swapAt(0, swapIdx)
+        while let headSlot = upcomingSlots.first {
+            switch headSlot {
+            case .batchTail(let batchID):
+                if activeBatches.contains(batchID) && !allowCrossBatchBoundary {
+                    playbackPhase = .waitingForPage
+                    revision &+= 1
+                    return .waitingForPage(batchID: batchID)
+                } else {
+                    upcomingSlots.removeFirst()
+                    continue
                 }
-            }
-            upcomingOrder = nextRound
-            let nextID = upcomingOrder.removeFirst()
-            if let nextEntry = entriesByID[nextID] {
-                pendingReservationID = nextEntry.id
-                pendingSource = .next
+            case .entry(let nextID):
+                upcomingSlots.removeFirst()
+                guard let nextEntry = entriesByID[nextID] else {
+                    continue
+                }
+                reservation = ReservationRecord(
+                    id: UUID(),
+                    entry: nextEntry,
+                    source: .next,
+                    previousConfirmed: baseConfirmed,
+                    forwardCandidate: nil
+                )
+                activeTarget = PlaybackTarget(
+                    kind: .song,
+                    providerResourceID: nextEntry.track.providerTrackID.isEmpty ? nextEntry.track.id : nextEntry.track.providerTrackID,
+                    title: nextEntry.track.title
+                )
+                playbackPhase = .preparing
                 revision &+= 1
                 return .play(entry: nextEntry, isRepeatOne: false)
             }
         }
 
-        return .stop
+        // Do not start a new repeat-all round while a batch is still loading
+        if !activeBatches.isEmpty && !allowCrossBatchBoundary {
+            if let bid = activeBatches.first {
+                playbackPhase = .waitingForPage
+                revision &+= 1
+                return .waitingForPage(batchID: bid)
+            }
+        }
+
+        if repeatMode == .all {
+            var candidateIDs = baselineEntryIDs
+            if !candidateIDs.isEmpty {
+                if requestedShuffle {
+                    candidateIDs.shuffle(using: &rng)
+                    effectiveShuffle = true
+                    if candidateIDs.count > 1,
+                       let currentID = baseConfirmed?.id,
+                       candidateIDs.first == currentID {
+                        let swapIdx = Int.random(in: 1..<candidateIDs.count, using: &rng)
+                        candidateIDs.swapAt(0, swapIdx)
+                    }
+                } else {
+                    effectiveShuffle = false
+                }
+                upcomingSlots = candidateIDs.map { .entry($0) }
+                let nextID = upcomingSlots.removeFirst().entryID!
+                if let nextEntry = entriesByID[nextID] {
+                    reservation = ReservationRecord(
+                        id: UUID(),
+                        entry: nextEntry,
+                        source: .next,
+                        previousConfirmed: baseConfirmed,
+                        forwardCandidate: nil
+                    )
+                    activeTarget = PlaybackTarget(
+                        kind: .song,
+                        providerResourceID: nextEntry.track.providerTrackID.isEmpty ? nextEntry.track.id : nextEntry.track.providerTrackID,
+                        title: nextEntry.track.title
+                    )
+                    playbackPhase = .preparing
+                    revision &+= 1
+                    return .play(entry: nextEntry, isRepeatOne: false)
+                }
+            }
+        }
+
+        playbackPhase = .exhausted
+        revision &+= 1
+        return .exhausted
     }
 
     /// Manual Previous: if `positionMs > 3000`, returns `.seekToZero`.
-    /// Otherwise pops from `history`, pushes current target to head of `upcomingOrder` (deduplicated) as forward candidate.
+    /// Otherwise pops from `history`, pushes current target to head of `upcomingSlots` (deduplicated) as forward candidate.
     public mutating func retreatPrevious(positionMs: Int64) -> QueueAdvancementResult {
         guard owner == .localCoordinator else { return .stop }
         if positionMs > 3_000 {
@@ -443,21 +696,32 @@ public struct QueueManager: Sendable {
             return .seekToZero
         }
 
-        // Push current active target to the front of upcomingOrder as forward candidate (deduped)
-        if let current = activeTargetEntry, current.id != prevEntry.id {
+        let currentTarget = activeTargetEntry
+        if let current = currentTarget, current.id != prevEntry.id {
             entriesByID[current.id] = current
-            upcomingOrder.removeAll { $0 == current.id }
-            upcomingOrder.insert(current.id, at: 0)
+            upcomingSlots.removeAll { $0 == .entry(current.id) }
+            upcomingSlots.insert(.entry(current.id), at: 0)
         }
 
         entriesByID[prevEntry.id] = prevEntry
-        pendingReservationID = prevEntry.id
-        pendingSource = .previous
+        reservation = ReservationRecord(
+            id: UUID(),
+            entry: prevEntry,
+            source: .previous,
+            previousConfirmed: confirmedCurrent,
+            forwardCandidate: currentTarget
+        )
+        activeTarget = PlaybackTarget(
+            kind: .song,
+            providerResourceID: prevEntry.track.providerTrackID.isEmpty ? prevEntry.track.id : prevEntry.track.providerTrackID,
+            title: prevEntry.track.title
+        )
+        playbackPhase = .preparing
         revision &+= 1
         return .play(entry: prevEntry, isRepeatOne: false)
     }
 
-    // MARK: - Playback Modes (Q03, Q04, Q05)
+    // MARK: - Playback Modes (Q03, Q04, Q05, P1-02)
 
     public mutating func setRepeatMode(_ mode: PlaybackState.RepeatMode) {
         repeatMode = mode
@@ -465,27 +729,48 @@ public struct QueueManager: Sendable {
     }
 
     public mutating func setShuffleEnabled<R: RandomNumberGenerator>(_ enabled: Bool, using rng: inout R) {
-        guard shuffleEnabled != enabled else { return }
-        shuffleEnabled = enabled
+        guard requestedShuffle != enabled else { return }
+        requestedShuffle = enabled
 
         if enabled {
-            upcomingOrder.shuffle(using: &rng)
-        } else {
-            // Restore relative order from baselineOrder while keeping only remaining upcoming entries
-            let rank = Dictionary(uniqueKeysWithValues: baselineOrder.enumerated().map { ($1, $0) })
-            upcomingOrder.sort { (lhs, rhs) in
-                (rank[lhs] ?? Int.max) < (rank[rhs] ?? Int.max)
+            if loadingState.isLoading {
+                // P1-02: Do not pretend partial collection is fully shuffled while loading
+                effectiveShuffle = false
+            } else {
+                applyFullShuffleToUpcoming(using: &rng)
+                effectiveShuffle = true
             }
+        } else {
+            effectiveShuffle = false
+            restoreBaselineRelativeOrderForUpcoming()
         }
         revision &+= 1
     }
 
+    private mutating func applyFullShuffleToUpcoming<R: RandomNumberGenerator>(using rng: inout R) {
+        var entryIDs = upcomingEntryIDs
+        entryIDs.shuffle(using: &rng)
+        // Preserve any trailing batchTail sentinels if present (empty when not loading)
+        let tails = upcomingSlots.filter { $0.batchID != nil }
+        upcomingSlots = entryIDs.map { .entry($0) } + tails
+    }
+
+    private mutating func restoreBaselineRelativeOrderForUpcoming() {
+        let rank = Dictionary(uniqueKeysWithValues: baselineEntryIDs.enumerated().map { ($1, $0) })
+        let entryIDs = upcomingEntryIDs.sorted { (lhs, rhs) in
+            (rank[lhs] ?? Int.max) < (rank[rhs] ?? Int.max)
+        }
+        let tails = upcomingSlots.filter { $0.batchID != nil }
+        upcomingSlots = entryIDs.map { .entry($0) } + tails
+    }
+
     // MARK: - Queue Editing (Q06 - Q15, Q20)
 
-    public mutating func validateEditContext(
+    public func validateEditContext(
         expectedQueueID: UUID? = nil,
         expectedSessionScope: String? = nil,
-        expectedRevision: UInt64? = nil
+        expectedRevision: UInt64? = nil,
+        expectedDestructiveEpoch: UInt64? = nil
     ) throws {
         if let expectedQueueID, expectedQueueID != queueID {
             throw QueueEditError.queueMismatch(expected: expectedQueueID, actual: queueID)
@@ -493,15 +778,16 @@ public struct QueueManager: Sendable {
         if let expectedSessionScope, expectedSessionScope != sessionScope {
             throw QueueEditError.sessionMismatch
         }
+        if let expectedDestructiveEpoch, expectedDestructiveEpoch != destructiveEpoch {
+            throw QueueEditError.staleEpoch
+        }
         if let expectedRevision, expectedRevision != revision {
-            // Allow safe relocation if only non-conflicting changes occurred?
-            // Callers can pass nil if they want ID-based relocation; explicit revision checks throw conflict.
             throw QueueEditError.revisionConflict(expected: expectedRevision, actual: revision)
         }
     }
 
-    /// Q13: Insert entries at the head of upcomingOrder (preserving batch order).
-    /// Also inserts into baselineOrder after current entry so turning off shuffle keeps them at the front.
+    /// Q13 / `prepend`: Insert entries at the head of upcoming (preserving batch order).
+    /// Inserts into `baselineSlots` right after the active target so turning off shuffle keeps them ahead of later upcoming items.
     public mutating func insertNext(
         _ entries: [QueueEntry],
         batchID: UUID? = nil
@@ -510,29 +796,32 @@ public struct QueueManager: Sendable {
             throw QueueEditError.unsupportedCapability("当前播放模式不支持插入下一首。")
         }
         guard !entries.isEmpty else { throw QueueEditError.emptyBatch }
+        for e in entries where e.origin.kind == .station {
+            throw QueueEditError.remoteStationMixedNotAllowed
+        }
 
         undoRecord = nil
         for entry in entries {
             entriesByID[entry.id] = entry
         }
 
-        let newIDs = entries.map(\.id)
-        upcomingOrder.insert(contentsOf: newIDs, at: 0)
+        let newSlots = entries.map { QueueSlot.entry($0.id) }
+        upcomingSlots.insert(contentsOf: newSlots, at: 0)
 
-        if let currentID = activeTargetEntry?.id, let idx = baselineOrder.firstIndex(of: currentID) {
-            baselineOrder.insert(contentsOf: newIDs, at: idx + 1)
+        if let currentID = activeTargetEntry?.id, let idx = baselineSlots.firstIndex(of: .entry(currentID)) {
+            baselineSlots.insert(contentsOf: newSlots, at: idx + 1)
         } else {
-            baselineOrder.insert(contentsOf: newIDs, at: 0)
+            baselineSlots.insert(contentsOf: newSlots, at: 0)
         }
 
-        if let batchID {
-            batchAnchors[batchID] = BatchAnchor(batchID: batchID, lastEntryID: entries.last?.id, isInvalidated: false)
+        if let batchID, loadingState.isLoading {
+            activeBatches.insert(batchID)
         }
 
         revision &+= 1
     }
 
-    /// Q12: Append entries to the tail of upcomingOrder and baselineOrder without re-shuffling.
+    /// Q12 / `append`: Append entries to the tail of upcoming and baseline without re-shuffling.
     public mutating func append(
         _ entries: [QueueEntry],
         batchID: UUID? = nil
@@ -541,68 +830,79 @@ public struct QueueManager: Sendable {
             throw QueueEditError.unsupportedCapability("当前播放模式不支持添加到队列。")
         }
         guard !entries.isEmpty else { throw QueueEditError.emptyBatch }
+        for e in entries where e.origin.kind == .station {
+            throw QueueEditError.remoteStationMixedNotAllowed
+        }
 
         undoRecord = nil
         for entry in entries {
             entriesByID[entry.id] = entry
         }
 
-        let newIDs = entries.map(\.id)
-        upcomingOrder.append(contentsOf: newIDs)
-        baselineOrder.append(contentsOf: newIDs)
+        let newSlots = entries.map { QueueSlot.entry($0.id) }
+        upcomingSlots.append(contentsOf: newSlots)
+        baselineSlots.append(contentsOf: newSlots)
 
-        if let batchID {
-            batchAnchors[batchID] = BatchAnchor(batchID: batchID, lastEntryID: entries.last?.id, isInvalidated: false)
+        if let batchID, loadingState.isLoading {
+            activeBatches.insert(batchID)
         }
 
         revision &+= 1
     }
 
-    /// Q07: Play a specific upcoming entry by ID without disturbing the relative order of remaining upcoming entries.
+    /// Q07 / `playExistingEntry`: Play a specific upcoming entry by ID without disturbing the relative order of remaining entries.
     public mutating func playEntry(id: UUID) throws -> QueueMutationResult {
-        guard capabilities.canRead else {
+        guard capabilities.canPlayEntry else {
             throw QueueEditError.unsupportedCapability("当前播放模式不支持选择待播曲目。")
         }
-        guard upcomingOrder.contains(id), let target = entriesByID[id] else {
+        guard let origIdx = upcomingSlots.firstIndex(of: .entry(id)), let target = entriesByID[id] else {
             throw QueueEditError.entryNotFound(id)
         }
 
         undoRecord = nil
-        var cancelled: QueueEntry?
-        if let pendingID = pendingReservationID, pendingID != id {
-            cancelled = entriesByID[pendingID]
-            if pendingSource == .next, let cancelled {
-                // Restore unconfirmed Next reservation to front of upcoming so it isn't silently lost
-                upcomingOrder.insert(cancelled.id, at: 0)
-            }
-        }
+        let cancelledEntry = reservation?.entry
+        let baseConfirmed = cancelPendingReservationForSameQueue()
 
-        // Remove target from upcomingOrder (after potential restore)
-        upcomingOrder.removeAll { $0 == id }
-        pendingReservationID = target.id
-        pendingSource = .directPlay
+        // Re-locate after potential restore
+        let actualIdx = upcomingSlots.firstIndex(of: .entry(id)) ?? origIdx
+        upcomingSlots.remove(at: actualIdx)
+
+        reservation = ReservationRecord(
+            id: UUID(),
+            entry: target,
+            source: .directPlay(originalUpcomingIndex: actualIdx),
+            previousConfirmed: baseConfirmed,
+            forwardCandidate: nil
+        )
+        activeTarget = PlaybackTarget(
+            kind: .song,
+            providerResourceID: target.track.providerTrackID.isEmpty ? target.track.id : target.track.providerTrackID,
+            title: target.track.title
+        )
+        playbackPhase = .preparing
         revision &+= 1
 
         return QueueMutationResult(
             snapshot: makeSnapshot(),
-            cancelledPendingEntry: cancelled,
+            cancelledPendingEntry: cancelledEntry,
             playbackTarget: target
         )
     }
 
     /// Q08 / Q15: Remove one or more upcoming entries by ID. Never removes confirmedCurrent or history.
+    /// Does NOT invalidate active pagination batches when a page's last item is deleted (BUG-08).
     public mutating func removeEntries(ids: [UUID]) throws {
         guard capabilities.canRemove else {
             throw QueueEditError.unsupportedCapability("当前播放模式不支持移除待播曲目。")
         }
         let idSet = Set(ids)
-        let validRemovals = upcomingOrder.filter { idSet.contains($0) }
+        let validRemovals = upcomingEntryIDs.filter { idSet.contains($0) }
         guard !validRemovals.isEmpty else {
             throw QueueEditError.entryNotFound(ids.first ?? UUID())
         }
 
-        let prevBaseline = baselineOrder
-        let prevUpcoming = upcomingOrder
+        let prevBaseline = baselineSlots
+        let prevUpcoming = upcomingSlots
         var removedMap: [UUID: QueueEntry] = [:]
         for id in validRemovals {
             if let entry = entriesByID[id] {
@@ -610,19 +910,13 @@ public struct QueueManager: Sendable {
             }
         }
 
-        upcomingOrder.removeAll { idSet.contains($0) }
-        baselineOrder.removeAll { idSet.contains($0) }
-
-        // Update batch anchors if the anchor entry was removed
-        for (bid, var anchor) in batchAnchors {
-            if let lastID = anchor.lastEntryID, idSet.contains(lastID) {
-                let replacement = upcomingOrder.last { entriesByID[$0]?.batchID == bid }
-                anchor.lastEntryID = replacement
-                if replacement == nil {
-                    anchor.isInvalidated = true
-                }
-                batchAnchors[bid] = anchor
-            }
+        upcomingSlots.removeAll { slot in
+            if case .entry(let id) = slot { return idSet.contains(id) }
+            return false
+        }
+        baselineSlots.removeAll { slot in
+            if case .entry(let id) = slot { return idSet.contains(id) }
+            return false
         }
 
         revision &+= 1
@@ -630,8 +924,8 @@ public struct QueueManager: Sendable {
             queueID: queueID,
             sessionScope: sessionScope,
             postEditRevision: revision,
-            previousBaselineOrder: prevBaseline,
-            previousUpcomingOrder: prevUpcoming,
+            previousBaselineSlots: prevBaseline,
+            previousUpcomingSlots: prevUpcoming,
             removedEntries: removedMap,
             description: validRemovals.count == 1 ? "移除 1 首曲目" : "移除 \(validRemovals.count) 首曲目"
         )
@@ -639,7 +933,6 @@ public struct QueueManager: Sendable {
     }
 
     /// Q09 / Q10 / Q11 / Q15: Move one or more upcoming entries before `targetID` (or to the end if `targetID == nil`).
-    /// Updates both `upcomingOrder` and `baselineOrder` so explicit edits survive turning shuffle off.
     public mutating func moveEntries(ids: [UUID], before targetID: UUID?) throws {
         guard capabilities.canReorder else {
             throw QueueEditError.unsupportedCapability("当前播放模式不支持调整队列顺序。")
@@ -647,70 +940,78 @@ public struct QueueManager: Sendable {
         guard !ids.isEmpty else { throw QueueEditError.emptyBatch }
 
         let idSet = Set(ids)
-        // Preserve existing relative order in upcomingOrder
-        let movingIDs = upcomingOrder.filter { idSet.contains($0) }
+        let currentUpcomingIDs = upcomingEntryIDs
+        let movingIDs = currentUpcomingIDs.filter { idSet.contains($0) }
         guard movingIDs.count == idSet.count else {
-            let missing = idSet.first { !upcomingOrder.contains($0) } ?? UUID()
+            let missing = idSet.first { !currentUpcomingIDs.contains($0) } ?? UUID()
             throw QueueEditError.entryNotFound(missing)
         }
 
         if let targetID {
-            guard !idSet.contains(targetID), upcomingOrder.contains(targetID) else {
+            guard !idSet.contains(targetID), currentUpcomingIDs.contains(targetID) else {
                 throw QueueEditError.invalidTarget(targetID)
             }
         }
 
         undoRecord = nil
+        let movingSlots = movingIDs.map { QueueSlot.entry($0) }
 
-        // Update upcomingOrder
-        upcomingOrder.removeAll { idSet.contains($0) }
-        if let targetID, let insertIdx = upcomingOrder.firstIndex(of: targetID) {
-            upcomingOrder.insert(contentsOf: movingIDs, at: insertIdx)
+        upcomingSlots.removeAll { slot in
+            if case .entry(let id) = slot { return idSet.contains(id) }
+            return false
+        }
+        if let targetID, let insertIdx = upcomingSlots.firstIndex(of: .entry(targetID)) {
+            upcomingSlots.insert(contentsOf: movingSlots, at: insertIdx)
         } else {
-            upcomingOrder.append(contentsOf: movingIDs)
+            upcomingSlots.append(contentsOf: movingSlots)
         }
 
-        // Update baselineOrder with the same relative placement
-        baselineOrder.removeAll { idSet.contains($0) }
-        if let targetID, let baseIdx = baselineOrder.firstIndex(of: targetID) {
-            baselineOrder.insert(contentsOf: movingIDs, at: baseIdx)
+        baselineSlots.removeAll { slot in
+            if case .entry(let id) = slot { return idSet.contains(id) }
+            return false
+        }
+        if let targetID, let baseIdx = baselineSlots.firstIndex(of: .entry(targetID)) {
+            baselineSlots.insert(contentsOf: movingSlots, at: baseIdx)
         } else {
-            baselineOrder.append(contentsOf: movingIDs)
+            baselineSlots.append(contentsOf: movingSlots)
         }
 
         revision &+= 1
     }
 
-    /// Q06: Clear all upcoming entries and cycle members (`baselineOrder`), invalidate active pagination batches.
-    /// Keeps current audio, position, history, and repeat/shuffle mode settings.
+    /// Q06 / P1-04: Clear all upcoming entries, cycle members, and active pagination batches.
+    /// Keeps current audio, reservation (if preparing), history, and repeat/shuffle mode settings.
     public mutating func clearUpcoming() throws {
         guard capabilities.canClear else {
             throw QueueEditError.unsupportedCapability("当前播放模式不支持清空队列。")
         }
 
-        let prevBaseline = baselineOrder
-        let prevUpcoming = upcomingOrder
+        let prevBaseline = baselineSlots
+        let prevUpcoming = upcomingSlots
         var removedMap: [UUID: QueueEntry] = [:]
-        for id in Set(prevBaseline).union(prevUpcoming) {
-            if id != confirmedCurrentID && id != pendingReservationID, let entry = entriesByID[id] {
+        for id in Set(baselineEntryIDs).union(upcomingEntryIDs) {
+            if id != confirmedCurrent?.id && id != reservation?.entry.id, let entry = entriesByID[id] {
                 removedMap[id] = entry
             }
         }
 
-        upcomingOrder.removeAll()
-        baselineOrder.removeAll()
-        for bid in batchAnchors.keys {
-            batchAnchors[bid]?.isInvalidated = true
+        let hadContent = !upcomingEntryIDs.isEmpty || !baselineEntryIDs.isEmpty || !activeBatches.isEmpty
+        upcomingSlots.removeAll()
+        baselineSlots.removeAll()
+        activeBatches.removeAll()
+        if loadingState.isLoading || loadingState.totalCount != nil {
+            loadingState = .idle
         }
-
+        destructiveEpoch &+= 1
         revision &+= 1
-        if !prevUpcoming.isEmpty || !prevBaseline.isEmpty {
+
+        if hadContent {
             undoRecord = UndoRecord(
                 queueID: queueID,
                 sessionScope: sessionScope,
                 postEditRevision: revision,
-                previousBaselineOrder: prevBaseline,
-                previousUpcomingOrder: prevUpcoming,
+                previousBaselineSlots: prevBaseline,
+                previousUpcomingSlots: prevUpcoming,
                 removedEntries: removedMap,
                 description: "清空待播队列"
             )
@@ -719,7 +1020,7 @@ public struct QueueManager: Sendable {
     }
 
     /// Q20: Single-step safe undo for `removeEntries` and `clearUpcoming`.
-    /// Only succeeds if `queueID`, `sessionScope`, and `revision` match the post-edit state.
+    /// Note: playback progress does not invalidate undo; only structural `revision` changes or session/queue changes do.
     public mutating func undo(expectedQueueID: UUID, expectedSessionScope: String) throws {
         guard let record = undoRecord else {
             throw QueueEditError.undoUnavailable("没有可撤销的操作。")
@@ -730,80 +1031,116 @@ public struct QueueManager: Sendable {
               record.sessionScope == sessionScope,
               record.postEditRevision == revision else {
             undoRecord = nil
-            throw QueueEditError.undoUnavailable("队列状态已变更，无法撤销。")
+            throw QueueEditError.undoUnavailable("队列已变化，无法撤销。")
         }
 
         for (id, entry) in record.removedEntries {
             entriesByID[id] = entry
         }
-        baselineOrder = record.previousBaselineOrder
-        upcomingOrder = record.previousUpcomingOrder
+        // Do not resurrect invalidated pagination batch sentinels
+        baselineSlots = record.previousBaselineSlots.filter { $0.batchID == nil }
+        upcomingSlots = record.previousUpcomingSlots.filter { $0.batchID == nil }
         undoRecord = nil
         revision &+= 1
     }
 
-    // MARK: - Pagination Batch Commits (Q18)
+    // MARK: - Pagination Batch Commits (P1-01, P1-02)
 
-    /// Commits a page of entries belonging to `batchID` right after the batch's anchor in `upcomingOrder` and `baselineOrder`,
-    /// so user-appended items after the batch are never overtaken and user-dragged items are not overwritten.
+    /// Commits a page of entries belonging to `batchID` right before `.batchTail(batchID)` in `upcomingSlots` and `baselineSlots`.
+    /// When `isComplete` is true and `requestedShuffle` is true, performs the deferred full Fisher–Yates shuffle (P1-02).
     @discardableResult
-    public mutating func commitPaginatedBatch(
+    public mutating func commitPaginatedBatch<R: RandomNumberGenerator>(
         _ entries: [QueueEntry],
         batchID: UUID,
         expectedQueueID: UUID,
-        expectedSessionScope: String
+        expectedSessionScope: String,
+        expectedDestructiveEpoch: UInt64? = nil,
+        loadingState: QueueLoadingState,
+        using rng: inout R
     ) -> Bool {
         guard expectedQueueID == queueID,
               expectedSessionScope == sessionScope,
-              let anchor = batchAnchors[batchID],
-              !anchor.isInvalidated else {
+              activeBatches.contains(batchID) else {
             return false
         }
-
-        guard !entries.isEmpty else { return true }
+        if let expectedDestructiveEpoch, expectedDestructiveEpoch != destructiveEpoch {
+            return false
+        }
 
         for entry in entries {
             entriesByID[entry.id] = entry
         }
-        let newIDs = entries.map(\.id)
+        let newSlots = entries.map { QueueSlot.entry($0.id) }
 
-        if let anchorID = anchor.lastEntryID, let upIdx = upcomingOrder.firstIndex(of: anchorID) {
-            upcomingOrder.insert(contentsOf: newIDs, at: upIdx + 1)
-        } else {
-            upcomingOrder.append(contentsOf: newIDs)
+        if !newSlots.isEmpty {
+            if let tailIdx = upcomingSlots.firstIndex(of: .batchTail(batchID)) {
+                upcomingSlots.insert(contentsOf: newSlots, at: tailIdx)
+            } else {
+                upcomingSlots.append(contentsOf: newSlots)
+            }
+
+            if let baseTailIdx = baselineSlots.firstIndex(of: .batchTail(batchID)) {
+                baselineSlots.insert(contentsOf: newSlots, at: baseTailIdx)
+            } else {
+                baselineSlots.append(contentsOf: newSlots)
+            }
         }
 
-        if let anchorID = anchor.lastEntryID, let baseIdx = baselineOrder.firstIndex(of: anchorID) {
-            baselineOrder.insert(contentsOf: newIDs, at: baseIdx + 1)
-        } else {
-            baselineOrder.append(contentsOf: newIDs)
+        self.loadingState = loadingState
+        if case .complete = loadingState {
+            activeBatches.remove(batchID)
+            upcomingSlots.removeAll { $0 == .batchTail(batchID) }
+            baselineSlots.removeAll { $0 == .batchTail(batchID) }
+
+            if requestedShuffle && !effectiveShuffle && owner == .localCoordinator {
+                applyFullShuffleToUpcoming(using: &rng)
+                effectiveShuffle = true
+            }
         }
 
-        batchAnchors[batchID] = BatchAnchor(batchID: batchID, lastEntryID: entries.last?.id, isInvalidated: false)
         revision &+= 1
         return true
     }
 
-    public mutating func invalidateBatch(_ batchID: UUID) {
-        batchAnchors[batchID]?.isInvalidated = true
+    public mutating func finishOrFailBatch(_ batchID: UUID, loadingState: QueueLoadingState) {
+        guard activeBatches.contains(batchID) else { return }
+        self.loadingState = loadingState
+        if case .complete = loadingState {
+            activeBatches.remove(batchID)
+            upcomingSlots.removeAll { $0 == .batchTail(batchID) }
+            baselineSlots.removeAll { $0 == .batchTail(batchID) }
+        } else if case .failed(_, _, _, let isRetryable) = loadingState, !isRetryable {
+            activeBatches.remove(batchID)
+            upcomingSlots.removeAll { $0 == .batchTail(batchID) }
+            baselineSlots.removeAll { $0 == .batchTail(batchID) }
+        }
+        revision &+= 1
     }
 
-    // MARK: - Persistence Export / Restore (Q17)
+    public mutating func invalidateBatch(_ batchID: UUID) {
+        activeBatches.remove(batchID)
+        upcomingSlots.removeAll { $0 == .batchTail(batchID) }
+        baselineSlots.removeAll { $0 == .batchTail(batchID) }
+        revision &+= 1
+    }
+
+    // MARK: - Persistence Export / Restore (Q17, P0-01, P0-04)
 
     public func exportPersistencePayload() -> QueuePersistencePayload {
-        var referencedIDs = Set(baselineOrder).union(upcomingOrder)
-        if let confirmedCurrentID { referencedIDs.insert(confirmedCurrentID) }
-        if let pendingReservationID { referencedIDs.insert(pendingReservationID) }
+        var referencedIDs = Set(baselineEntryIDs).union(upcomingEntryIDs)
+        if let cid = confirmedCurrent?.id { referencedIDs.insert(cid) }
+        if let pid = reservation?.entry.id { referencedIDs.insert(pid) }
 
         let persistedEntries = referencedIDs.compactMap { entriesByID[$0] }
         return QueuePersistencePayload(
             queueID: queueID,
             entries: persistedEntries,
-            baselineOrder: baselineOrder,
-            upcomingOrder: upcomingOrder,
+            baselineOrder: baselineEntryIDs,
+            upcomingOrder: upcomingEntryIDs,
             history: history,
             currentEntryID: activeTargetEntry?.id,
-            shuffleEnabled: shuffleEnabled,
+            activeTarget: activeTarget,
+            shuffleEnabled: requestedShuffle,
             repeatMode: repeatMode,
             owner: owner
         )
@@ -813,43 +1150,84 @@ public struct QueueManager: Sendable {
     public mutating func restore(from payload: QueuePersistencePayload, sessionScope: String) -> QueueEntry? {
         self.queueID = payload.queueID
         self.revision &+= 1
+        self.destructiveEpoch &+= 1
         self.sessionScope = sessionScope
         self.owner = payload.owner
+        self.activeTarget = payload.activeTarget
         self.capabilities = payload.owner == .remoteEngine ? .remoteStationDefault : .fullLocal
         self.loadingState = .idle
-        self.shuffleEnabled = payload.shuffleEnabled
+        self.requestedShuffle = payload.shuffleEnabled
+        self.effectiveShuffle = payload.shuffleEnabled
         self.repeatMode = payload.repeatMode
         self.undoRecord = nil
-        self.batchAnchors.removeAll()
-        self.lastFailedTarget = nil
+        self.activeBatches.removeAll()
+        self.reservation = nil
 
         var map: [UUID: QueueEntry] = [:]
         for e in payload.entries {
             map[e.id] = e
         }
-        for h in payload.history {
-            if map[h.id] == nil {
-                map[h.id] = h
-            }
+        for h in payload.history where map[h.id] == nil {
+            map[h.id] = h
         }
         self.entriesByID = map
-        self.baselineOrder = payload.baselineOrder.filter { map[$0] != nil }
-        self.upcomingOrder = payload.upcomingOrder.filter { map[$0] != nil }
+        self.baselineSlots = payload.baselineOrder.compactMap { map[$0] != nil ? .entry($0) : nil }
+        self.upcomingSlots = payload.upcomingOrder.compactMap { map[$0] != nil ? .entry($0) : nil }
         self.history = Array(payload.history.suffix(Self.maxHistoryCount))
 
-        if let cid = payload.currentEntryID, map[cid] != nil {
-            self.confirmedCurrentID = cid
+        if let cid = payload.currentEntryID, let restored = map[cid] {
+            self.confirmedCurrent = restored
+            self.playbackPhase = .paused
+            if self.activeTarget == nil {
+                self.activeTarget = PlaybackTarget(
+                    kind: payload.owner == .remoteEngine ? .station : .song,
+                    providerResourceID: restored.track.providerTrackID.isEmpty ? restored.track.id : restored.track.providerTrackID,
+                    title: restored.track.title
+                )
+            }
         } else {
-            self.confirmedCurrentID = nil
+            self.confirmedCurrent = nil
+            self.playbackPhase = .idle
         }
-        self.pendingReservationID = nil
-        self.pendingSource = nil
 
         pruneUnreferencedEntries()
-        return confirmedCurrentEntry
+        return confirmedCurrent
     }
 
     // MARK: - Internal Helpers
+
+    private mutating func cancelPendingReservationForSameQueue() -> QueueEntry? {
+        guard let res = reservation else { return confirmedCurrent }
+        reservation = nil
+
+        switch res.source {
+        case .next:
+            if !res.isFailed && baselineSlots.contains(.entry(res.entry.id)) {
+                entriesByID[res.entry.id] = res.entry
+                upcomingSlots.insert(.entry(res.entry.id), at: 0)
+            }
+            return res.previousConfirmed
+        case .directPlay(let origIdx):
+            if !res.isFailed && baselineSlots.contains(.entry(res.entry.id)) {
+                entriesByID[res.entry.id] = res.entry
+                let insertAt = min(origIdx ?? 0, upcomingSlots.count)
+                upcomingSlots.insert(.entry(res.entry.id), at: insertAt)
+            }
+            return res.previousConfirmed
+        case .previous:
+            rollbackPreviousReservation(res)
+            return res.previousConfirmed
+        case .replace, .interrupt, .repeatOne:
+            return res.previousConfirmed
+        }
+    }
+
+    private mutating func rollbackPreviousReservation(_ res: ReservationRecord) {
+        if let fwd = res.forwardCandidate {
+            upcomingSlots.removeAll { $0 == .entry(fwd.id) }
+        }
+        appendToHistory(res.entry)
+    }
 
     private mutating func appendToHistory(_ entry: QueueEntry) {
         history.append(entry)
@@ -859,10 +1237,10 @@ public struct QueueManager: Sendable {
     }
 
     private mutating func pruneUnreferencedEntries() {
-        var keep = Set(baselineOrder).union(upcomingOrder)
-        if let confirmedCurrentID { keep.insert(confirmedCurrentID) }
-        if let pendingReservationID { keep.insert(pendingReservationID) }
-        if let lastFailed = lastFailedTarget?.id { keep.insert(lastFailed) }
+        var keep = Set(baselineEntryIDs).union(upcomingEntryIDs)
+        if let cid = confirmedCurrent?.id { keep.insert(cid) }
+        if let pid = reservation?.entry.id { keep.insert(pid) }
+        if let prevID = reservation?.previousConfirmed?.id { keep.insert(prevID) }
         for h in history { keep.insert(h.id) }
         if let u = undoRecord {
             keep.formUnion(u.removedEntries.keys)

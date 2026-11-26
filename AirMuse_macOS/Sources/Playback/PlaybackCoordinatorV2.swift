@@ -12,6 +12,8 @@ public struct PlaybackTimeAnchor: Sendable, Equatable {
     public let monotonicNs: UInt64
     public let isPlaying: Bool
 
+    public static let zero = PlaybackTimeAnchor(positionMs: 0, durationMs: 0, monotonicNs: 0, isPlaying: false)
+
     public init(positionMs: Int64, durationMs: Int64, monotonicNs: UInt64, isPlaying: Bool) {
         self.positionMs = max(0, positionMs)
         self.durationMs = max(0, durationMs)
@@ -55,10 +57,8 @@ private struct RandomizerAdapter: RandomNumberGenerator {
 // MARK: - PlaybackCoordinatorV2
 
 /// Authoritative Core V2 playback scheduler & sole queue writer.
-/// Guarantees Latest-Intent-Wins with serialized underlying engine execution,
-/// queue ownership isolation (local vs remote radio), monotonic time anchoring,
-/// strict `(sessionID, engineInstanceID, operationID, trackID)` event filtering,
-/// and deterministic `QueueManager` state transitions.
+/// Separates `playbackGeneration` (source selection), `transportRevision` (play/pause/seek),
+/// `queueManager.revision` (structural edits), and `publishSequence` (monotonic atomic Store commits).
 public actor PlaybackCoordinatorV2 {
     private let store: PlaybackStore
     private let engine: any PlaybackEngineProtocol
@@ -67,8 +67,10 @@ public actor PlaybackCoordinatorV2 {
     private let randomizer: any QueueRandomizer
 
     private var activeSession: SessionContext?
-    private var operationID: UInt64 = 0
-    private var activePlayOperationID: UInt64 = 0
+    private var playbackGeneration: UInt64 = 0
+    private var transportRevision: UInt64 = 0
+    private var activePlayGeneration: UInt64 = 0
+    private var publishSequence: UInt64 = 0
     private var operationEntryMap: [UInt64: UUID] = [:]
 
     // Authoritative synchronous queue state
@@ -77,16 +79,16 @@ public actor PlaybackCoordinatorV2 {
 
     // Desired state (updated synchronously on user intent)
     private var desiredTrack: MusicTrack?
-    private var desiredKind: PlayableKind = .song
-    private var desiredStartIndex: Int = 0
+    private var activeTargetResource: PlaybackTarget?
     private var desiredTransport: DesiredTransport = .stopped
     private var pendingSeekSeconds: Double?
     private var desiredVolume: Float = 1.0
     private var restoredNeedsEngineLoad: Bool = false
+    private var needsPlayItemOnResume: Bool = false
 
     // Actual engine-confirmed state
     private var actualStatus: PlaybackTransportStatus = .idle
-    private var timeAnchor: PlaybackTimeAnchor = PlaybackTimeAnchor(positionMs: 0, durationMs: 0, monotonicNs: 0, isPlaying: false)
+    private var timeAnchor: PlaybackTimeAnchor = .zero
 
     // Serial execution & deduplication
     private var isDraining: Bool = false
@@ -120,7 +122,7 @@ public actor PlaybackCoordinatorV2 {
         self.rngAdapter = RandomizerAdapter(source: randomizer)
     }
 
-    // MARK: - Lifecycle
+    // MARK: - Lifecycle & Session Invalidation (P0-01)
 
     public func start(session: SessionContext? = nil) async {
         self.activeSession = session
@@ -145,30 +147,46 @@ public actor PlaybackCoordinatorV2 {
         let newScope = Self.sessionScope(for: session)
 
         if session == nil && sessionChanged {
-            snapshotSaveTask?.cancel()
-            queueManager.resetForSessionInvalidation(newScope: "")
-            operationEntryMap.removeAll()
-            restoredNeedsEngineLoad = false
-            hasRestoredForScope = nil
             AppLogger.shared.log(category: .queue, level: .info, message: "会话已退出，清空私有播放队列")
-            try? await stop()
-            await publishToStore(includeQueue: true)
+            await invalidatePlaybackSession(newScope: "")
             return
         }
 
         if accountChanged {
-            snapshotSaveTask?.cancel()
-            queueManager.resetForSessionInvalidation(newScope: newScope)
-            operationEntryMap.removeAll()
-            restoredNeedsEngineLoad = false
-            hasRestoredForScope = nil
             AppLogger.shared.log(category: .queue, level: .info, message: "账户切换，重置并隔离播放队列")
-            try? await stop()
-            await publishToStore(includeQueue: true)
+            await invalidatePlaybackSession(newScope: newScope)
         } else if sessionChanged {
             queueManager.setSessionScope(newScope)
             await publishToStore(includeQueue: true)
         }
+    }
+
+    /// Synchronously invalidates all playback/queue/session state before stopping the engine,
+    /// ensuring no stale account data or late engine events leak across sessions.
+    public func invalidatePlaybackSession(newScope: String) async {
+        snapshotSaveTask?.cancel()
+        playbackGeneration &+= 1
+        transportRevision &+= 1
+        activePlayGeneration = 0
+        operationEntryMap.removeAll()
+        desiredTrack = nil
+        activeTargetResource = nil
+        desiredTransport = .stopped
+        pendingSeekSeconds = nil
+        restoredNeedsEngineLoad = false
+        needsPlayItemOnResume = false
+        needsPlayItemExecution = false
+        needsTransportSync = false
+        lastEndedOperationKey = nil
+        actualStatus = .idle
+        timeAnchor = .zero
+        hasRestoredForScope = nil
+        queueManager.resetForSessionInvalidation(newScope: newScope)
+
+        // Publish clean state immediately before potentially blocking engine stop
+        await publishToStore(includeQueue: true)
+        let ctx = await currentContext(trackID: "")
+        try? await engine.execute(.stop, context: ctx)
     }
 
     public func shutdown() async {
@@ -179,7 +197,89 @@ public actor PlaybackCoordinatorV2 {
         try? await stop()
     }
 
-    // MARK: - User Intents (Playback & Queue Replacement)
+    // MARK: - Unified Four Playback & Queue Intents (Section 1.1–1.2)
+
+    @discardableResult
+    public func submitIntent(
+        _ intent: QueueInsertionIntent,
+        entries: [QueueEntry],
+        startIndex: Int = 0,
+        kind: PlayableKind? = nil,
+        loadingState: QueueLoadingState? = nil,
+        batchID: UUID? = nil,
+        expectedQueueID: UUID? = nil,
+        expectedDestructiveEpoch: UInt64? = nil
+    ) async throws -> QueueCommandResult {
+        guard !entries.isEmpty else { throw QueueEditError.emptyBatch }
+
+        switch intent {
+        case .replaceAndPlay:
+            try await playEntries(
+                entries,
+                startIndex: startIndex,
+                kind: kind,
+                loadingState: loadingState,
+                batchID: batchID
+            )
+            let snap = queueManager.makeSnapshot()
+            return QueueCommandResult(
+                queueID: snap.queueID,
+                revision: snap.revision,
+                destructiveEpoch: snap.destructiveEpoch,
+                acceptedCount: entries.count,
+                message: "已播放 \(entries.count) 首曲目"
+            )
+
+        case .interruptAndPlay:
+            let safeIndex = min(max(0, startIndex), entries.count - 1)
+            let ordered = safeIndex == 0 ? entries : ([entries[safeIndex]] + entries.enumerated().filter { $0.offset != safeIndex }.map(\.element))
+            let head = try queueManager.interruptAndPlay(ordered, batchID: batchID)
+            AppLogger.shared.log(
+                category: .queue,
+                level: .info,
+                correlationID: queueCorrelationID,
+                message: "立即插播: \(head.track.title) (批次 \(ordered.count) 首, 原待播保留)"
+            )
+            let target = PlaybackTarget(
+                kind: .song,
+                providerResourceID: head.track.providerTrackID.isEmpty ? head.track.id : head.track.providerTrackID,
+                title: head.track.title
+            )
+            await initiatePlayback(for: head, target: target)
+            let snap = queueManager.makeSnapshot()
+            return QueueCommandResult(
+                queueID: snap.queueID,
+                revision: snap.revision,
+                destructiveEpoch: snap.destructiveEpoch,
+                acceptedCount: ordered.count,
+                message: ordered.count == 1 ? "已立即插播「\(head.track.title)」" : "已立即插播 \(ordered.count) 首歌曲"
+            )
+
+        case .prepend:
+            try await insertNext(entries, expectedQueueID: expectedQueueID, expectedDestructiveEpoch: expectedDestructiveEpoch, batchID: batchID)
+            let snap = queueManager.makeSnapshot()
+            return QueueCommandResult(
+                queueID: snap.queueID,
+                revision: snap.revision,
+                destructiveEpoch: snap.destructiveEpoch,
+                acceptedCount: entries.count,
+                message: entries.count == 1 ? "已将「\(entries[0].track.title)」加入下一首" : "已将 \(entries.count) 首歌曲加入下一首"
+            )
+
+        case .append:
+            try await append(entries, expectedQueueID: expectedQueueID, expectedDestructiveEpoch: expectedDestructiveEpoch, batchID: batchID)
+            let snap = queueManager.makeSnapshot()
+            return QueueCommandResult(
+                queueID: snap.queueID,
+                revision: snap.revision,
+                destructiveEpoch: snap.destructiveEpoch,
+                acceptedCount: entries.count,
+                message: entries.count == 1 ? "已将「\(entries[0].track.title)」添加到队列末尾" : "已添加 \(entries.count) 首歌曲到队列"
+            )
+        }
+    }
+
+    // MARK: - Playback Intents
 
     public func playEntries(
         _ entries: [QueueEntry],
@@ -192,17 +292,35 @@ public actor PlaybackCoordinatorV2 {
         let safeIndex = min(max(0, startIndex), entries.count - 1)
         let selected = entries[safeIndex]
         let resolvedKind: PlayableKind = kind ?? (
-            selected.track.providerTrackID.hasPrefix("ra.") || selected.track.id.hasPrefix("ra.")
+            selected.track.providerTrackID.hasPrefix("ra.") || selected.track.id.hasPrefix("ra.") || selected.origin.kind == .station
                 ? .station
                 : .song
         )
         let owner: QueueOwner = (resolvedKind == .station) ? .remoteEngine : .localCoordinator
+        if owner == .localCoordinator {
+            for e in entries where e.origin.kind == .station {
+                throw QueueEditError.remoteStationMixedNotAllowed
+            }
+        }
         let resolvedLoading = loadingState ?? .complete(totalCount: entries.count)
+        let resourceID: String
+        if resolvedKind == .station {
+            resourceID = selected.origin.sourceID ?? (selected.track.providerTrackID.isEmpty ? selected.track.id : selected.track.providerTrackID)
+        } else {
+            resourceID = selected.track.providerTrackID.isEmpty ? selected.track.id : selected.track.providerTrackID
+        }
+        let target = PlaybackTarget(
+            kind: resolvedKind,
+            providerResourceID: resourceID,
+            title: selected.track.title,
+            storefront: activeSession?.storefront
+        )
 
-        guard let target = queueManager.replaceQueue(
+        guard let chosen = queueManager.replaceQueue(
             entries: entries,
             startIndex: safeIndex,
             owner: owner,
+            target: target,
             loadingState: resolvedLoading,
             batchID: batchID,
             startPlayback: true,
@@ -213,9 +331,9 @@ public actor PlaybackCoordinatorV2 {
             category: .queue,
             level: .info,
             correlationID: queueCorrelationID,
-            message: "新建队列并播放: \(target.track.title) (共 \(entries.count) 首, startIndex=\(safeIndex), owner=\(owner.rawValue), 来源=\(target.origin.displayTitle))"
+            message: "新建队列并播放: \(chosen.track.title) (共 \(entries.count) 首, startIndex=\(safeIndex), owner=\(owner.rawValue), 来源=\(chosen.origin.displayTitle))"
         )
-        await initiatePlayback(for: target, kind: resolvedKind, startIndex: 0)
+        await initiatePlayback(for: chosen, target: target)
     }
 
     public func playTrack(_ track: MusicTrack, in queue: PlaybackQueue, kind: PlayableKind? = nil, startIndex: Int = 0) async throws {
@@ -238,24 +356,53 @@ public actor PlaybackCoordinatorV2 {
     }
 
     public func play() async throws {
-        if desiredTrack == nil {
-            // Idle queue with upcoming entries: Play consumes the first upcoming item
+        // 1. Failed target -> explicit retry
+        if queueManager.isPendingTargetFailed {
+            try await retryPendingOrCurrent()
+            return
+        }
+
+        // 2. Idle or exhausted queue with newly appended upcoming entries -> consume first upcoming
+        if desiredTrack == nil || queueManager.playbackPhase == .exhausted {
             if case .play(let entry, _) = queueManager.advanceNext(using: &rngAdapter) {
-                await initiatePlayback(for: entry, kind: .song, startIndex: 0)
+                let target = PlaybackTarget(
+                    kind: .song,
+                    providerResourceID: entry.track.providerTrackID.isEmpty ? entry.track.id : entry.track.providerTrackID,
+                    title: entry.track.title
+                )
+                await initiatePlayback(for: entry, target: target)
+                return
+            }
+            // Exhausted with no new upcoming -> replay current/last track from 0
+            if queueManager.playbackPhase == .exhausted, let current = queueManager.activeTargetEntry {
+                let target = activeTargetResource ?? PlaybackTarget(
+                    kind: queueManager.owner == .remoteEngine ? .station : .song,
+                    providerResourceID: current.track.providerTrackID.isEmpty ? current.track.id : current.track.providerTrackID,
+                    title: current.track.title
+                )
+                await initiatePlayback(for: current, target: target)
                 return
             }
             return
         }
 
-        if restoredNeedsEngineLoad, let entry = queueManager.activeTargetEntry {
+        // 3. Restored from snapshot or paused before engine loaded playItem -> load via playItem
+        if (restoredNeedsEngineLoad || needsPlayItemOnResume), let entry = queueManager.activeTargetEntry {
             restoredNeedsEngineLoad = false
-            let resumePosSec = Double(max(0, timeAnchor.positionMs)) / 1000.0
-            let kind: PlayableKind = (queueManager.owner == .remoteEngine) ? .station : .song
-            await initiatePlayback(for: entry, kind: kind, startIndex: 0, initialSeekSeconds: resumePosSec > 0 ? resumePosSec : nil)
+            needsPlayItemOnResume = false
+            let isStation = (queueManager.owner == .remoteEngine)
+            let target = activeTargetResource ?? PlaybackTarget(
+                kind: isStation ? .station : .song,
+                providerResourceID: entry.track.providerTrackID.isEmpty ? entry.track.id : entry.track.providerTrackID,
+                title: entry.track.title
+            )
+            let resumePosSec = (!isStation && timeAnchor.positionMs > 0) ? Double(timeAnchor.positionMs) / 1000.0 : nil
+            await initiatePlayback(for: entry, target: target, initialSeekSeconds: resumePosSec)
             return
         }
 
-        operationID += 1
+        // 4. Normal resume from pause / user stop
+        transportRevision &+= 1
         desiredTransport = .playing
         needsTransportSync = true
         await drainCommands()
@@ -270,13 +417,15 @@ public actor PlaybackCoordinatorV2 {
     }
 
     public func pause() async throws {
-        operationID += 1
+        transportRevision &+= 1
         desiredTransport = .paused
-        if actualStatus == .preparing || actualStatus == .buffering {
+        if needsPlayItemExecution {
             needsPlayItemExecution = false
+            needsPlayItemOnResume = true
         }
         needsTransportSync = true
         actualStatus = .paused
+        queueManager.setPlaybackPhase(.paused)
         let currentPos = timeAnchor.interpolatedPositionMs(at: clock.monotonicNanoseconds)
         timeAnchor = PlaybackTimeAnchor(positionMs: currentPos, durationMs: timeAnchor.durationMs, monotonicNs: clock.monotonicNanoseconds, isPlaying: false)
         await publishToStore(includeQueue: false)
@@ -285,10 +434,12 @@ public actor PlaybackCoordinatorV2 {
     }
 
     public func stop() async throws {
-        operationID += 1
-        activePlayOperationID = operationID
+        playbackGeneration &+= 1
+        transportRevision &+= 1
+        activePlayGeneration = playbackGeneration
         desiredTransport = .stopped
         needsPlayItemExecution = false
+        needsPlayItemOnResume = false
         needsTransportSync = true
         actualStatus = .idle
         queueManager.clearPendingOnStop()
@@ -298,7 +449,7 @@ public actor PlaybackCoordinatorV2 {
     }
 
     public func seek(toMs ms: Int64) async throws {
-        operationID += 1
+        transportRevision &+= 1
         let clampedMs = max(0, ms)
         pendingSeekSeconds = Double(clampedMs) / 1000.0
         timeAnchor = PlaybackTimeAnchor(
@@ -320,7 +471,9 @@ public actor PlaybackCoordinatorV2 {
     }
 
     public func setRepeatMode(_ mode: PlaybackState.RepeatMode) async {
-        guard queueManager.capabilities.canRepeatOne || queueManager.capabilities.canRepeatAll || mode == .off else {
+        guard (mode == .one && queueManager.capabilities.canRepeatOne) ||
+              (mode == .all && queueManager.capabilities.canRepeatAll) ||
+              mode == .off else {
             return
         }
         queueManager.setRepeatMode(mode)
@@ -343,7 +496,7 @@ public actor PlaybackCoordinatorV2 {
             category: .queue,
             level: .info,
             correlationID: queueCorrelationID,
-            message: "切换随机播放: \(enabled ? "开启" : "关闭") (待播 \(queueManager.upcomingEntries.count) 首)"
+            message: "切换随机播放: \(enabled ? "开启" : "关闭") (effective=\(queueManager.effectiveShuffle), 待播 \(queueManager.upcomingEntries.count) 首)"
         )
         await publishToStore(includeQueue: true)
         scheduleDebouncedSnapshotSave(immediate: true)
@@ -359,10 +512,22 @@ public actor PlaybackCoordinatorV2 {
         switch queueManager.advanceNext(using: &rngAdapter) {
         case .play(let next, _):
             AppLogger.shared.log(category: .queue, level: .info, correlationID: queueCorrelationID, message: "下一首推进: \(next.track.title) (剩余待播 \(queueManager.upcomingEntries.count) 首)")
-            await initiatePlayback(for: next, kind: .song, startIndex: 0)
-        case .seekToZero, .stop:
-            AppLogger.shared.log(category: .queue, level: .info, correlationID: queueCorrelationID, message: "待播队列已耗尽，停止播放")
-            try await stop()
+            let target = PlaybackTarget(
+                kind: .song,
+                providerResourceID: next.track.providerTrackID.isEmpty ? next.track.id : next.track.providerTrackID,
+                title: next.track.title
+            )
+            await initiatePlayback(for: next, target: target)
+        case .waitingForPage(let bid):
+            AppLogger.shared.log(category: .queue, level: .info, correlationID: queueCorrelationID, message: "到达未加载分页边界 (\(bid.uuidString.prefix(6)))，等待后续页加载")
+            await publishToStore(includeQueue: true)
+        case .exhausted, .seekToZero, .stop:
+            AppLogger.shared.log(category: .queue, level: .info, correlationID: queueCorrelationID, message: "待播队列已耗尽")
+            desiredTransport = .stopped
+            actualStatus = .idle
+            await publishToStore(includeQueue: true)
+            let ctx = await currentContext(trackID: desiredTrack?.id ?? "")
+            try? await engine.execute(.stop, context: ctx)
         }
     }
 
@@ -380,16 +545,45 @@ public actor PlaybackCoordinatorV2 {
             try await seek(toMs: 0)
         case .play(let prev, _):
             AppLogger.shared.log(category: .queue, level: .info, correlationID: queueCorrelationID, message: "上一首回退历史: \(prev.track.title) (剩余历史 \(queueManager.historyEntries.count) 首)")
-            await initiatePlayback(for: prev, kind: .song, startIndex: 0)
-        case .stop:
+            let target = PlaybackTarget(
+                kind: .song,
+                providerResourceID: prev.track.providerTrackID.isEmpty ? prev.track.id : prev.track.providerTrackID,
+                title: prev.track.title
+            )
+            await initiatePlayback(for: prev, target: target)
+        case .waitingForPage, .exhausted, .stop:
             break
         }
     }
 
     public func retryPendingOrCurrent() async throws {
-        if let target = queueManager.activeTargetEntry {
-            let kind: PlayableKind = (queueManager.owner == .remoteEngine) ? .station : .song
-            await initiatePlayback(for: target, kind: kind, startIndex: 0)
+        guard let entry = queueManager.activeTargetEntry else { return }
+        let isStation = (queueManager.owner == .remoteEngine)
+        let target = activeTargetResource ?? PlaybackTarget(
+            kind: isStation ? .station : .song,
+            providerResourceID: entry.track.providerTrackID.isEmpty ? entry.track.id : entry.track.providerTrackID,
+            title: entry.track.title,
+            storefront: activeSession?.storefront
+        )
+        AppLogger.shared.log(category: .queue, level: .info, correlationID: queueCorrelationID, message: "重试播放目标: \(target.providerResourceID) (kind=\(target.kind.rawValue))")
+        await initiatePlayback(for: entry, target: target)
+    }
+
+    public func skipFailedTarget() async throws {
+        try await skipToNext()
+    }
+
+    public func advancePastWaitingBatch() async throws {
+        guard queueManager.owner == .localCoordinator else { return }
+        if case .play(let next, _) = queueManager.advanceNext(using: &rngAdapter, allowCrossBatchBoundary: true) {
+            let target = PlaybackTarget(
+                kind: .song,
+                providerResourceID: next.track.providerTrackID.isEmpty ? next.track.id : next.track.providerTrackID,
+                title: next.track.title
+            )
+            await initiatePlayback(for: next, target: target)
+        } else {
+            try await stop()
         }
     }
 
@@ -399,12 +593,17 @@ public actor PlaybackCoordinatorV2 {
         _ entries: [QueueEntry],
         expectedQueueID: UUID? = nil,
         expectedRevision: UInt64? = nil,
+        expectedDestructiveEpoch: UInt64? = nil,
         batchID: UUID? = nil
     ) async throws {
         if queueManager.owner == .remoteEngine {
             throw QueueEditError.remoteQueueRequiresSwitch(stationTitle: queueManager.activeTargetEntry?.track.title)
         }
-        try queueManager.validateEditContext(expectedQueueID: expectedQueueID, expectedRevision: expectedRevision)
+        try queueManager.validateEditContext(
+            expectedQueueID: expectedQueueID,
+            expectedRevision: expectedRevision,
+            expectedDestructiveEpoch: expectedDestructiveEpoch
+        )
         try queueManager.insertNext(entries, batchID: batchID)
         AppLogger.shared.log(
             category: .queue,
@@ -420,12 +619,17 @@ public actor PlaybackCoordinatorV2 {
         _ entries: [QueueEntry],
         expectedQueueID: UUID? = nil,
         expectedRevision: UInt64? = nil,
+        expectedDestructiveEpoch: UInt64? = nil,
         batchID: UUID? = nil
     ) async throws {
         if queueManager.owner == .remoteEngine {
             throw QueueEditError.remoteQueueRequiresSwitch(stationTitle: queueManager.activeTargetEntry?.track.title)
         }
-        try queueManager.validateEditContext(expectedQueueID: expectedQueueID, expectedRevision: expectedRevision)
+        try queueManager.validateEditContext(
+            expectedQueueID: expectedQueueID,
+            expectedRevision: expectedRevision,
+            expectedDestructiveEpoch: expectedDestructiveEpoch
+        )
         try queueManager.append(entries, batchID: batchID)
         AppLogger.shared.log(
             category: .queue,
@@ -440,14 +644,19 @@ public actor PlaybackCoordinatorV2 {
     public func playEntry(id: UUID, expectedQueueID: UUID? = nil) async throws {
         try queueManager.validateEditContext(expectedQueueID: expectedQueueID)
         let result = try queueManager.playEntry(id: id)
-        if let target = result.playbackTarget {
+        if let targetEntry = result.playbackTarget {
             AppLogger.shared.log(
                 category: .queue,
                 level: .info,
                 correlationID: queueCorrelationID,
-                message: "指定播放待播条目: \(target.track.title) (entry=\(id.uuidString.prefix(6)), 剩余待播 \(queueManager.upcomingEntries.count) 首)"
+                message: "指定播放待播条目: \(targetEntry.track.title) (entry=\(id.uuidString.prefix(6)), 剩余待播 \(queueManager.upcomingEntries.count) 首)"
             )
-            await initiatePlayback(for: target, kind: .song, startIndex: 0)
+            let target = PlaybackTarget(
+                kind: .song,
+                providerResourceID: targetEntry.track.providerTrackID.isEmpty ? targetEntry.track.id : targetEntry.track.providerTrackID,
+                title: targetEntry.track.title
+            )
+            await initiatePlayback(for: targetEntry, target: target)
         }
     }
 
@@ -512,16 +721,33 @@ public actor PlaybackCoordinatorV2 {
         batchID: UUID,
         expectedQueueID: UUID,
         expectedSessionScope: String,
+        expectedDestructiveEpoch: UInt64? = nil,
         loadingState: QueueLoadingState
     ) async -> Bool {
+        let wasWaiting = (queueManager.playbackPhase == .waitingForPage)
         let ok = queueManager.commitPaginatedBatch(
             entries,
             batchID: batchID,
             expectedQueueID: expectedQueueID,
-            expectedSessionScope: expectedSessionScope
+            expectedSessionScope: expectedSessionScope,
+            expectedDestructiveEpoch: expectedDestructiveEpoch,
+            loadingState: loadingState,
+            using: &rngAdapter
         )
         guard ok else { return false }
-        queueManager.updateLoadingState(loadingState)
+
+        // If playback was waiting at the batch boundary, resume automatically now that tracks arrived
+        if wasWaiting, desiredTransport == .playing,
+           case .play(let next, _) = queueManager.advanceNext(using: &rngAdapter) {
+            let target = PlaybackTarget(
+                kind: .song,
+                providerResourceID: next.track.providerTrackID.isEmpty ? next.track.id : next.track.providerTrackID,
+                title: next.track.title
+            )
+            await initiatePlayback(for: next, target: target)
+            return true
+        }
+
         await publishToStore(includeQueue: true)
         scheduleDebouncedSnapshotSave(immediate: false)
         return true
@@ -530,11 +756,20 @@ public actor PlaybackCoordinatorV2 {
     public func updateQueueLoadingState(
         _ state: QueueLoadingState,
         expectedQueueID: UUID,
-        expectedSessionScope: String
+        expectedSessionScope: String,
+        expectedDestructiveEpoch: UInt64? = nil,
+        batchID: UUID? = nil
     ) async {
         guard queueManager.queueID == expectedQueueID,
               queueManager.sessionScope == expectedSessionScope else { return }
-        queueManager.updateLoadingState(state)
+        if let expectedDestructiveEpoch, expectedDestructiveEpoch != queueManager.destructiveEpoch {
+            return
+        }
+        if let batchID {
+            queueManager.finishOrFailBatch(batchID, loadingState: state)
+        } else {
+            queueManager.updateLoadingState(state)
+        }
         await publishToStore(includeQueue: true)
     }
 
@@ -569,33 +804,51 @@ public actor PlaybackCoordinatorV2 {
         await store.queueStream()
     }
 
-    // MARK: - Persistence (Q17)
+    // MARK: - Persistence (Q17, P0-01)
 
     public func restoreSnapshotIfNeeded(providerID: String, accountID: String?) async {
         guard let snapshotStore else { return }
         let scope = "\(providerID)|\(accountID ?? "guest")"
         guard hasRestoredForScope != scope else { return }
-        // Do not overwrite an already-active playing queue
         guard queueManager.activeTargetEntry == nil, queueManager.upcomingEntries.isEmpty else {
             hasRestoredForScope = scope
             return
         }
-        hasRestoredForScope = scope
 
-        guard let snap = await snapshotStore.load(expectedProviderID: providerID, expectedAccountID: accountID),
-              let payload = snap.resolvedQueuePayload() else {
+        // Capture pre-await invariants (P0-01)
+        let preScope = queueManager.sessionScope
+        let prePlayGen = playbackGeneration
+        let preEpoch = queueManager.destructiveEpoch
+        let preQueueID = queueManager.queueID
+        let preRevision = queueManager.revision
+
+        let snap = await snapshotStore.load(expectedProviderID: providerID, expectedAccountID: accountID)
+
+        // Re-verify post-await invariants before mutating state
+        guard queueManager.sessionScope == preScope,
+              playbackGeneration == prePlayGen,
+              queueManager.destructiveEpoch == preEpoch,
+              queueManager.queueID == preQueueID,
+              queueManager.revision == preRevision,
+              queueManager.activeTargetEntry == nil,
+              queueManager.upcomingEntries.isEmpty else {
+            return
+        }
+
+        hasRestoredForScope = scope
+        guard let snap, let payload = snap.resolvedQueuePayload() else {
             return
         }
 
         let restoredCurrent = queueManager.restore(from: payload, sessionScope: queueManager.sessionScope)
         desiredVolume = min(max(snap.volume, 0), 1)
         desiredTrack = restoredCurrent?.track
-        desiredKind = (payload.owner == .remoteEngine) ? .station : .song
+        activeTargetResource = queueManager.makeSnapshot().activeTarget
         desiredTransport = .paused
         actualStatus = restoredCurrent != nil ? .paused : .idle
         restoredNeedsEngineLoad = (restoredCurrent != nil)
         let durMs = restoredCurrent?.track.durationMs ?? 0
-        let clampedPos = durMs > 0 ? min(max(0, snap.positionMs), durMs) : max(0, snap.positionMs)
+        let clampedPos = (payload.owner == .remoteEngine) ? 0 : (durMs > 0 ? min(max(0, snap.positionMs), durMs) : max(0, snap.positionMs))
         timeAnchor = PlaybackTimeAnchor(positionMs: clampedPos, durationMs: durMs, monotonicNs: clock.monotonicNanoseconds, isPlaying: false)
 
         await publishToStore(includeQueue: true)
@@ -609,6 +862,9 @@ public actor PlaybackCoordinatorV2 {
 
     public func flushSnapshot() async {
         guard let snapshotStore, let session = activeSession else { return }
+        let expectedScope = Self.sessionScope(for: session)
+        guard queueManager.sessionScope == expectedScope else { return }
+
         let payload = queueManager.exportPersistencePayload()
         guard payload.currentEntryID != nil || !payload.upcomingOrder.isEmpty else {
             await snapshotStore.clear()
@@ -635,7 +891,7 @@ public actor PlaybackCoordinatorV2 {
         guard snapshotStore != nil, activeSession != nil else { return }
         if !immediate {
             let now = clock.monotonicNanoseconds
-            if now &- lastProgressSnapshotSaveNs < 10_000_000_000 { // 10s throttle for progress/pause
+            if now &- lastProgressSnapshotSaveNs < 10_000_000_000 {
                 return
             }
             lastProgressSnapshotSaveNs = now
@@ -650,22 +906,21 @@ public actor PlaybackCoordinatorV2 {
         }
     }
 
-    // MARK: - Internal Playback Initiation & Drain
+    // MARK: - Internal Playback Initiation & Drain (P0-03, P0-04)
 
     private func initiatePlayback(
         for entry: QueueEntry,
-        kind: PlayableKind,
-        startIndex: Int,
+        target: PlaybackTarget,
         initialSeekSeconds: Double? = nil
     ) async {
-        operationID += 1
-        activePlayOperationID = operationID
-        recordOperationEntry(opID: operationID, entryID: entry.id)
+        playbackGeneration &+= 1
+        activePlayGeneration = playbackGeneration
+        recordOperationEntry(gen: playbackGeneration, entryID: entry.id)
 
         restoredNeedsEngineLoad = false
+        needsPlayItemOnResume = false
         desiredTrack = entry.track
-        desiredKind = kind
-        desiredStartIndex = startIndex
+        activeTargetResource = target
         desiredTransport = .playing
         pendingSeekSeconds = initialSeekSeconds
         actualStatus = .preparing
@@ -683,8 +938,8 @@ public actor PlaybackCoordinatorV2 {
         await drainCommands()
     }
 
-    private func recordOperationEntry(opID: UInt64, entryID: UUID) {
-        operationEntryMap[opID] = entryID
+    private func recordOperationEntry(gen: UInt64, entryID: UUID) {
+        operationEntryMap[gen] = entryID
         if operationEntryMap.count > 64, let oldestKey = operationEntryMap.keys.min() {
             operationEntryMap.removeValue(forKey: oldestKey)
         }
@@ -699,40 +954,45 @@ public actor PlaybackCoordinatorV2 {
             let sessionID = activeSession?.sessionID ?? UUID(uuidString: "00000000-0000-0000-0000-000000000000")!
             let engineID = await engine.engineInstanceID
 
-            if needsPlayItemExecution, let track = desiredTrack, desiredTransport == .playing {
+            if needsPlayItemExecution, let target = activeTargetResource, desiredTransport == .playing {
                 needsPlayItemExecution = false
-                let targetOpID = operationID
-                let targetID = track.providerTrackID.isEmpty ? track.id : track.providerTrackID
-                let ctx = PlaybackOperationContext(sessionID: sessionID, engineInstanceID: engineID, operationID: targetOpID, trackID: targetID)
+                let targetGen = playbackGeneration
+                let ctx = PlaybackOperationContext(
+                    sessionID: sessionID,
+                    engineInstanceID: engineID,
+                    operationID: targetGen,
+                    trackID: target.providerResourceID
+                )
 
                 do {
-                    try await engine.execute(.playItem(id: targetID, kind: desiredKind, startIndex: desiredStartIndex), context: ctx)
+                    try await engine.execute(.playItem(id: target.providerResourceID, kind: target.kind, startIndex: 0), context: ctx)
                 } catch {
-                    if targetOpID == operationID {
+                    if targetGen == playbackGeneration {
                         actualStatus = .failed(error.localizedDescription)
                         queueManager.markPendingFailed()
                         await publishToStore(includeQueue: true)
                     }
                 }
-                if targetOpID != operationID {
+                if targetGen != playbackGeneration {
                     continue
                 }
             }
 
             if let seekSec = pendingSeekSeconds {
                 pendingSeekSeconds = nil
-                let targetOpID = operationID
-                let ctx = PlaybackOperationContext(sessionID: sessionID, engineInstanceID: engineID, operationID: targetOpID, trackID: desiredTrack?.id ?? "")
+                let targetGen = playbackGeneration
+                let targetRev = transportRevision
+                let ctx = PlaybackOperationContext(sessionID: sessionID, engineInstanceID: engineID, operationID: targetGen, trackID: desiredTrack?.id ?? "")
                 try? await engine.execute(.seek(seconds: seekSec), context: ctx)
-                if targetOpID != operationID {
+                if targetGen != playbackGeneration || targetRev != transportRevision {
                     continue
                 }
             }
 
             if needsTransportSync {
                 needsTransportSync = false
-                let targetOpID = operationID
-                let ctx = PlaybackOperationContext(sessionID: sessionID, engineInstanceID: engineID, operationID: targetOpID, trackID: desiredTrack?.id ?? "")
+                let targetGen = playbackGeneration
+                let ctx = PlaybackOperationContext(sessionID: sessionID, engineInstanceID: engineID, operationID: targetGen, trackID: desiredTrack?.id ?? "")
                 switch desiredTransport {
                 case .playing:
                     try? await engine.execute(.play, context: ctx)
@@ -755,19 +1015,17 @@ public actor PlaybackCoordinatorV2 {
             break
 
         case .stateChanged(let ctx, let status):
-            guard ctx.engineInstanceID == currentEngineID, ctx.operationID == activePlayOperationID else { return }
+            guard ctx.engineInstanceID == currentEngineID, ctx.operationID == activePlayGeneration else { return }
             if desiredTransport == .paused && status == .playing { return }
             if desiredTransport == .stopped && status != .idle { return }
-            let prevStatus = actualStatus
             let nowNs = clock.monotonicNanoseconds
             let currentPos = timeAnchor.interpolatedPositionMs(at: nowNs)
-            if desiredTransport == .playing,
-               queueManager.owner == .localCoordinator,
-               prevStatus == .playing,
-               (status == .paused || status == .idle || status == .ended),
-               timeAnchor.durationMs > 5000,
-               currentPos >= timeAnchor.durationMs - 1500 {
-                await handleNaturalTrackEnd(operationID: ctx.operationID, trackID: ctx.trackID)
+
+            if case .failed(let msg) = status {
+                actualStatus = .failed(msg)
+                queueManager.markPendingFailed()
+                timeAnchor = PlaybackTimeAnchor(positionMs: currentPos, durationMs: timeAnchor.durationMs, monotonicNs: nowNs, isPlaying: false)
+                await publishToStore(includeQueue: true)
                 return
             }
 
@@ -789,7 +1047,7 @@ public actor PlaybackCoordinatorV2 {
             await publishToStore(includeQueue: queueChanged)
 
         case .positionUpdated(let ctx, let posSec, let durSec):
-            guard ctx.engineInstanceID == currentEngineID, ctx.operationID == activePlayOperationID else { return }
+            guard ctx.engineInstanceID == currentEngineID, ctx.operationID == activePlayGeneration else { return }
             let posMs = Int64(max(0, posSec) * 1000)
             let durMs = durSec > 0 ? Int64(durSec * 1000) : timeAnchor.durationMs
             timeAnchor = PlaybackTimeAnchor(
@@ -803,7 +1061,7 @@ public actor PlaybackCoordinatorV2 {
             scheduleDebouncedSnapshotSave(immediate: false)
 
         case .itemChanged(let ctx, let trackID, let title, let artist, let albumTitle, let artworkURL, let durSec):
-            guard ctx.engineInstanceID == currentEngineID, ctx.operationID == activePlayOperationID else { return }
+            guard ctx.engineInstanceID == currentEngineID, ctx.operationID == activePlayGeneration else { return }
             let nowNs = clock.monotonicNanoseconds
             var didMutateState = false
             var didMutateQueue = false
@@ -826,6 +1084,7 @@ public actor PlaybackCoordinatorV2 {
                     providerTrackID: effectiveID
                 )
                 desiredTrack = updatedTrack
+                // NOTE: activeTargetResource stays pointing to the original station ID! (P0-04)
                 queueManager.updateRemoteCurrentTrack(updatedTrack)
                 timeAnchor = PlaybackTimeAnchor(
                     positionMs: trackChanged ? 0 : timeAnchor.interpolatedPositionMs(at: nowNs),
@@ -849,7 +1108,7 @@ public actor PlaybackCoordinatorV2 {
             }
 
         case .trackEnded(let ctx, _, _):
-            guard ctx.engineInstanceID == currentEngineID, ctx.operationID == activePlayOperationID else { return }
+            guard ctx.engineInstanceID == currentEngineID, ctx.operationID == activePlayGeneration else { return }
             await handleNaturalTrackEnd(operationID: ctx.operationID, trackID: ctx.trackID)
 
         case .crashed(let crashedID, _):
@@ -874,17 +1133,32 @@ public actor PlaybackCoordinatorV2 {
         lastEndedOperationKey = dedupKey
 
         guard queueManager.owner == .localCoordinator else { return }
-
-        // Ensure current playing entry is confirmed before advancing
-        if let entryID = operationEntryMap[opID], queueManager.pendingReservationID == entryID {
-            queueManager.confirmEntry(entryID)
+        // Only advance if the ended operation corresponds to the current active entry
+        guard let endedEntryID = operationEntryMap[opID] else { return }
+        if queueManager.pendingReservationID == endedEntryID {
+            // Confirming a track that finished without an explicit stateChanged(.playing) only if it wasn't failed
+            guard !queueManager.isPendingTargetFailed else { return }
+            queueManager.confirmEntry(endedEntryID)
+        } else if queueManager.confirmedCurrentID != endedEntryID {
+            return
         }
 
         switch queueManager.advanceOnNaturalEnd(using: &rngAdapter) {
         case .play(let next, _):
-            await initiatePlayback(for: next, kind: .song, startIndex: 0)
-        case .seekToZero, .stop:
-            try? await stop()
+            let target = PlaybackTarget(
+                kind: .song,
+                providerResourceID: next.track.providerTrackID.isEmpty ? next.track.id : next.track.providerTrackID,
+                title: next.track.title
+            )
+            await initiatePlayback(for: next, target: target)
+        case .waitingForPage:
+            await publishToStore(includeQueue: true)
+        case .exhausted, .seekToZero, .stop:
+            desiredTransport = .stopped
+            actualStatus = .idle
+            await publishToStore(includeQueue: true)
+            let ctx = await currentContext(trackID: desiredTrack?.id ?? "")
+            try? await engine.execute(.stop, context: ctx)
         }
     }
 
@@ -895,7 +1169,7 @@ public actor PlaybackCoordinatorV2 {
     private func currentContext(trackID: String) async -> PlaybackOperationContext {
         let sid = activeSession?.sessionID ?? UUID(uuidString: "00000000-0000-0000-0000-000000000000")!
         let eid = await engine.engineInstanceID
-        return PlaybackOperationContext(sessionID: sid, engineInstanceID: eid, operationID: operationID, trackID: trackID)
+        return PlaybackOperationContext(sessionID: sid, engineInstanceID: eid, operationID: playbackGeneration, trackID: trackID)
     }
 
     private static func sessionScope(for session: SessionContext?) -> String {
@@ -922,7 +1196,7 @@ public actor PlaybackCoordinatorV2 {
             volume: desiredVolume,
             isMuted: desiredVolume <= 0.001,
             repeatMode: queueManager.repeatMode,
-            shuffleEnabled: queueManager.shuffleEnabled,
+            shuffleEnabled: queueManager.effectiveShuffle,
             currentTrack: desiredTrack,
             providerID: desiredTrack?.providerID ?? "apple_music",
             sourceName: "Apple Music",
@@ -930,9 +1204,9 @@ public actor PlaybackCoordinatorV2 {
             timestampDate: clock.now,
             errorMessage: errorMsg
         )
-        await store.update(state: state)
-        if includeQueue {
-            await store.update(queueSnapshot: queueManager.makeSnapshot())
-        }
+        publishSequence &+= 1
+        let seq = publishSequence
+        let qSnap = includeQueue ? queueManager.makeSnapshot() : nil
+        await store.commitAtomic(state: state, queueSnapshot: qSnap, publishSequence: seq)
     }
 }

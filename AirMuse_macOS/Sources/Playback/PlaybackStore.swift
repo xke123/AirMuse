@@ -13,6 +13,7 @@ public actor PlaybackStore {
     private var _lyrics: LyricsDocument = .empty
     private var _queue: PlaybackQueue = .init()
     private var _queueSnapshot: QueueSnapshot = .empty
+    private var _publishSequence: UInt64 = 0
 
     // MARK: - Continuations for async streams
 
@@ -22,11 +23,30 @@ public actor PlaybackStore {
 
     public init() {}
 
+    // MARK: - Atomic Combined Update
+
+    /// Atomically commits `PlaybackState` and `QueueSnapshot` in a single actor hop.
+    /// Rejects stale publications via monotonic `publishSequence`, and only notifies `queueContinuations`
+    /// when `queueSnapshot` has actually changed.
+    public func commitAtomic(state: PlaybackState, queueSnapshot: QueueSnapshot?, publishSequence: UInt64) {
+        guard publishSequence >= _publishSequence else { return }
+        _publishSequence = publishSequence
+
+        applyStateUpdate(state)
+        if let queueSnapshot {
+            applyQueueSnapshotUpdate(queueSnapshot)
+        }
+    }
+
     // MARK: - State
 
     public var state: PlaybackState { _state }
 
     public func update(state: PlaybackState) {
+        applyStateUpdate(state)
+    }
+
+    private func applyStateUpdate(_ state: PlaybackState) {
         // Preserve cached artwork when the track key hasn't changed.
         if state.artworkData == nil,
            let existing = _state.artworkData,
@@ -95,6 +115,10 @@ public actor PlaybackStore {
 
     /// Publishes an authoritative `QueueSnapshot` only if it represents a newer or changed structural state.
     public func update(queueSnapshot: QueueSnapshot) {
+        applyQueueSnapshotUpdate(queueSnapshot)
+    }
+
+    private func applyQueueSnapshotUpdate(_ queueSnapshot: QueueSnapshot) {
         if queueSnapshot.sessionScope == _queueSnapshot.sessionScope,
            queueSnapshot.queueID == _queueSnapshot.queueID,
            queueSnapshot.revision < _queueSnapshot.revision {

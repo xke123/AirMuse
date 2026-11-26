@@ -52,11 +52,12 @@ struct QueuePaginationTests {
         let snap = await coord.currentStructuredQueueSnapshot()
 
         let loader = QueuePaginationLoader(maxPages: 20)
-        loader.startBackgroundPagination(
+        await loader.startBackgroundPagination(
             coordinator: coord,
             batchID: batchID,
             expectedQueueID: snap.queueID,
             expectedSessionScope: snap.sessionScope,
+            expectedDestructiveEpoch: snap.destructiveEpoch,
             origin: origin,
             initialLoadedCount: 100,
             initialNextURL: URL(string: "https://example.com/page/2")!,
@@ -116,11 +117,12 @@ struct QueuePaginationTests {
 
         let loader = QueuePaginationLoader(maxPages: 20)
         let loopURL = URL(string: "https://example.com/page/loop")!
-        loader.startBackgroundPagination(
+        await loader.startBackgroundPagination(
             coordinator: coord,
             batchID: batchID,
             expectedQueueID: snap.queueID,
             expectedSessionScope: snap.sessionScope,
+            expectedDestructiveEpoch: snap.destructiveEpoch,
             origin: origin,
             initialLoadedCount: 10,
             initialNextURL: loopURL,

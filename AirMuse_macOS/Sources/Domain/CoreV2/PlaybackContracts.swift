@@ -37,11 +37,32 @@ public enum PlaybackTransportStatus: Sendable, Equatable {
     case failed(String)
 }
 
-public enum PlayableKind: String, Sendable, Equatable {
+public enum PlayableKind: String, Sendable, Equatable, Codable {
     case song
     case album
     case playlist
     case station
+}
+
+/// Identifies the authoritative provider resource for engine execution (e.g. a radio station ID
+/// that must remain constant even as `itemChanged` updates the currently displayed track).
+public struct PlaybackTarget: Sendable, Equatable, Codable {
+    public let kind: PlayableKind
+    public let providerResourceID: String
+    public let title: String?
+    public let storefront: String?
+
+    public init(
+        kind: PlayableKind,
+        providerResourceID: String,
+        title: String? = nil,
+        storefront: String? = nil
+    ) {
+        self.kind = kind
+        self.providerResourceID = providerResourceID
+        self.title = title
+        self.storefront = storefront
+    }
 }
 
 public enum QueueOwner: String, Sendable, Equatable, Codable {

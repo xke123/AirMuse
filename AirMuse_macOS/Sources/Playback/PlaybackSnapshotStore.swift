@@ -56,12 +56,21 @@ public struct PlaybackSnapshot: Codable, Sendable, Equatable {
             let cleanBaseline = payload.baselineOrder.filter { validIDs.contains($0) }
             let cleanUpcoming = payload.upcomingOrder.filter { validIDs.contains($0) }
             let cleanCurrent = payload.currentEntryID.flatMap { validIDs.contains($0) ? $0 : nil }
-            // Remote station: only restore if current entry is valid; do not fabricate upcoming tracks
+            // Remote station: only restore if current entry is valid and has a real station target/ID; do not fabricate upcoming tracks
             if payload.owner == .remoteEngine {
+                let validStationID = payload.activeTarget?.providerResourceID
                 guard let cleanCurrent,
-                      let currentEntry = payload.entries.first(where: { $0.id == cleanCurrent }) else {
+                      let currentEntry = payload.entries.first(where: { $0.id == cleanCurrent }),
+                      let stationID = validStationID ?? (currentEntry.origin.kind == .station ? currentEntry.origin.sourceID : nil),
+                      !stationID.isEmpty else {
                     return nil
                 }
+                let safeTarget = PlaybackTarget(
+                    kind: .station,
+                    providerResourceID: stationID,
+                    title: payload.activeTarget?.title ?? currentEntry.origin.sourceTitle ?? currentEntry.track.title,
+                    storefront: payload.activeTarget?.storefront
+                )
                 return QueuePersistencePayload(
                     queueID: payload.queueID,
                     entries: [currentEntry],
@@ -69,6 +78,7 @@ public struct PlaybackSnapshot: Codable, Sendable, Equatable {
                     upcomingOrder: [],
                     history: [],
                     currentEntryID: currentEntry.id,
+                    activeTarget: safeTarget,
                     shuffleEnabled: false,
                     repeatMode: .off,
                     owner: .remoteEngine
@@ -81,6 +91,7 @@ public struct PlaybackSnapshot: Codable, Sendable, Equatable {
                 upcomingOrder: cleanUpcoming,
                 history: payload.history,
                 currentEntryID: cleanCurrent,
+                activeTarget: payload.activeTarget,
                 shuffleEnabled: payload.shuffleEnabled,
                 repeatMode: payload.repeatMode,
                 owner: payload.owner

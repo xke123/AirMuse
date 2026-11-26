@@ -7,8 +7,18 @@ import Infrastructure
 
 public enum LibraryQueueAction: Sendable {
     case playNow
+    case interruptNow
     case playNext
     case appendToQueue
+
+    public var intent: QueueInsertionIntent {
+        switch self {
+        case .playNow: return .replaceAndPlay
+        case .interruptNow: return .interruptAndPlay
+        case .playNext: return .prepend
+        case .appendToQueue: return .append
+        }
+    }
 }
 
 @MainActor
@@ -38,6 +48,13 @@ private func makeQueueContextMenu(
     menu.addItem(playNowItem)
 
     if type != .radio {
+        let interruptItem = NSMenuItem(title: "立即插播", action: #selector(QueueMenuActionProxy.trigger(_:)), keyEquivalent: "")
+        let interruptProxy = QueueMenuActionProxy { handler(.interruptNow) }
+        interruptItem.target = interruptProxy
+        interruptItem.representedObject = interruptProxy
+        interruptItem.image = NSImage(systemSymbolName: "bolt.fill", accessibilityDescription: nil)
+        menu.addItem(interruptItem)
+
         let nextItem = NSMenuItem(title: "下一首播放", action: #selector(QueueMenuActionProxy.trigger(_:)), keyEquivalent: "")
         let nextProxy = QueueMenuActionProxy { handler(.playNext) }
         nextItem.target = nextProxy
@@ -702,6 +719,7 @@ final class DetailOverlayView: NSView {
     public var onPlayAll: (() -> Void)?
     public var onBatchQueueAction: ((LibraryQueueAction) -> Void)?
     public var onTrackSelected: ((MusicTrack) -> Void)?
+    public var onTrackIndexSelected: ((Int, MusicTrack) -> Void)?
     public var onTrackQueueAction: ((MusicTrack, LibraryQueueAction) -> Void)?
 
     public var topContentInset: CGFloat = 0 {
@@ -867,6 +885,7 @@ final class DetailOverlayView: NSView {
                 row.heightAnchor.constraint(equalToConstant: 42).isActive = true
                 row.widthAnchor.constraint(equalToConstant: max(100, bounds.width - 12)).isActive = true
                 row.onClick = { [weak self] in
+                    self?.onTrackIndexSelected?(idx, track)
                     self?.onTrackSelected?(track)
                 }
                 row.onQueueAction = { [weak self] action in
@@ -903,6 +922,7 @@ open class LibraryContentView: NSView {
     public var onItemClicked: ((MediaCardItem) -> Void)?
     public var onItemQueueAction: ((MediaCardItem, LibraryQueueAction) -> Void)?
     public var onTrackSelected: ((MusicTrack) -> Void)?
+    public var onTrackIndexSelected: ((Int, MusicTrack) -> Void)?
     public var onTrackQueueAction: ((MusicTrack, LibraryQueueAction) -> Void)?
     public var onPlayAll: (([MusicTrack]) -> Void)?
     public var onDetailBatchQueueAction: (([MusicTrack], LibraryQueueAction) -> Void)?
@@ -1012,6 +1032,9 @@ open class LibraryContentView: NSView {
         detailOverlay.onBatchQueueAction = { [weak self] action in
             guard let self else { return }
             self.onDetailBatchQueueAction?(self.currentDetailTracks, action)
+        }
+        detailOverlay.onTrackIndexSelected = { [weak self] idx, track in
+            self?.onTrackIndexSelected?(idx, track)
         }
         detailOverlay.onTrackSelected = { [weak self] track in
             self?.onTrackSelected?(track)

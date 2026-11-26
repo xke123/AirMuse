@@ -55,7 +55,7 @@ struct QueueManagerTests {
         #expect(mgr.upcomingEntries.isEmpty)
 
         let end = mgr.advanceOnNaturalEnd(using: &rng)
-        #expect(end == .stop)
+        #expect(end == .exhausted)
     }
 
     @Test("T02: Duplicate track IDs from different origins have independent identities")
@@ -169,7 +169,7 @@ struct QueueManagerTests {
         try mgr.clearUpcoming()
         #expect(mgr.confirmedCurrentID == a.id)
         #expect(mgr.upcomingEntries.isEmpty)
-        #expect(mgr.advanceOnNaturalEnd(using: &rng) == .stop)
+        #expect(mgr.advanceOnNaturalEnd(using: &rng) == .exhausted)
 
         // Repeat-one still replays A even after clearUpcoming
         mgr.setRepeatMode(.one)
@@ -238,7 +238,7 @@ struct QueueManagerTests {
 
         let batchID = UUID()
         let a = makeEntry("A", batchID: batchID), b = makeEntry("B", batchID: batchID)
-        _ = mgr.replaceQueue(entries: [a, b], startIndex: 0, batchID: batchID, using: &rng)
+        _ = mgr.replaceQueue(entries: [a, b], startIndex: 0, loadingState: .loading(loadedCount: 2, totalCount: 4), batchID: batchID, using: &rng)
         mgr.confirmEntry(a.id)
 
         // User appends Z after initial page
@@ -247,14 +247,14 @@ struct QueueManagerTests {
 
         // Page 2 arrives: should insert after B and BEFORE Z!
         let c = makeEntry("C", batchID: batchID), d = makeEntry("D", batchID: batchID)
-        let committed = mgr.commitPaginatedBatch([c, d], batchID: batchID, expectedQueueID: mgr.queueID, expectedSessionScope: scope)
+        let committed = mgr.commitPaginatedBatch([c, d], batchID: batchID, expectedQueueID: mgr.queueID, expectedSessionScope: scope, loadingState: .complete(totalCount: 4), using: &rng)
         #expect(committed)
         #expect(mgr.upcomingEntries.map(\.id) == [b.id, c.id, d.id, z.id])
 
         // Clear invalidates batch; late page is rejected
         try mgr.clearUpcoming()
         let e = makeEntry("E", batchID: batchID)
-        let lateCommitted = mgr.commitPaginatedBatch([e], batchID: batchID, expectedQueueID: mgr.queueID, expectedSessionScope: scope)
+        let lateCommitted = mgr.commitPaginatedBatch([e], batchID: batchID, expectedQueueID: mgr.queueID, expectedSessionScope: scope, loadingState: .complete(totalCount: 5), using: &rng)
         #expect(!lateCommitted)
         #expect(mgr.upcomingEntries.isEmpty)
     }

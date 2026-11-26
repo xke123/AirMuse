@@ -130,12 +130,15 @@ public final class LiquidFusionQueueDockView: NSView, NSTableViewDataSource, NST
 
     public var onNavigateToOrigin: ((PlaybackOrigin) -> Void)?
     public var onReportError: ((String) -> Void)?
+    public var onRetryPagination: (() -> Void)?
     public private(set) var isExpanded: Bool = false
 
     private let coordinator: PlaybackCoordinatorV2
     private var snapshot: QueueSnapshot = .empty
     private var displayedEntries: [QueueEntry] = []
     private var streamTask: Task<Void, Never>?
+    private var feedbackTask: Task<Void, Never>?
+    private var transientFeedbackMessage: String?
     private var localClickMonitor: Any?
     private let motionOwnerID = "QueueDock-\(UUID().uuidString)"
     private var isAnimatingMorph: Bool = false
@@ -181,6 +184,7 @@ public final class LiquidFusionQueueDockView: NSView, NSTableViewDataSource, NST
 
     isolated deinit {
         streamTask?.cancel()
+        feedbackTask?.cancel()
         if let monitor = localClickMonitor {
             NSEvent.removeMonitor(monitor)
         }
@@ -348,8 +352,10 @@ public final class LiquidFusionQueueDockView: NSView, NSTableViewDataSource, NST
                 height: buttonSize
             )
         }
-        let targetW = min(max(240, w * 0.5), max(240, w - cornerMargin * 2))
-        let targetH = min(max(220, h * 0.7), max(220, h - cornerMargin * 2))
+        let maxAvailW = max(120, w - cornerMargin * 2)
+        let maxAvailH = max(120, h - cornerMargin * 2)
+        let targetW = min(max(240, w * 0.5), maxAvailW)
+        let targetH = min(max(220, h * 0.7), maxAvailH)
         return NSRect(
             x: max(cornerMargin, w - targetW - cornerMargin),
             y: cornerMargin,
@@ -451,9 +457,8 @@ public final class LiquidFusionQueueDockView: NSView, NSTableViewDataSource, NST
                 self.expandedContentView.animator().alphaValue = expanded ? 1.0 : 0.0
             },
             completion: { [weak self] committed in
-                guard let self else { return }
+                guard let self, committed else { return }
                 self.isAnimatingMorph = false
-                guard committed else { return }
                 self.expandedContentView.isHidden = !self.isExpanded
                 self.layoutMorphSubviews(in: self.morphGlassView.bounds)
             }
@@ -530,7 +535,27 @@ public final class LiquidFusionQueueDockView: NSView, NSTableViewDataSource, NST
                 oldIDs.indices.contains(row) ? oldIDs[row] : nil
             })
             let scrollOrigin = scrollView.contentView.bounds.origin
-            tableView.reloadData()
+            let diff = newIDs.difference(from: oldIDs)
+            if diff.removals.count + diff.insertions.count <= 64 {
+                tableView.beginUpdates()
+                var removeIndices = IndexSet()
+                for change in diff.removals {
+                    if case .remove(let offset, _, _) = change { removeIndices.insert(offset) }
+                }
+                if !removeIndices.isEmpty {
+                    tableView.removeRows(at: removeIndices, withAnimation: [])
+                }
+                var insertIndices = IndexSet()
+                for change in diff.insertions {
+                    if case .insert(let offset, _, _) = change { insertIndices.insert(offset) }
+                }
+                if !insertIndices.isEmpty {
+                    tableView.insertRows(at: insertIndices, withAnimation: [])
+                }
+                tableView.endUpdates()
+            } else {
+                tableView.reloadData()
+            }
             if !selectedIDs.isEmpty {
                 var newSelection = IndexSet()
                 for (idx, entry) in displayedEntries.enumerated() where selectedIDs.contains(entry.id) {
@@ -547,7 +572,7 @@ public final class LiquidFusionQueueDockView: NSView, NSTableViewDataSource, NST
     private func updateToolbarAndStatus() {
         let caps = snapshot.capabilities
 
-        clearButton.isEnabled = caps.canClear && !displayedEntries.isEmpty
+        clearButton.isEnabled = caps.canClear && snapshot.canClearUpcoming
         clearButton.toolTip = caps.canClear ? "清空待播队列" : "当前播放模式不支持清空"
 
         undoButton.isHidden = !snapshot.canUndo
@@ -566,19 +591,33 @@ public final class LiquidFusionQueueDockView: NSView, NSTableViewDataSource, NST
         repeatAllButton.toolTip = caps.canRepeatAll ? "列表循环" : "当前播放模式不支持列表循环"
 
         retryButton.isHidden = true
-        if snapshot.owner == .remoteEngine {
+        if let transientFeedbackMessage {
+            statusLabel.stringValue = transientFeedbackMessage
+        } else if snapshot.owner == .remoteEngine {
             statusLabel.stringValue = "电台自动续播中"
             emptyStateLabel.stringValue = "电台由远端自动续播"
+            emptyStateLabel.isHidden = !displayedEntries.isEmpty
+        } else if snapshot.isPendingTargetFailed {
+            statusLabel.stringValue = "当前曲目播放失败"
+            retryButton.isHidden = false
+            emptyStateLabel.isHidden = !displayedEntries.isEmpty
+        } else if snapshot.playbackPhase == .waitingForPage {
+            statusLabel.stringValue = "等待下一页加载..."
             emptyStateLabel.isHidden = !displayedEntries.isEmpty
         } else {
             switch snapshot.loadingState {
             case .idle, .complete:
-                statusLabel.stringValue = displayedEntries.isEmpty ? "待播队列" : "接下来播放 · \(displayedEntries.count) 首"
-            case .loading(let loaded, let total):
-                if let total {
-                    statusLabel.stringValue = "正在加载 \(loaded)/\(total) 首..."
+                if snapshot.requestedShuffle && !snapshot.effectiveShuffle {
+                    statusLabel.stringValue = "正在准备随机..."
                 } else {
-                    statusLabel.stringValue = "已加载 \(loaded) 首..."
+                    statusLabel.stringValue = displayedEntries.isEmpty ? "待播队列" : "接下来播放 · \(displayedEntries.count) 首"
+                }
+            case .loading(let loaded, let total):
+                let shuffleNote = snapshot.requestedShuffle ? " · 正在准备随机" : ""
+                if let total {
+                    statusLabel.stringValue = "正在加载 \(loaded)/\(total) 首...\(shuffleNote)"
+                } else {
+                    statusLabel.stringValue = "已加载 \(loaded) 首...\(shuffleNote)"
                 }
             case .partial(let loaded, let total):
                 statusLabel.stringValue = total.map { "已加载 \(loaded)/\($0) 首" } ?? "已加载 \(loaded) 首"
@@ -647,9 +686,25 @@ public final class LiquidFusionQueueDockView: NSView, NSTableViewDataSource, NST
         }
     }
 
+    public func showFeedback(_ message: String, durationSeconds: Double = 3.5) {
+        feedbackTask?.cancel()
+        transientFeedbackMessage = message
+        updateToolbarAndStatus()
+        feedbackTask = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(durationSeconds))
+            guard !Task.isCancelled, let self else { return }
+            self.transientFeedbackMessage = nil
+            self.updateToolbarAndStatus()
+        }
+    }
+
     @objc private func retryClicked() {
-        Task {
-            try? await coordinator.retryPendingOrCurrent()
+        if case .failed(_, _, _, let retryable) = snapshot.loadingState, retryable {
+            onRetryPagination?()
+        } else {
+            Task {
+                try? await coordinator.retryPendingOrCurrent()
+            }
         }
     }
 

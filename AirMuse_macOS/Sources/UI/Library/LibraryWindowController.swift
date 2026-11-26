@@ -96,6 +96,9 @@ open class LibraryWindowController: NSWindowController {
     private var currentDetailNextURL: URL?
     private var currentDetailIsLibrary: Bool = false
     private var currentDetailTotalCount: Int?
+    private var playIntentGeneration: UInt64 = 0
+    private var pendingQueueSubmissionChain: Task<Void, Never>?
+    private var activeCollectionActionKeys: Set<String> = []
 
     // Dynamic remote categories cached per tab index (0: Home recommendations, 1: Browse editorial, 2: Radio)
     private var loadedEditorialCategories: [Int: [AmpCategory]] = [:]
@@ -139,7 +142,8 @@ open class LibraryWindowController: NSWindowController {
         browseLoadTask?.cancel()
         detailLoadTask?.cancel()
         artistLoadTask?.cancel()
-        queuePaginationLoader.cancel()
+        let loader = queuePaginationLoader
+        Task { await loader.cancel() }
         MotionCoordinator.shared.cancel(key: TransitionKey(owner: "LibraryWindow-\(ObjectIdentifier(self).hashValue)", channel: "hover"))
     }
 
@@ -400,7 +404,7 @@ open class LibraryWindowController: NSWindowController {
                 switch snap.sessionState {
                 case .signedOut, .expired, .invalidating:
                     if prevState != snap.sessionState {
-                        self.queuePaginationLoader.cancel()
+                        Task { await self.queuePaginationLoader.cancel() }
                         self.loadedEditorialCategories.removeAll()
                         self.handleTabSelected(self.activeTabIndex)
                     }
@@ -548,13 +552,13 @@ open class LibraryWindowController: NSWindowController {
             self.handleItemClicked(item)
         }
 
-        contentView.onTrackSelected = { [weak self] track in
+        contentView.onTrackIndexSelected = { [weak self] idx, track in
             guard let self else { return }
-            AppLogger.shared.log(category: .userAction, level: .info, message: "用户在曲目列表中选中播放: \(track.title) - \(track.artistName) (ID: \(track.id))")
+            AppLogger.shared.log(category: .userAction, level: .info, message: "用户在曲目列表中选中播放: \(track.title) - \(track.artistName) (row=\(idx), ID: \(track.id))")
             let allTracks = self.contentView.currentDetailTracksList
             let sourceTracks = allTracks.isEmpty ? [track] : allTracks
-            let index = sourceTracks.firstIndex(where: { $0.id == track.id }) ?? 0
-            self.playDetailTracks(sourceTracks, startIndex: index)
+            let safeIndex = sourceTracks.indices.contains(idx) ? idx : (sourceTracks.firstIndex(where: { $0.id == track.id }) ?? 0)
+            self.playDetailTracks(sourceTracks, startIndex: safeIndex)
         }
 
         contentView.onTrackQueueAction = { [weak self] track, action in
@@ -596,6 +600,13 @@ open class LibraryWindowController: NSWindowController {
 
         queueDockView.onReportError = { message in
             AppLogger.shared.log(category: .playback, level: .warn, message: "队列操作提示: \(message)")
+        }
+
+        queueDockView.onRetryPagination = { [weak self] in
+            guard let self else { return }
+            Task {
+                await self.queuePaginationLoader.retryFailedPagination()
+            }
         }
 
         // Initial tab: 主页
@@ -1601,8 +1612,11 @@ open class LibraryWindowController: NSWindowController {
             let index = entries.firstIndex(where: { $0.track.id == clickedTrack.id }) ?? 0
             let effectiveEntries = entries.isEmpty ? [QueueEntry(track: clickedTrack, origin: origin)] : entries
             let kind: PlayableKind = (item.type == .radio) ? .station : .song
-            queuePaginationLoader.cancel()
+            playIntentGeneration &+= 1
+            let expectedIntentGen = playIntentGeneration
             Task {
+                await self.queuePaginationLoader.cancel()
+                guard self.playIntentGeneration == expectedIntentGen else { return }
                 do {
                     try await self.coordinator.playEntries(effectiveEntries, startIndex: index, kind: kind)
                 } catch {
@@ -1787,8 +1801,11 @@ open class LibraryWindowController: NSWindowController {
             artworkURL: detail.artist.artworkURL
         )
         let entries = tracks.map { QueueEntry(track: $0, origin: origin) }
-        queuePaginationLoader.cancel()
+        playIntentGeneration &+= 1
+        let expectedIntentGen = playIntentGeneration
         Task {
+            await self.queuePaginationLoader.cancel()
+            guard self.playIntentGeneration == expectedIntentGen else { return }
             try? await coordinator.playEntries(entries, startIndex: 0)
         }
     }
@@ -1895,7 +1912,7 @@ open class LibraryWindowController: NSWindowController {
                     artworkURL: station.artworkURL ?? detail.artist.artworkURL
                 )
                 let entry = QueueEntry(track: track, origin: origin)
-                self.queuePaginationLoader.cancel()
+                await self.queuePaginationLoader.cancel()
                 try? await self.coordinator.playEntries([entry], startIndex: 0, kind: .station)
             }
         }
@@ -1976,17 +1993,21 @@ open class LibraryWindowController: NSWindowController {
             ? .loading(loadedCount: entries.count, totalCount: totalCount)
             : .complete(totalCount: entries.count)
 
-        queuePaginationLoader.cancel()
+        playIntentGeneration &+= 1
+        let expectedIntentGen = playIntentGeneration
         Task {
+            await self.queuePaginationLoader.cancel()
+            guard self.playIntentGeneration == expectedIntentGen else { return }
             do {
                 try await self.coordinator.playEntries(entries, startIndex: startIndex, loadingState: loadingState, batchID: batchID)
-                if let nextURL, let provider = self.appleMusicProvider {
+                if let nextURL, let provider = self.appleMusicProvider, self.playIntentGeneration == expectedIntentGen {
                     let snap = await self.coordinator.currentStructuredQueueSnapshot()
-                    self.queuePaginationLoader.startBackgroundPagination(
+                    await self.queuePaginationLoader.startBackgroundPagination(
                         coordinator: self.coordinator,
                         batchID: batchID,
                         expectedQueueID: snap.queueID,
                         expectedSessionScope: snap.sessionScope,
+                        expectedDestructiveEpoch: snap.destructiveEpoch,
                         origin: origin,
                         initialLoadedCount: entries.count,
                         initialNextURL: nextURL,
@@ -2006,6 +2027,7 @@ open class LibraryWindowController: NSWindowController {
         guard !tracks.isEmpty else { return }
         let actionName: String = switch action {
         case .playNow: "立即播放"
+        case .interruptNow: "立即插播"
         case .playNext: "下一首播放"
         case .appendToQueue: "添加到队列"
         }
@@ -2015,26 +2037,50 @@ open class LibraryWindowController: NSWindowController {
             message: "用户在音乐库触发队列操作 [\(actionName)]: \(tracks.count) 首 (首曲: \(tracks[0].title), 来源: \(origin.displayTitle))"
         )
         let entries = tracks.map { QueueEntry(track: $0, origin: origin) }
-        Task {
+        let intent = action.intent
+
+        if intent == .replaceAndPlay || intent == .interruptAndPlay {
+            playIntentGeneration &+= 1
+        }
+        let expectedIntentGen = playIntentGeneration
+
+        let prevChain = pendingQueueSubmissionChain
+        let task = Task {
+            if intent == .prepend || intent == .append {
+                await prevChain?.value
+            }
+            let snap = await self.coordinator.currentStructuredQueueSnapshot()
+            if (intent == .replaceAndPlay || intent == .interruptAndPlay), self.playIntentGeneration != expectedIntentGen {
+                return
+            }
+            if intent == .replaceAndPlay {
+                await self.queuePaginationLoader.cancel()
+            }
             do {
-                switch action {
-                case .playNow:
-                    self.queuePaginationLoader.cancel()
-                    try await self.coordinator.playEntries(entries, startIndex: 0)
-                case .playNext:
-                    try await self.coordinator.insertNext(entries)
-                case .appendToQueue:
-                    try await self.coordinator.append(entries)
+                let res = try await self.coordinator.submitIntent(
+                    intent,
+                    entries: entries,
+                    startIndex: 0,
+                    expectedQueueID: (intent == .prepend || intent == .append) ? snap.queueID : nil,
+                    expectedDestructiveEpoch: (intent == .prepend || intent == .append) ? snap.destructiveEpoch : nil
+                )
+                if let msg = res.message {
+                    self.queueDockView.showFeedback(msg)
                 }
             } catch let editErr as QueueEditError {
                 if case .remoteQueueRequiresSwitch(let stationTitle) = editErr {
                     self.promptRemoteStationSwitch(stationTitle: stationTitle, entries: entries, action: action)
                 } else {
+                    self.queueDockView.showFeedback(editErr.localizedDescription)
                     self.handlePlaybackError(editErr)
                 }
             } catch {
+                self.queueDockView.showFeedback("队列操作失败: \(error.localizedDescription)")
                 self.handlePlaybackError(error)
             }
+        }
+        if intent == .prepend || intent == .append {
+            pendingQueueSubmissionChain = task
         }
     }
 
@@ -2061,6 +2107,13 @@ open class LibraryWindowController: NSWindowController {
             guard let provider = appleMusicProvider else { return }
             let isAlbum = (item.type == .album)
             let sourceID = isAlbum ? (item.albumID ?? item.id) : (item.playlistID ?? item.id)
+            let actionKey = "\(sourceID)|\(action.intent.rawValue)"
+            guard !activeCollectionActionKeys.contains(actionKey) else {
+                queueDockView.showFeedback("正在加载「\(item.title)」，请稍候…")
+                return
+            }
+            activeCollectionActionKeys.insert(actionKey)
+
             let isLib = isAlbum ? (sourceID.hasPrefix("l.") || sourceID.hasPrefix("i.")) : (sourceID.hasPrefix("p.") || sourceID.hasPrefix("l."))
             let origin = PlaybackOrigin(
                 kind: isAlbum ? .album : .playlist,
@@ -2070,28 +2123,40 @@ open class LibraryWindowController: NSWindowController {
                 artworkURL: item.artworkURL
             )
 
-            Task {
+            let intent = action.intent
+            if intent == .replaceAndPlay || intent == .interruptAndPlay {
+                playIntentGeneration &+= 1
+            }
+            let expectedIntentGen = playIntentGeneration
+            let prevChain = pendingQueueSubmissionChain
+
+            let task = Task {
+                defer { self.activeCollectionActionKeys.remove(actionKey) }
                 do {
+                    // Capture target queue/epoch at click time for prepend/append
+                    let preSnap = await self.coordinator.currentStructuredQueueSnapshot()
                     let firstPage = isAlbum
                         ? try await provider.fetchAlbumTracksPage(albumID: sourceID, isLibrary: isLib)
                         : try await provider.fetchPlaylistTracksPage(playlistID: sourceID, isLibrary: isLib)
                     guard !firstPage.tracks.isEmpty else { return }
 
-                    if action == .playNow {
+                    if intent == .replaceAndPlay {
+                        await self.queuePaginationLoader.cancel()
+                        guard self.playIntentGeneration == expectedIntentGen else { return }
                         let batchID = UUID()
                         let entries = firstPage.tracks.map { QueueEntry(track: $0, origin: origin, batchID: batchID) }
                         let loadingState: QueueLoadingState = firstPage.nextURL != nil
                             ? .loading(loadedCount: entries.count, totalCount: firstPage.totalCount)
                             : .complete(totalCount: entries.count)
-                        self.queuePaginationLoader.cancel()
                         try await self.coordinator.playEntries(entries, startIndex: 0, loadingState: loadingState, batchID: batchID)
-                        if let nextURL = firstPage.nextURL {
+                        if let nextURL = firstPage.nextURL, self.playIntentGeneration == expectedIntentGen {
                             let snap = await self.coordinator.currentStructuredQueueSnapshot()
-                            self.queuePaginationLoader.startBackgroundPagination(
+                            await self.queuePaginationLoader.startBackgroundPagination(
                                 coordinator: self.coordinator,
                                 batchID: batchID,
                                 expectedQueueID: snap.queueID,
                                 expectedSessionScope: snap.sessionScope,
+                                expectedDestructiveEpoch: snap.destructiveEpoch,
                                 origin: origin,
                                 initialLoadedCount: entries.count,
                                 initialNextURL: nextURL,
@@ -2102,7 +2167,7 @@ open class LibraryWindowController: NSWindowController {
                             }
                         }
                     } else {
-                        // Whole-collection insertNext/append loads all pages first so batch order is guaranteed
+                        // Whole-collection interrupt/prepend/append loads all pages first so batch order is guaranteed
                         var allTracks = firstPage.tracks
                         var nextURL = firstPage.nextURL
                         var visited: Set<String> = []
@@ -2114,11 +2179,43 @@ open class LibraryWindowController: NSWindowController {
                             allTracks.append(contentsOf: page.tracks)
                             nextURL = page.nextURL
                         }
-                        self.handleTracksQueueAction(allTracks, origin: origin, action: action)
+                        if nextURL != nil {
+                            self.queueDockView.showFeedback("歌单过大（超过 100 页），已截断加载")
+                        }
+                        if intent == .prepend || intent == .append {
+                            await prevChain?.value
+                        } else if self.playIntentGeneration != expectedIntentGen {
+                            return
+                        }
+                        let entries = allTracks.map { QueueEntry(track: $0, origin: origin) }
+                        let res = try await self.coordinator.submitIntent(
+                            intent,
+                            entries: entries,
+                            startIndex: 0,
+                            expectedQueueID: (intent == .prepend || intent == .append) ? preSnap.queueID : nil,
+                            expectedDestructiveEpoch: (intent == .prepend || intent == .append) ? preSnap.destructiveEpoch : nil
+                        )
+                        if let msg = res.message {
+                            self.queueDockView.showFeedback(msg)
+                        }
+                    }
+                } catch let editErr as QueueEditError {
+                    if case .remoteQueueRequiresSwitch(let stationTitle) = editErr {
+                        let fallbackEntries = [QueueEntry]()
+                        _ = fallbackEntries
+                        self.queueDockView.showFeedback(editErr.localizedDescription)
+                        _ = stationTitle
+                    } else {
+                        self.queueDockView.showFeedback(editErr.localizedDescription)
+                        self.handlePlaybackError(editErr)
                     }
                 } catch {
+                    self.queueDockView.showFeedback("加载失败: \(error.localizedDescription)")
                     self.handlePlaybackError(error)
                 }
+            }
+            if intent == .prepend || intent == .append {
+                pendingQueueSubmissionChain = task
             }
 
         case .artist:
@@ -2129,19 +2226,22 @@ open class LibraryWindowController: NSWindowController {
     private func promptRemoteStationSwitch(stationTitle: String?, entries: [QueueEntry], action: LibraryQueueAction) {
         let alert = NSAlert()
         alert.alertStyle = .informational
-        alert.messageText = "切换为本地播放队列？"
+        alert.messageText = "结束电台并播放所选歌曲？"
         let name = (stationTitle?.isEmpty == false) ? "「\(stationTitle!)」" : "电台"
-        alert.informativeText = "当前正在收听\(name)，电台不支持直接插入或追加普通曲目。是否停止电台并改用新队列？"
-        alert.addButton(withTitle: "切换并\(action == .playNext ? "下一首播放" : "添加到队列")")
-        alert.addButton(withTitle: "取消")
+        alert.informativeText = "当前正在收听\(name)，电台不支持直接插入或追加普通曲目。是否结束当前电台并改用所选歌曲建立本地队列？"
+        alert.addButton(withTitle: "结束电台并播放所选歌曲")
+        alert.addButton(withTitle: "继续收听电台")
         if alert.runModal() == .alertFirstButtonReturn {
-            AppLogger.shared.log(category: .queue, level: .info, message: "用户确认从电台切换为本地队列并执行队列操作")
-            queuePaginationLoader.cancel()
+            AppLogger.shared.log(category: .queue, level: .info, message: "用户确认结束电台并切换为本地队列")
+            playIntentGeneration &+= 1
+            let expectedIntentGen = playIntentGeneration
             Task {
+                await self.queuePaginationLoader.cancel()
+                guard self.playIntentGeneration == expectedIntentGen else { return }
                 try? await self.coordinator.playEntries(entries, startIndex: 0)
             }
         } else {
-            AppLogger.shared.log(category: .queue, level: .info, message: "用户取消电台切换本地队列，保持当前电台播放")
+            AppLogger.shared.log(category: .queue, level: .info, message: "用户选择继续收听电台，保持当前电台播放")
         }
     }
 

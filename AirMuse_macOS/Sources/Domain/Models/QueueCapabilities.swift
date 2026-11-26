@@ -6,6 +6,7 @@ import Foundation
 /// Remote radio/station queues default to restricted/unknown until verified.
 public struct QueueCapabilities: Sendable, Codable, Equatable {
     public var canRead: Bool
+    public var canPlayEntry: Bool
     public var canInsertNext: Bool
     public var canAppend: Bool
     public var canRemove: Bool
@@ -19,6 +20,7 @@ public struct QueueCapabilities: Sendable, Codable, Equatable {
 
     public init(
         canRead: Bool = false,
+        canPlayEntry: Bool = false,
         canInsertNext: Bool = false,
         canAppend: Bool = false,
         canRemove: Bool = false,
@@ -31,6 +33,7 @@ public struct QueueCapabilities: Sendable, Codable, Equatable {
         canSkipPrevious: Bool = false
     ) {
         self.canRead = canRead
+        self.canPlayEntry = canPlayEntry
         self.canInsertNext = canInsertNext
         self.canAppend = canAppend
         self.canRemove = canRemove
@@ -46,6 +49,7 @@ public struct QueueCapabilities: Sendable, Codable, Equatable {
     /// Full local coordinator queue capabilities.
     public static let fullLocal = QueueCapabilities(
         canRead: true,
+        canPlayEntry: true,
         canInsertNext: true,
         canAppend: true,
         canRemove: true,
@@ -62,6 +66,7 @@ public struct QueueCapabilities: Sendable, Codable, Equatable {
     /// no local queue editing, shuffle/repeat disabled, next skip allowed by MusicKit.
     public static let remoteStationDefault = QueueCapabilities(
         canRead: false,
+        canPlayEntry: false,
         canInsertNext: false,
         canAppend: false,
         canRemove: false,
