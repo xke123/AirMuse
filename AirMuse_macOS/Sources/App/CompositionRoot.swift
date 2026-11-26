@@ -51,7 +51,8 @@ public final class CompositionRoot {
 
         let store = PlaybackStore()
         self.playbackStore = store
-        self.playbackSnapshotStore = PlaybackSnapshotStore()
+        let snapshotStore = PlaybackSnapshotStore()
+        self.playbackSnapshotStore = snapshotStore
 
         let runtime = WebRuntime()
         self.webRuntime = runtime
@@ -63,7 +64,8 @@ public final class CompositionRoot {
         self.playbackCoordinatorV2 = PlaybackCoordinatorV2(
             store: store,
             engine: engine,
-            clock: clock
+            clock: clock,
+            snapshotStore: snapshotStore
         )
 
         let authBackend = AmpSessionAuthBackend(ampClient: .shared)

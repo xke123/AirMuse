@@ -387,9 +387,24 @@ public actor AppleMusicProvider:
         return try await ampClient.fetchAlbumTracks(albumID: albumID, isLibrary: isLibrary, generation: gen)
     }
 
+    public func fetchAlbumTracksPage(albumID: String, isLibrary: Bool? = nil) async throws -> AppleMusicAmpClient.TrackPage {
+        let gen = await sessionAdapter.currentGeneration
+        return try await ampClient.fetchAlbumTracksPage(albumID: albumID, isLibrary: isLibrary, generation: gen)
+    }
+
     public func fetchPlaylistTracks(playlistID: String, isLibrary: Bool? = nil) async throws -> [MusicTrack] {
         let gen = await sessionAdapter.currentGeneration
         return try await ampClient.fetchPlaylistTracks(playlistID: playlistID, isLibrary: isLibrary, generation: gen)
+    }
+
+    public func fetchPlaylistTracksPage(playlistID: String, isLibrary: Bool? = nil) async throws -> AppleMusicAmpClient.TrackPage {
+        let gen = await sessionAdapter.currentGeneration
+        return try await ampClient.fetchPlaylistTracksPage(playlistID: playlistID, isLibrary: isLibrary, generation: gen)
+    }
+
+    public func fetchTracksPage(nextURL: URL, isLibrary: Bool) async throws -> AppleMusicAmpClient.TrackPage {
+        let gen = await sessionAdapter.currentGeneration
+        return try await ampClient.fetchTracksPage(nextURL: nextURL, isLibrary: isLibrary, generation: gen)
     }
 
     public func fetchArtistTopSongs(artistID: String, isLibrary: Bool? = nil) async throws -> [MusicTrack] {

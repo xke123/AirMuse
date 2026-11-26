@@ -44,7 +44,7 @@ public enum PlayableKind: String, Sendable, Equatable {
     case station
 }
 
-public enum QueueOwner: String, Sendable, Equatable {
+public enum QueueOwner: String, Sendable, Equatable, Codable {
     case localCoordinator
     case remoteEngine
 }

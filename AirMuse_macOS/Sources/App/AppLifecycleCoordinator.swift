@@ -213,6 +213,7 @@ public final class AppLifecycleCoordinator {
                         await AppleMusicAmpClient.shared.setUserToken(rec.value)
                     }
                     if snap.sessionState == .authenticated {
+                        await self.coordinator.restoreSnapshotIfNeeded(providerID: ctx.providerID, accountID: ctx.accountID)
                         try? await self.root.webEngine.prepare(sessionContext: ctx, deadlineSeconds: 12.0)
                     }
                 } else {

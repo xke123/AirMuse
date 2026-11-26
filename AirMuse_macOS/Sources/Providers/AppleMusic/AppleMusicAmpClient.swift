@@ -736,40 +736,79 @@ public actor AppleMusicAmpClient {
 
     // MARK: - Collection Detail Tracks (Albums & Playlists & Artists)
 
+    public struct TrackPage: Sendable, Equatable {
+        public let tracks: [MusicTrack]
+        public let nextURL: URL?
+        public let totalCount: Int?
+
+        public init(tracks: [MusicTrack], nextURL: URL? = nil, totalCount: Int? = nil) {
+            self.tracks = tracks
+            self.nextURL = nextURL
+            self.totalCount = totalCount
+        }
+    }
+
     public func fetchAlbumTracks(albumID: String, isLibrary: Bool? = nil, limit: Int = 100, generation: Int? = nil) async throws -> [MusicTrack] {
+        try await fetchAlbumTracksPage(albumID: albumID, isLibrary: isLibrary, limit: limit, generation: generation).tracks
+    }
+
+    public func fetchAlbumTracksPage(albumID: String, isLibrary: Bool? = nil, limit: Int = 100, generation: Int? = nil) async throws -> TrackPage {
         let isLib = isLibrary ?? (albumID.hasPrefix("l.") || albumID.hasPrefix("i."))
         let urlStr = isLib
             ? "https://amp-api.music.apple.com/v1/me/library/albums/\(albumID)/tracks?include=catalog&limit=\(limit)&l=zh-Hans-CN&platform=web"
             : "https://amp-api.music.apple.com/v1/catalog/\(storefront)/albums/\(albumID)/tracks?limit=\(limit)&l=zh-Hans-CN&platform=web"
 
-        guard let url = URL(string: urlStr) else { return [] }
+        guard let url = URL(string: urlStr) else { return TrackPage(tracks: []) }
         let data = try await execute(url: url, needAuth: isLib, generation: generation)
-        let tracks = parseSongsData(data: data)
+        let page = parseSongsPage(data: data)
         AppLogger.shared.log(
             category: .ampAPI,
             level: .info,
-            message: "拉取\(isLib ? "资料库" : "目录")专辑 [\(albumID)] 曲目列表完成: 共 \(tracks.count) 首",
-            details: tracks.first.map { "首曲: \($0.title) - \($0.artistName)" }
+            message: "拉取\(isLib ? "资料库" : "目录")专辑 [\(albumID)] 曲目页完成: 共 \(page.tracks.count) 首 (hasNext=\(page.nextURL != nil))",
+            details: page.tracks.first.map { "首曲: \($0.title) - \($0.artistName)" }
         )
-        return tracks
+        return page
     }
 
     public func fetchPlaylistTracks(playlistID: String, isLibrary: Bool? = nil, limit: Int = 100, generation: Int? = nil) async throws -> [MusicTrack] {
+        try await fetchPlaylistTracksPage(playlistID: playlistID, isLibrary: isLibrary, limit: limit, generation: generation).tracks
+    }
+
+    public func fetchPlaylistTracksPage(playlistID: String, isLibrary: Bool? = nil, limit: Int = 100, generation: Int? = nil) async throws -> TrackPage {
         let isLib = isLibrary ?? (playlistID.hasPrefix("p.") || playlistID.hasPrefix("l."))
         let urlStr = isLib
             ? "https://amp-api.music.apple.com/v1/me/library/playlists/\(playlistID)/tracks?include=catalog&limit=\(limit)&l=zh-Hans-CN&platform=web"
             : "https://amp-api.music.apple.com/v1/catalog/\(storefront)/playlists/\(playlistID)/tracks?limit=\(limit)&l=zh-Hans-CN&platform=web"
 
-        guard let url = URL(string: urlStr) else { return [] }
+        guard let url = URL(string: urlStr) else { return TrackPage(tracks: []) }
         let data = try await execute(url: url, needAuth: isLib, generation: generation)
-        let tracks = parseSongsData(data: data)
+        let page = parseSongsPage(data: data)
         AppLogger.shared.log(
             category: .ampAPI,
             level: .info,
-            message: "拉取\(isLib ? "资料库" : "目录")歌单 [\(playlistID)] 曲目列表完成: 共 \(tracks.count) 首",
-            details: tracks.first.map { "首曲: \($0.title) - \($0.artistName)" }
+            message: "拉取\(isLib ? "资料库" : "目录")歌单 [\(playlistID)] 曲目页完成: 共 \(page.tracks.count) 首 (hasNext=\(page.nextURL != nil))",
+            details: page.tracks.first.map { "首曲: \($0.title) - \($0.artistName)" }
         )
-        return tracks
+        return page
+    }
+
+    public func fetchTracksPage(nextURL: URL, isLibrary: Bool, generation: Int? = nil) async throws -> TrackPage {
+        let data = try await execute(url: nextURL, needAuth: isLibrary, generation: generation)
+        return parseSongsPage(data: data)
+    }
+
+    private func parseSongsPage(data: Data) -> TrackPage {
+        let tracks = parseSongsData(data: data)
+        guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            return TrackPage(tracks: tracks)
+        }
+        var nextURL: URL?
+        if let nextStr = json["next"] as? String, !nextStr.isEmpty {
+            let fullStr = nextStr.hasPrefix("http") ? nextStr : "https://amp-api.music.apple.com\(nextStr)"
+            nextURL = URL(string: fullStr)
+        }
+        let total = (json["meta"] as? [String: Any])?["total"] as? Int
+        return TrackPage(tracks: tracks, nextURL: nextURL, totalCount: total)
     }
 
     public func fetchArtistTopSongs(artistID: String, isLibrary: Bool? = nil, limit: Int = 100, generation: Int? = nil) async throws -> [MusicTrack] {

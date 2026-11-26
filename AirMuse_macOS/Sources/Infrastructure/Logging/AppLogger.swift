@@ -22,6 +22,7 @@ public enum LogCategory: String, Sendable, CaseIterable {
     case musicKit   = "MUSICKIT"
     case render     = "RENDER"
     case playback   = "PLAYBACK"
+    case queue      = "QUEUE"
     case lyrics     = "LYRICS"
     case cache      = "CACHE"
     case database   = "DATABASE"

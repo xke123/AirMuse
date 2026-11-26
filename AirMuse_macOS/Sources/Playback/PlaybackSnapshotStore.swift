@@ -4,11 +4,15 @@ import Domain
 // MARK: - PlaybackSnapshot
 
 public struct PlaybackSnapshot: Codable, Sendable, Equatable {
+    public static let currentSchemaVersion = 2
+
     public let schemaVersion: Int
     public let providerID: String
     public let accountID: String?
+    public let storefront: String?
     public let queueTracks: [MusicTrack]
     public let currentIndex: Int
+    public let queuePayload: QueuePersistencePayload?
     public let positionMs: Int64
     public let volume: Float
     public let repeatMode: PlaybackState.RepeatMode
@@ -16,11 +20,13 @@ public struct PlaybackSnapshot: Codable, Sendable, Equatable {
     public let savedAt: Date
 
     public init(
-        schemaVersion: Int = 1,
+        schemaVersion: Int = PlaybackSnapshot.currentSchemaVersion,
         providerID: String,
         accountID: String?,
-        queueTracks: [MusicTrack],
-        currentIndex: Int,
+        storefront: String? = nil,
+        queueTracks: [MusicTrack] = [],
+        currentIndex: Int = 0,
+        queuePayload: QueuePersistencePayload? = nil,
         positionMs: Int64,
         volume: Float,
         repeatMode: PlaybackState.RepeatMode,
@@ -30,20 +36,83 @@ public struct PlaybackSnapshot: Codable, Sendable, Equatable {
         self.schemaVersion = schemaVersion
         self.providerID = providerID
         self.accountID = accountID
+        self.storefront = storefront
         self.queueTracks = queueTracks
         self.currentIndex = currentIndex
+        self.queuePayload = queuePayload
         self.positionMs = positionMs
         self.volume = volume
         self.repeatMode = repeatMode
         self.shuffleEnabled = shuffleEnabled
         self.savedAt = savedAt
     }
+
+    /// Migrates a v1 snapshot (or validates a v2 snapshot) into a `QueuePersistencePayload`.
+    /// Unknown or corrupted indices are safely clamped or dropped.
+    public func resolvedQueuePayload() -> QueuePersistencePayload? {
+        if schemaVersion >= 2, let payload = queuePayload {
+            // Validate referential integrity
+            let validIDs = Set(payload.entries.map(\.id))
+            let cleanBaseline = payload.baselineOrder.filter { validIDs.contains($0) }
+            let cleanUpcoming = payload.upcomingOrder.filter { validIDs.contains($0) }
+            let cleanCurrent = payload.currentEntryID.flatMap { validIDs.contains($0) ? $0 : nil }
+            // Remote station: only restore if current entry is valid; do not fabricate upcoming tracks
+            if payload.owner == .remoteEngine {
+                guard let cleanCurrent,
+                      let currentEntry = payload.entries.first(where: { $0.id == cleanCurrent }) else {
+                    return nil
+                }
+                return QueuePersistencePayload(
+                    queueID: payload.queueID,
+                    entries: [currentEntry],
+                    baselineOrder: [currentEntry.id],
+                    upcomingOrder: [],
+                    history: [],
+                    currentEntryID: currentEntry.id,
+                    shuffleEnabled: false,
+                    repeatMode: .off,
+                    owner: .remoteEngine
+                )
+            }
+            return QueuePersistencePayload(
+                queueID: payload.queueID,
+                entries: payload.entries,
+                baselineOrder: cleanBaseline,
+                upcomingOrder: cleanUpcoming,
+                history: payload.history,
+                currentEntryID: cleanCurrent,
+                shuffleEnabled: payload.shuffleEnabled,
+                repeatMode: payload.repeatMode,
+                owner: payload.owner
+            )
+        }
+
+        // Schema v1 migration: convert tracks + currentIndex to independent QueueEntry IDs with .unknown origin
+        guard schemaVersion == 1, !queueTracks.isEmpty else {
+            return nil
+        }
+        let entries = queueTracks.map { QueueEntry(track: $0, origin: .unknown) }
+        let validIndex = (0..<entries.count).contains(currentIndex) ? currentIndex : 0
+        let currentID = entries[validIndex].id
+        let upcomingIDs = Array(entries[(validIndex + 1)...].map(\.id))
+        return QueuePersistencePayload(
+            queueID: UUID(),
+            entries: entries,
+            baselineOrder: entries.map(\.id),
+            upcomingOrder: upcomingIDs,
+            history: [],
+            currentEntryID: currentID,
+            shuffleEnabled: shuffleEnabled,
+            repeatMode: repeatMode,
+            owner: .localCoordinator
+        )
+    }
 }
 
 // MARK: - PlaybackSnapshotStore
 
 /// Persists playback queue, position, volume, and repeat/shuffle state atomically.
-/// Private snapshots are isolated by `accountID` so unknown or mismatched accounts
+/// Private snapshots are isolated by `accountID` and `providerID` so unknown or mismatched accounts
 /// never mount another user's queue.
 public actor PlaybackSnapshotStore {
     private let fileURL: URL
@@ -67,13 +136,14 @@ public actor PlaybackSnapshotStore {
         try data.write(to: fileURL, options: .atomic)
     }
 
-    /// Loads snapshot only if schema matches and (if private `accountID` is present)
-    /// it strictly matches `expectedAccountID`. Always restores in paused state by caller.
-    public func load(expectedAccountID: String?) -> PlaybackSnapshot? {
+    /// Loads snapshot only if schema is supported (v1 or v2) and account/provider match.
+    /// Always restores in paused state by caller.
+    public func load(expectedProviderID: String = "apple_music", expectedAccountID: String?) -> PlaybackSnapshot? {
         guard FileManager.default.fileExists(atPath: fileURL.path),
               let data = try? Data(contentsOf: fileURL),
               let snap = try? decoder.decode(PlaybackSnapshot.self, from: data),
-              snap.schemaVersion == 1 else {
+              (snap.schemaVersion == 1 || snap.schemaVersion == PlaybackSnapshot.currentSchemaVersion),
+              snap.providerID == expectedProviderID else {
             return nil
         }
         if let snapAccount = snap.accountID {

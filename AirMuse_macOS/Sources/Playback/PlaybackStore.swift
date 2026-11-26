@@ -12,11 +12,13 @@ public actor PlaybackStore {
     private var _state: PlaybackState = .idle
     private var _lyrics: LyricsDocument = .empty
     private var _queue: PlaybackQueue = .init()
+    private var _queueSnapshot: QueueSnapshot = .empty
 
     // MARK: - Continuations for async streams
 
     private var stateContinuations: [UUID: AsyncStream<PlaybackState>.Continuation] = [:]
     private var lyricsContinuations: [UUID: AsyncStream<LyricsDocument>.Continuation] = [:]
+    private var queueContinuations: [UUID: AsyncStream<QueueSnapshot>.Continuation] = [:]
 
     public init() {}
 
@@ -85,8 +87,38 @@ public actor PlaybackStore {
     // MARK: - Queue
 
     public var queue: PlaybackQueue { _queue }
+    public var queueSnapshot: QueueSnapshot { _queueSnapshot }
 
     public func update(queue: PlaybackQueue) {
         _queue = queue
+    }
+
+    /// Publishes an authoritative `QueueSnapshot` only if it represents a newer or changed structural state.
+    public func update(queueSnapshot: QueueSnapshot) {
+        if queueSnapshot.sessionScope == _queueSnapshot.sessionScope,
+           queueSnapshot.queueID == _queueSnapshot.queueID,
+           queueSnapshot.revision < _queueSnapshot.revision {
+            return
+        }
+        guard queueSnapshot != _queueSnapshot else { return }
+        _queueSnapshot = queueSnapshot
+        queueContinuations.values.forEach { $0.yield(queueSnapshot) }
+    }
+
+    /// Subscribe to structural queue snapshot changes (`bufferingNewest(1)`).
+    /// Progress, volume, and lyrics updates do not emit on this stream.
+    public func queueStream() -> AsyncStream<QueueSnapshot> {
+        AsyncStream(bufferingPolicy: .bufferingNewest(1)) { continuation in
+            let id = UUID()
+            queueContinuations[id] = continuation
+            continuation.yield(_queueSnapshot)
+            continuation.onTermination = { [weak self] _ in
+                Task { await self?.removeQueueContinuation(id: id) }
+            }
+        }
+    }
+
+    private func removeQueueContinuation(id: UUID) {
+        queueContinuations.removeValue(forKey: id)
     }
 }

@@ -55,7 +55,7 @@ let package = Package(
         // ─── Playback coordination ────────────────────────────────────
         .target(
             name: "Playback",
-            dependencies: ["Domain"],
+            dependencies: ["Domain", "Infrastructure"],
             path: "Sources/Playback",
             swiftSettings: sharedSwiftSettings
         ),
