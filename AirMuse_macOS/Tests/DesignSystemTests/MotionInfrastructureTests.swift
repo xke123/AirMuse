@@ -177,6 +177,37 @@ struct MotionInfrastructureTests {
         #expect(snap1.didSnap)
         if let snapped = snap1.targetScreenRect {
             #expect(!snapped.insetBy(dx: 1, dy: 1).intersects(playerRect))
+            #expect(abs(snapped.minX - playerRect.minX) < 0.5)
+        }
+
+        // Dropped 45pt staggered horizontally below player -> still snaps strictly flush-aligned
+        let staggeredBelow = CGPoint(x: 345, y: 400 - 426 - 10)
+        let snapBelow = StageLayoutEngine.computeSnap(
+            movedSize: lyricsSize,
+            droppedOrigin: staggeredBelow,
+            playerScreenRect: playerRect,
+            otherModuleScreenRect: nil,
+            uiScale: 1.0,
+            wasAlreadySnapped: false
+        )
+        #expect(snapBelow.didSnap)
+        #expect(snapBelow.targetScreenRect == CGRect(x: 300, y: 400 - 426, width: 495, height: 426))
+
+        // Dropped 60pt staggered vertically to the right of player -> snaps top-aligned or bottom-aligned
+        let staggeredRight = CGPoint(x: 300 + 495 + 10, y: 400 + 60)
+        let snapRight = StageLayoutEngine.computeSnap(
+            movedSize: lyricsSize,
+            droppedOrigin: staggeredRight,
+            playerScreenRect: playerRect,
+            otherModuleScreenRect: nil,
+            uiScale: 1.0,
+            wasAlreadySnapped: false
+        )
+        #expect(snapRight.didSnap)
+        if let snapped = snapRight.targetScreenRect {
+            let isTopAligned = abs(snapped.maxY - playerRect.maxY) < 0.5
+            let isBottomAligned = abs(snapped.minY - playerRect.minY) < 0.5
+            #expect(isTopAligned || isBottomAligned)
         }
     }
 

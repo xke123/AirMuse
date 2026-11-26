@@ -329,38 +329,38 @@ public enum StageLayoutEngine {
         return StageSnapResult(snappedOffset: offset, targetScreenRect: snapped, didSnap: true)
     }
 
-    /// Generates 4 edge-touching candidates (left, right, bottom, top of `target`) with edge alignment.
+    /// Generates strictly flush-aligned edge-touching candidates (left, right, bottom, top of `target`):
+    /// - Left & Right: strictly top-aligned (`maxY`) or bottom-aligned (`minY`)
+    /// - Bottom & Top: strictly left-aligned (`minX`) or right-aligned (`maxX`)
     public static func candidateSnapRects(
         for size: CGSize,
         droppedRect: CGRect,
         against target: CGRect,
         alignThreshold: CGFloat
     ) -> [CGRect] {
+        _ = droppedRect
+        _ = alignThreshold
         var results: [CGRect] = []
 
-        // 1. Left & Right of target -> align Y
-        let minTouchY = target.minY - size.height + 20.0
-        let maxTouchY = target.maxY - 20.0
-        var snappedY = min(max(droppedRect.minY, minTouchY), maxTouchY)
-        if abs(droppedRect.maxY - target.maxY) <= alignThreshold {
-            snappedY = target.maxY - size.height
-        } else if abs(droppedRect.minY - target.minY) <= alignThreshold {
-            snappedY = target.minY
+        // 1. Left & Right of target -> strictly top-aligned or bottom-aligned
+        let topAlignedY = target.maxY - size.height
+        let bottomAlignedY = target.minY
+        results.append(CGRect(x: target.minX - size.width, y: topAlignedY, width: size.width, height: size.height))
+        results.append(CGRect(x: target.maxX, y: topAlignedY, width: size.width, height: size.height))
+        if abs(bottomAlignedY - topAlignedY) > 0.5 {
+            results.append(CGRect(x: target.minX - size.width, y: bottomAlignedY, width: size.width, height: size.height))
+            results.append(CGRect(x: target.maxX, y: bottomAlignedY, width: size.width, height: size.height))
         }
-        results.append(CGRect(x: target.minX - size.width, y: snappedY, width: size.width, height: size.height))
-        results.append(CGRect(x: target.maxX, y: snappedY, width: size.width, height: size.height))
 
-        // 2. Bottom & Top of target -> align X
-        let minTouchX = target.minX - size.width + 20.0
-        let maxTouchX = target.maxX - 20.0
-        var snappedX = min(max(droppedRect.minX, minTouchX), maxTouchX)
-        if abs(droppedRect.minX - target.minX) <= alignThreshold {
-            snappedX = target.minX
-        } else if abs(droppedRect.maxX - target.maxX) <= alignThreshold {
-            snappedX = target.maxX - size.width
+        // 2. Bottom & Top of target -> strictly left-aligned or right-aligned
+        let leftAlignedX = target.minX
+        let rightAlignedX = target.maxX - size.width
+        results.append(CGRect(x: leftAlignedX, y: target.minY - size.height, width: size.width, height: size.height))
+        results.append(CGRect(x: leftAlignedX, y: target.maxY, width: size.width, height: size.height))
+        if abs(rightAlignedX - leftAlignedX) > 0.5 {
+            results.append(CGRect(x: rightAlignedX, y: target.minY - size.height, width: size.width, height: size.height))
+            results.append(CGRect(x: rightAlignedX, y: target.maxY, width: size.width, height: size.height))
         }
-        results.append(CGRect(x: snappedX, y: target.minY - size.height, width: size.width, height: size.height))
-        results.append(CGRect(x: snappedX, y: target.maxY, width: size.width, height: size.height))
 
         return results
     }

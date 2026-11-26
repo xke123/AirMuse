@@ -62,6 +62,9 @@ private final class ModuleTopBarDragHandle: NSView {
         for sub in view.subviews where !sub.isHidden && sub !== self {
             let subPt = sub.convert(point, from: view)
             guard sub.bounds.contains(subPt) else { continue }
+            if let textField = sub as? NSTextField, !textField.isEditable, !textField.isSelectable {
+                continue
+            }
             if sub is NSControl || sub is GlassButton {
                 return true
             }
@@ -132,7 +135,6 @@ public final class UnifiedStageController {
 
     public let hostWindow: PlayerWindow
     private let stageRootView = StageRootView()
-    private let snapPreviewLayer = CAShapeLayer()
 
     private let playerCtrl: PlayerWindowController
     private let lyricsView: LyricsModuleView
@@ -196,7 +198,7 @@ public final class UnifiedStageController {
     }
 
     public var isSnapPreviewVisible: Bool {
-        !snapPreviewLayer.isHidden && snapPreviewLayer.opacity > 0.01
+        false
     }
 
     public init(
@@ -258,14 +260,6 @@ public final class UnifiedStageController {
 
         lyricsView.addSubview(lyricsDragHandle, positioned: .above, relativeTo: nil)
         libraryCtrl.moduleView.addSubview(libraryDragHandle, positioned: .above, relativeTo: nil)
-
-        // M12 Snap preview highlight overlay
-        snapPreviewLayer.isHidden = true
-        snapPreviewLayer.opacity = 0.0
-        snapPreviewLayer.fillColor = NSColor(srgbRed: 130/255.0, green: 215/255.0, blue: 255/255.0, alpha: 0.14).cgColor
-        snapPreviewLayer.strokeColor = NSColor(srgbRed: 180/255.0, green: 230/255.0, blue: 255/255.0, alpha: 0.72).cgColor
-        snapPreviewLayer.lineWidth = 1.5
-        stageRootView.layer?.addSublayer(snapPreviewLayer)
 
         MotionCoordinator.shared.displayDriver.attach(to: stageRootView)
     }
@@ -401,7 +395,6 @@ public final class UnifiedStageController {
             )
             self.activeSnapResult = snap
             self.relayoutStage()
-            self.updateSnapPreviewLayer(for: snap, uiScale: s)
         }
         handle.onDragEnded = { [weak self] in
             guard let self, self.activeDragModule == kind else { return }
@@ -409,14 +402,12 @@ public final class UnifiedStageController {
             let snap = self.activeSnapResult
             self.activeDragModule = nil
             self.activeSnapResult = nil
-            self.hideSnapPreviewLayer()
             self.snapDroppedModule(kind, droppedOrigin: droppedOrigin, precomputedSnap: snap)
         }
         handle.onDragCancelled = { [weak self] in
             guard let self, self.activeDragModule == kind else { return }
             self.activeDragModule = nil
             self.activeSnapResult = nil
-            self.hideSnapPreviewLayer()
         }
     }
 
@@ -1342,32 +1333,7 @@ public final class UnifiedStageController {
         }
     }
 
-    // MARK: - M12 Magnetic Snap with Preview, Hysteresis & Haptic
-
-    private func updateSnapPreviewLayer(for snap: StageSnapResult, uiScale: CGFloat) {
-        guard snap.didSnap, let targetScreen = snap.targetScreenRect else {
-            hideSnapPreviewLayer()
-            return
-        }
-        let localRect = targetScreen.offsetBy(dx: -hostWindow.frame.minX, dy: -hostWindow.frame.minY)
-        let radius = OriginalDesignTokens.BaseMetrics.glassCornerRadius * uiScale
-        CATransaction.begin()
-        CATransaction.setDisableActions(true)
-        snapPreviewLayer.isHidden = false
-        snapPreviewLayer.opacity = 1.0
-        snapPreviewLayer.frame = stageRootView.bounds
-        snapPreviewLayer.path = CGPath(roundedRect: localRect.insetBy(dx: 1, dy: 1), cornerWidth: radius, cornerHeight: radius, transform: nil)
-        CATransaction.commit()
-    }
-
-    private func hideSnapPreviewLayer() {
-        CATransaction.begin()
-        CATransaction.setDisableActions(true)
-        snapPreviewLayer.opacity = 0.0
-        snapPreviewLayer.isHidden = true
-        snapPreviewLayer.path = nil
-        CATransaction.commit()
-    }
+    // MARK: - M12 Magnetic Snap with Hysteresis & Haptic
 
     /// Snaps the dragged module to the nearest valid edge of the remaining visible modules (gap = 0, no overlap).
     private func snapDroppedModule(_ kind: ModuleKind, droppedOrigin: NSPoint, precomputedSnap: StageSnapResult? = nil) {
