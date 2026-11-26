@@ -238,6 +238,7 @@ open class LibraryTopBarView: NSView, NSSearchFieldDelegate {
     private func configureIconButton(_ btn: NSButton, symbolName: String, tooltip: String, action: Selector) {
         btn.bezelStyle = .regularSquare
         btn.isBordered = false
+        btn.focusRingType = .none
         btn.toolTip = tooltip
         btn.target = self
         btn.action = action

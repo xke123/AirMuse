@@ -118,6 +118,22 @@ private final class QueueEntryCellView: NSTableCellView {
     }
 }
 
+@MainActor
+private final class FlippedDockContentView: NSView {
+    override var isFlipped: Bool { true }
+}
+
+// MARK: - QueueAdditionVisualKind
+
+/// Visual animation motif distinguishing what kind of media resource was added to the queue.
+public enum QueueAdditionVisualKind: Sendable, Equatable {
+    case song
+    case multiSongs(count: Int)
+    case album
+    case playlist
+    case station
+}
+
 // MARK: - LiquidFusionQueueDockView
 
 /// Bottom-right Liquid Fusion Dock queue control & expandable upcoming queue overlay.
@@ -129,6 +145,8 @@ public final class LiquidFusionQueueDockView: NSView, NSTableViewDataSource, NST
     // MARK: - Public Callbacks & State
 
     public var onNavigateToOrigin: ((PlaybackOrigin) -> Void)?
+    public var onQueueMediaAction: ((MediaAction) -> Void)?
+    public var queueContextBuilder: ((MediaResourceReference, [UUID]) -> MediaActionContext)?
     public var onReportError: ((String) -> Void)?
     public var onRetryPagination: (() -> Void)?
     public private(set) var isExpanded: Bool = false
@@ -140,8 +158,14 @@ public final class LiquidFusionQueueDockView: NSView, NSTableViewDataSource, NST
     private var feedbackTask: Task<Void, Never>?
     private var transientFeedbackMessage: String?
     private var localClickMonitor: Any?
+    private var mouseUpSwallowMonitor: Any?
     private let motionOwnerID = "QueueDock-\(UUID().uuidString)"
     private var isAnimatingMorph: Bool = false
+    private var isCollapsedHovered: Bool = false
+    private var collapsedTrackingArea: NSTrackingArea?
+    private var lastObservedQueueCount: Int = 0
+    private var hasObservedInitialSnapshot: Bool = false
+    private var lastExplicitAnimationAt: CFTimeInterval = 0
 
     // MARK: - Native Glass Hierarchy
 
@@ -150,11 +174,19 @@ public final class LiquidFusionQueueDockView: NSView, NSTableViewDataSource, NST
     private let glassContentView = NSView(frame: .zero)
     private let reduceTransparencyFallbackView = NSView(frame: .zero)
 
-    // Collapsed trigger button
+    // Floating Toast Pill (appears above the queue button)
+    private let toastGlassView = NSGlassEffectView(frame: .zero)
+    private let toastFallbackView = NSView(frame: .zero)
+    private let toastLabel = NSTextField(labelWithString: "")
+
+    // Collapsed trigger (embedded cleanly on bottom glass bar at rest; glass activates on hover/expand)
+    private let collapsedOverlayView = NSView(frame: .zero)
+    private let toggleIconView = NSImageView(frame: .zero)
+    private let countLabel = NSTextField(labelWithString: "")
     private let toggleButton = NSButton(frame: .zero)
 
     // Expanded content container (inside morphGlassView.contentView)
-    private let expandedContentView = NSView(frame: .zero)
+    private let expandedContentView = FlippedDockContentView(frame: .zero)
     private let toolbarView = NSView(frame: .zero)
     private let clearButton = NSButton(frame: .zero)
     private let undoButton = NSButton(frame: .zero)
@@ -168,8 +200,14 @@ public final class LiquidFusionQueueDockView: NSView, NSTableViewDataSource, NST
     private let emptyStateLabel = NSTextField(labelWithString: "待播队列为空")
 
     // Metrics (QUEUE_UI.md)
-    private let buttonSize: CGFloat = 26
-    private let cornerMargin: CGFloat = 7
+    private let buttonSize: CGFloat = 24
+    private let cornerMargin: CGFloat = 10
+    public var bottomBarHeight: CGFloat = 30 {
+        didSet {
+            guard oldValue != bottomBarHeight else { return }
+            needsLayout = true
+        }
+    }
 
     public init(coordinator: PlaybackCoordinatorV2) {
         self.coordinator = coordinator
@@ -188,19 +226,51 @@ public final class LiquidFusionQueueDockView: NSView, NSTableViewDataSource, NST
         if let monitor = localClickMonitor {
             NSEvent.removeMonitor(monitor)
         }
+        if let upMonitor = mouseUpSwallowMonitor {
+            NSEvent.removeMonitor(upMonitor)
+        }
         MotionCoordinator.shared.cancelAll(owner: motionOwnerID)
     }
 
     // MARK: - Hit Testing
 
-    /// Only intercept hits inside the visible glass morph view so the rest of the library remains interactive.
+    /// Intercepts clicks on the capsule button when collapsed (never falling through),
+    /// and absorbs all clicks inside the panel when expanded so outside clicks only dismiss.
     public override func hitTest(_ point: NSPoint) -> NSView? {
         let localPt = convert(point, from: superview)
-        let glassPt = glassContainer.convert(localPt, from: self)
-        guard morphGlassView.frame.contains(glassPt) else {
-            return nil
+        if isExpanded {
+            if morphGlassView.frame.contains(localPt) {
+                return super.hitTest(point) ?? expandedContentView
+            }
+            return bounds.contains(localPt) ? self : nil
+        } else {
+            guard collapsedOverlayView.frame.contains(localPt) else {
+                return nil
+            }
+            return toggleButton
         }
-        return super.hitTest(point) ?? (isExpanded ? expandedContentView : toggleButton)
+    }
+
+    public override func mouseDown(with event: NSEvent) {
+        if isExpanded {
+            let pt = convert(event.locationInWindow, from: nil)
+            if !morphGlassView.frame.contains(pt) {
+                setExpanded(false)
+                return
+            }
+        }
+        super.mouseDown(with: event)
+    }
+
+    public override func rightMouseDown(with event: NSEvent) {
+        if isExpanded {
+            let pt = convert(event.locationInWindow, from: nil)
+            if !morphGlassView.frame.contains(pt) {
+                setExpanded(false)
+                return
+            }
+        }
+        super.rightMouseDown(with: event)
     }
 
     // MARK: - Setup
@@ -213,6 +283,7 @@ public final class LiquidFusionQueueDockView: NSView, NSTableViewDataSource, NST
 
         morphGlassView.style = .clear
         morphGlassView.cornerRadius = buttonSize * 0.5
+        morphGlassView.isHidden = true
         glassContentView.wantsLayer = true
         morphGlassView.contentView = glassContentView
         glassContainer.addSubview(morphGlassView)
@@ -225,15 +296,56 @@ public final class LiquidFusionQueueDockView: NSView, NSTableViewDataSource, NST
         reduceTransparencyFallbackView.isHidden = true
         glassContentView.addSubview(reduceTransparencyFallbackView)
 
-        // Collapsed circular toggle button
+        // Collapsed trigger (`music.note.list` + queue count + full-capsule hit button) embedded on bottom glass bar
+        collapsedOverlayView.wantsLayer = true
+        addSubview(collapsedOverlayView)
+
+        let symCfg = NSImage.SymbolConfiguration(pointSize: 12.0, weight: .semibold)
+        toggleIconView.image = NSImage(systemSymbolName: "music.note.list", accessibilityDescription: "播放队列")?.withSymbolConfiguration(symCfg)
+        toggleIconView.contentTintColor = .labelColor
+        collapsedOverlayView.addSubview(toggleIconView)
+
+        countLabel.font = NSFont.monospacedDigitSystemFont(ofSize: 10.5, weight: .semibold)
+        countLabel.textColor = .labelColor
+        countLabel.alignment = .center
+        countLabel.isHidden = true
+        countLabel.isBezeled = false
+        countLabel.drawsBackground = false
+        countLabel.isEditable = false
+        countLabel.isSelectable = false
+        collapsedOverlayView.addSubview(countLabel)
+
         toggleButton.isBordered = false
         toggleButton.bezelStyle = .regularSquare
-        toggleButton.image = NSImage(systemSymbolName: "list.bullet", accessibilityDescription: "播放队列")
-        toggleButton.contentTintColor = .labelColor
+        toggleButton.focusRingType = .none
+        toggleButton.title = ""
+        toggleButton.image = nil
         toggleButton.toolTip = "播放队列"
+        toggleButton.setAccessibilityLabel("播放队列")
         toggleButton.target = self
         toggleButton.action = #selector(toggleExpanded)
-        glassContentView.addSubview(toggleButton)
+        collapsedOverlayView.addSubview(toggleButton)
+
+        // Floating Toast Pill
+        toastGlassView.style = .regular
+        toastGlassView.cornerRadius = 13
+        toastGlassView.isHidden = true
+        toastGlassView.alphaValue = 0
+        addSubview(toastGlassView)
+
+        toastFallbackView.wantsLayer = true
+        toastFallbackView.layer?.backgroundColor = NSColor(srgbRed: 28 / 255.0, green: 30 / 255.0, blue: 34 / 255.0, alpha: 0.94).cgColor
+        toastFallbackView.layer?.cornerRadius = 13
+        toastFallbackView.layer?.borderWidth = 0.5
+        toastFallbackView.layer?.borderColor = NSColor(white: 1.0, alpha: 0.16).cgColor
+        toastFallbackView.isHidden = true
+        toastGlassView.addSubview(toastFallbackView)
+
+        toastLabel.font = NSFont.systemFont(ofSize: 11.5, weight: .medium)
+        toastLabel.textColor = NSColor(white: 0.96, alpha: 1.0)
+        toastLabel.lineBreakMode = .byTruncatingTail
+        toastLabel.alignment = .center
+        toastGlassView.contentView = toastLabel
 
         // Expanded content
         expandedContentView.wantsLayer = true
@@ -341,24 +453,33 @@ public final class LiquidFusionQueueDockView: NSView, NSTableViewDataSource, NST
         layoutMorphSubviews(in: morphGlassView.bounds)
     }
 
+    private func collapsedWidth(for count: Int) -> CGFloat {
+        guard count > 0 else { return buttonSize }
+        let digits = count >= 1000 ? 4 : (count >= 100 ? 3 : (count >= 10 ? 2 : 1))
+        return buttonSize + CGFloat(digits * 7 + 8)
+    }
+
     private func targetMorphRect(expanded: Bool) -> NSRect {
         let w = bounds.width
         let h = bounds.height
+        let barH = max(buttonSize + 4, bottomBarHeight)
+        let collapsedY = max(2, (barH - buttonSize) * 0.5)
         if !expanded {
+            let cw = collapsedWidth(for: displayedEntries.count)
             return NSRect(
-                x: max(cornerMargin, w - buttonSize - cornerMargin),
-                y: cornerMargin,
-                width: buttonSize,
+                x: max(cornerMargin, w - cw - cornerMargin),
+                y: collapsedY,
+                width: cw,
                 height: buttonSize
             )
         }
         let maxAvailW = max(120, w - cornerMargin * 2)
-        let maxAvailH = max(120, h - cornerMargin * 2)
+        let maxAvailH = max(120, h - barH * 2 - 12)
         let targetW = min(max(240, w * 0.5), maxAvailW)
-        let targetH = min(max(220, h * 0.7), maxAvailH)
+        let targetH = min(max(220, h * 0.65), maxAvailH)
         return NSRect(
             x: max(cornerMargin, w - targetW - cornerMargin),
-            y: cornerMargin,
+            y: collapsedY,
             width: targetW,
             height: targetH
         )
@@ -367,7 +488,27 @@ public final class LiquidFusionQueueDockView: NSView, NSTableViewDataSource, NST
     private func layoutMorphSubviews(in rect: NSRect) {
         reduceTransparencyFallbackView.frame = rect
         reduceTransparencyFallbackView.layer?.cornerRadius = isExpanded ? 14 : buttonSize * 0.5
-        toggleButton.frame = NSRect(x: max(0, rect.width - buttonSize), y: 0, width: buttonSize, height: buttonSize)
+
+        let collapsedRect = targetMorphRect(expanded: false)
+        collapsedOverlayView.frame = collapsedRect
+        toggleButton.frame = NSRect(x: 0, y: 0, width: collapsedRect.width, height: buttonSize)
+        if displayedEntries.isEmpty {
+            toggleIconView.frame = NSRect(x: max(0, (collapsedRect.width - 14) * 0.5), y: (buttonSize - 14) * 0.5, width: 14, height: 14)
+            countLabel.isHidden = true
+        } else {
+            let cw = collapsedWidth(for: displayedEntries.count)
+            let countW = max(14, cw - buttonSize - 4)
+            if !isExpanded {
+                toggleIconView.frame = NSRect(x: 7, y: (buttonSize - 14) * 0.5, width: 14, height: 14)
+                countLabel.frame = NSRect(x: buttonSize - 1, y: (buttonSize - 14) * 0.5, width: countW, height: 14)
+                countLabel.isHidden = false
+            } else {
+                countLabel.isHidden = true
+            }
+        }
+        updateCollapsedTrackingArea()
+        updateCollapsedGlassVisibility()
+        layoutToast()
 
         expandedContentView.frame = rect
         let w = rect.width
@@ -415,13 +556,18 @@ public final class LiquidFusionQueueDockView: NSView, NSTableViewDataSource, NST
         if expanded {
             installOutsideClickMonitor()
             expandedContentView.isHidden = false
-            toggleButton.isHidden = true
+            collapsedOverlayView.isHidden = true
+            toastGlassView.isHidden = true
+            morphGlassView.isHidden = false
             morphGlassView.style = .regular
         } else {
             removeOutsideClickMonitor()
-            toggleButton.isHidden = false
+            collapsedOverlayView.isHidden = false
+            countLabel.isHidden = displayedEntries.isEmpty
             morphGlassView.style = .clear
-            window?.makeFirstResponder(toggleButton)
+            if let win = window, win.firstResponder === tableView || win.firstResponder === toggleButton {
+                win.makeFirstResponder(nil)
+            }
         }
 
         let targetFrame = targetMorphRect(expanded: expanded)
@@ -471,12 +617,47 @@ public final class LiquidFusionQueueDockView: NSView, NSTableViewDataSource, NST
         MotionCoordinator.shared.cancelAll(owner: motionOwnerID)
         if isExpanded {
             isExpanded = false
+            isCollapsedHovered = false
             expandedContentView.isHidden = true
             expandedContentView.alphaValue = 0
-            toggleButton.isHidden = false
+            collapsedOverlayView.isHidden = false
+            countLabel.isHidden = displayedEntries.isEmpty
             morphGlassView.style = .clear
+            morphGlassView.isHidden = true
             needsLayout = true
         }
+    }
+
+    private func updateCollapsedTrackingArea() {
+        if let existing = collapsedTrackingArea {
+            collapsedOverlayView.removeTrackingArea(existing)
+            collapsedTrackingArea = nil
+        }
+        let area = NSTrackingArea(
+            rect: collapsedOverlayView.bounds,
+            options: [.mouseEnteredAndExited, .activeInKeyWindow, .inVisibleRect],
+            owner: self,
+            userInfo: nil
+        )
+        collapsedOverlayView.addTrackingArea(area)
+        collapsedTrackingArea = area
+    }
+
+    public override func mouseEntered(with event: NSEvent) {
+        guard !isExpanded else { return }
+        isCollapsedHovered = true
+        updateCollapsedGlassVisibility()
+    }
+
+    public override func mouseExited(with event: NSEvent) {
+        guard isCollapsedHovered else { return }
+        isCollapsedHovered = false
+        updateCollapsedGlassVisibility()
+    }
+
+    private func updateCollapsedGlassVisibility() {
+        let shouldShowGlass = isExpanded || isAnimatingMorph || isCollapsedHovered
+        morphGlassView.isHidden = !shouldShowGlass
     }
 
     // MARK: - Outside Click & Accessibility
@@ -489,9 +670,29 @@ public final class LiquidFusionQueueDockView: NSView, NSTableViewDataSource, NST
             }
             let ptInSelf = self.convert(event.locationInWindow, from: nil)
             if !self.morphGlassView.frame.contains(ptInSelf) {
+                self.installOneShotMouseUpSwallow(for: win)
                 self.setExpanded(false)
+                return nil
             }
             return event
+        }
+    }
+
+    private func installOneShotMouseUpSwallow(for targetWindow: NSWindow) {
+        if let existing = mouseUpSwallowMonitor {
+            NSEvent.removeMonitor(existing)
+            mouseUpSwallowMonitor = nil
+        }
+        mouseUpSwallowMonitor = NSEvent.addLocalMonitorForEvents(matching: [.leftMouseUp, .rightMouseUp]) { [weak self] upEvent in
+            guard let self else { return upEvent }
+            if let monitor = self.mouseUpSwallowMonitor {
+                NSEvent.removeMonitor(monitor)
+                self.mouseUpSwallowMonitor = nil
+            }
+            if upEvent.window === targetWindow {
+                return nil
+            }
+            return upEvent
         }
     }
 
@@ -566,7 +767,265 @@ public final class LiquidFusionQueueDockView: NSView, NSTableViewDataSource, NST
             scrollView.contentView.scroll(to: scrollOrigin)
         }
 
+        updateQueueCountBadge(previousCount: oldIDs.count, newCount: newIDs.count)
         updateToolbarAndStatus()
+    }
+
+    private func updateQueueCountBadge(previousCount: Int, newCount: Int) {
+        countLabel.stringValue = newCount > 0 ? "\(newCount)" : ""
+        countLabel.isHidden = isExpanded || newCount == 0
+        toggleButton.toolTip = newCount > 0 ? "播放队列（\(newCount) 首待播）" : "播放队列"
+        toggleButton.setAccessibilityValue(newCount > 0 ? "\(newCount) 首待播" : "空")
+
+        if !isExpanded && !isAnimatingMorph {
+            morphGlassView.frame = targetMorphRect(expanded: false)
+            layoutMorphSubviews(in: morphGlassView.bounds)
+        }
+
+        let added = newCount - previousCount
+        let now = CACurrentMediaTime()
+        if hasObservedInitialSnapshot && added > 0 && (now - lastExplicitAnimationAt) > 0.45 {
+            let inferredKind: QueueAdditionVisualKind = added > 1 ? .multiSongs(count: added) : .song
+            animateQueueAddedPulse(kind: inferredKind)
+        }
+        hasObservedInitialSnapshot = true
+        lastObservedQueueCount = newCount
+    }
+
+    /// Triggers a distinct, resource-aware queue-addition animation + optional toast feedback.
+    public func playQueueAdditionAnimation(kind: QueueAdditionVisualKind, message: String? = nil) {
+        lastExplicitAnimationAt = CACurrentMediaTime()
+        if let message, !message.isEmpty {
+            showFeedback(message)
+        }
+        guard !MotionCoordinator.shared.isReduceMotionEnabled else { return }
+        animateQueueAddedPulse(kind: kind)
+        spawnAdditionMotif(kind: kind)
+    }
+
+    private func animateQueueAddedPulse(kind: QueueAdditionVisualKind) {
+        guard !MotionCoordinator.shared.isReduceMotionEnabled else { return }
+        let targetView = isExpanded ? morphGlassView : collapsedOverlayView
+        guard let layer = targetView.layer else { return }
+        layer.anchorPoint = CGPoint(x: 0.5, y: 0.5)
+        layer.position = CGPoint(
+            x: targetView.frame.midX,
+            y: targetView.frame.midY
+        )
+
+        let anim = CAKeyframeAnimation(keyPath: "transform.scale")
+        switch kind {
+        case .song:
+            anim.values = [1.0, 1.14, 0.97, 1.0]
+            anim.duration = 0.28
+        case .multiSongs:
+            anim.values = [1.0, 1.22, 0.94, 1.08, 1.0]
+            anim.duration = 0.44
+        case .album:
+            anim.values = [1.0, 1.18, 0.95, 1.0]
+            anim.duration = 0.36
+        case .playlist:
+            anim.values = [1.0, 1.18, 0.96, 1.05, 1.0]
+            anim.duration = 0.40
+        case .station:
+            anim.values = [1.0, 1.20, 0.96, 1.0]
+            anim.duration = 0.38
+        }
+        anim.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+        anim.isRemovedOnCompletion = true
+        layer.add(anim, forKey: "queueAddPulse")
+    }
+
+    private func spawnAdditionMotif(kind: QueueAdditionVisualKind) {
+        guard let hostLayer = self.layer else { return }
+        let anchorView = isExpanded ? morphGlassView : collapsedOverlayView
+        let anchorCenter = CGPoint(x: anchorView.frame.midX, y: anchorView.frame.maxY + 2)
+
+        switch kind {
+        case .song:
+            emitFloatingSymbolLayer(
+                in: hostLayer,
+                symbolName: "music.note",
+                tint: NSColor.systemPink,
+                center: anchorCenter,
+                offsetY: 22,
+                rotationRadians: 0,
+                duration: 0.48,
+                delay: 0
+            )
+
+        case .multiSongs(let count):
+            let noteCount = min(4, max(2, count))
+            for idx in 0..<noteCount {
+                let xOffset = CGFloat(idx - noteCount / 2) * 8.0
+                emitFloatingSymbolLayer(
+                    in: hostLayer,
+                    symbolName: idx % 2 == 0 ? "music.note" : "music.quarternote.3",
+                    tint: idx % 2 == 0 ? NSColor.systemPink : NSColor.systemOrange,
+                    center: CGPoint(x: anchorCenter.x + xOffset, y: anchorCenter.y),
+                    offsetY: 26 + CGFloat(idx) * 3,
+                    rotationRadians: CGFloat(idx % 2 == 0 ? -0.15 : 0.15),
+                    duration: 0.50,
+                    delay: Double(idx) * 0.055
+                )
+            }
+
+        case .album:
+            emitExpandingRing(in: hostLayer, center: CGPoint(x: anchorView.frame.midX, y: anchorView.frame.midY), color: NSColor.systemOrange, duration: 0.45)
+            emitFloatingSymbolLayer(
+                in: hostLayer,
+                symbolName: "opticaldisc.fill",
+                tint: NSColor.systemOrange,
+                center: anchorCenter,
+                offsetY: 24,
+                rotationRadians: .pi,
+                duration: 0.52,
+                delay: 0
+            )
+
+        case .playlist:
+            emitExpandingRing(in: hostLayer, center: CGPoint(x: anchorView.frame.midX, y: anchorView.frame.midY), color: NSColor.systemIndigo, duration: 0.45)
+            for idx in 0..<2 {
+                emitFloatingSymbolLayer(
+                    in: hostLayer,
+                    symbolName: idx == 0 ? "music.note.list" : "square.stack.fill",
+                    tint: idx == 0 ? NSColor.systemTeal : NSColor.systemIndigo,
+                    center: CGPoint(x: anchorCenter.x + CGFloat(idx * 6 - 3), y: anchorCenter.y),
+                    offsetY: 22 + CGFloat(idx * 5),
+                    rotationRadians: 0,
+                    duration: 0.48,
+                    delay: Double(idx) * 0.07
+                )
+            }
+
+        case .station:
+            let center = CGPoint(x: anchorView.frame.midX, y: anchorView.frame.midY)
+            emitExpandingRing(in: hostLayer, center: center, color: NSColor.systemPink, duration: 0.55)
+            emitExpandingRing(in: hostLayer, center: center, color: NSColor.systemPurple, duration: 0.65, delay: 0.10)
+            emitFloatingSymbolLayer(
+                in: hostLayer,
+                symbolName: "dot.radiowaves.left.and.right",
+                tint: NSColor.systemPink,
+                center: anchorCenter,
+                offsetY: 24,
+                rotationRadians: 0,
+                duration: 0.54,
+                delay: 0
+            )
+        }
+    }
+
+    private func emitFloatingSymbolLayer(
+        in hostLayer: CALayer,
+        symbolName: String,
+        tint: NSColor,
+        center: CGPoint,
+        offsetY: CGFloat,
+        rotationRadians: CGFloat,
+        duration: CFTimeInterval,
+        delay: CFTimeInterval
+    ) {
+        let cfg = NSImage.SymbolConfiguration(pointSize: 13, weight: .bold)
+        guard let img = NSImage(systemSymbolName: symbolName, accessibilityDescription: nil)?.withSymbolConfiguration(cfg) else {
+            return
+        }
+        let tinted = NSImage(size: img.size, flipped: false) { rect in
+            img.draw(in: rect)
+            tint.set()
+            rect.fill(using: .sourceAtop)
+            return true
+        }
+        guard let cgImg = tinted.cgImage(forProposedRect: nil, context: nil, hints: nil) else { return }
+
+        let badgeLayer = CALayer()
+        badgeLayer.contents = cgImg
+        badgeLayer.bounds = CGRect(x: 0, y: 0, width: 16, height: 16)
+        badgeLayer.position = center
+        badgeLayer.opacity = 0
+        hostLayer.addSublayer(badgeLayer)
+
+        let posAnim = CABasicAnimation(keyPath: "position.y")
+        posAnim.fromValue = center.y
+        posAnim.toValue = center.y + offsetY
+
+        let scaleAnim = CAKeyframeAnimation(keyPath: "transform.scale")
+        scaleAnim.values = [0.6, 1.18, 0.85]
+        scaleAnim.keyTimes = [0.0, 0.45, 1.0]
+
+        let rotAnim = CABasicAnimation(keyPath: "transform.rotation.z")
+        rotAnim.fromValue = 0
+        rotAnim.toValue = rotationRadians
+
+        let opacityAnim = CAKeyframeAnimation(keyPath: "opacity")
+        opacityAnim.values = [0.0, 1.0, 1.0, 0.0]
+        opacityAnim.keyTimes = [0.0, 0.2, 0.65, 1.0]
+
+        let group = CAAnimationGroup()
+        group.animations = [posAnim, scaleAnim, rotAnim, opacityAnim]
+        group.duration = duration
+        group.beginTime = CACurrentMediaTime() + delay
+        group.timingFunction = CAMediaTimingFunction(name: .easeOut)
+        group.isRemovedOnCompletion = true
+
+        CATransaction.begin()
+        CATransaction.setCompletionBlock { [weak badgeLayer] in
+            badgeLayer?.removeFromSuperlayer()
+        }
+        badgeLayer.add(group, forKey: "motifFloat")
+        CATransaction.commit()
+    }
+
+    private func emitExpandingRing(
+        in hostLayer: CALayer,
+        center: CGPoint,
+        color: NSColor,
+        duration: CFTimeInterval,
+        delay: CFTimeInterval = 0
+    ) {
+        let ring = CAShapeLayer()
+        let baseRect = CGRect(x: -12, y: -12, width: 24, height: 24)
+        ring.path = CGPath(ellipseIn: baseRect, transform: nil)
+        ring.position = center
+        ring.fillColor = NSColor.clear.cgColor
+        ring.strokeColor = color.withAlphaComponent(0.85).cgColor
+        ring.lineWidth = 1.75
+        ring.opacity = 0
+        hostLayer.addSublayer(ring)
+
+        let scaleAnim = CABasicAnimation(keyPath: "transform.scale")
+        scaleAnim.fromValue = 0.85
+        scaleAnim.toValue = 2.1
+
+        let opacityAnim = CAKeyframeAnimation(keyPath: "opacity")
+        opacityAnim.values = [0.0, 0.9, 0.0]
+        opacityAnim.keyTimes = [0.0, 0.25, 1.0]
+
+        let group = CAAnimationGroup()
+        group.animations = [scaleAnim, opacityAnim]
+        group.duration = duration
+        group.beginTime = CACurrentMediaTime() + delay
+        group.timingFunction = CAMediaTimingFunction(name: .easeOut)
+        group.isRemovedOnCompletion = true
+
+        CATransaction.begin()
+        CATransaction.setCompletionBlock { [weak ring] in
+            ring?.removeFromSuperlayer()
+        }
+        ring.add(group, forKey: "ringRipple")
+        CATransaction.commit()
+    }
+
+    private func layoutToast() {
+        guard !toastGlassView.isHidden else { return }
+        let maxW = max(120, bounds.width - cornerMargin * 2)
+        let textW = ceil(toastLabel.intrinsicContentSize.width) + 22
+        let toastW = min(maxW, max(96, textW))
+        let toastH: CGFloat = 26
+        let barH = max(buttonSize + 4, bottomBarHeight)
+        let toastY = max(barH + 6, morphGlassView.frame.maxY + 6)
+        let toastX = max(cornerMargin, bounds.width - toastW - cornerMargin)
+        toastGlassView.frame = NSRect(x: toastX, y: toastY, width: toastW, height: toastH)
+        toastFallbackView.frame = toastGlassView.bounds
     }
 
     private func updateToolbarAndStatus() {
@@ -690,11 +1149,54 @@ public final class LiquidFusionQueueDockView: NSView, NSTableViewDataSource, NST
         feedbackTask?.cancel()
         transientFeedbackMessage = message
         updateToolbarAndStatus()
+
+        guard !isExpanded else {
+            feedbackTask = Task { [weak self] in
+                try? await Task.sleep(for: .seconds(durationSeconds))
+                guard !Task.isCancelled, let self else { return }
+                self.transientFeedbackMessage = nil
+                self.updateToolbarAndStatus()
+            }
+            return
+        }
+
+        toastLabel.stringValue = message
+        let useFallback = NSWorkspace.shared.accessibilityDisplayShouldReduceTransparency || !GlassInteractionCoordinator.shared.isEnhancedMode
+        toastFallbackView.isHidden = !useFallback
+        toastGlassView.isHidden = false
+        layoutToast()
+
+        if MotionCoordinator.shared.isReduceMotionEnabled {
+            toastGlassView.alphaValue = 1
+        } else {
+            toastGlassView.alphaValue = 0
+            NSAnimationContext.runAnimationGroup { ctx in
+                ctx.duration = 0.16
+                ctx.timingFunction = CAMediaTimingFunction(name: .easeOut)
+                toastGlassView.animator().alphaValue = 1
+            }
+        }
+
         feedbackTask = Task { [weak self] in
             try? await Task.sleep(for: .seconds(durationSeconds))
             guard !Task.isCancelled, let self else { return }
             self.transientFeedbackMessage = nil
             self.updateToolbarAndStatus()
+            if MotionCoordinator.shared.isReduceMotionEnabled {
+                self.toastGlassView.alphaValue = 0
+                self.toastGlassView.isHidden = true
+            } else {
+                NSAnimationContext.runAnimationGroup { ctx in
+                    ctx.duration = 0.2
+                    ctx.timingFunction = CAMediaTimingFunction(name: .easeIn)
+                    self.toastGlassView.animator().alphaValue = 0
+                } completionHandler: { [weak self] in
+                    Task { @MainActor in
+                        guard let self, self.transientFeedbackMessage == nil else { return }
+                        self.toastGlassView.isHidden = true
+                    }
+                }
+            }
         }
     }
 
@@ -818,64 +1320,96 @@ extension LiquidFusionQueueDockView: NSMenuDelegate {
         let primaryEntry = displayedEntries[clicked]
         let qid = snapshot.queueID
 
-        let playItem = NSMenuItem(title: "立即播放", action: #selector(ctxPlay(_:)), keyEquivalent: "")
-        playItem.target = self
-        playItem.representedObject = primaryEntry.id
-        menu.addItem(playItem)
+        let resource = MediaResourceReference(
+            kind: .queueEntry,
+            providerID: primaryEntry.track.providerID,
+            canonicalID: primaryEntry.track.providerTrackID.isEmpty ? primaryEntry.track.id : primaryEntry.track.providerTrackID,
+            catalogID: primaryEntry.track.providerTrackID.isEmpty ? nil : primaryEntry.track.providerTrackID,
+            libraryID: primaryEntry.track.id,
+            title: primaryEntry.track.title,
+            subtitle: primaryEntry.track.artistName,
+            artworkURL: primaryEntry.track.artworkURL,
+            isLibrary: primaryEntry.track.id.hasPrefix("i.") || primaryEntry.origin.isLibrary,
+            albumID: primaryEntry.track.albumID,
+            albumTitle: primaryEntry.track.albumTitle.isEmpty ? nil : primaryEntry.track.albumTitle,
+            artists: primaryEntry.track.artists,
+            queueEntryID: primaryEntry.id,
+            origin: primaryEntry.origin
+        )
 
-        if snapshot.capabilities.canReorder {
-            let moveNextItem = NSMenuItem(title: "移到下一首", action: #selector(ctxMoveToNext(_:)), keyEquivalent: "")
-            moveNextItem.target = self
-            moveNextItem.representedObject = (selectedIDs, qid)
-            menu.addItem(moveNextItem)
-
-            let moveEndItem = NSMenuItem(title: "移到末尾", action: #selector(ctxMoveToEnd(_:)), keyEquivalent: "")
-            moveEndItem.target = self
-            moveEndItem.representedObject = (selectedIDs, qid)
-            menu.addItem(moveEndItem)
+        let ctx: MediaActionContext
+        if let built = queueContextBuilder?(resource, selectedIDs) {
+            ctx = built
+        } else {
+            let caps = MediaActionCapabilities(
+                isAuthenticated: false,
+                canPlay: true,
+                canReorderQueue: snapshot.capabilities.canReorder,
+                canRemoveFromQueue: snapshot.capabilities.canRemove
+            )
+            ctx = MediaActionContext(
+                resource: resource,
+                location: .queueRow,
+                state: .unknown,
+                capabilities: caps,
+                selectedCount: selectedIDs.count,
+                selectedQueueEntryIDs: selectedIDs
+            )
         }
 
-        if snapshot.capabilities.canRemove {
-            let removeItem = NSMenuItem(title: selectedIDs.count > 1 ? "移除所选 (\(selectedIDs.count))" : "移除", action: #selector(ctxRemove(_:)), keyEquivalent: "")
-            removeItem.target = self
-            removeItem.representedObject = (selectedIDs, qid)
-            menu.addItem(removeItem)
+        let descriptor = MediaActionResolver.resolveContextMenu(for: ctx)
+        guard let builtMenu = MediaContextMenuBuilder.buildMenu(from: descriptor, onAction: { [weak self] action in
+            self?.handleQueueMenuAction(action, expectedQueueID: qid)
+        }) else {
+            return
         }
-
-        if primaryEntry.origin.canNavigate {
-            menu.addItem(.separator())
-            let originItem = NSMenuItem(title: "前往来源（\(primaryEntry.origin.displayTitle)）", action: #selector(ctxNavigateOrigin(_:)), keyEquivalent: "")
-            originItem.target = self
-            originItem.representedObject = primaryEntry.origin
-            menu.addItem(originItem)
+        for item in builtMenu.items {
+            builtMenu.removeItem(item)
+            menu.addItem(item)
         }
     }
 
-    @objc private func ctxPlay(_ sender: NSMenuItem) {
-        guard let id = sender.representedObject as? UUID else { return }
-        let qid = snapshot.queueID
-        Task { try? await coordinator.playEntry(id: id, expectedQueueID: qid) }
-    }
-
-    @objc private func ctxMoveToNext(_ sender: NSMenuItem) {
-        guard let (ids, qid) = sender.representedObject as? ([UUID], UUID) else { return }
-        let firstID = displayedEntries.first(where: { !ids.contains($0.id) })?.id
-        Task { try? await coordinator.moveEntries(ids: ids, before: firstID, expectedQueueID: qid) }
-    }
-
-    @objc private func ctxMoveToEnd(_ sender: NSMenuItem) {
-        guard let (ids, qid) = sender.representedObject as? ([UUID], UUID) else { return }
-        Task { try? await coordinator.moveEntries(ids: ids, before: nil, expectedQueueID: qid) }
-    }
-
-    @objc private func ctxRemove(_ sender: NSMenuItem) {
-        guard let (ids, qid) = sender.representedObject as? ([UUID], UUID) else { return }
-        Task { try? await coordinator.removeEntries(ids: ids, expectedQueueID: qid) }
-    }
-
-    @objc private func ctxNavigateOrigin(_ sender: NSMenuItem) {
-        guard let origin = sender.representedObject as? PlaybackOrigin else { return }
-        setExpanded(false)
-        onNavigateToOrigin?(origin)
+    private func handleQueueMenuAction(_ action: MediaAction, expectedQueueID qid: UUID) {
+        switch action {
+        case .playQueueEntry(let id):
+            Task { [weak self] in
+                do {
+                    try await self?.coordinator.playEntry(id: id, expectedQueueID: qid)
+                } catch {
+                    self?.showFeedback("队列操作已过期或失败: \(error.localizedDescription)")
+                }
+            }
+        case .moveQueueEntryToNext(let ids):
+            let firstID = displayedEntries.first(where: { !ids.contains($0.id) })?.id
+            Task { [weak self] in
+                do {
+                    try await self?.coordinator.moveEntries(ids: ids, before: firstID, expectedQueueID: qid)
+                } catch {
+                    self?.showFeedback("队列移动失败: \(error.localizedDescription)")
+                }
+            }
+        case .moveQueueEntryToEnd(let ids):
+            Task { [weak self] in
+                do {
+                    try await self?.coordinator.moveEntries(ids: ids, before: nil, expectedQueueID: qid)
+                } catch {
+                    self?.showFeedback("队列移动失败: \(error.localizedDescription)")
+                }
+            }
+        case .removeQueueEntries(let ids):
+            Task { [weak self] in
+                do {
+                    try await self?.coordinator.removeEntries(ids: ids, expectedQueueID: qid)
+                } catch {
+                    self?.showFeedback("队列移除失败: \(error.localizedDescription)")
+                }
+            }
+        case .navigateToOrigin(let origin):
+            setExpanded(false)
+            onNavigateToOrigin?(origin)
+        default:
+            setExpanded(false)
+            onQueueMediaAction?(action)
+        }
     }
 }

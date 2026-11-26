@@ -17,6 +17,8 @@ public struct MusicTrack: Sendable, Identifiable, Hashable, Codable {
     public var releaseDate: Date?
     public var providerID: String          // which provider owns this track
     public var providerTrackID: String     // provider-specific identifier
+    public var albumID: String?
+    public var artists: [MediaArtistRef]
 
     public var durationSeconds: Double {
         Double(durationMs) / 1000.0
@@ -35,7 +37,9 @@ public struct MusicTrack: Sendable, Identifiable, Hashable, Codable {
         genreNames: [String] = [],
         releaseDate: Date? = nil,
         providerID: String,
-        providerTrackID: String
+        providerTrackID: String,
+        albumID: String? = nil,
+        artists: [MediaArtistRef] = []
     ) {
         self.id = id
         self.title = title
@@ -50,6 +54,8 @@ public struct MusicTrack: Sendable, Identifiable, Hashable, Codable {
         self.releaseDate = releaseDate
         self.providerID = providerID
         self.providerTrackID = providerTrackID
+        self.albumID = albumID
+        self.artists = artists
     }
 
     public init(
@@ -75,6 +81,8 @@ public struct MusicTrack: Sendable, Identifiable, Hashable, Codable {
         self.releaseDate = nil
         self.providerID = source.rawValue
         self.providerTrackID = id
+        self.albumID = nil
+        self.artists = []
     }
 
     /// Convenience init used in tests with accountID-scoped cache keys.
@@ -99,7 +107,35 @@ public struct MusicTrack: Sendable, Identifiable, Hashable, Codable {
         self.releaseDate = nil
         self.providerID = source.rawValue
         self.providerTrackID = id.isEmpty ? "\(title)|\(artist)" : id
+        self.albumID = nil
+        self.artists = []
         self._accountID = accountID
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case id, title, artistName, albumTitle, durationMs, artworkURL, isExplicit
+        case trackNumber, discNumber, genreNames, releaseDate, providerID, providerTrackID
+        case albumID, artists, _accountID
+    }
+
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(String.self, forKey: .id)
+        title = try c.decode(String.self, forKey: .title)
+        artistName = try c.decode(String.self, forKey: .artistName)
+        albumTitle = try c.decode(String.self, forKey: .albumTitle)
+        durationMs = try c.decode(Int64.self, forKey: .durationMs)
+        artworkURL = try c.decodeIfPresent(URL.self, forKey: .artworkURL)
+        isExplicit = try c.decode(Bool.self, forKey: .isExplicit)
+        trackNumber = try c.decodeIfPresent(Int.self, forKey: .trackNumber)
+        discNumber = try c.decodeIfPresent(Int.self, forKey: .discNumber)
+        genreNames = try c.decodeIfPresent([String].self, forKey: .genreNames) ?? []
+        releaseDate = try c.decodeIfPresent(Date.self, forKey: .releaseDate)
+        providerID = try c.decode(String.self, forKey: .providerID)
+        providerTrackID = try c.decode(String.self, forKey: .providerTrackID)
+        albumID = try c.decodeIfPresent(String.self, forKey: .albumID)
+        artists = try c.decodeIfPresent([MediaArtistRef].self, forKey: .artists) ?? []
+        _accountID = try c.decodeIfPresent(String.self, forKey: ._accountID) ?? ""
     }
 
     private var _accountID: String = ""

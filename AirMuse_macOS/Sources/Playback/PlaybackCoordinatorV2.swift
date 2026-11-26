@@ -208,7 +208,8 @@ public actor PlaybackCoordinatorV2 {
         loadingState: QueueLoadingState? = nil,
         batchID: UUID? = nil,
         expectedQueueID: UUID? = nil,
-        expectedDestructiveEpoch: UInt64? = nil
+        expectedDestructiveEpoch: UInt64? = nil,
+        explicitShuffleMode: Bool? = nil
     ) async throws -> QueueCommandResult {
         guard !entries.isEmpty else { throw QueueEditError.emptyBatch }
 
@@ -219,7 +220,9 @@ public actor PlaybackCoordinatorV2 {
                 startIndex: startIndex,
                 kind: kind,
                 loadingState: loadingState,
-                batchID: batchID
+                batchID: batchID,
+                shuffleOverride: explicitShuffleMode,
+                pickRandomFirstWhenShuffling: false
             )
             let snap = queueManager.makeSnapshot()
             return QueueCommandResult(
@@ -227,7 +230,26 @@ public actor PlaybackCoordinatorV2 {
                 revision: snap.revision,
                 destructiveEpoch: snap.destructiveEpoch,
                 acceptedCount: entries.count,
-                message: "已播放 \(entries.count) 首曲目"
+                message: "已提交播放 \(entries.count) 首曲目"
+            )
+
+        case .shuffleAndPlay:
+            try await playEntries(
+                entries,
+                startIndex: 0,
+                kind: kind,
+                loadingState: loadingState,
+                batchID: batchID,
+                shuffleOverride: true,
+                pickRandomFirstWhenShuffling: true
+            )
+            let snap = queueManager.makeSnapshot()
+            return QueueCommandResult(
+                queueID: snap.queueID,
+                revision: snap.revision,
+                destructiveEpoch: snap.destructiveEpoch,
+                acceptedCount: entries.count,
+                message: "已提交随机播放 \(entries.count) 首曲目"
             )
 
         case .interruptAndPlay:
@@ -286,7 +308,9 @@ public actor PlaybackCoordinatorV2 {
         startIndex: Int = 0,
         kind: PlayableKind? = nil,
         loadingState: QueueLoadingState? = nil,
-        batchID: UUID? = nil
+        batchID: UUID? = nil,
+        shuffleOverride: Bool? = nil,
+        pickRandomFirstWhenShuffling: Bool = false
     ) async throws {
         guard !entries.isEmpty else { return }
         let safeIndex = min(max(0, startIndex), entries.count - 1)
@@ -309,7 +333,7 @@ public actor PlaybackCoordinatorV2 {
         } else {
             resourceID = selected.track.providerTrackID.isEmpty ? selected.track.id : selected.track.providerTrackID
         }
-        let target = PlaybackTarget(
+        let initialTarget = PlaybackTarget(
             kind: resolvedKind,
             providerResourceID: resourceID,
             title: selected.track.title,
@@ -320,12 +344,27 @@ public actor PlaybackCoordinatorV2 {
             entries: entries,
             startIndex: safeIndex,
             owner: owner,
-            target: target,
+            target: initialTarget,
             loadingState: resolvedLoading,
             batchID: batchID,
             startPlayback: true,
+            shuffleOverride: shuffleOverride,
+            pickRandomFirstWhenShuffling: pickRandomFirstWhenShuffling,
             using: &rngAdapter
         ) else { return }
+
+        let chosenResourceID: String
+        if resolvedKind == .station {
+            chosenResourceID = chosen.origin.sourceID ?? (chosen.track.providerTrackID.isEmpty ? chosen.track.id : chosen.track.providerTrackID)
+        } else {
+            chosenResourceID = chosen.track.providerTrackID.isEmpty ? chosen.track.id : chosen.track.providerTrackID
+        }
+        let target = PlaybackTarget(
+            kind: resolvedKind,
+            providerResourceID: chosenResourceID,
+            title: chosen.track.title,
+            storefront: activeSession?.storefront
+        )
 
         AppLogger.shared.log(
             category: .queue,

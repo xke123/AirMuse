@@ -3,75 +3,6 @@ import Domain
 import DesignSystem
 import Infrastructure
 
-// MARK: - LibraryQueueAction
-
-public enum LibraryQueueAction: Sendable {
-    case playNow
-    case interruptNow
-    case playNext
-    case appendToQueue
-
-    public var intent: QueueInsertionIntent {
-        switch self {
-        case .playNow: return .replaceAndPlay
-        case .interruptNow: return .interruptAndPlay
-        case .playNext: return .prepend
-        case .appendToQueue: return .append
-        }
-    }
-}
-
-@MainActor
-private final class QueueMenuActionProxy: NSObject {
-    let handler: () -> Void
-    init(_ handler: @escaping () -> Void) {
-        self.handler = handler
-    }
-    @objc func trigger(_ sender: Any?) {
-        handler()
-    }
-}
-
-@MainActor
-private func makeQueueContextMenu(
-    for type: MediaItemType,
-    handler: @escaping (LibraryQueueAction) -> Void
-) -> NSMenu? {
-    guard type != .artist else { return nil }
-    let menu = NSMenu()
-
-    let playNowItem = NSMenuItem(title: "立即播放", action: #selector(QueueMenuActionProxy.trigger(_:)), keyEquivalent: "")
-    let playNowProxy = QueueMenuActionProxy { handler(.playNow) }
-    playNowItem.target = playNowProxy
-    playNowItem.representedObject = playNowProxy
-    playNowItem.image = NSImage(systemSymbolName: "play.fill", accessibilityDescription: nil)
-    menu.addItem(playNowItem)
-
-    if type != .radio {
-        let interruptItem = NSMenuItem(title: "立即插播", action: #selector(QueueMenuActionProxy.trigger(_:)), keyEquivalent: "")
-        let interruptProxy = QueueMenuActionProxy { handler(.interruptNow) }
-        interruptItem.target = interruptProxy
-        interruptItem.representedObject = interruptProxy
-        interruptItem.image = NSImage(systemSymbolName: "bolt.fill", accessibilityDescription: nil)
-        menu.addItem(interruptItem)
-
-        let nextItem = NSMenuItem(title: "下一首播放", action: #selector(QueueMenuActionProxy.trigger(_:)), keyEquivalent: "")
-        let nextProxy = QueueMenuActionProxy { handler(.playNext) }
-        nextItem.target = nextProxy
-        nextItem.representedObject = nextProxy
-        nextItem.image = NSImage(systemSymbolName: "text.line.first.and.arrowtriangle.forward", accessibilityDescription: nil)
-        menu.addItem(nextItem)
-
-        let appendItem = NSMenuItem(title: "添加到队列", action: #selector(QueueMenuActionProxy.trigger(_:)), keyEquivalent: "")
-        let appendProxy = QueueMenuActionProxy { handler(.appendToQueue) }
-        appendItem.target = appendProxy
-        appendItem.representedObject = appendProxy
-        appendItem.image = NSImage(systemSymbolName: "text.badge.plus", accessibilityDescription: nil)
-        menu.addItem(appendItem)
-    }
-    return menu
-}
-
 // MARK: - MediaItemType
 
 public enum MediaItemType: String, Sendable {
@@ -194,11 +125,10 @@ final class MediaCardRowView: NSView {
     }
 
     public var onClick: (() -> Void)?
-    public var onQueueAction: ((LibraryQueueAction) -> Void)?
+    public var onContextMenuRequested: (() -> NSMenu?)?
 
     override func menu(for event: NSEvent) -> NSMenu? {
-        guard let onQueueAction else { return nil }
-        return makeQueueContextMenu(for: item.type, handler: onQueueAction)
+        onContextMenuRequested?()
     }
 
     private let cardMotionID = "MediaCardRow-\(UUID().uuidString)"
@@ -380,11 +310,10 @@ final class MediaGridCardView: NSView {
     override var isFlipped: Bool { true }
 
     public var onClick: (() -> Void)?
-    public var onQueueAction: ((LibraryQueueAction) -> Void)?
+    public var onContextMenuRequested: (() -> NSMenu?)?
 
     override func menu(for event: NSEvent) -> NSMenu? {
-        guard let onQueueAction else { return nil }
-        return makeQueueContextMenu(for: item.type, handler: onQueueAction)
+        onContextMenuRequested?()
     }
 
     private let cardMotionID = "MediaGridCard-\(UUID().uuidString)"
@@ -590,11 +519,10 @@ final class DetailTrackRowView: NSView {
     }
 
     public var onClick: (() -> Void)?
-    public var onQueueAction: ((LibraryQueueAction) -> Void)?
+    public var onContextMenuRequested: (() -> NSMenu?)?
 
     override func menu(for event: NSEvent) -> NSMenu? {
-        guard let onQueueAction else { return nil }
-        return makeQueueContextMenu(for: .song, handler: onQueueAction)
+        onContextMenuRequested?()
     }
 
     private let cardMotionID = "MediaCardRow-\(UUID().uuidString)"
@@ -716,11 +644,12 @@ final class DetailOverlayView: NSView {
     override var isFlipped: Bool { true }
 
     public var onBack: (() -> Void)?
-    public var onPlayAll: (() -> Void)?
-    public var onBatchQueueAction: ((LibraryQueueAction) -> Void)?
+    public var onPlayIntent: ((MediaPlayIntent) -> Void)?
+    public var playMenuDescriptorProvider: (() -> MediaActionMenuDescriptor)?
+    public var onDetailContextMenuRequested: (() -> NSMenu?)?
     public var onTrackSelected: ((MusicTrack) -> Void)?
     public var onTrackIndexSelected: ((Int, MusicTrack) -> Void)?
-    public var onTrackQueueAction: ((MusicTrack, LibraryQueueAction) -> Void)?
+    public var onTrackContextMenuRequested: ((MusicTrack) -> NSMenu?)?
 
     public var topContentInset: CGFloat = 0 {
         didSet {
@@ -736,7 +665,7 @@ final class DetailOverlayView: NSView {
     private let headerGlassView = NSGlassEffectView(frame: .zero)
     private let backButton = NSButton()
     private let titleLabel = NSTextField(labelWithString: "")
-    private let playAllButton = NSButton()
+    private let playMenuButton = MediaPlayCapsuleButton()
     private let scrollView = NSScrollView()
     private let trackStack = FlippedStackView()
     private let loadingIndicator = NSProgressIndicator()
@@ -800,22 +729,14 @@ final class DetailOverlayView: NSView {
         titleLabel.lineBreakMode = .byTruncatingTail
         headerView.addSubview(titleLabel)
 
-        playAllButton.bezelStyle = .inline
-        playAllButton.isBordered = false
-        playAllButton.wantsLayer = true
-        playAllButton.layer?.backgroundColor = NSColor(red: 0.98, green: 0.22, blue: 0.35, alpha: 0.95).cgColor
-        playAllButton.layer?.cornerRadius = 13
-        let pstyle = NSMutableParagraphStyle()
-        pstyle.alignment = .center
-        let btnAttrs: [NSAttributedString.Key: Any] = [
-            .font: NSFont.systemFont(ofSize: 12.5, weight: .bold),
-            .foregroundColor: NSColor.white,
-            .paragraphStyle: pstyle
-        ]
-        playAllButton.attributedTitle = NSAttributedString(string: "▶ 播放全部", attributes: btnAttrs)
-        playAllButton.target = self
-        playAllButton.action = #selector(playAllClicked)
-        headerView.addSubview(playAllButton)
+        playMenuButton.titleText = "播放"
+        playMenuButton.menuDescriptorProvider = { [weak self] in
+            self?.playMenuDescriptorProvider?() ?? MediaActionMenuDescriptor(sections: [])
+        }
+        playMenuButton.onSelectIntent = { [weak self] intent in
+            self?.onPlayIntent?(intent)
+        }
+        headerView.addSubview(playMenuButton)
 
         loadingIndicator.style = .spinning
         loadingIndicator.controlSize = .small
@@ -848,9 +769,8 @@ final class DetailOverlayView: NSView {
 
         let hw = headerView.bounds.width
         backButton.frame = NSRect(x: 8, y: (headerHeight - 26) / 2, width: 66, height: 26)
-        playAllButton.frame = NSRect(x: hw - 108 - 5, y: (headerHeight - 26) / 2, width: 108, height: 26)
-        playAllButton.layer?.cornerRadius = 13
-        titleLabel.frame = NSRect(x: 76, y: (headerHeight - 20) / 2, width: max(10, hw - 76 - 118), height: 20)
+        playMenuButton.frame = NSRect(x: hw - 96 - 5, y: (headerHeight - 28) / 2, width: 96, height: 28)
+        titleLabel.frame = NSRect(x: 76, y: (headerHeight - 20) / 2, width: max(10, hw - 76 - 106), height: 20)
 
         let contentTop = headerY + headerHeight
         let contentH = max(10, h - contentTop)
@@ -888,8 +808,8 @@ final class DetailOverlayView: NSView {
                     self?.onTrackIndexSelected?(idx, track)
                     self?.onTrackSelected?(track)
                 }
-                row.onQueueAction = { [weak self] action in
-                    self?.onTrackQueueAction?(track, action)
+                row.onContextMenuRequested = { [weak self] in
+                    self?.onTrackContextMenuRequested?(track)
                 }
                 trackStack.addArrangedSubview(row)
             }
@@ -901,13 +821,9 @@ final class DetailOverlayView: NSView {
         onBack?()
     }
 
-    @objc private func playAllClicked() {
-        onPlayAll?()
-    }
-
     override func menu(for event: NSEvent) -> NSMenu? {
-        guard let onBatchQueueAction, !currentTracks.isEmpty else { return nil }
-        return makeQueueContextMenu(for: .playlist, handler: onBatchQueueAction)
+        guard !currentTracks.isEmpty else { return nil }
+        return onDetailContextMenuRequested?()
     }
 }
 
@@ -920,12 +836,13 @@ open class LibraryContentView: NSView {
     open override var isFlipped: Bool { true }
 
     public var onItemClicked: ((MediaCardItem) -> Void)?
-    public var onItemQueueAction: ((MediaCardItem, LibraryQueueAction) -> Void)?
+    public var onItemContextMenuRequested: ((MediaCardItem) -> NSMenu?)?
     public var onTrackSelected: ((MusicTrack) -> Void)?
     public var onTrackIndexSelected: ((Int, MusicTrack) -> Void)?
-    public var onTrackQueueAction: ((MusicTrack, LibraryQueueAction) -> Void)?
-    public var onPlayAll: (([MusicTrack]) -> Void)?
-    public var onDetailBatchQueueAction: (([MusicTrack], LibraryQueueAction) -> Void)?
+    public var onTrackContextMenuRequested: ((MusicTrack) -> NSMenu?)?
+    public var onDetailPlayIntent: (([MusicTrack], MediaPlayIntent) -> Void)?
+    public var detailPlayMenuDescriptorProvider: (() -> MediaActionMenuDescriptor)?
+    public var onDetailContextMenuRequested: (([MusicTrack]) -> NSMenu?)?
     public var onReachedBottom: (() -> Void)?
 
     public private(set) var is2Col: Bool = true
@@ -1025,13 +942,16 @@ open class LibraryContentView: NSView {
         detailOverlay.onBack = { [weak self] in
             self?.hideDetail()
         }
-        detailOverlay.onPlayAll = { [weak self] in
-            guard let self else { return }
-            self.onPlayAll?(self.currentDetailTracks)
+        detailOverlay.playMenuDescriptorProvider = { [weak self] in
+            self?.detailPlayMenuDescriptorProvider?() ?? MediaActionMenuDescriptor(sections: [])
         }
-        detailOverlay.onBatchQueueAction = { [weak self] action in
+        detailOverlay.onPlayIntent = { [weak self] intent in
             guard let self else { return }
-            self.onDetailBatchQueueAction?(self.currentDetailTracks, action)
+            self.onDetailPlayIntent?(self.currentDetailTracks, intent)
+        }
+        detailOverlay.onDetailContextMenuRequested = { [weak self] in
+            guard let self else { return nil }
+            return self.onDetailContextMenuRequested?(self.currentDetailTracks)
         }
         detailOverlay.onTrackIndexSelected = { [weak self] idx, track in
             self?.onTrackIndexSelected?(idx, track)
@@ -1039,8 +959,8 @@ open class LibraryContentView: NSView {
         detailOverlay.onTrackSelected = { [weak self] track in
             self?.onTrackSelected?(track)
         }
-        detailOverlay.onTrackQueueAction = { [weak self] track, action in
-            self?.onTrackQueueAction?(track, action)
+        detailOverlay.onTrackContextMenuRequested = { [weak self] track in
+            self?.onTrackContextMenuRequested?(track)
         }
         addSubview(detailOverlay)
     }
@@ -1166,8 +1086,8 @@ open class LibraryContentView: NSView {
                         card.onClick = { [weak self] in
                             self?.onItemClicked?(item)
                         }
-                        card.onQueueAction = { [weak self] action in
-                            self?.onItemQueueAction?(item, action)
+                        card.onContextMenuRequested = { [weak self] in
+                            self?.onItemContextMenuRequested?(item)
                         }
                         rowStack.addArrangedSubview(card)
                     } else {
@@ -1190,8 +1110,8 @@ open class LibraryContentView: NSView {
                 row.onClick = { [weak self] in
                     self?.onItemClicked?(item)
                 }
-                row.onQueueAction = { [weak self] action in
-                    self?.onItemQueueAction?(item, action)
+                row.onContextMenuRequested = { [weak self] in
+                    self?.onItemContextMenuRequested?(item)
                 }
                 stackView.addArrangedSubview(row)
             }

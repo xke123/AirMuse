@@ -427,6 +427,90 @@ public actor AppleMusicProvider:
         return try await ampClient.fetchArtistStation(artistID: artistID, generation: gen)
     }
 
+    // MARK: - MediaResourceMutationProvider
+
+    public func mediaActionCapabilities(for resource: MediaResourceReference) async -> MediaActionCapabilities {
+        let isLoggedIn = await sessionAdapter.webSessionState.isLoggedIn
+        let isWritablePlaylist: Bool
+        if case .playlist(let ownership) = resource.kind {
+            isWritablePlaylist = ownership.isContainerWritable
+        } else {
+            isWritablePlaylist = false
+        }
+
+        // Only expose verified write capabilities; unverified song/album/playlist writes stay disabled honestly.
+        let canFavoriteArtist = isLoggedIn && resource.kind == .artist
+        let canReadFavorite = isLoggedIn && resource.kind == .artist
+        let canReadLibrary = isLoggedIn && (resource.kind == .song || resource.kind == .queueEntry || resource.kind == .album || isWritablePlaylist)
+
+        return MediaActionCapabilities(
+            isAuthenticated: isLoggedIn,
+            canPlay: true,
+            canReadLibraryMembership: canReadLibrary,
+            canAddToLibrary: false,
+            canRemoveFromLibrary: false,
+            canReadFavorite: canReadFavorite,
+            canSetFavorite: canFavoriteArtist,
+            canStartSongStation: false,
+            canStartArtistStation: true,
+            canReorderQueue: true,
+            canRemoveFromQueue: true
+        )
+    }
+
+    public func fetchResourceState(_ resource: MediaResourceReference) async throws -> MediaResourceState {
+        let isLoggedIn = await sessionAdapter.webSessionState.isLoggedIn
+        guard isLoggedIn else {
+            return .unknown
+        }
+        switch resource.kind {
+        case .artist:
+            let detail = try await fetchArtistDetail(artistID: resource.canonicalID, isLibrary: resource.isLibrary)
+            return MediaResourceState(
+                libraryMembership: .unknown,
+                favorite: .known(detail.isFavorited)
+            )
+        default:
+            return .unknown
+        }
+    }
+
+    public func addToLibrary(_ resource: MediaResourceReference) async throws -> MediaMutationReceipt {
+        if case .playlist(let ownership) = resource.kind, !ownership.isContainerWritable {
+            throw MediaActionError.readOnlyPlaylist
+        }
+        throw MediaActionError.unsupportedCapability("Apple Music 资料库添加接口尚待实机验证")
+    }
+
+    public func removeFromLibrary(_ resource: MediaResourceReference) async throws -> MediaMutationReceipt {
+        if case .playlist(let ownership) = resource.kind, !ownership.isContainerWritable {
+            throw MediaActionError.readOnlyPlaylist
+        }
+        throw MediaActionError.unsupportedCapability("Apple Music 资料库移除接口尚待实机验证")
+    }
+
+    public func setFavorite(_ resource: MediaResourceReference, enabled: Bool) async throws -> MediaMutationReceipt {
+        let isLoggedIn = await sessionAdapter.webSessionState.isLoggedIn
+        guard isLoggedIn else {
+            throw MediaActionError.notAuthenticated
+        }
+        if case .playlist(let ownership) = resource.kind, !ownership.isContainerWritable {
+            throw MediaActionError.readOnlyPlaylist
+        }
+        switch resource.kind {
+        case .artist:
+            try await setArtistRating(artistID: resource.canonicalID, value: enabled ? 1 : nil)
+            let updated = try? await fetchArtistDetail(artistID: resource.canonicalID, isLibrary: resource.isLibrary)
+            let confirmed = updated?.isFavorited ?? enabled
+            return MediaMutationReceipt(
+                state: MediaResourceState(libraryMembership: .unknown, favorite: .known(confirmed)),
+                message: confirmed ? "已收藏艺人" : "已取消收藏艺人"
+            )
+        default:
+            throw MediaActionError.unsupportedCapability("Apple Music 该资源收藏接口尚待实机验证")
+        }
+    }
+
     public func fetchEditorialCategories(name: String = "music") async throws -> [AmpCategory] {
         let client = self.ampClient
         return try await loadCachedPublic(
@@ -1194,3 +1278,5 @@ private extension Artist {
 public extension Notification.Name {
     static let appleMusicRequiresAuthentication = Notification.Name("AirMuseAppleMusicRequiresAuthenticationNotification")
 }
+
+extension AppleMusicProvider: MediaResourceMutationProvider {}

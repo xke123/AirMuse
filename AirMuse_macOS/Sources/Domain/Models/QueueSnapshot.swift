@@ -2,9 +2,10 @@ import Foundation
 
 // MARK: - QueueInsertionIntent
 
-/// Unified four playback/queue insertion intents shared across Library, Context Menus, and future Play Menu.
+/// Unified five playback/queue insertion intents shared across Library, Context Menus, and Play Menu.
 public enum QueueInsertionIntent: String, Sendable, Equatable, Codable {
     case replaceAndPlay
+    case shuffleAndPlay
     case interruptAndPlay
     case prepend
     case append

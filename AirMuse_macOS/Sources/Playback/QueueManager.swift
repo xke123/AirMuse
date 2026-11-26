@@ -323,6 +323,8 @@ public struct QueueManager: Sendable {
         loadingState: QueueLoadingState = .idle,
         batchID: UUID? = nil,
         startPlayback: Bool = true,
+        shuffleOverride: Bool? = nil,
+        pickRandomFirstWhenShuffling: Bool = false,
         using rng: inout R
     ) -> QueueEntry? {
         let prevConfirmed = confirmedCurrent
@@ -333,6 +335,9 @@ public struct QueueManager: Sendable {
         self.owner = owner
         self.capabilities = capabilities ?? (owner == .remoteEngine ? .remoteStationDefault : .fullLocal)
         self.loadingState = loadingState
+        if let shuffleOverride {
+            self.requestedShuffle = (owner == .localCoordinator) ? shuffleOverride : false
+        }
 
         entriesByID.removeAll()
         baselineSlots.removeAll()
@@ -345,6 +350,7 @@ public struct QueueManager: Sendable {
         guard !entries.isEmpty else {
             self.activeTarget = nil
             self.playbackPhase = .idle
+            self.effectiveShuffle = false
             return nil
         }
 
@@ -360,12 +366,61 @@ public struct QueueManager: Sendable {
 
         let safeIndex = min(max(0, startIndex), entries.count - 1)
         if startPlayback {
-            let chosen = entries[safeIndex]
-            self.activeTarget = target ?? PlaybackTarget(
-                kind: owner == .remoteEngine ? .station : .song,
-                providerResourceID: chosen.track.providerTrackID.isEmpty ? chosen.track.id : chosen.track.providerTrackID,
-                title: chosen.track.title
-            )
+            let chosen: QueueEntry
+            var remainingSlots: [QueueSlot]
+
+            if requestedShuffle && owner == .localCoordinator && !loadingState.isLoading && pickRandomFirstWhenShuffling {
+                var shuffledSlots = entries.map { QueueSlot.entry($0.id) }
+                shuffledSlots.shuffle(using: &rng)
+                if let firstSlot = shuffledSlots.first,
+                   case .entry(let firstID) = firstSlot,
+                   let firstEntry = entriesByID[firstID] {
+                    chosen = firstEntry
+                    remainingSlots = Array(shuffledSlots.dropFirst())
+                    effectiveShuffle = true
+                } else {
+                    chosen = entries[safeIndex]
+                    remainingSlots = entries[(safeIndex + 1)...].map { .entry($0.id) }
+                    effectiveShuffle = false
+                }
+            } else {
+                chosen = entries[safeIndex]
+                remainingSlots = entries[(safeIndex + 1)...].map { .entry($0.id) }
+                if let batchID, loadingState.isLoading {
+                    remainingSlots.append(.batchTail(batchID))
+                }
+
+                if requestedShuffle && owner == .localCoordinator {
+                    if loadingState.isLoading {
+                        // Defer full shuffle until pagination finishes (P1-02)
+                        effectiveShuffle = false
+                    } else {
+                        var others = entries.filter { $0.id != chosen.id }.map { QueueSlot.entry($0.id) }
+                        others.shuffle(using: &rng)
+                        remainingSlots = others
+                        effectiveShuffle = true
+                    }
+                } else {
+                    effectiveShuffle = false
+                }
+            }
+
+            if let target {
+                self.activeTarget = PlaybackTarget(
+                    kind: target.kind,
+                    providerResourceID: owner == .remoteEngine
+                        ? target.providerResourceID
+                        : (chosen.track.providerTrackID.isEmpty ? chosen.track.id : chosen.track.providerTrackID),
+                    title: chosen.track.title,
+                    storefront: target.storefront
+                )
+            } else {
+                self.activeTarget = PlaybackTarget(
+                    kind: owner == .remoteEngine ? .station : .song,
+                    providerResourceID: chosen.track.providerTrackID.isEmpty ? chosen.track.id : chosen.track.providerTrackID,
+                    title: chosen.track.title
+                )
+            }
             self.playbackPhase = .preparing
 
             reservation = ReservationRecord(
@@ -375,25 +430,6 @@ public struct QueueManager: Sendable {
                 previousConfirmed: prevConfirmed,
                 forwardCandidate: nil
             )
-
-            var remainingSlots: [QueueSlot] = entries[(safeIndex + 1)...].map { .entry($0.id) }
-            if let batchID, loadingState.isLoading {
-                remainingSlots.append(.batchTail(batchID))
-            }
-
-            if requestedShuffle && owner == .localCoordinator {
-                if loadingState.isLoading {
-                    // Defer full shuffle until pagination finishes (P1-02)
-                    effectiveShuffle = false
-                } else {
-                    var others = entries.filter { $0.id != chosen.id }.map { QueueSlot.entry($0.id) }
-                    others.shuffle(using: &rng)
-                    remainingSlots = others
-                    effectiveShuffle = true
-                }
-            } else {
-                effectiveShuffle = false
-            }
 
             upcomingSlots = remainingSlots
             pruneUnreferencedEntries()

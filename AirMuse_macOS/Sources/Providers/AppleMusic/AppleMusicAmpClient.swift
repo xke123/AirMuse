@@ -1566,6 +1566,26 @@ public actor AppleMusicAmpClient {
         let durationMs = (attrs["durationInMillis"] as? NSNumber)?.int64Value ?? 0
         let rawArt = (attrs["artwork"] as? [String: Any])?["url"] as? String
 
+        var albumID: String? = nil
+        var parsedArtists: [MediaArtistRef] = []
+        if let rel = item["relationships"] as? [String: Any] {
+            if let albumsData = (rel["albums"] as? [String: Any])?["data"] as? [[String: Any]],
+               let firstAlbum = albumsData.first,
+               let aid = firstAlbum["id"] as? String {
+                albumID = aid
+            }
+            if let artistsData = (rel["artists"] as? [String: Any])?["data"] as? [[String: Any]] {
+                for artistObj in artistsData {
+                    if let artistID = artistObj["id"] as? String, !artistID.isEmpty {
+                        let artistAttrs = artistObj["attributes"] as? [String: Any]
+                        let artistName = (artistAttrs?["name"] as? String) ?? (attrs["artistName"] as? String) ?? "歌手"
+                        let isLib = artistID.hasPrefix("r.")
+                        parsedArtists.append(MediaArtistRef(id: artistID, name: artistName, isLibrary: isLib))
+                    }
+                }
+            }
+        }
+
         let effectiveTrackID = catalogID ?? id
         return MusicTrack(
             id: id,
@@ -1575,7 +1595,9 @@ public actor AppleMusicAmpClient {
             durationMs: durationMs,
             artworkURL: formatArtworkURL(rawArt),
             providerID: "apple_music",
-            providerTrackID: effectiveTrackID
+            providerTrackID: effectiveTrackID,
+            albumID: albumID,
+            artists: parsedArtists
         )
     }
 
