@@ -60,10 +60,48 @@ public actor LyricsRepositoryV2 {
         let key = track.trackKey
         activeTrackKey = key
 
+        AppLogger.shared.emit(
+            eventName: "lyrics.lookup.requested",
+            category: "LYRICS",
+            level: .debug,
+            phase: .begin,
+            source: DiagnosticSourceLocation(module: "Lyrics", component: "LyricsRepositoryV2", function: "requestLyrics"),
+            payload: {
+                DiagnosticEventPayload(
+                    context: DiagnosticContext(providerID: track.providerID, resourceRef: key),
+                    fields: ["sourcePolicy": .string("cache_then_providers")],
+                    message: "Lyrics lookup requested"
+                )
+            }
+        )
+
         let savedOffset = await loadOffset(trackKey: key)
         if var cached = await loadCachedDocument(trackKey: key) {
             cached.offsetMs = savedOffset
-            guard activeTrackKey == key else { return }
+            guard activeTrackKey == key else {
+                AppLogger.shared.emit(
+                    eventName: "lyrics.result.discarded",
+                    category: "LYRICS",
+                    level: .debug,
+                    outcome: .discarded,
+                    source: DiagnosticSourceLocation(module: "Lyrics", component: "LyricsRepositoryV2", function: "requestLyrics"),
+                    payload: { DiagnosticEventPayload(fields: ["reasonCode": .string("track_changed")], message: "Discarded cached lyrics for stale track") }
+                )
+                return
+            }
+            AppLogger.shared.emit(
+                eventName: "lyrics.cache.hit",
+                category: "LYRICS",
+                level: .debug,
+                source: DiagnosticSourceLocation(module: "Lyrics", component: "LyricsRepositoryV2", function: "requestLyrics"),
+                payload: {
+                    DiagnosticEventPayload(
+                        context: DiagnosticContext(providerID: track.providerID, resourceRef: key),
+                        fields: ["cacheSource": .string("sqlite_v2"), "lineCount": .int(cached.lines.count)],
+                        message: "Lyrics cache hit (lines=\(cached.lines.count))"
+                    )
+                }
+            )
             await store.update(lyrics: cached)
             return
         }
@@ -103,8 +141,37 @@ public actor LyricsRepositoryV2 {
                 if var doc = try await provider.fetchLyrics(for: track), !doc.lines.isEmpty {
                     let source = provider.providerID
                     await saveCachedDocument(doc, trackKey: key, source: source)
-                    guard !Task.isCancelled, activeTrackKey == key else { return }
+                    guard !Task.isCancelled, activeTrackKey == key else {
+                        AppLogger.shared.emit(
+                            eventName: "lyrics.result.discarded",
+                            category: "LYRICS",
+                            level: .debug,
+                            outcome: .discarded,
+                            source: DiagnosticSourceLocation(module: "Lyrics", component: "LyricsRepositoryV2", function: "fetchAndPersist"),
+                            payload: { DiagnosticEventPayload(fields: ["reasonCode": .string("track_changed_or_cancelled")], message: "Discarded fetched lyrics") }
+                        )
+                        return
+                    }
                     doc.offsetMs = await loadOffset(trackKey: key)
+                    AppLogger.shared.emit(
+                        eventName: "lyrics.lookup.completed",
+                        category: "LYRICS",
+                        level: .info,
+                        phase: .end,
+                        outcome: .succeeded,
+                        source: DiagnosticSourceLocation(module: "Lyrics", component: "LyricsRepositoryV2", function: "fetchAndPersist"),
+                        payload: {
+                            DiagnosticEventPayload(
+                                context: DiagnosticContext(providerID: track.providerID, resourceRef: key),
+                                fields: [
+                                    "source": .string(source),
+                                    "lineCount": .int(doc.lines.count),
+                                    "timed": .bool(doc.lines.contains(where: { $0.timeMs > 0 }))
+                                ],
+                                message: "Lyrics loaded from \(source) (lines=\(doc.lines.count))"
+                            )
+                        }
+                    )
                     await store.update(lyrics: doc)
                     return
                 }

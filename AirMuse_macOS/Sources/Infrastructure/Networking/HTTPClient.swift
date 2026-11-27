@@ -44,7 +44,21 @@ public final class URLSessionHTTPTransport: HTTPTransportProtocol, Sendable {
 
 /// Actor-isolated HTTP client with single-flight request deduplication,
 /// priority-aware bounded concurrency, total deadline enforcement, and typed error mapping.
-public actor HTTPClient {
+public actor HTTPClient: DiagnosticSnapshotProvider {
+    public nonisolated var componentName: String { "HTTPClient" }
+
+    public func captureDiagnosticSnapshot() async -> DiagnosticComponentSnapshot {
+        DiagnosticComponentSnapshot(
+            component: componentName,
+            availability: .available,
+            data: [
+                "activeCount": .int(activeCount),
+                "maxConcurrentRequests": .int(maxConcurrentRequests),
+                "queuedWaiters": .int(slotWaiters.count),
+                "inFlightCoalescedKeys": .int(inFlight.count)
+            ]
+        )
+    }
     private let transport: any HTTPTransportProtocol
     private let clock: any ClockProtocol
     private let maxConcurrentRequests: Int
@@ -62,8 +76,16 @@ public actor HTTPClient {
     }
 
     private final class InFlightEntry {
+        let ownerRequestID: UUID
+        let ownerTrace: DiagnosticTraceContext
         var task: Task<HTTPResponse, Error>?
         var waiters: [UUID: CheckedContinuation<HTTPResponse, Error>] = [:]
+        var consumerCount: Int = 1
+
+        init(ownerRequestID: UUID, ownerTrace: DiagnosticTraceContext) {
+            self.ownerRequestID = ownerRequestID
+            self.ownerTrace = ownerTrace
+        }
     }
 
     public init(
@@ -81,8 +103,34 @@ public actor HTTPClient {
     public func send(_ request: HTTPRequest) async throws -> HTTPResponse {
         try Task.checkCancellation()
 
+        let requestID = UUID()
+        let parentTrace = DiagnosticTrace.currentOrRoot()
+        let reqTrace = parentTrace.childSpan(context: DiagnosticContext(requestID: requestID))
+        let sanitizedURL = LogSanitizer.sanitizeURL(request.url)
+
+        AppLogger.shared.emit(
+            eventName: "http.request.created",
+            category: "HTTP",
+            level: .debug,
+            phase: .begin,
+            traceContext: reqTrace,
+            source: DiagnosticSourceLocation(module: "Infrastructure", component: "HTTPClient", function: "send"),
+            payload: {
+                DiagnosticEventPayload(
+                    context: DiagnosticContext(requestID: requestID),
+                    fields: [
+                        "method": .string(request.method.rawValue),
+                        "hostClass": .string(sanitizedURL.hostClass),
+                        "endpointTemplate": .string(sanitizedURL.endpointTemplate),
+                        "timeoutMs": .double(request.policy.totalDeadlineSeconds * 1000.0)
+                    ],
+                    message: "HTTP \(request.method.rawValue) \(sanitizedURL.endpointTemplate)"
+                )
+            }
+        )
+
         if !request.policy.deduplicate || request.policy.isSideEffecting {
-            return try await executeWithDeadlineAndRetries(request)
+            return try await executeWithDeadlineAndRetries(request, requestID: requestID, traceContext: reqTrace)
         }
 
         let key = Self.canonicalDeduplicationKey(for: request)
@@ -92,9 +140,29 @@ public actor HTTPClient {
         let isOwner: Bool
         if let existing = inFlight[key] {
             entry = existing
+            entry.consumerCount += 1
             isOwner = false
+            AppLogger.shared.emit(
+                eventName: "http.request.coalesced",
+                category: "HTTP",
+                level: .debug,
+                phase: .instant,
+                traceContext: reqTrace,
+                source: DiagnosticSourceLocation(module: "Infrastructure", component: "HTTPClient", function: "send"),
+                payload: {
+                    DiagnosticEventPayload(
+                        context: DiagnosticContext(requestID: entry.ownerRequestID),
+                        fields: [
+                            "ownerRequestID": .string(entry.ownerRequestID.uuidString),
+                            "consumerCount": .int(entry.consumerCount)
+                        ],
+                        links: [DiagnosticLink(traceID: entry.ownerTrace.traceID, spanID: entry.ownerTrace.spanID, relation: "coalescedFrom")],
+                        message: "Coalesced into owner request \(entry.ownerRequestID.uuidString.prefix(8))"
+                    )
+                }
+            )
         } else {
-            let created = InFlightEntry()
+            let created = InFlightEntry(ownerRequestID: requestID, ownerTrace: reqTrace)
             inFlight[key] = created
             entry = created
             isOwner = true
@@ -104,7 +172,7 @@ public actor HTTPClient {
             entry.task = Task { [weak self] in
                 guard let self else { throw CoreError.cancelled }
                 do {
-                    let response = try await self.executeWithDeadlineAndRetries(request)
+                    let response = try await self.executeWithDeadlineAndRetries(request, requestID: requestID, traceContext: reqTrace)
                     await self.finishInFlight(key: key, result: .success(response))
                     return response
                 } catch {
@@ -166,7 +234,7 @@ public actor HTTPClient {
 
     // MARK: - Bounded Concurrency & Priority Queue
 
-    private func acquireSlot(priority: RequestPriority) async throws {
+    private func acquireSlot(priority: RequestPriority, requestID: UUID, traceContext: DiagnosticTraceContext) async throws {
         try Task.checkCancellation()
         if activeCount < maxConcurrentRequests {
             activeCount += 1
@@ -176,6 +244,22 @@ public actor HTTPClient {
         let waiterID = UUID()
         nextSequence += 1
         let seq = nextSequence
+
+        AppLogger.shared.emit(
+            eventName: "http.request.queued",
+            category: "HTTP",
+            level: .debug,
+            phase: .instant,
+            traceContext: traceContext,
+            source: DiagnosticSourceLocation(module: "Infrastructure", component: "HTTPClient", function: "acquireSlot"),
+            payload: {
+                DiagnosticEventPayload(
+                    context: DiagnosticContext(requestID: requestID),
+                    fields: ["pool": .string("http_default"), "queueDepth": .int(slotWaiters.count + 1)],
+                    message: "HTTP request queued (depth=\(slotWaiters.count + 1))"
+                )
+            }
+        )
 
         try await withTaskCancellationHandler {
             try await withCheckedThrowingContinuation { (cont: CheckedContinuation<Void, Error>) in
@@ -219,25 +303,115 @@ public actor HTTPClient {
 
     // MARK: - Deadline, Retry & Error Mapping
 
-    private func executeWithDeadlineAndRetries(_ request: HTTPRequest) async throws -> HTTPResponse {
+    private func executeWithDeadlineAndRetries(
+        _ request: HTTPRequest,
+        requestID: UUID,
+        traceContext: DiagnosticTraceContext
+    ) async throws -> HTTPResponse {
         let startNs = clock.monotonicNanoseconds
         let totalBudgetNs = UInt64(max(0.1, request.policy.totalDeadlineSeconds) * 1_000_000_000)
         let deadlineNs = startNs &+ totalBudgetNs
         let maxAttempts = request.policy.isSideEffecting ? 1 : max(1, request.policy.maxRetries + 1)
+        let sanitizedURL = LogSanitizer.sanitizeURL(request.url)
 
         var lastError: CoreError = .timeout
+        var attemptsUsed = 0
+
+        func emitCompleted(outcome: DiagnosticOutcome, error: CoreError? = nil) {
+            let endNs = clock.monotonicNanoseconds
+            let durationMs = Double(endNs >= startNs ? endNs - startNs : 0) / 1_000_000.0
+            AppLogger.shared.emit(
+                eventName: "http.request.completed",
+                category: "HTTP",
+                level: outcome == .failed ? .error : .debug,
+                phase: .end,
+                outcome: outcome,
+                durationMs: durationMs,
+                traceContext: traceContext,
+                source: DiagnosticSourceLocation(module: "Infrastructure", component: "HTTPClient", function: "executeWithDeadlineAndRetries"),
+                payload: {
+                    DiagnosticEventPayload(
+                        context: DiagnosticContext(requestID: requestID, attempt: attemptsUsed),
+                        fields: [
+                            "attemptCount": .int(attemptsUsed),
+                            "endpointTemplate": .string(sanitizedURL.endpointTemplate)
+                        ],
+                        error: error.map { LogSanitizer.sanitizeError($0, stage: "http") },
+                        message: "HTTP \(request.method.rawValue) \(sanitizedURL.endpointTemplate) \(outcome.rawValue)"
+                    )
+                }
+            )
+        }
 
         for attempt in 0..<maxAttempts {
-            if Task.isCancelled { throw CoreError.cancelled }
+            attemptsUsed = attempt + 1
+            if Task.isCancelled {
+                AppLogger.shared.emit(
+                    eventName: "http.request.cancelled",
+                    category: "HTTP",
+                    level: .info,
+                    outcome: .cancelled,
+                    traceContext: traceContext,
+                    source: DiagnosticSourceLocation(module: "Infrastructure", component: "HTTPClient", function: "executeWithDeadlineAndRetries"),
+                    payload: {
+                        DiagnosticEventPayload(
+                            context: DiagnosticContext(requestID: requestID, attempt: attemptsUsed),
+                            fields: ["reasonCode": .string("task_cancelled"), "initiator": .string("caller")],
+                            message: "HTTP request cancelled"
+                        )
+                    }
+                )
+                emitCompleted(outcome: .cancelled, error: .cancelled)
+                throw CoreError.cancelled
+            }
 
             let nowNs = clock.monotonicNanoseconds
             if nowNs >= deadlineNs {
+                AppLogger.shared.emit(
+                    eventName: "http.request.timeout",
+                    category: "HTTP",
+                    level: .warn,
+                    outcome: .failed,
+                    traceContext: traceContext,
+                    source: DiagnosticSourceLocation(module: "Infrastructure", component: "HTTPClient", function: "executeWithDeadlineAndRetries"),
+                    payload: {
+                        DiagnosticEventPayload(
+                            context: DiagnosticContext(requestID: requestID, attempt: attemptsUsed),
+                            fields: ["stage": .string("total_deadline"), "deadlineMs": .double(request.policy.totalDeadlineSeconds * 1000.0)],
+                            message: "HTTP request deadline exceeded"
+                        )
+                    }
+                )
+                emitCompleted(outcome: .failed, error: .timeout)
                 throw CoreError.timeout
             }
             let remainingSeconds = Double(deadlineNs - nowNs) / 1_000_000_000.0
             let attemptTimeout = min(request.policy.attemptTimeoutSeconds, remainingSeconds)
 
-            try await acquireSlot(priority: request.policy.priority)
+            let slotStartNs = clock.monotonicNanoseconds
+            do {
+                try await acquireSlot(priority: request.policy.priority, requestID: requestID, traceContext: traceContext)
+            } catch {
+                emitCompleted(outcome: .cancelled, error: .cancelled)
+                throw error
+            }
+            let attemptStartNs = clock.monotonicNanoseconds
+            let queueWaitMs = Double(attemptStartNs >= slotStartNs ? attemptStartNs - slotStartNs : 0) / 1_000_000.0
+            AppLogger.shared.emit(
+                eventName: "http.request.started",
+                category: "HTTP",
+                level: .trace,
+                traceContext: traceContext,
+                source: DiagnosticSourceLocation(module: "Infrastructure", component: "HTTPClient", function: "executeWithDeadlineAndRetries"),
+                payload: {
+                    DiagnosticEventPayload(
+                        context: DiagnosticContext(requestID: requestID, attempt: attemptsUsed),
+                        fields: ["queueWaitMs": .double(queueWaitMs), "deadlineMs": .double(attemptTimeout * 1000.0)],
+                        message: "HTTP attempt \(attemptsUsed) started"
+                    )
+                }
+            )
+
             let response: HTTPResponse
             do {
                 response = try await transport.send(request, timeoutSeconds: attemptTimeout)
@@ -245,40 +419,166 @@ public actor HTTPClient {
             } catch {
                 releaseSlot()
                 let mapped = Self.mapTransportError(error)
-                if mapped == .cancelled { throw CoreError.cancelled }
+                if mapped == .cancelled {
+                    AppLogger.shared.emit(
+                        eventName: "http.request.cancelled",
+                        category: "HTTP",
+                        level: .info,
+                        outcome: .cancelled,
+                        traceContext: traceContext,
+                        source: DiagnosticSourceLocation(module: "Infrastructure", component: "HTTPClient", function: "executeWithDeadlineAndRetries"),
+                        payload: {
+                            DiagnosticEventPayload(
+                                context: DiagnosticContext(requestID: requestID, attempt: attemptsUsed),
+                                fields: ["reasonCode": .string("transport_cancelled"), "initiator": .string("caller")],
+                                message: "HTTP transport cancelled"
+                            )
+                        }
+                    )
+                    emitCompleted(outcome: .cancelled, error: .cancelled)
+                    throw CoreError.cancelled
+                }
                 lastError = mapped
 
                 let canRetry = !request.policy.isSideEffecting &&
                     attempt + 1 < maxAttempts &&
                     Self.isRetryableError(mapped)
+                AppLogger.shared.emit(
+                    eventName: "http.request.failed",
+                    category: "HTTP",
+                    level: canRetry ? .warn : .error,
+                    outcome: .failed,
+                    traceContext: traceContext,
+                    source: DiagnosticSourceLocation(module: "Infrastructure", component: "HTTPClient", function: "executeWithDeadlineAndRetries"),
+                    payload: {
+                        DiagnosticEventPayload(
+                            context: DiagnosticContext(requestID: requestID, attempt: attemptsUsed),
+                            fields: ["retryable": .bool(canRetry)],
+                            error: LogSanitizer.sanitizeError(mapped, stage: "transport"),
+                            message: "HTTP transport failed (retryable=\(canRetry))"
+                        )
+                    }
+                )
                 if canRetry {
                     let delay = min(remainingSeconds, Self.backoffDelay(attempt: attempt))
                     if delay > 0.01 {
+                        AppLogger.shared.emit(
+                            eventName: "http.request.retry_scheduled",
+                            category: "HTTP",
+                            level: .info,
+                            traceContext: traceContext,
+                            source: DiagnosticSourceLocation(module: "Infrastructure", component: "HTTPClient", function: "executeWithDeadlineAndRetries"),
+                            payload: {
+                                DiagnosticEventPayload(
+                                    context: DiagnosticContext(requestID: requestID, attempt: attemptsUsed),
+                                    fields: [
+                                        "reasonCode": .string("transport_error"),
+                                        "backoffMs": .double(delay * 1000.0),
+                                        "nextAttempt": .int(attemptsUsed + 1)
+                                    ],
+                                    message: "Scheduling retry attempt \(attemptsUsed + 1)"
+                                )
+                            }
+                        )
                         try await sleepCheckingCancellation(seconds: delay)
                         continue
                     }
                 }
+                emitCompleted(outcome: .failed, error: mapped)
                 throw mapped
             }
 
+            let respNs = clock.monotonicNanoseconds
+            let attemptMs = Double(respNs >= attemptStartNs ? respNs - attemptStartNs : 0) / 1_000_000.0
+            AppLogger.shared.emit(
+                eventName: "http.response.received",
+                category: "HTTP",
+                level: response.statusCode >= 400 ? .warn : .debug,
+                durationMs: attemptMs,
+                traceContext: traceContext,
+                source: DiagnosticSourceLocation(module: "Infrastructure", component: "HTTPClient", function: "executeWithDeadlineAndRetries"),
+                payload: {
+                    DiagnosticEventPayload(
+                        context: DiagnosticContext(requestID: requestID, attempt: attemptsUsed),
+                        fields: [
+                            "statusCode": .int(response.statusCode),
+                            "responseBytes": .int(response.data.count)
+                        ],
+                        message: "HTTP \(response.statusCode) (\(response.data.count)B)"
+                    )
+                }
+            )
+
             switch response.statusCode {
             case 200..<300:
+                emitCompleted(outcome: .succeeded)
                 return response
             case 401:
+                let authErr: CoreError
                 switch request.policy.authScope {
-                case .clientRequired:
-                    throw CoreError.clientCredentialInvalid
-                default:
-                    throw CoreError.userCredentialInvalid
+                case .clientRequired: authErr = .clientCredentialInvalid
+                default: authErr = .userCredentialInvalid
                 }
+                AppLogger.shared.emit(
+                    eventName: "api.authorization_failed",
+                    category: "HTTP",
+                    level: .error,
+                    outcome: .failed,
+                    traceContext: traceContext,
+                    source: DiagnosticSourceLocation(module: "Infrastructure", component: "HTTPClient", function: "executeWithDeadlineAndRetries"),
+                    payload: {
+                        DiagnosticEventPayload(
+                            context: DiagnosticContext(requestID: requestID, attempt: attemptsUsed),
+                            fields: ["statusCode": .int(401), "classification": .string("unauthorized")],
+                            error: LogSanitizer.sanitizeError(authErr, stage: "auth"),
+                            message: "HTTP 401 unauthorized"
+                        )
+                    }
+                )
+                emitCompleted(outcome: .failed, error: authErr)
+                throw authErr
             case 403:
+                AppLogger.shared.emit(
+                    eventName: "api.authorization_failed",
+                    category: "HTTP",
+                    level: .error,
+                    outcome: .failed,
+                    traceContext: traceContext,
+                    source: DiagnosticSourceLocation(module: "Infrastructure", component: "HTTPClient", function: "executeWithDeadlineAndRetries"),
+                    payload: {
+                        DiagnosticEventPayload(
+                            context: DiagnosticContext(requestID: requestID, attempt: attemptsUsed),
+                            fields: ["statusCode": .int(403), "classification": .string("forbidden")],
+                            error: LogSanitizer.sanitizeError(CoreError.forbidden(nil), stage: "auth"),
+                            message: "HTTP 403 forbidden"
+                        )
+                    }
+                )
+                emitCompleted(outcome: .failed, error: .forbidden(nil))
                 throw CoreError.forbidden(nil)
             case 404:
+                emitCompleted(outcome: .failed, error: .notFound(nil))
                 throw CoreError.notFound(nil)
             case 429:
                 let retryAfter = Self.parseRetryAfter(response.headerValue(forCaseInsensitiveName: "Retry-After"), now: clock.now)
                 lastError = .rateLimited(retryAfterSeconds: retryAfter)
-                AppLogger.shared.log(category: .network, level: .warn, correlationID: "http-a\(attempt + 1)", message: "HTTP 429 限流: \(request.url.path) (retryAfter=\(retryAfter.map { String(format: "%.1fs", $0) } ?? "backoff"))")
+                AppLogger.shared.emit(
+                    eventName: "api.rate_limited",
+                    category: "HTTP",
+                    level: .warn,
+                    traceContext: traceContext,
+                    source: DiagnosticSourceLocation(module: "Infrastructure", component: "HTTPClient", function: "executeWithDeadlineAndRetries"),
+                    payload: {
+                        DiagnosticEventPayload(
+                            context: DiagnosticContext(requestID: requestID, attempt: attemptsUsed),
+                            fields: [
+                                "endpointTemplate": .string(sanitizedURL.endpointTemplate),
+                                "retryAfterMs": retryAfter.map { .double($0 * 1000.0) } ?? .absent
+                            ],
+                            message: "HTTP 429 rate limited"
+                        )
+                    }
+                )
                 let afterNs = clock.monotonicNanoseconds
                 let remSec = afterNs < deadlineNs ? Double(deadlineNs - afterNs) / 1_000_000_000.0 : 0
                 let waitSec = retryAfter ?? Self.backoffDelay(attempt: attempt)
@@ -286,6 +586,7 @@ public actor HTTPClient {
                     try await sleepCheckingCancellation(seconds: waitSec)
                     continue
                 }
+                emitCompleted(outcome: .failed, error: lastError)
                 throw lastError
             case 500..<600:
                 lastError = .server(statusCode: response.statusCode, message: nil)
@@ -294,16 +595,38 @@ public actor HTTPClient {
                 if !request.policy.isSideEffecting && attempt + 1 < maxAttempts {
                     let delay = min(remSec, Self.backoffDelay(attempt: attempt))
                     if delay > 0.01 {
+                        AppLogger.shared.emit(
+                            eventName: "http.request.retry_scheduled",
+                            category: "HTTP",
+                            level: .info,
+                            traceContext: traceContext,
+                            source: DiagnosticSourceLocation(module: "Infrastructure", component: "HTTPClient", function: "executeWithDeadlineAndRetries"),
+                            payload: {
+                                DiagnosticEventPayload(
+                                    context: DiagnosticContext(requestID: requestID, attempt: attemptsUsed),
+                                    fields: [
+                                        "reasonCode": .string("server_\(response.statusCode)"),
+                                        "backoffMs": .double(delay * 1000.0),
+                                        "nextAttempt": .int(attemptsUsed + 1)
+                                    ],
+                                    message: "Scheduling retry after HTTP \(response.statusCode)"
+                                )
+                            }
+                        )
                         try await sleepCheckingCancellation(seconds: delay)
                         continue
                     }
                 }
+                emitCompleted(outcome: .failed, error: lastError)
                 throw lastError
             default:
-                throw CoreError.transport(statusCode: response.statusCode, message: "HTTP \(response.statusCode)")
+                let err = CoreError.transport(statusCode: response.statusCode, message: "HTTP \(response.statusCode)")
+                emitCompleted(outcome: .failed, error: err)
+                throw err
             }
         }
 
+        emitCompleted(outcome: .failed, error: lastError)
         throw lastError
     }
 

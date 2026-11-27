@@ -27,7 +27,23 @@ public struct ProviderSessionRecord: Sendable, Equatable {
 
 /// Generic platform registry, lazy activation coordinator, and per-provider session isolation owner.
 /// Never imports concrete adapters; stores descriptors + lazy factories only.
-public actor ProviderSessionRegistry {
+public actor ProviderSessionRegistry: DiagnosticSnapshotProvider {
+    public nonisolated var componentName: String { "ProviderSessionRegistry" }
+
+    public func captureDiagnosticSnapshot() async -> DiagnosticComponentSnapshot {
+        DiagnosticComponentSnapshot(
+            component: componentName,
+            scopeRef: browsingProviderID?.rawValue,
+            availability: .available,
+            data: [
+                "registeredCount": .int(descriptorOrder.count),
+                "activatedCount": .int(adapters.count),
+                "browsingProviderID": browsingProviderID.map { .string($0.rawValue) } ?? .absent,
+                "subscriberCount": .int(snapshotContinuations.count),
+                "isShutDown": .bool(isShutDown)
+            ]
+        )
+    }
     private var factories: [ProviderID: any PlatformAdapterFactory] = [:]
     private var descriptorOrder: [ProviderID] = []
     private var adapters: [ProviderID: any PlatformAdapter] = [:]
@@ -59,9 +75,24 @@ public actor ProviderSessionRegistry {
 
     public func register(factory: any PlatformAdapterFactory) {
         let id = factory.descriptor.providerID
-        if factories[id] == nil {
-            descriptorOrder.append(id)
+        if factories[id] != nil {
+            AppLogger.shared.emit(
+                eventName: "platform.registration.rejected",
+                category: "PLATFORM",
+                level: .warn,
+                outcome: .rejected,
+                source: DiagnosticSourceLocation(module: "PlatformRuntime", component: "ProviderSessionRegistry", function: "register"),
+                payload: {
+                    DiagnosticEventPayload(
+                        context: DiagnosticContext(providerID: id.rawValue),
+                        fields: ["reasonCode": .string("duplicate_provider")],
+                        message: "Rejected duplicate provider registration: \(id.rawValue)"
+                    )
+                }
+            )
+            return
         }
+        descriptorOrder.append(id)
         factories[id] = factory
         if sessionStates[id] == nil {
             sessionStates[id] = .signedOut
@@ -72,6 +103,23 @@ public actor ProviderSessionRegistry {
         if browsingProviderID == nil && factory.descriptor.isAvailableInProduction {
             browsingProviderID = id
         }
+        AppLogger.shared.emit(
+            eventName: "platform.registered",
+            category: "PLATFORM",
+            level: .info,
+            outcome: .succeeded,
+            source: DiagnosticSourceLocation(module: "PlatformRuntime", component: "ProviderSessionRegistry", function: "register"),
+            payload: {
+                DiagnosticEventPayload(
+                    context: DiagnosticContext(providerID: id.rawValue),
+                    fields: [
+                        "descriptorRef": .string(id.rawValue),
+                        "isProduction": .bool(factory.descriptor.isAvailableInProduction)
+                    ],
+                    message: "Registered platform \(id.rawValue)"
+                )
+            }
+        )
     }
 
     public func registeredDescriptors(includeNonProduction: Bool = false) -> [PlatformDescriptor] {
@@ -95,28 +143,65 @@ public actor ProviderSessionRegistry {
     // MARK: - Browsing Context (Independent of Playback)
 
     public func setBrowsingProvider(_ providerID: ProviderID?) {
+        let previous = browsingProviderID
         guard let providerID else {
             browsingProviderID = nil
             return
         }
         guard factories[providerID] != nil else { return }
         browsingProviderID = providerID
+        if previous != providerID {
+            AppLogger.shared.emit(
+                eventName: "platform.browse.changed",
+                category: "PLATFORM",
+                level: .info,
+                outcome: .confirmed,
+                source: DiagnosticSourceLocation(module: "PlatformRuntime", component: "ProviderSessionRegistry", function: "setBrowsingProvider"),
+                payload: {
+                    DiagnosticEventPayload(
+                        context: DiagnosticContext(browsingProviderID: providerID.rawValue),
+                        fields: [
+                            "previousProvider": .string(previous?.rawValue ?? "absent"),
+                            "nextProvider": .string(providerID.rawValue)
+                        ],
+                        message: "Browsing provider changed: \(previous?.rawValue ?? "none") -> \(providerID.rawValue)"
+                    )
+                }
+            )
+        }
     }
 
     // MARK: - Lazy Activation & Session Management
 
     public func activate(providerID: ProviderID) async throws -> any PlatformAdapter {
+        let activationRef = UUID().uuidString
+        let gen = generations[providerID] ?? 0
+        let span = AppLogger.shared.beginSpan(
+            eventName: "platform.activation.requested",
+            category: "PLATFORM",
+            level: .info,
+            context: DiagnosticContext(providerID: providerID.rawValue, sessionGeneration: gen),
+            fields: ["activationRef": .string(activationRef), "reason": .string("on_demand")],
+            source: DiagnosticSourceLocation(module: "PlatformRuntime", component: "ProviderSessionRegistry", function: "activate"),
+            message: "Activation requested for \(providerID.rawValue)"
+        )
         guard !isShutDown else {
-            throw CoreError.engineUnavailable("Platform registry is shut down")
+            let err = CoreError.engineUnavailable("Platform registry is shut down")
+            AppLogger.shared.endSpan(span, endEventName: "platform.activation.failed", outcome: .failed, error: LogSanitizer.sanitizeError(err, stage: "activate"), message: "Registry is shut down")
+            throw err
         }
         if let existing = adapters[providerID] {
+            AppLogger.shared.endSpan(span, endEventName: "platform.activation.reused", outcome: .succeeded, fields: ["activationRef": .string(activationRef), "adapterRef": .string(providerID.rawValue)], message: "Reused activated adapter for \(providerID.rawValue)")
             return existing
         }
         guard let factory = factories[providerID] else {
-            throw CoreError.unsupported("Provider \(providerID.rawValue) is not registered")
+            let err = CoreError.unsupported("Provider \(providerID.rawValue) is not registered")
+            AppLogger.shared.endSpan(span, endEventName: "platform.activation.failed", outcome: .unsupported, error: LogSanitizer.sanitizeError(err, stage: "activate"), message: "Provider not registered")
+            throw err
         }
         let adapter = await factory.makeAdapter()
         adapters[providerID] = adapter
+        AppLogger.shared.endSpan(span, endEventName: "platform.activation.completed", outcome: .succeeded, fields: ["activationRef": .string(activationRef), "adapterRef": .string(providerID.rawValue)], message: "Activated adapter for \(providerID.rawValue)")
         return adapter
     }
 
@@ -153,6 +238,8 @@ public actor ProviderSessionRegistry {
     }
 
     public func publishSessionSnapshot(_ snapshot: SessionSnapshot, for providerID: ProviderID) {
+        let prevGen = generations[providerID] ?? 0
+        let prevState = sessionStates[providerID] ?? .signedOut
         if let ctx = snapshot.context {
             sessions[providerID] = ctx
             generations[providerID] = ctx.generation
@@ -164,6 +251,50 @@ public actor ProviderSessionRegistry {
         for c in snapshotContinuations.values {
             c.yield((providerID, snapshot))
         }
+        let newGen = generations[providerID] ?? prevGen
+        if newGen != prevGen {
+            AppLogger.shared.emit(
+                eventName: "session.generation.changed",
+                category: "SESSION",
+                level: .info,
+                source: DiagnosticSourceLocation(module: "PlatformRuntime", component: "ProviderSessionRegistry", function: "publishSessionSnapshot"),
+                payload: {
+                    DiagnosticEventPayload(
+                        context: DiagnosticContext(providerID: providerID.rawValue, sessionID: snapshot.context?.sessionID, sessionGeneration: newGen),
+                        fields: ["previousGeneration": .uint64(prevGen), "nextGeneration": .uint64(newGen)],
+                        message: "Session generation \(prevGen) -> \(newGen)"
+                    )
+                }
+            )
+        }
+        if prevState != snapshot.sessionState {
+            AppLogger.shared.emit(
+                eventName: "session.state.changed",
+                category: "SESSION",
+                level: .info,
+                source: DiagnosticSourceLocation(module: "PlatformRuntime", component: "ProviderSessionRegistry", function: "publishSessionSnapshot"),
+                payload: {
+                    DiagnosticEventPayload(
+                        context: DiagnosticContext(providerID: providerID.rawValue, sessionID: snapshot.context?.sessionID, sessionGeneration: newGen),
+                        fields: ["before": .string(String(describing: prevState)), "after": .string(String(describing: snapshot.sessionState)), "reasonCode": .string("snapshot_published")],
+                        message: "Session state changed for \(providerID.rawValue)"
+                    )
+                }
+            )
+        }
+        AppLogger.shared.emit(
+            eventName: "session.snapshot.published",
+            category: "SESSION",
+            level: .debug,
+            source: DiagnosticSourceLocation(module: "PlatformRuntime", component: "ProviderSessionRegistry", function: "publishSessionSnapshot"),
+            payload: {
+                DiagnosticEventPayload(
+                    context: DiagnosticContext(providerID: providerID.rawValue, sessionID: snapshot.context?.sessionID, sessionGeneration: newGen),
+                    fields: ["subscriberCount": .int(snapshotContinuations.count)],
+                    message: "Published session snapshot to \(snapshotContinuations.count) subscribers"
+                )
+            }
+        )
     }
 
     public func sessionSnapshots() -> AsyncStream<(ProviderID, SessionSnapshot)> {
@@ -206,11 +337,39 @@ public actor ProviderSessionRegistry {
     public func shutdownAll() async {
         guard !isShutDown else { return }
         isShutDown = true
+        let count = adapters.count
         for id in adapters.keys {
             let nextGen = (generations[id] ?? 0) &+ 1
             generations[id] = nextGen
+            AppLogger.shared.emit(
+                eventName: "platform.deactivated",
+                category: "PLATFORM",
+                level: .notice,
+                outcome: .succeeded,
+                source: DiagnosticSourceLocation(module: "PlatformRuntime", component: "ProviderSessionRegistry", function: "shutdownAll"),
+                payload: {
+                    DiagnosticEventPayload(
+                        context: DiagnosticContext(providerID: id.rawValue, sessionGeneration: nextGen),
+                        fields: ["reason": .string("shutdown"), "adapterRef": .string(id.rawValue)],
+                        message: "Deactivated platform \(id.rawValue)"
+                    )
+                }
+            )
         }
         adapters.removeAll()
         sessions.removeAll()
+        AppLogger.shared.emit(
+            eventName: "session.shutdown.completed",
+            category: "SESSION",
+            level: .notice,
+            outcome: .succeeded,
+            source: DiagnosticSourceLocation(module: "PlatformRuntime", component: "ProviderSessionRegistry", function: "shutdownAll"),
+            payload: {
+                DiagnosticEventPayload(
+                    fields: ["releasedCount": .int(count)],
+                    message: "ProviderSessionRegistry shutdown completed (released=\(count))"
+                )
+            }
+        )
     }
 }

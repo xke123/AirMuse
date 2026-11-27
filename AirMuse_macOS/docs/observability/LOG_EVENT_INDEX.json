@@ -1,0 +1,6107 @@
+{
+  "schemaVersion": 1,
+  "baselineCommit": "791ae679d8e1c7fc03252f57dc4cef09c13a7005",
+  "totalEvents": 309,
+  "events": [
+    {
+      "eventName": "app.launch.begin",
+      "domain": "APP",
+      "owner": "AppLifecycleCoordinator / CompositionRoot / AppDelegate",
+      "context": "runID",
+      "requiredFields": "launchReason,build,commit",
+      "trigger": "启动入口",
+      "specLine": 11,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "PENDING_INTEGRATION",
+      "naReason": null
+    },
+    {
+      "eventName": "app.environment.detected",
+      "domain": "APP",
+      "owner": "AppLifecycleCoordinator / CompositionRoot / AppDelegate",
+      "context": "runID",
+      "requiredFields": "os,arch,sdk,displayRefreshHz",
+      "trigger": "实测环境/unknown",
+      "specLine": 12,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "PENDING_INTEGRATION",
+      "naReason": null
+    },
+    {
+      "eventName": "app.configuration.loaded",
+      "domain": "APP",
+      "owner": "AppLifecycleCoordinator / CompositionRoot / AppDelegate",
+      "context": "runID",
+      "requiredFields": "theme,logMode,settingsRevision",
+      "trigger": "配置加载",
+      "specLine": 13,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "PENDING_INTEGRATION",
+      "naReason": null
+    },
+    {
+      "eventName": "app.service.initialized",
+      "domain": "APP",
+      "owner": "AppLifecycleCoordinator / CompositionRoot / AppDelegate",
+      "context": "runID",
+      "requiredFields": "service,durationMs,outcome",
+      "trigger": "每个服务",
+      "specLine": 14,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "PENDING_INTEGRATION",
+      "naReason": null
+    },
+    {
+      "eventName": "app.stage.ready",
+      "domain": "APP",
+      "owner": "AppLifecycleCoordinator / CompositionRoot / AppDelegate",
+      "context": "runID",
+      "requiredFields": "windowRef,durationMs",
+      "trigger": "宿主可交互",
+      "specLine": 15,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "PENDING_INTEGRATION",
+      "naReason": null
+    },
+    {
+      "eventName": "app.first_frame",
+      "domain": "APP",
+      "owner": "AppLifecycleCoordinator / CompositionRoot / AppDelegate",
+      "context": "runID",
+      "requiredFields": "measurementSource,durationMs",
+      "trigger": "仅真实首帧证据",
+      "specLine": 16,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "PENDING_INTEGRATION",
+      "naReason": null
+    },
+    {
+      "eventName": "app.warmup.begin",
+      "domain": "APP",
+      "owner": "AppLifecycleCoordinator / CompositionRoot / AppDelegate",
+      "context": "runID",
+      "requiredFields": "service,policy",
+      "trigger": "预热开始",
+      "specLine": 17,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "PENDING_INTEGRATION",
+      "naReason": null
+    },
+    {
+      "eventName": "app.warmup.completed",
+      "domain": "APP",
+      "owner": "AppLifecycleCoordinator / CompositionRoot / AppDelegate",
+      "context": "runID",
+      "requiredFields": "service,outcome,durationMs",
+      "trigger": "预热结束",
+      "specLine": 18,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "PENDING_INTEGRATION",
+      "naReason": null
+    },
+    {
+      "eventName": "app.sleep",
+      "domain": "APP",
+      "owner": "AppLifecycleCoordinator / CompositionRoot / AppDelegate",
+      "context": "runID",
+      "requiredFields": "reason",
+      "trigger": "睡眠",
+      "specLine": 19,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "PENDING_INTEGRATION",
+      "naReason": null
+    },
+    {
+      "eventName": "app.wake",
+      "domain": "APP",
+      "owner": "AppLifecycleCoordinator / CompositionRoot / AppDelegate",
+      "context": "runID",
+      "requiredFields": "recoveryPolicy",
+      "trigger": "唤醒",
+      "specLine": 20,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "PENDING_INTEGRATION",
+      "naReason": null
+    },
+    {
+      "eventName": "app.memory_pressure",
+      "domain": "APP",
+      "owner": "AppLifecycleCoordinator / CompositionRoot / AppDelegate",
+      "context": "runID",
+      "requiredFields": "level,action",
+      "trigger": "压力与释放",
+      "specLine": 21,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "PENDING_INTEGRATION",
+      "naReason": null
+    },
+    {
+      "eventName": "app.shutdown.begin",
+      "domain": "APP",
+      "owner": "AppLifecycleCoordinator / CompositionRoot / AppDelegate",
+      "context": "runID",
+      "requiredFields": "reason",
+      "trigger": "退出",
+      "specLine": 22,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "PENDING_INTEGRATION",
+      "naReason": null
+    },
+    {
+      "eventName": "app.shutdown.completed",
+      "domain": "APP",
+      "owner": "AppLifecycleCoordinator / CompositionRoot / AppDelegate",
+      "context": "runID",
+      "requiredFields": "releasedCount,flushOutcome",
+      "trigger": "退出结果",
+      "specLine": 23,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "PENDING_INTEGRATION",
+      "naReason": null
+    },
+    {
+      "eventName": "platform.registered",
+      "domain": "PLATFORM",
+      "owner": "ProviderSessionRegistry / ApplicationServices",
+      "context": "providerID,sessionGeneration",
+      "requiredFields": "descriptorRef,capabilities",
+      "trigger": "注册不激活",
+      "specLine": 30,
+      "productionCallSites": [
+        "PlatformRuntime/ProviderSessionRegistry.swift:107"
+      ],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "IMPLEMENTED",
+      "naReason": null
+    },
+    {
+      "eventName": "platform.registration.rejected",
+      "domain": "PLATFORM",
+      "owner": "ProviderSessionRegistry / ApplicationServices",
+      "context": "providerID,sessionGeneration",
+      "requiredFields": "reasonCode",
+      "trigger": "重复或无效",
+      "specLine": 31,
+      "productionCallSites": [
+        "PlatformRuntime/ProviderSessionRegistry.swift:80"
+      ],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "IMPLEMENTED",
+      "naReason": null
+    },
+    {
+      "eventName": "platform.activation.requested",
+      "domain": "PLATFORM",
+      "owner": "ProviderSessionRegistry / ApplicationServices",
+      "context": "providerID,sessionGeneration",
+      "requiredFields": "activationRef,reason",
+      "trigger": "按需激活",
+      "specLine": 32,
+      "productionCallSites": [
+        "PlatformRuntime/ProviderSessionRegistry.swift:180"
+      ],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "IMPLEMENTED",
+      "naReason": null
+    },
+    {
+      "eventName": "platform.activation.reused",
+      "domain": "PLATFORM",
+      "owner": "ProviderSessionRegistry / ApplicationServices",
+      "context": "providerID,sessionGeneration",
+      "requiredFields": "activationRef,adapterRef",
+      "trigger": "复用/合并",
+      "specLine": 33,
+      "productionCallSites": [
+        "PlatformRuntime/ProviderSessionRegistry.swift:194"
+      ],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "IMPLEMENTED",
+      "naReason": null
+    },
+    {
+      "eventName": "platform.activation.completed",
+      "domain": "PLATFORM",
+      "owner": "ProviderSessionRegistry / ApplicationServices",
+      "context": "providerID,sessionGeneration",
+      "requiredFields": "activationRef,adapterRef,durationMs",
+      "trigger": "实际创建",
+      "specLine": 34,
+      "productionCallSites": [
+        "PlatformRuntime/ProviderSessionRegistry.swift:204"
+      ],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "IMPLEMENTED",
+      "naReason": null
+    },
+    {
+      "eventName": "platform.activation.failed",
+      "domain": "PLATFORM",
+      "owner": "ProviderSessionRegistry / ApplicationServices",
+      "context": "providerID,sessionGeneration",
+      "requiredFields": "activationRef,error",
+      "trigger": "失败",
+      "specLine": 35,
+      "productionCallSites": [
+        "PlatformRuntime/ProviderSessionRegistry.swift:190",
+        "PlatformRuntime/ProviderSessionRegistry.swift:199"
+      ],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "IMPLEMENTED",
+      "naReason": null
+    },
+    {
+      "eventName": "platform.browse.changed",
+      "domain": "PLATFORM",
+      "owner": "ProviderSessionRegistry / ApplicationServices",
+      "context": "providerID,sessionGeneration",
+      "requiredFields": "previousProvider,nextProvider,routeRef",
+      "trigger": "浏览变更",
+      "specLine": 36,
+      "productionCallSites": [
+        "PlatformRuntime/ProviderSessionRegistry.swift:155"
+      ],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "IMPLEMENTED",
+      "naReason": null
+    },
+    {
+      "eventName": "platform.playback.changed",
+      "domain": "PLATFORM",
+      "owner": "ProviderSessionRegistry / ApplicationServices",
+      "context": "providerID,sessionGeneration",
+      "requiredFields": "previousProvider,nextProvider,leaseRef",
+      "trigger": "已确认播放路由",
+      "specLine": 37,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "platform.operation.routed",
+      "domain": "PLATFORM",
+      "owner": "ProviderSessionRegistry / ApplicationServices",
+      "context": "providerID,sessionGeneration",
+      "requiredFields": "operation,resourceRef,operationProviderID,browsingProviderID,playingProviderID",
+      "trigger": "目标路由",
+      "specLine": 38,
+      "productionCallSites": [
+        "Application/ApplicationServices.swift:372",
+        "Application/ApplicationServices.swift:503"
+      ],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "IMPLEMENTED",
+      "naReason": null
+    },
+    {
+      "eventName": "platform.capabilities.changed",
+      "domain": "PLATFORM",
+      "owner": "ProviderSessionRegistry / ApplicationServices",
+      "context": "providerID,sessionGeneration",
+      "requiredFields": "before,after,evidence",
+      "trigger": "有效能力",
+      "specLine": 39,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "platform.deactivated",
+      "domain": "PLATFORM",
+      "owner": "ProviderSessionRegistry / ApplicationServices",
+      "context": "providerID,sessionGeneration",
+      "requiredFields": "reason,adapterRef",
+      "trigger": "停用",
+      "specLine": 40,
+      "productionCallSites": [
+        "PlatformRuntime/ProviderSessionRegistry.swift:345"
+      ],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "IMPLEMENTED",
+      "naReason": null
+    },
+    {
+      "eventName": "platform.resources.released",
+      "domain": "PLATFORM",
+      "owner": "ProviderSessionRegistry / ApplicationServices",
+      "context": "providerID,sessionGeneration",
+      "requiredFields": "resourceType,count,outcome",
+      "trigger": "释放",
+      "specLine": 41,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "session.restore.begin",
+      "domain": "SESSION",
+      "owner": "SessionCoordinator / ProviderSessionRegistry / AccountService",
+      "context": "providerID,accountRef,sessionID,sessionGeneration",
+      "requiredFields": "hasStoredSession",
+      "trigger": "恢复",
+      "specLine": 48,
+      "productionCallSites": [
+        "Providers/AppleMusic/Session/SessionCoordinator.swift:316"
+      ],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "IMPLEMENTED",
+      "naReason": null
+    },
+    {
+      "eventName": "session.restore.completed",
+      "domain": "SESSION",
+      "owner": "SessionCoordinator / ProviderSessionRegistry / AccountService",
+      "context": "providerID,accountRef,sessionID,sessionGeneration",
+      "requiredFields": "outcome,authorizationState",
+      "trigger": "恢复结果",
+      "specLine": 49,
+      "productionCallSites": [
+        "Providers/AppleMusic/Session/SessionCoordinator.swift:357"
+      ],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "IMPLEMENTED",
+      "naReason": null
+    },
+    {
+      "eventName": "session.state.changed",
+      "domain": "SESSION",
+      "owner": "SessionCoordinator / ProviderSessionRegistry / AccountService",
+      "context": "providerID,accountRef,sessionID,sessionGeneration",
+      "requiredFields": "before,after,reasonCode",
+      "trigger": "状态转换",
+      "specLine": 50,
+      "productionCallSites": [
+        "PlatformRuntime/ProviderSessionRegistry.swift:272"
+      ],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "IMPLEMENTED",
+      "naReason": null
+    },
+    {
+      "eventName": "session.generation.changed",
+      "domain": "SESSION",
+      "owner": "SessionCoordinator / ProviderSessionRegistry / AccountService",
+      "context": "providerID,accountRef,sessionID,sessionGeneration",
+      "requiredFields": "previousGeneration,nextGeneration",
+      "trigger": "会话隔离",
+      "specLine": 51,
+      "productionCallSites": [
+        "PlatformRuntime/ProviderSessionRegistry.swift:257"
+      ],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "IMPLEMENTED",
+      "naReason": null
+    },
+    {
+      "eventName": "session.snapshot.published",
+      "domain": "SESSION",
+      "owner": "SessionCoordinator / ProviderSessionRegistry / AccountService",
+      "context": "providerID,accountRef,sessionID,sessionGeneration",
+      "requiredFields": "snapshotRevision,subscriberCount",
+      "trigger": "发布",
+      "specLine": 52,
+      "productionCallSites": [
+        "PlatformRuntime/ProviderSessionRegistry.swift:286"
+      ],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "IMPLEMENTED",
+      "naReason": null
+    },
+    {
+      "eventName": "session.account.changed",
+      "domain": "SESSION",
+      "owner": "SessionCoordinator / ProviderSessionRegistry / AccountService",
+      "context": "providerID,accountRef,sessionID,sessionGeneration",
+      "requiredFields": "previousAccountRef,nextAccountRef",
+      "trigger": "切换",
+      "specLine": 53,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "session.invalidated",
+      "domain": "SESSION",
+      "owner": "SessionCoordinator / ProviderSessionRegistry / AccountService",
+      "context": "providerID,accountRef,sessionID,sessionGeneration",
+      "requiredFields": "reasonCode",
+      "trigger": "失效",
+      "specLine": 54,
+      "productionCallSites": [
+        "Providers/AppleMusic/Session/SessionCoordinator.swift:629"
+      ],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "IMPLEMENTED",
+      "naReason": null
+    },
+    {
+      "eventName": "session.stale_result.discarded",
+      "domain": "SESSION",
+      "owner": "SessionCoordinator / ProviderSessionRegistry / AccountService",
+      "context": "providerID,accountRef,sessionID,sessionGeneration",
+      "requiredFields": "receivedGeneration,expectedGeneration,reasonCode",
+      "trigger": "过期",
+      "specLine": 55,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "session.scope.changed",
+      "domain": "SESSION",
+      "owner": "SessionCoordinator / ProviderSessionRegistry / AccountService",
+      "context": "providerID,accountRef,sessionID,sessionGeneration",
+      "requiredFields": "previousScopeRef,nextScopeRef",
+      "trigger": "缓存/状态域",
+      "specLine": 56,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "session.shutdown.completed",
+      "domain": "SESSION",
+      "owner": "SessionCoordinator / ProviderSessionRegistry / AccountService",
+      "context": "providerID,accountRef,sessionID,sessionGeneration",
+      "requiredFields": "outcome",
+      "trigger": "清理",
+      "specLine": 57,
+      "productionCallSites": [
+        "PlatformRuntime/ProviderSessionRegistry.swift:362"
+      ],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "IMPLEMENTED",
+      "naReason": null
+    },
+    {
+      "eventName": "auth.login.begin",
+      "domain": "AUTH",
+      "owner": "AccountService / AppleMusicIntegrationUI / SessionCoordinator / CredentialVault",
+      "context": "providerID,sessionID",
+      "requiredFields": "method",
+      "trigger": "登录",
+      "specLine": 64,
+      "productionCallSites": [
+        "Providers/AppleMusic/Session/SessionCoordinator.swift:134"
+      ],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "IMPLEMENTED",
+      "naReason": null
+    },
+    {
+      "eventName": "auth.web.navigation",
+      "domain": "AUTH",
+      "owner": "AccountService / AppleMusicIntegrationUI / SessionCoordinator / CredentialVault",
+      "context": "providerID,sessionID",
+      "requiredFields": "hostClass,stage",
+      "trigger": "无URL原文",
+      "specLine": 65,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "auth.callback.received",
+      "domain": "AUTH",
+      "owner": "AccountService / AppleMusicIntegrationUI / SessionCoordinator / CredentialVault",
+      "context": "providerID,sessionID",
+      "requiredFields": "sourceClass,validationResult",
+      "trigger": "无code",
+      "specLine": 66,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "auth.credential.detected",
+      "domain": "AUTH",
+      "owner": "AccountService / AppleMusicIntegrationUI / SessionCoordinator / CredentialVault",
+      "context": "providerID,sessionID",
+      "requiredFields": "credentialKind,present",
+      "trigger": "不记录长度或内容",
+      "specLine": 67,
+      "productionCallSites": [
+        "Providers/AppleMusic/AppleMusicAmpClient.swift:95"
+      ],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "IMPLEMENTED",
+      "naReason": null
+    },
+    {
+      "eventName": "auth.credential.verified",
+      "domain": "AUTH",
+      "owner": "AccountService / AppleMusicIntegrationUI / SessionCoordinator / CredentialVault",
+      "context": "providerID,sessionID",
+      "requiredFields": "credentialKind,outcome,expiryState",
+      "trigger": "校验",
+      "specLine": 68,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "auth.credential.expired",
+      "domain": "AUTH",
+      "owner": "AccountService / AppleMusicIntegrationUI / SessionCoordinator / CredentialVault",
+      "context": "providerID,sessionID",
+      "requiredFields": "credentialKind,reasonCode",
+      "trigger": "失效",
+      "specLine": 69,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "auth.authorization.changed",
+      "domain": "AUTH",
+      "owner": "AccountService / AppleMusicIntegrationUI / SessionCoordinator / CredentialVault",
+      "context": "providerID,sessionID",
+      "requiredFields": "before,after,evidence",
+      "trigger": "订阅/权限",
+      "specLine": 70,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "auth.refresh.begin",
+      "domain": "AUTH",
+      "owner": "AccountService / AppleMusicIntegrationUI / SessionCoordinator / CredentialVault",
+      "context": "providerID,sessionID",
+      "requiredFields": "reasonCode",
+      "trigger": "刷新",
+      "specLine": 71,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "auth.refresh.completed",
+      "domain": "AUTH",
+      "owner": "AccountService / AppleMusicIntegrationUI / SessionCoordinator / CredentialVault",
+      "context": "providerID,sessionID",
+      "requiredFields": "outcome,durationMs",
+      "trigger": "结束",
+      "specLine": 72,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "auth.login.completed",
+      "domain": "AUTH",
+      "owner": "AccountService / AppleMusicIntegrationUI / SessionCoordinator / CredentialVault",
+      "context": "providerID,sessionID",
+      "requiredFields": "outcome",
+      "trigger": "登录终态",
+      "specLine": 73,
+      "productionCallSites": [
+        "Providers/AppleMusic/Session/SessionCoordinator.swift:164",
+        "Providers/AppleMusic/Session/SessionCoordinator.swift:292"
+      ],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "IMPLEMENTED",
+      "naReason": null
+    },
+    {
+      "eventName": "auth.logout.begin",
+      "domain": "AUTH",
+      "owner": "AccountService / AppleMusicIntegrationUI / SessionCoordinator / CredentialVault",
+      "context": "providerID,sessionID",
+      "requiredFields": "accountRef",
+      "trigger": "退出",
+      "specLine": 74,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "auth.logout.completed",
+      "domain": "AUTH",
+      "owner": "AccountService / AppleMusicIntegrationUI / SessionCoordinator / CredentialVault",
+      "context": "providerID,sessionID",
+      "requiredFields": "credentialClearOutcome,cacheClearOutcome,engineOutcome",
+      "trigger": "退出终态",
+      "specLine": 75,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "http.request.created",
+      "domain": "HTTP",
+      "owner": "HTTPClient / AppleMusicAmpClient / independent lyrics transport",
+      "context": "requestID,providerID,attempt",
+      "requiredFields": "method,endpointTemplate,timeoutMs",
+      "trigger": "逻辑请求",
+      "specLine": 82,
+      "productionCallSites": [
+        "Providers/AppleMusic/AppleMusicAmpClient.swift:331",
+        "Infrastructure/Networking/HTTPClient.swift:112"
+      ],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "IMPLEMENTED",
+      "naReason": null
+    },
+    {
+      "eventName": "http.request.queued",
+      "domain": "HTTP",
+      "owner": "HTTPClient / AppleMusicAmpClient / independent lyrics transport",
+      "context": "requestID,providerID,attempt",
+      "requiredFields": "pool,queueDepth",
+      "trigger": "排队",
+      "specLine": 83,
+      "productionCallSites": [
+        "Infrastructure/Networking/HTTPClient.swift:249"
+      ],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "IMPLEMENTED",
+      "naReason": null
+    },
+    {
+      "eventName": "http.request.started",
+      "domain": "HTTP",
+      "owner": "HTTPClient / AppleMusicAmpClient / independent lyrics transport",
+      "context": "requestID,providerID,attempt",
+      "requiredFields": "queueWaitMs,deadlineMs",
+      "trigger": "实际传输",
+      "specLine": 84,
+      "productionCallSites": [
+        "Infrastructure/Networking/HTTPClient.swift:401"
+      ],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "IMPLEMENTED",
+      "naReason": null
+    },
+    {
+      "eventName": "http.request.coalesced",
+      "domain": "HTTP",
+      "owner": "HTTPClient / AppleMusicAmpClient / independent lyrics transport",
+      "context": "requestID,providerID,attempt",
+      "requiredFields": "ownerRequestID,consumerCount",
+      "trigger": "请求合并",
+      "specLine": 85,
+      "productionCallSites": [
+        "Infrastructure/Networking/HTTPClient.swift:146"
+      ],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "IMPLEMENTED",
+      "naReason": null
+    },
+    {
+      "eventName": "http.response.received",
+      "domain": "HTTP",
+      "owner": "HTTPClient / AppleMusicAmpClient / independent lyrics transport",
+      "context": "requestID,providerID,attempt",
+      "requiredFields": "statusCode,responseBytes,durationMs",
+      "trigger": "传输结果",
+      "specLine": 86,
+      "productionCallSites": [
+        "Infrastructure/Networking/HTTPClient.swift:494"
+      ],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "IMPLEMENTED",
+      "naReason": null
+    },
+    {
+      "eventName": "http.response.parsed",
+      "domain": "HTTP",
+      "owner": "HTTPClient / AppleMusicAmpClient / independent lyrics transport",
+      "context": "requestID,providerID,attempt",
+      "requiredFields": "itemCount,missingFieldCounts,parseMs",
+      "trigger": "解析",
+      "specLine": 87,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "http.request.retry_scheduled",
+      "domain": "HTTP",
+      "owner": "HTTPClient / AppleMusicAmpClient / independent lyrics transport",
+      "context": "requestID,providerID,attempt",
+      "requiredFields": "reasonCode,backoffMs,nextAttempt",
+      "trigger": "重试",
+      "specLine": 88,
+      "productionCallSites": [
+        "Infrastructure/Networking/HTTPClient.swift:466",
+        "Infrastructure/Networking/HTTPClient.swift:599"
+      ],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "IMPLEMENTED",
+      "naReason": null
+    },
+    {
+      "eventName": "http.request.timeout",
+      "domain": "HTTP",
+      "owner": "HTTPClient / AppleMusicAmpClient / independent lyrics transport",
+      "context": "requestID,providerID,attempt",
+      "requiredFields": "stage,deadlineMs",
+      "trigger": "超时",
+      "specLine": 89,
+      "productionCallSites": [
+        "Infrastructure/Networking/HTTPClient.swift:371"
+      ],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "IMPLEMENTED",
+      "naReason": null
+    },
+    {
+      "eventName": "http.request.cancelled",
+      "domain": "HTTP",
+      "owner": "HTTPClient / AppleMusicAmpClient / independent lyrics transport",
+      "context": "requestID,providerID,attempt",
+      "requiredFields": "reasonCode,initiator",
+      "trigger": "取消",
+      "specLine": 90,
+      "productionCallSites": [
+        "Infrastructure/Networking/HTTPClient.swift:350",
+        "Infrastructure/Networking/HTTPClient.swift:424"
+      ],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "IMPLEMENTED",
+      "naReason": null
+    },
+    {
+      "eventName": "http.request.failed",
+      "domain": "HTTP",
+      "owner": "HTTPClient / AppleMusicAmpClient / independent lyrics transport",
+      "context": "requestID,providerID,attempt",
+      "requiredFields": "error,retryable",
+      "trigger": "失败",
+      "specLine": 91,
+      "productionCallSites": [
+        "Infrastructure/Networking/HTTPClient.swift:447"
+      ],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "IMPLEMENTED",
+      "naReason": null
+    },
+    {
+      "eventName": "http.response.discarded",
+      "domain": "HTTP",
+      "owner": "HTTPClient / AppleMusicAmpClient / independent lyrics transport",
+      "context": "requestID,providerID,attempt",
+      "requiredFields": "reasonCode,expectedGeneration,actualGeneration",
+      "trigger": "过期",
+      "specLine": 92,
+      "productionCallSites": [
+        "Providers/AppleMusic/AppleMusicAmpClient.swift:355"
+      ],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "IMPLEMENTED",
+      "naReason": null
+    },
+    {
+      "eventName": "http.request.completed",
+      "domain": "HTTP",
+      "owner": "HTTPClient / AppleMusicAmpClient / independent lyrics transport",
+      "context": "requestID,providerID,attempt",
+      "requiredFields": "outcome,attemptCount,durationMs",
+      "trigger": "逻辑终态",
+      "specLine": 93,
+      "productionCallSites": [
+        "Infrastructure/Networking/HTTPClient.swift:324"
+      ],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "IMPLEMENTED",
+      "naReason": null
+    },
+    {
+      "eventName": "http.metrics.collected",
+      "domain": "HTTP",
+      "owner": "HTTPClient / AppleMusicAmpClient / independent lyrics transport",
+      "context": "requestID,providerID,attempt",
+      "requiredFields": "dnsMs,tcpMs,tlsMs,ttfbMs,source",
+      "trigger": "仅可获得的指标",
+      "specLine": 94,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "api.rate_limited",
+      "domain": "HTTP",
+      "owner": "HTTPClient / AppleMusicAmpClient / independent lyrics transport",
+      "context": "requestID,providerID,attempt",
+      "requiredFields": "scopeRef,retryAfterMs",
+      "trigger": "限流",
+      "specLine": 95,
+      "productionCallSites": [
+        "Infrastructure/Networking/HTTPClient.swift:566"
+      ],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "IMPLEMENTED",
+      "naReason": null
+    },
+    {
+      "eventName": "api.authorization_failed",
+      "domain": "HTTP",
+      "owner": "HTTPClient / AppleMusicAmpClient / independent lyrics transport",
+      "context": "requestID,providerID,attempt",
+      "requiredFields": "statusCode,classification",
+      "trigger": "401/403",
+      "specLine": 96,
+      "productionCallSites": [
+        "Infrastructure/Networking/HTTPClient.swift:523",
+        "Infrastructure/Networking/HTTPClient.swift:542"
+      ],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "IMPLEMENTED",
+      "naReason": null
+    },
+    {
+      "eventName": "api.schema_mismatch",
+      "domain": "HTTP",
+      "owner": "HTTPClient / AppleMusicAmpClient / independent lyrics transport",
+      "context": "requestID,providerID,attempt",
+      "requiredFields": "schemaRef,missingFields",
+      "trigger": "结构错误",
+      "specLine": 97,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "browse.page.requested",
+      "domain": "BROWSE",
+      "owner": "BrowseService / SearchCollectionService / AppleMusicAdapter / LibraryWindowController",
+      "context": "providerID,routeRef,browseGeneration",
+      "requiredFields": "scopeRef,routeKind",
+      "trigger": "请求",
+      "specLine": 104,
+      "productionCallSites": [
+        "Application/ApplicationServices.swift:38"
+      ],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "IMPLEMENTED",
+      "naReason": null
+    },
+    {
+      "eventName": "browse.page.loaded",
+      "domain": "BROWSE",
+      "owner": "BrowseService / SearchCollectionService / AppleMusicAdapter / LibraryWindowController",
+      "context": "providerID,routeRef,browseGeneration",
+      "requiredFields": "sectionCount,itemCount,cacheStatus",
+      "trigger": "响应",
+      "specLine": 105,
+      "productionCallSites": [
+        "Application/ApplicationServices.swift:101"
+      ],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "IMPLEMENTED",
+      "naReason": null
+    },
+    {
+      "eventName": "browse.page.rendered",
+      "domain": "BROWSE",
+      "owner": "BrowseService / SearchCollectionService / AppleMusicAdapter / LibraryWindowController",
+      "context": "providerID,routeRef,browseGeneration",
+      "requiredFields": "renderedCount,viewRevision",
+      "trigger": "实际渲染",
+      "specLine": 106,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "browse.page.cancelled",
+      "domain": "BROWSE",
+      "owner": "BrowseService / SearchCollectionService / AppleMusicAdapter / LibraryWindowController",
+      "context": "providerID,routeRef,browseGeneration",
+      "requiredFields": "reasonCode",
+      "trigger": "取消",
+      "specLine": 107,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "browse.page.discarded",
+      "domain": "BROWSE",
+      "owner": "BrowseService / SearchCollectionService / AppleMusicAdapter / LibraryWindowController",
+      "context": "providerID,routeRef,browseGeneration",
+      "requiredFields": "expectedGeneration,actualGeneration",
+      "trigger": "过期",
+      "specLine": 108,
+      "productionCallSites": [
+        "Application/ApplicationServices.swift:91"
+      ],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "IMPLEMENTED",
+      "naReason": null
+    },
+    {
+      "eventName": "browse.section.resolved",
+      "domain": "BROWSE",
+      "owner": "BrowseService / SearchCollectionService / AppleMusicAdapter / LibraryWindowController",
+      "context": "providerID,routeRef,browseGeneration",
+      "requiredFields": "sectionRef,kind,capabilities",
+      "trigger": "栏目",
+      "specLine": 109,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "browse.section.page.completed",
+      "domain": "BROWSE",
+      "owner": "BrowseService / SearchCollectionService / AppleMusicAdapter / LibraryWindowController",
+      "context": "providerID,routeRef,browseGeneration",
+      "requiredFields": "cursorRef,itemCount,hasNext",
+      "trigger": "栏目分页",
+      "specLine": 110,
+      "productionCallSites": [
+        "Application/ApplicationServices.swift:117"
+      ],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "IMPLEMENTED",
+      "naReason": null
+    },
+    {
+      "eventName": "collection.detail.requested",
+      "domain": "BROWSE",
+      "owner": "BrowseService / SearchCollectionService / AppleMusicAdapter / LibraryWindowController",
+      "context": "providerID,routeRef,browseGeneration",
+      "requiredFields": "resourceRef,resourceKind",
+      "trigger": "详情",
+      "specLine": 111,
+      "productionCallSites": [
+        "Application/ApplicationServices.swift:179"
+      ],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "IMPLEMENTED",
+      "naReason": null
+    },
+    {
+      "eventName": "collection.detail.loaded",
+      "domain": "BROWSE",
+      "owner": "BrowseService / SearchCollectionService / AppleMusicAdapter / LibraryWindowController",
+      "context": "providerID,routeRef,browseGeneration",
+      "requiredFields": "itemCount,totalCount,hasNext",
+      "trigger": "详情结果",
+      "specLine": 112,
+      "productionCallSites": [
+        "Application/ApplicationServices.swift:197"
+      ],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "IMPLEMENTED",
+      "naReason": null
+    },
+    {
+      "eventName": "collection.detail.failed",
+      "domain": "BROWSE",
+      "owner": "BrowseService / SearchCollectionService / AppleMusicAdapter / LibraryWindowController",
+      "context": "providerID,routeRef,browseGeneration",
+      "requiredFields": "error",
+      "trigger": "失败",
+      "specLine": 113,
+      "productionCallSites": [
+        "Application/ApplicationServices.swift:204"
+      ],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "IMPLEMENTED",
+      "naReason": null
+    },
+    {
+      "eventName": "search.requested",
+      "domain": "BROWSE",
+      "owner": "BrowseService / SearchCollectionService / AppleMusicAdapter / LibraryWindowController",
+      "context": "providerID,routeRef,browseGeneration",
+      "requiredFields": "queryRef,scopeRef",
+      "trigger": "搜索",
+      "specLine": 114,
+      "productionCallSites": [
+        "Application/ApplicationServices.swift:150"
+      ],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "IMPLEMENTED",
+      "naReason": null
+    },
+    {
+      "eventName": "search.debounced",
+      "domain": "BROWSE",
+      "owner": "BrowseService / SearchCollectionService / AppleMusicAdapter / LibraryWindowController",
+      "context": "providerID,routeRef,browseGeneration",
+      "requiredFields": "suppressedCount,delayMs",
+      "trigger": "防抖",
+      "specLine": 115,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "search.completed",
+      "domain": "BROWSE",
+      "owner": "BrowseService / SearchCollectionService / AppleMusicAdapter / LibraryWindowController",
+      "context": "providerID,routeRef,browseGeneration",
+      "requiredFields": "countsByKind,outcome",
+      "trigger": "搜索终态",
+      "specLine": 116,
+      "productionCallSites": [
+        "Application/ApplicationServices.swift:169",
+        "Application/ApplicationServices.swift:172"
+      ],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "IMPLEMENTED",
+      "naReason": null
+    },
+    {
+      "eventName": "search.result.discarded",
+      "domain": "BROWSE",
+      "owner": "BrowseService / SearchCollectionService / AppleMusicAdapter / LibraryWindowController",
+      "context": "providerID,routeRef,browseGeneration",
+      "requiredFields": "reasonCode,expectedGeneration,actualGeneration",
+      "trigger": "过期",
+      "specLine": 117,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "search.pagination.completed",
+      "domain": "BROWSE",
+      "owner": "BrowseService / SearchCollectionService / AppleMusicAdapter / LibraryWindowController",
+      "context": "providerID,routeRef,browseGeneration",
+      "requiredFields": "cursorRef,itemCount,totalLoaded",
+      "trigger": "搜索分页",
+      "specLine": 118,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "library.category.changed",
+      "domain": "BROWSE",
+      "owner": "BrowseService / SearchCollectionService / AppleMusicAdapter / LibraryWindowController",
+      "context": "providerID,routeRef,browseGeneration",
+      "requiredFields": "previousRouteRef,nextRouteRef",
+      "trigger": "分类",
+      "specLine": 119,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "resource.identity.resolved",
+      "domain": "RESOURCE",
+      "owner": "AppleMusicAdapter / SearchCollectionService / MediaActionResolver",
+      "context": "providerID,resourceRef,resourceKind,scopeRef",
+      "requiredFields": "identitySource,hasCatalogID,hasLibraryID",
+      "trigger": "真实身份",
+      "specLine": 126,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "resource.identity.invalid",
+      "domain": "RESOURCE",
+      "owner": "AppleMusicAdapter / SearchCollectionService / MediaActionResolver",
+      "context": "providerID,resourceRef,resourceKind,scopeRef",
+      "requiredFields": "reasonCode",
+      "trigger": "无效",
+      "specLine": 127,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "resource.mapping.resolved",
+      "domain": "RESOURCE",
+      "owner": "AppleMusicAdapter / SearchCollectionService / MediaActionResolver",
+      "context": "providerID,resourceRef,resourceKind,scopeRef",
+      "requiredFields": "catalogRef,libraryRef,evidence",
+      "trigger": "映射",
+      "specLine": 128,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "resource.mapping.failed",
+      "domain": "RESOURCE",
+      "owner": "AppleMusicAdapter / SearchCollectionService / MediaActionResolver",
+      "context": "providerID,resourceRef,resourceKind,scopeRef",
+      "requiredFields": "reasonCode",
+      "trigger": "失败",
+      "specLine": 129,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "resource.relationship.requested",
+      "domain": "RESOURCE",
+      "owner": "AppleMusicAdapter / SearchCollectionService / MediaActionResolver",
+      "context": "providerID,resourceRef,resourceKind,scopeRef",
+      "requiredFields": "itemSequence,requestedKinds",
+      "trigger": "关系查询",
+      "specLine": 130,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "resource.relationship.resolved",
+      "domain": "RESOURCE",
+      "owner": "AppleMusicAdapter / SearchCollectionService / MediaActionResolver",
+      "context": "providerID,resourceRef,resourceKind,scopeRef",
+      "requiredFields": "albumRef,artistRefs,outcome",
+      "trigger": "实际关系",
+      "specLine": 131,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "resource.relationship.discarded",
+      "domain": "RESOURCE",
+      "owner": "AppleMusicAdapter / SearchCollectionService / MediaActionResolver",
+      "context": "providerID,resourceRef,resourceKind,scopeRef",
+      "requiredFields": "reasonCode,itemSequence",
+      "trigger": "过期",
+      "specLine": 132,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "resource.ownership.resolved",
+      "domain": "RESOURCE",
+      "owner": "AppleMusicAdapter / SearchCollectionService / MediaActionResolver",
+      "context": "providerID,resourceRef,resourceKind,scopeRef",
+      "requiredFields": "ownership,evidence",
+      "trigger": "歌单所有权",
+      "specLine": 133,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "resource.permission.denied",
+      "domain": "RESOURCE",
+      "owner": "AppleMusicAdapter / SearchCollectionService / MediaActionResolver",
+      "context": "providerID,resourceRef,resourceKind,scopeRef",
+      "requiredFields": "action,reasonCode",
+      "trigger": "权限",
+      "specLine": 134,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "resource.capability.unavailable",
+      "domain": "RESOURCE",
+      "owner": "AppleMusicAdapter / SearchCollectionService / MediaActionResolver",
+      "context": "providerID,resourceRef,resourceKind,scopeRef",
+      "requiredFields": "capability,reasonCode",
+      "trigger": "不可用",
+      "specLine": 135,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "media.menu.resolved",
+      "domain": "MEDIA_ACTION",
+      "owner": "MediaActionService / MediaResourceStateStore / UI menu",
+      "context": "providerID,resourceRef,scopeRef,mutationID",
+      "requiredFields": "actionIDs,hiddenReasons",
+      "trigger": "菜单能力",
+      "specLine": 142,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "media.action.requested",
+      "domain": "MEDIA_ACTION",
+      "owner": "MediaActionService / MediaResourceStateStore / UI menu",
+      "context": "providerID,resourceRef,scopeRef,mutationID",
+      "requiredFields": "action,location",
+      "trigger": "操作入口",
+      "specLine": 143,
+      "productionCallSites": [
+        "Application/ApplicationServices.swift:478"
+      ],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "IMPLEMENTED",
+      "naReason": null
+    },
+    {
+      "eventName": "media.action.validated",
+      "domain": "MEDIA_ACTION",
+      "owner": "MediaActionService / MediaResourceStateStore / UI menu",
+      "context": "providerID,resourceRef,scopeRef,mutationID",
+      "requiredFields": "capability,ownership",
+      "trigger": "校验",
+      "specLine": 144,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "media.action.rejected",
+      "domain": "MEDIA_ACTION",
+      "owner": "MediaActionService / MediaResourceStateStore / UI menu",
+      "context": "providerID,resourceRef,scopeRef,mutationID",
+      "requiredFields": "reasonCode",
+      "trigger": "拒绝",
+      "specLine": 145,
+      "productionCallSites": [
+        "Application/ApplicationServices.swift:492"
+      ],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "IMPLEMENTED",
+      "naReason": null
+    },
+    {
+      "eventName": "mutation.intent.created",
+      "domain": "MEDIA_ACTION",
+      "owner": "MediaActionService / MediaResourceStateStore / UI menu",
+      "context": "providerID,resourceRef,scopeRef,mutationID",
+      "requiredFields": "field,desired,fieldRevision",
+      "trigger": "写意图",
+      "specLine": 146,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "mutation.state.pending",
+      "domain": "MEDIA_ACTION",
+      "owner": "MediaActionService / MediaResourceStateStore / UI menu",
+      "context": "providerID,resourceRef,scopeRef,mutationID",
+      "requiredFields": "field,confirmed,desired,fieldRevision",
+      "trigger": "pending",
+      "specLine": 147,
+      "productionCallSites": [
+        "Application/MediaResourceStateStore.swift:315"
+      ],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "IMPLEMENTED",
+      "naReason": null
+    },
+    {
+      "eventName": "mutation.request.started",
+      "domain": "MEDIA_ACTION",
+      "owner": "MediaActionService / MediaResourceStateStore / UI menu",
+      "context": "providerID,resourceRef,scopeRef,mutationID",
+      "requiredFields": "field,requestID",
+      "trigger": "真实写",
+      "specLine": 148,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "mutation.receipt.received",
+      "domain": "MEDIA_ACTION",
+      "owner": "MediaActionService / MediaResourceStateStore / UI menu",
+      "context": "providerID,resourceRef,scopeRef,mutationID",
+      "requiredFields": "evidenceFields,statusCode",
+      "trigger": "响应",
+      "specLine": 149,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "mutation.patch.merged",
+      "domain": "MEDIA_ACTION",
+      "owner": "MediaActionService / MediaResourceStateStore / UI menu",
+      "context": "providerID,resourceRef,scopeRef,mutationID",
+      "requiredFields": "before,after,preservedFields",
+      "trigger": "字段合并",
+      "specLine": 150,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "mutation.state.confirmed",
+      "domain": "MEDIA_ACTION",
+      "owner": "MediaActionService / MediaResourceStateStore / UI menu",
+      "context": "providerID,resourceRef,scopeRef,mutationID",
+      "requiredFields": "field,confirmed,fieldRevision",
+      "trigger": "确认",
+      "specLine": 151,
+      "productionCallSites": [
+        "Application/MediaResourceStateStore.swift:407"
+      ],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "IMPLEMENTED",
+      "naReason": null
+    },
+    {
+      "eventName": "mutation.superseded",
+      "domain": "MEDIA_ACTION",
+      "owner": "MediaActionService / MediaResourceStateStore / UI menu",
+      "context": "providerID,resourceRef,scopeRef,mutationID",
+      "requiredFields": "supersededBy,reasonCode",
+      "trigger": "新意图取代",
+      "specLine": 152,
+      "productionCallSites": [
+        "Application/MediaResourceStateStore.swift:342",
+        "Application/MediaResourceStateStore.swift:365"
+      ],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "IMPLEMENTED",
+      "naReason": null
+    },
+    {
+      "eventName": "mutation.outcome.unknown",
+      "domain": "MEDIA_ACTION",
+      "owner": "MediaActionService / MediaResourceStateStore / UI menu",
+      "context": "providerID,resourceRef,scopeRef,mutationID",
+      "requiredFields": "reasonCode,field",
+      "trigger": "结果未知",
+      "specLine": 153,
+      "productionCallSites": [
+        "Application/MediaResourceStateStore.swift:391",
+        "Application/MediaResourceStateStore.swift:485"
+      ],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "IMPLEMENTED",
+      "naReason": null
+    },
+    {
+      "eventName": "mutation.reconcile.begin",
+      "domain": "MEDIA_ACTION",
+      "owner": "MediaActionService / MediaResourceStateStore / UI menu",
+      "context": "providerID,resourceRef,scopeRef,mutationID",
+      "requiredFields": "field,requestID",
+      "trigger": "核对",
+      "specLine": 154,
+      "productionCallSites": [
+        "Application/MediaResourceStateStore.swift:430"
+      ],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "IMPLEMENTED",
+      "naReason": null
+    },
+    {
+      "eventName": "mutation.reconcile.completed",
+      "domain": "MEDIA_ACTION",
+      "owner": "MediaActionService / MediaResourceStateStore / UI menu",
+      "context": "providerID,resourceRef,scopeRef,mutationID",
+      "requiredFields": "outcome,field,fieldRevision",
+      "trigger": "核对终态",
+      "specLine": 155,
+      "productionCallSites": [
+        "Application/MediaResourceStateStore.swift:461"
+      ],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "IMPLEMENTED",
+      "naReason": null
+    },
+    {
+      "eventName": "mutation.rollback",
+      "domain": "MEDIA_ACTION",
+      "owner": "MediaActionService / MediaResourceStateStore / UI menu",
+      "context": "providerID,resourceRef,scopeRef,mutationID",
+      "requiredFields": "field,confirmed,reasonCode",
+      "trigger": "回滚",
+      "specLine": 156,
+      "productionCallSites": [
+        "Application/MediaResourceStateStore.swift:504"
+      ],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "IMPLEMENTED",
+      "naReason": null
+    },
+    {
+      "eventName": "mutation.failed",
+      "domain": "MEDIA_ACTION",
+      "owner": "MediaActionService / MediaResourceStateStore / UI menu",
+      "context": "providerID,resourceRef,scopeRef,mutationID",
+      "requiredFields": "error,field",
+      "trigger": "失败",
+      "specLine": 157,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "mutation.observers.notified",
+      "domain": "MEDIA_ACTION",
+      "owner": "MediaActionService / MediaResourceStateStore / UI menu",
+      "context": "providerID,resourceRef,scopeRef,mutationID",
+      "requiredFields": "subscriberCount,fieldRevision",
+      "trigger": "订阅",
+      "specLine": 158,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "mutation.read.discarded",
+      "domain": "MEDIA_ACTION",
+      "owner": "MediaActionService / MediaResourceStateStore / UI menu",
+      "context": "providerID,resourceRef,scopeRef,mutationID",
+      "requiredFields": "reasonCode,expectedRevision,actualRevision",
+      "trigger": "旧读",
+      "specLine": 159,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "mutation.scope.invalidated",
+      "domain": "MEDIA_ACTION",
+      "owner": "MediaActionService / MediaResourceStateStore / UI menu",
+      "context": "providerID,resourceRef,scopeRef,mutationID",
+      "requiredFields": "previousScopeRef,nextScopeRef,taskCount",
+      "trigger": "隔离",
+      "specLine": 160,
+      "productionCallSites": [
+        "Application/MediaResourceStateStore.swift:108"
+      ],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "IMPLEMENTED",
+      "naReason": null
+    },
+    {
+      "eventName": "playback.intent.created",
+      "domain": "PLAYBACK",
+      "owner": "PlaybackIntentService / PlaybackCoordinatorV2 / PlaybackStore",
+      "context": "intentID,operationID,playbackGeneration,transportRevision,queueID",
+      "requiredFields": "intentKind,location,resourceRef,entryCount",
+      "trigger": "点击",
+      "specLine": 167,
+      "productionCallSites": [
+        "Application/ApplicationServices.swift:280"
+      ],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "IMPLEMENTED",
+      "naReason": null
+    },
+    {
+      "eventName": "playback.intent.validated",
+      "domain": "PLAYBACK",
+      "owner": "PlaybackIntentService / PlaybackCoordinatorV2 / PlaybackStore",
+      "context": "intentID,operationID,playbackGeneration,transportRevision,queueID",
+      "requiredFields": "expectedScopeRef,expectedQueueID,expectedEpoch",
+      "trigger": "校验",
+      "specLine": 168,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "playback.intent.accepted",
+      "domain": "PLAYBACK",
+      "owner": "PlaybackIntentService / PlaybackCoordinatorV2 / PlaybackStore",
+      "context": "intentID,operationID,playbackGeneration,transportRevision,queueID",
+      "requiredFields": "acceptedCount,queueRevision",
+      "trigger": "接受非播放确认",
+      "specLine": 169,
+      "productionCallSites": [
+        "Playback/PlaybackCoordinatorV2.swift:254"
+      ],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "IMPLEMENTED",
+      "naReason": null
+    },
+    {
+      "eventName": "playback.intent.rejected",
+      "domain": "PLAYBACK",
+      "owner": "PlaybackIntentService / PlaybackCoordinatorV2 / PlaybackStore",
+      "context": "intentID,operationID,playbackGeneration,transportRevision,queueID",
+      "requiredFields": "reasonCode",
+      "trigger": "拒绝",
+      "specLine": 170,
+      "productionCallSites": [
+        "Application/ApplicationServices.swift:300",
+        "Application/ApplicationServices.swift:313",
+        "Application/ApplicationServices.swift:327",
+        "Application/ApplicationServices.swift:352"
+      ],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "IMPLEMENTED",
+      "naReason": null
+    },
+    {
+      "eventName": "playback.intent.superseded",
+      "domain": "PLAYBACK",
+      "owner": "PlaybackIntentService / PlaybackCoordinatorV2 / PlaybackStore",
+      "context": "intentID,operationID,playbackGeneration,transportRevision,queueID",
+      "requiredFields": "newIntentID,reasonCode",
+      "trigger": "过期",
+      "specLine": 171,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "playback.target.resolved",
+      "domain": "PLAYBACK",
+      "owner": "PlaybackIntentService / PlaybackCoordinatorV2 / PlaybackStore",
+      "context": "intentID,operationID,playbackGeneration,transportRevision,queueID",
+      "requiredFields": "targetKind,targetRef,providerID",
+      "trigger": "实际目标",
+      "specLine": 172,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "playback.prepare.begin",
+      "domain": "PLAYBACK",
+      "owner": "PlaybackIntentService / PlaybackCoordinatorV2 / PlaybackStore",
+      "context": "intentID,operationID,playbackGeneration,transportRevision,queueID",
+      "requiredFields": "targetRef",
+      "trigger": "准备",
+      "specLine": 173,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "playback.prepare.completed",
+      "domain": "PLAYBACK",
+      "owner": "PlaybackIntentService / PlaybackCoordinatorV2 / PlaybackStore",
+      "context": "intentID,operationID,playbackGeneration,transportRevision,queueID",
+      "requiredFields": "outcome,durationMs",
+      "trigger": "准备终态",
+      "specLine": 174,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "playback.command.dispatched",
+      "domain": "PLAYBACK",
+      "owner": "PlaybackIntentService / PlaybackCoordinatorV2 / PlaybackStore",
+      "context": "intentID,operationID,playbackGeneration,transportRevision,queueID",
+      "requiredFields": "command,engineInstanceID",
+      "trigger": "调度",
+      "specLine": 175,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "playback.state.changed",
+      "domain": "PLAYBACK",
+      "owner": "PlaybackIntentService / PlaybackCoordinatorV2 / PlaybackStore",
+      "context": "intentID,operationID,playbackGeneration,transportRevision,queueID",
+      "requiredFields": "desiredTransport,actualBefore,actualAfter,confirmedEntry,pendingEntry",
+      "trigger": "真实变化",
+      "specLine": 176,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "playback.current.confirmed",
+      "domain": "PLAYBACK",
+      "owner": "PlaybackIntentService / PlaybackCoordinatorV2 / PlaybackStore",
+      "context": "intentID,operationID,playbackGeneration,transportRevision,queueID",
+      "requiredFields": "entryID,targetRef,evidence",
+      "trigger": "引擎确认",
+      "specLine": 177,
+      "productionCallSites": [
+        "Playback/PlaybackCoordinatorV2.swift:1435"
+      ],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "IMPLEMENTED",
+      "naReason": null
+    },
+    {
+      "eventName": "playback.pause.requested",
+      "domain": "PLAYBACK",
+      "owner": "PlaybackIntentService / PlaybackCoordinatorV2 / PlaybackStore",
+      "context": "intentID,operationID,playbackGeneration,transportRevision,queueID",
+      "requiredFields": "positionMs",
+      "trigger": "暂停请求",
+      "specLine": 178,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "playback.pause.confirmed",
+      "domain": "PLAYBACK",
+      "owner": "PlaybackIntentService / PlaybackCoordinatorV2 / PlaybackStore",
+      "context": "intentID,operationID,playbackGeneration,transportRevision,queueID",
+      "requiredFields": "positionMs,evidence",
+      "trigger": "暂停确认",
+      "specLine": 179,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "playback.resume.requested",
+      "domain": "PLAYBACK",
+      "owner": "PlaybackIntentService / PlaybackCoordinatorV2 / PlaybackStore",
+      "context": "intentID,operationID,playbackGeneration,transportRevision,queueID",
+      "requiredFields": "positionMs",
+      "trigger": "继续",
+      "specLine": 180,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "playback.seek.requested",
+      "domain": "PLAYBACK",
+      "owner": "PlaybackIntentService / PlaybackCoordinatorV2 / PlaybackStore",
+      "context": "intentID,operationID,playbackGeneration,transportRevision,queueID",
+      "requiredFields": "targetMs",
+      "trigger": "seek",
+      "specLine": 181,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "playback.seek.completed",
+      "domain": "PLAYBACK",
+      "owner": "PlaybackIntentService / PlaybackCoordinatorV2 / PlaybackStore",
+      "context": "intentID,operationID,playbackGeneration,transportRevision,queueID",
+      "requiredFields": "targetMs,actualMs,outcome",
+      "trigger": "seek结果",
+      "specLine": 182,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "playback.buffering.begin",
+      "domain": "PLAYBACK",
+      "owner": "PlaybackIntentService / PlaybackCoordinatorV2 / PlaybackStore",
+      "context": "intentID,operationID,playbackGeneration,transportRevision,queueID",
+      "requiredFields": "positionMs,reasonCode",
+      "trigger": "缓冲",
+      "specLine": 183,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "playback.buffering.end",
+      "domain": "PLAYBACK",
+      "owner": "PlaybackIntentService / PlaybackCoordinatorV2 / PlaybackStore",
+      "context": "intentID,operationID,playbackGeneration,transportRevision,queueID",
+      "requiredFields": "durationMs,outcome",
+      "trigger": "缓冲结果",
+      "specLine": 184,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "playback.track.ended",
+      "domain": "PLAYBACK",
+      "owner": "PlaybackIntentService / PlaybackCoordinatorV2 / PlaybackStore",
+      "context": "intentID,operationID,playbackGeneration,transportRevision,queueID",
+      "requiredFields": "positionMs,durationMs,reasonCode",
+      "trigger": "结束",
+      "specLine": 185,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "playback.advance.decided",
+      "domain": "PLAYBACK",
+      "owner": "PlaybackIntentService / PlaybackCoordinatorV2 / PlaybackStore",
+      "context": "intentID,operationID,playbackGeneration,transportRevision,queueID",
+      "requiredFields": "strategy,nextEntryRef,reasonCode",
+      "trigger": "推进",
+      "specLine": 186,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "playback.retry.requested",
+      "domain": "PLAYBACK",
+      "owner": "PlaybackIntentService / PlaybackCoordinatorV2 / PlaybackStore",
+      "context": "intentID,operationID,playbackGeneration,transportRevision,queueID",
+      "requiredFields": "targetRef",
+      "trigger": "重试",
+      "specLine": 187,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "playback.position.aggregate",
+      "domain": "PLAYBACK",
+      "owner": "PlaybackIntentService / PlaybackCoordinatorV2 / PlaybackStore",
+      "context": "intentID,operationID,playbackGeneration,transportRevision,queueID",
+      "requiredFields": "sampleCount,minMs,maxMs,lastMs",
+      "trigger": "聚合",
+      "specLine": 188,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "playback.failed",
+      "domain": "PLAYBACK",
+      "owner": "PlaybackIntentService / PlaybackCoordinatorV2 / PlaybackStore",
+      "context": "intentID,operationID,playbackGeneration,transportRevision,queueID",
+      "requiredFields": "error,stage",
+      "trigger": "失败",
+      "specLine": 189,
+      "productionCallSites": [
+        "Playback/PlaybackCoordinatorV2.swift:1410"
+      ],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "IMPLEMENTED",
+      "naReason": null
+    },
+    {
+      "eventName": "playback.intent.completed",
+      "domain": "PLAYBACK",
+      "owner": "PlaybackIntentService / PlaybackCoordinatorV2 / PlaybackStore",
+      "context": "intentID,operationID,playbackGeneration,transportRevision,queueID",
+      "requiredFields": "outcome,confirmationLevel",
+      "trigger": "终态",
+      "specLine": 190,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "engine.created",
+      "domain": "ENGINE",
+      "owner": "AppleMusicWebEngine / generic PlaybackEngineProtocol implementations",
+      "context": "engineInstanceID,sessionID,operationID,playbackGeneration",
+      "requiredFields": "engineKind",
+      "trigger": "创建",
+      "specLine": 197,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "engine.prepare.begin",
+      "domain": "ENGINE",
+      "owner": "AppleMusicWebEngine / generic PlaybackEngineProtocol implementations",
+      "context": "engineInstanceID,sessionID,operationID,playbackGeneration",
+      "requiredFields": "deadlineMs",
+      "trigger": "准备",
+      "specLine": 198,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "engine.ready",
+      "domain": "ENGINE",
+      "owner": "AppleMusicWebEngine / generic PlaybackEngineProtocol implementations",
+      "context": "engineInstanceID,sessionID,operationID,playbackGeneration",
+      "requiredFields": "ready,authorized,evidence",
+      "trigger": "就绪",
+      "specLine": 199,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "engine.prepare.completed",
+      "domain": "ENGINE",
+      "owner": "AppleMusicWebEngine / generic PlaybackEngineProtocol implementations",
+      "context": "engineInstanceID,sessionID,operationID,playbackGeneration",
+      "requiredFields": "outcome,durationMs",
+      "trigger": "准备终态",
+      "specLine": 200,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "engine.command.sent",
+      "domain": "ENGINE",
+      "owner": "AppleMusicWebEngine / generic PlaybackEngineProtocol implementations",
+      "context": "engineInstanceID,sessionID,operationID,playbackGeneration",
+      "requiredFields": "command,targetRef",
+      "trigger": "发送",
+      "specLine": 201,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "engine.command.completed",
+      "domain": "ENGINE",
+      "owner": "AppleMusicWebEngine / generic PlaybackEngineProtocol implementations",
+      "context": "engineInstanceID,sessionID,operationID,playbackGeneration",
+      "requiredFields": "command,outcome,durationMs",
+      "trigger": "结束",
+      "specLine": 202,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "engine.command.failed",
+      "domain": "ENGINE",
+      "owner": "AppleMusicWebEngine / generic PlaybackEngineProtocol implementations",
+      "context": "engineInstanceID,sessionID,operationID,playbackGeneration",
+      "requiredFields": "command,error",
+      "trigger": "失败",
+      "specLine": 203,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "engine.event.received",
+      "domain": "ENGINE",
+      "owner": "AppleMusicWebEngine / generic PlaybackEngineProtocol implementations",
+      "context": "engineInstanceID,sessionID,operationID,playbackGeneration",
+      "requiredFields": "eventType,itemRef",
+      "trigger": "接收",
+      "specLine": 204,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "engine.event.accepted",
+      "domain": "ENGINE",
+      "owner": "AppleMusicWebEngine / generic PlaybackEngineProtocol implementations",
+      "context": "engineInstanceID,sessionID,operationID,playbackGeneration",
+      "requiredFields": "eventType,decision",
+      "trigger": "接受",
+      "specLine": 205,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "engine.event.discarded",
+      "domain": "ENGINE",
+      "owner": "AppleMusicWebEngine / generic PlaybackEngineProtocol implementations",
+      "context": "engineInstanceID,sessionID,operationID,playbackGeneration",
+      "requiredFields": "eventType,reasonCode,expectedContext,receivedContext",
+      "trigger": "过滤",
+      "specLine": 206,
+      "productionCallSites": [
+        "Playback/PlaybackCoordinatorV2.swift:1385"
+      ],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "IMPLEMENTED",
+      "naReason": null
+    },
+    {
+      "eventName": "engine.crashed",
+      "domain": "ENGINE",
+      "owner": "AppleMusicWebEngine / generic PlaybackEngineProtocol implementations",
+      "context": "engineInstanceID,sessionID,operationID,playbackGeneration",
+      "requiredFields": "reasonCode,recoveryAttempt",
+      "trigger": "崩溃",
+      "specLine": 207,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "engine.recovery.begin",
+      "domain": "ENGINE",
+      "owner": "AppleMusicWebEngine / generic PlaybackEngineProtocol implementations",
+      "context": "engineInstanceID,sessionID,operationID,playbackGeneration",
+      "requiredFields": "attempt,limit",
+      "trigger": "恢复",
+      "specLine": 208,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "engine.recovery.completed",
+      "domain": "ENGINE",
+      "owner": "AppleMusicWebEngine / generic PlaybackEngineProtocol implementations",
+      "context": "engineInstanceID,sessionID,operationID,playbackGeneration",
+      "requiredFields": "outcome,durationMs",
+      "trigger": "恢复终态",
+      "specLine": 209,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "engine.reset",
+      "domain": "ENGINE",
+      "owner": "AppleMusicWebEngine / generic PlaybackEngineProtocol implementations",
+      "context": "engineInstanceID,sessionID,operationID,playbackGeneration",
+      "requiredFields": "reasonCode,outcome",
+      "trigger": "重置",
+      "specLine": 210,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "web.runtime.created",
+      "domain": "BRIDGE",
+      "owner": "WebRuntime / WebBridge / AppleMusicWebEngine",
+      "context": "engineInstanceID,runtimeRef,operationID",
+      "requiredFields": "storeScopeRef",
+      "trigger": "创建",
+      "specLine": 217,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "web.runtime.released",
+      "domain": "BRIDGE",
+      "owner": "WebRuntime / WebBridge / AppleMusicWebEngine",
+      "context": "engineInstanceID,runtimeRef,operationID",
+      "requiredFields": "outcome",
+      "trigger": "释放",
+      "specLine": 218,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "web.navigation.started",
+      "domain": "BRIDGE",
+      "owner": "WebRuntime / WebBridge / AppleMusicWebEngine",
+      "context": "engineInstanceID,runtimeRef,operationID",
+      "requiredFields": "hostClass,stage",
+      "trigger": "导航",
+      "specLine": 219,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "web.navigation.finished",
+      "domain": "BRIDGE",
+      "owner": "WebRuntime / WebBridge / AppleMusicWebEngine",
+      "context": "engineInstanceID,runtimeRef,operationID",
+      "requiredFields": "durationMs",
+      "trigger": "完成",
+      "specLine": 220,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "web.navigation.failed",
+      "domain": "BRIDGE",
+      "owner": "WebRuntime / WebBridge / AppleMusicWebEngine",
+      "context": "engineInstanceID,runtimeRef,operationID",
+      "requiredFields": "error",
+      "trigger": "失败",
+      "specLine": 221,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "bridge.script.injected",
+      "domain": "BRIDGE",
+      "owner": "WebRuntime / WebBridge / AppleMusicWebEngine",
+      "context": "engineInstanceID,runtimeRef,operationID",
+      "requiredFields": "scriptVersion,outcome",
+      "trigger": "注入",
+      "specLine": 222,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "bridge.message.received",
+      "domain": "BRIDGE",
+      "owner": "WebRuntime / WebBridge / AppleMusicWebEngine",
+      "context": "engineInstanceID,runtimeRef,operationID",
+      "requiredFields": "messageType,fieldPresence",
+      "trigger": "桥消息不含原文",
+      "specLine": 223,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "bridge.message.rejected",
+      "domain": "BRIDGE",
+      "owner": "WebRuntime / WebBridge / AppleMusicWebEngine",
+      "context": "engineInstanceID,runtimeRef,operationID",
+      "requiredFields": "messageType,reasonCode",
+      "trigger": "拒绝",
+      "specLine": 224,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "bridge.javascript.exception",
+      "domain": "BRIDGE",
+      "owner": "WebRuntime / WebBridge / AppleMusicWebEngine",
+      "context": "engineInstanceID,runtimeRef,operationID",
+      "requiredFields": "safeErrorCode,scriptVersion,line",
+      "trigger": "JS异常",
+      "specLine": 225,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "bridge.waiter.completed",
+      "domain": "BRIDGE",
+      "owner": "WebRuntime / WebBridge / AppleMusicWebEngine",
+      "context": "engineInstanceID,runtimeRef,operationID",
+      "requiredFields": "outcome,waiterRef",
+      "trigger": "等待结束",
+      "specLine": 226,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "engine.switch.requested",
+      "domain": "ENGINE_ROUTER",
+      "owner": "EngineRouter / coordinator boundary",
+      "context": "switchRef,routingGeneration,engineInstanceID,leaseRef",
+      "requiredFields": "fromProvider,toProvider,candidateEngineID",
+      "trigger": "交接意图",
+      "specLine": 233,
+      "productionCallSites": [
+        "PlatformRuntime/EngineRouter.swift:110"
+      ],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "IMPLEMENTED",
+      "naReason": null
+    },
+    {
+      "eventName": "engine.switch.preparing",
+      "domain": "ENGINE_ROUTER",
+      "owner": "EngineRouter / coordinator boundary",
+      "context": "switchRef,routingGeneration,engineInstanceID,leaseRef",
+      "requiredFields": "candidateEngineID,deadlineMs",
+      "trigger": "无声候选",
+      "specLine": 234,
+      "productionCallSites": [
+        "PlatformRuntime/EngineRouter.swift:124"
+      ],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "IMPLEMENTED",
+      "naReason": null
+    },
+    {
+      "eventName": "engine.switch.prepare_failed",
+      "domain": "ENGINE_ROUTER",
+      "owner": "EngineRouter / coordinator boundary",
+      "context": "switchRef,routingGeneration,engineInstanceID,leaseRef",
+      "requiredFields": "error,oldEngineState",
+      "trigger": "准备失败",
+      "specLine": 235,
+      "productionCallSites": [
+        "PlatformRuntime/EngineRouter.swift:163"
+      ],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "IMPLEMENTED",
+      "naReason": null
+    },
+    {
+      "eventName": "engine.candidate.prepared",
+      "domain": "ENGINE_ROUTER",
+      "owner": "EngineRouter / coordinator boundary",
+      "context": "switchRef,routingGeneration,engineInstanceID,leaseRef",
+      "requiredFields": "candidateEngineID,evidence",
+      "trigger": "候选就绪",
+      "specLine": 236,
+      "productionCallSites": [
+        "PlatformRuntime/EngineRouter.swift:140"
+      ],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "IMPLEMENTED",
+      "naReason": null
+    },
+    {
+      "eventName": "engine.candidate.discarded",
+      "domain": "ENGINE_ROUTER",
+      "owner": "EngineRouter / coordinator boundary",
+      "context": "switchRef,routingGeneration,engineInstanceID,leaseRef",
+      "requiredFields": "candidateEngineID,reasonCode,outcome",
+      "trigger": "候选释放",
+      "specLine": 237,
+      "productionCallSites": [
+        "PlatformRuntime/EngineRouter.swift:382"
+      ],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "IMPLEMENTED",
+      "naReason": null
+    },
+    {
+      "eventName": "audio.ownership.release_requested",
+      "domain": "ENGINE_ROUTER",
+      "owner": "EngineRouter / coordinator boundary",
+      "context": "switchRef,routingGeneration,engineInstanceID,leaseRef",
+      "requiredFields": "oldEngineID,stopContext",
+      "trigger": "停播请求",
+      "specLine": 238,
+      "productionCallSites": [
+        "PlatformRuntime/EngineRouter.swift:312"
+      ],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "IMPLEMENTED",
+      "naReason": null
+    },
+    {
+      "eventName": "audio.ownership.release_confirmed",
+      "domain": "ENGINE_ROUTER",
+      "owner": "EngineRouter / coordinator boundary",
+      "context": "switchRef,routingGeneration,engineInstanceID,leaseRef",
+      "requiredFields": "oldEngineID,evidence,confirmationLevel",
+      "trigger": "真实停播屏障证据",
+      "specLine": 239,
+      "productionCallSites": [
+        "PlatformRuntime/EngineRouter.swift:339"
+      ],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "IMPLEMENTED",
+      "naReason": null
+    },
+    {
+      "eventName": "audio.ownership.release_failed",
+      "domain": "ENGINE_ROUTER",
+      "owner": "EngineRouter / coordinator boundary",
+      "context": "switchRef,routingGeneration,engineInstanceID,leaseRef",
+      "requiredFields": "oldEngineID,error",
+      "trigger": "阻断新播放",
+      "specLine": 240,
+      "productionCallSites": [
+        "PlatformRuntime/EngineRouter.swift:359",
+        "Playback/PlaybackCoordinatorV2.swift:395"
+      ],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "IMPLEMENTED",
+      "naReason": null
+    },
+    {
+      "eventName": "audio.ownership.acquired",
+      "domain": "ENGINE_ROUTER",
+      "owner": "EngineRouter / coordinator boundary",
+      "context": "switchRef,routingGeneration,engineInstanceID,leaseRef",
+      "requiredFields": "newEngineID,leaseRef",
+      "trigger": "转移",
+      "specLine": 241,
+      "productionCallSites": [
+        "PlatformRuntime/EngineRouter.swift:238"
+      ],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "IMPLEMENTED",
+      "naReason": null
+    },
+    {
+      "eventName": "engine.route.command",
+      "domain": "ENGINE_ROUTER",
+      "owner": "EngineRouter / coordinator boundary",
+      "context": "switchRef,routingGeneration,engineInstanceID,leaseRef",
+      "requiredFields": "command,requestedEngineID,actualEngineID",
+      "trigger": "路由",
+      "specLine": 242,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "engine.route.event_discarded",
+      "domain": "ENGINE_ROUTER",
+      "owner": "EngineRouter / coordinator boundary",
+      "context": "switchRef,routingGeneration,engineInstanceID,leaseRef",
+      "requiredFields": "receivedGeneration,expectedGeneration,receivedEngineID,reasonCode",
+      "trigger": "旧事件",
+      "specLine": 243,
+      "productionCallSites": [
+        "PlatformRuntime/EngineRouter.swift:279"
+      ],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "IMPLEMENTED",
+      "naReason": null
+    },
+    {
+      "eventName": "engine.switch.completed",
+      "domain": "ENGINE_ROUTER",
+      "owner": "EngineRouter / coordinator boundary",
+      "context": "switchRef,routingGeneration,engineInstanceID,leaseRef",
+      "requiredFields": "newEngineID,outcome",
+      "trigger": "切换终态",
+      "specLine": 244,
+      "productionCallSites": [
+        "PlatformRuntime/EngineRouter.swift:252"
+      ],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "IMPLEMENTED",
+      "naReason": null
+    },
+    {
+      "eventName": "engine.switch.cancelled",
+      "domain": "ENGINE_ROUTER",
+      "owner": "EngineRouter / coordinator boundary",
+      "context": "switchRef,routingGeneration,engineInstanceID,leaseRef",
+      "requiredFields": "reasonCode",
+      "trigger": "取消",
+      "specLine": 245,
+      "productionCallSites": [
+        "PlatformRuntime/EngineRouter.swift:187",
+        "PlatformRuntime/EngineRouter.swift:210"
+      ],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "IMPLEMENTED",
+      "naReason": null
+    },
+    {
+      "eventName": "engine.switch.rollback",
+      "domain": "ENGINE_ROUTER",
+      "owner": "EngineRouter / coordinator boundary",
+      "context": "switchRef,routingGeneration,engineInstanceID,leaseRef",
+      "requiredFields": "outcome,reasonCode",
+      "trigger": "实际回滚",
+      "specLine": 246,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "engine.switch.failed",
+      "domain": "ENGINE_ROUTER",
+      "owner": "EngineRouter / coordinator boundary",
+      "context": "switchRef,routingGeneration,engineInstanceID,leaseRef",
+      "requiredFields": "stage,error",
+      "trigger": "失败",
+      "specLine": 247,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "audio.ownership.violation",
+      "domain": "ENGINE_ROUTER",
+      "owner": "EngineRouter / coordinator boundary",
+      "context": "switchRef,routingGeneration,engineInstanceID,leaseRef",
+      "requiredFields": "leaseCount,evidence",
+      "trigger": "不变量",
+      "specLine": 248,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "queue.created",
+      "domain": "QUEUE",
+      "owner": "QueueManager / PlaybackCoordinatorV2",
+      "context": "queueID,queueRevision,destructiveEpoch,sessionID",
+      "requiredFields": "owner,entryCount",
+      "trigger": "新队列",
+      "specLine": 255,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "queue.replaced",
+      "domain": "QUEUE",
+      "owner": "QueueManager / PlaybackCoordinatorV2",
+      "context": "queueID,queueRevision,destructiveEpoch,sessionID",
+      "requiredFields": "fromRevision,toRevision,checkpointRef",
+      "trigger": "替换",
+      "specLine": 256,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "queue.entries.prepended",
+      "domain": "QUEUE",
+      "owner": "QueueManager / PlaybackCoordinatorV2",
+      "context": "queueID,queueRevision,destructiveEpoch,sessionID",
+      "requiredFields": "fromRevision,toRevision,orderedEntryRefs,anchorRef",
+      "trigger": "队首",
+      "specLine": 257,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "queue.entries.appended",
+      "domain": "QUEUE",
+      "owner": "QueueManager / PlaybackCoordinatorV2",
+      "context": "queueID,queueRevision,destructiveEpoch,sessionID",
+      "requiredFields": "fromRevision,toRevision,orderedEntryRefs,anchorRef",
+      "trigger": "队尾",
+      "specLine": 258,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "queue.entries.removed",
+      "domain": "QUEUE",
+      "owner": "QueueManager / PlaybackCoordinatorV2",
+      "context": "queueID,queueRevision,destructiveEpoch,sessionID",
+      "requiredFields": "fromRevision,toRevision,removedRefs,positions",
+      "trigger": "删除",
+      "specLine": 259,
+      "productionCallSites": [
+        "Playback/PlaybackCoordinatorV2.swift:944"
+      ],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "IMPLEMENTED",
+      "naReason": null
+    },
+    {
+      "eventName": "queue.entries.moved",
+      "domain": "QUEUE",
+      "owner": "QueueManager / PlaybackCoordinatorV2",
+      "context": "queueID,queueRevision,destructiveEpoch,sessionID",
+      "requiredFields": "fromRevision,toRevision,orderedEntryRefs,anchorRef",
+      "trigger": "移动",
+      "specLine": 260,
+      "productionCallSites": [
+        "Playback/PlaybackCoordinatorV2.swift:972"
+      ],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "IMPLEMENTED",
+      "naReason": null
+    },
+    {
+      "eventName": "queue.cleared",
+      "domain": "QUEUE",
+      "owner": "QueueManager / PlaybackCoordinatorV2",
+      "context": "queueID,queueRevision,destructiveEpoch,sessionID",
+      "requiredFields": "fromRevision,toRevision,scope,removedCount",
+      "trigger": "清空",
+      "specLine": 261,
+      "productionCallSites": [
+        "Playback/PlaybackCoordinatorV2.swift:1001"
+      ],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "IMPLEMENTED",
+      "naReason": null
+    },
+    {
+      "eventName": "queue.undo.applied",
+      "domain": "QUEUE",
+      "owner": "QueueManager / PlaybackCoordinatorV2",
+      "context": "queueID,queueRevision,destructiveEpoch,sessionID",
+      "requiredFields": "fromRevision,toRevision,undoRef",
+      "trigger": "撤销",
+      "specLine": 262,
+      "productionCallSites": [
+        "Playback/PlaybackCoordinatorV2.swift:1028"
+      ],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "IMPLEMENTED",
+      "naReason": null
+    },
+    {
+      "eventName": "queue.reservation.created",
+      "domain": "QUEUE",
+      "owner": "QueueManager / PlaybackCoordinatorV2",
+      "context": "queueID,queueRevision,destructiveEpoch,sessionID",
+      "requiredFields": "entryID,source",
+      "trigger": "pending",
+      "specLine": 263,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "queue.reservation.confirmed",
+      "domain": "QUEUE",
+      "owner": "QueueManager / PlaybackCoordinatorV2",
+      "context": "queueID,queueRevision,destructiveEpoch,sessionID",
+      "requiredFields": "entryID,evidence",
+      "trigger": "确认",
+      "specLine": 264,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "queue.reservation.failed",
+      "domain": "QUEUE",
+      "owner": "QueueManager / PlaybackCoordinatorV2",
+      "context": "queueID,queueRevision,destructiveEpoch,sessionID",
+      "requiredFields": "entryID,error",
+      "trigger": "失败",
+      "specLine": 265,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "queue.history.updated",
+      "domain": "QUEUE",
+      "owner": "QueueManager / PlaybackCoordinatorV2",
+      "context": "queueID,queueRevision,destructiveEpoch,sessionID",
+      "requiredFields": "fromRevision,toRevision,diff",
+      "trigger": "历史",
+      "specLine": 266,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "queue.shuffle.requested",
+      "domain": "QUEUE",
+      "owner": "QueueManager / PlaybackCoordinatorV2",
+      "context": "queueID,queueRevision,destructiveEpoch,sessionID",
+      "requiredFields": "requested",
+      "trigger": "请求随机",
+      "specLine": 267,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "queue.shuffle.effective",
+      "domain": "QUEUE",
+      "owner": "QueueManager / PlaybackCoordinatorV2",
+      "context": "queueID,queueRevision,destructiveEpoch,sessionID",
+      "requiredFields": "effective,orderRef",
+      "trigger": "实际顺序",
+      "specLine": 268,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "queue.repeat.changed",
+      "domain": "QUEUE",
+      "owner": "QueueManager / PlaybackCoordinatorV2",
+      "context": "queueID,queueRevision,destructiveEpoch,sessionID",
+      "requiredFields": "before,after",
+      "trigger": "循环",
+      "specLine": 269,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "queue.loading.changed",
+      "domain": "QUEUE",
+      "owner": "QueueManager / PlaybackCoordinatorV2",
+      "context": "queueID,queueRevision,destructiveEpoch,sessionID",
+      "requiredFields": "before,after,loadedCount,totalCount",
+      "trigger": "加载",
+      "specLine": 270,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "queue.epoch.changed",
+      "domain": "QUEUE",
+      "owner": "QueueManager / PlaybackCoordinatorV2",
+      "context": "queueID,queueRevision,destructiveEpoch,sessionID",
+      "requiredFields": "before,after,reasonCode",
+      "trigger": "破坏代数",
+      "specLine": 271,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "queue.operation.rejected",
+      "domain": "QUEUE",
+      "owner": "QueueManager / PlaybackCoordinatorV2",
+      "context": "queueID,queueRevision,destructiveEpoch,sessionID",
+      "requiredFields": "reasonCode,expectedContext,receivedContext",
+      "trigger": "拒绝",
+      "specLine": 272,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "queue.owner.changed",
+      "domain": "QUEUE",
+      "owner": "QueueManager / PlaybackCoordinatorV2",
+      "context": "queueID,queueRevision,destructiveEpoch,sessionID",
+      "requiredFields": "before,after",
+      "trigger": "所有权",
+      "specLine": 273,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "queue.checkpoint.captured",
+      "domain": "QUEUE",
+      "owner": "QueueManager / PlaybackCoordinatorV2",
+      "context": "queueID,queueRevision,destructiveEpoch,sessionID",
+      "requiredFields": "checkpointRef,revision,partCount",
+      "trigger": "检查点",
+      "specLine": 274,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "queue.diff.committed",
+      "domain": "QUEUE",
+      "owner": "QueueManager / PlaybackCoordinatorV2",
+      "context": "queueID,queueRevision,destructiveEpoch,sessionID",
+      "requiredFields": "fromRevision,toRevision,commitID,partCount",
+      "trigger": "真实提交差量",
+      "specLine": 275,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "queue.invariant.failed",
+      "domain": "QUEUE",
+      "owner": "QueueManager / PlaybackCoordinatorV2",
+      "context": "queueID,queueRevision,destructiveEpoch,sessionID",
+      "requiredFields": "invariantID,evidence",
+      "trigger": "异常",
+      "specLine": 276,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "pagination.batch.created",
+      "domain": "PAGINATION",
+      "owner": "QueuePaginationLoader / SearchCollectionService",
+      "context": "batchID,queueID,destructiveEpoch,providerID",
+      "requiredFields": "initialCount,totalCount",
+      "trigger": "批次",
+      "specLine": 283,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "pagination.page.requested",
+      "domain": "PAGINATION",
+      "owner": "QueuePaginationLoader / SearchCollectionService",
+      "context": "batchID,queueID,destructiveEpoch,providerID",
+      "requiredFields": "pageIndex,cursorRef",
+      "trigger": "请求",
+      "specLine": 284,
+      "productionCallSites": [
+        "Playback/QueuePaginationLoader.swift:179"
+      ],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "IMPLEMENTED",
+      "naReason": null
+    },
+    {
+      "eventName": "pagination.page.received",
+      "domain": "PAGINATION",
+      "owner": "QueuePaginationLoader / SearchCollectionService",
+      "context": "batchID,queueID,destructiveEpoch,providerID",
+      "requiredFields": "pageIndex,receivedCount,hasNext",
+      "trigger": "返回",
+      "specLine": 285,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "pagination.page.committed",
+      "domain": "PAGINATION",
+      "owner": "QueuePaginationLoader / SearchCollectionService",
+      "context": "batchID,queueID,destructiveEpoch,providerID",
+      "requiredFields": "pageIndex,acceptedCount,loadedCount,revision",
+      "trigger": "提交",
+      "specLine": 286,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "pagination.page.discarded",
+      "domain": "PAGINATION",
+      "owner": "QueuePaginationLoader / SearchCollectionService",
+      "context": "batchID,queueID,destructiveEpoch,providerID",
+      "requiredFields": "reasonCode,pageIndex",
+      "trigger": "失效",
+      "specLine": 287,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "pagination.boundary.reached",
+      "domain": "PAGINATION",
+      "owner": "QueuePaginationLoader / SearchCollectionService",
+      "context": "batchID,queueID,destructiveEpoch,providerID",
+      "requiredFields": "loadedCount,batchID",
+      "trigger": "边界",
+      "specLine": 288,
+      "productionCallSites": [
+        "Playback/QueuePaginationLoader.swift:154"
+      ],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "IMPLEMENTED",
+      "naReason": null
+    },
+    {
+      "eventName": "pagination.cursor.repeated",
+      "domain": "PAGINATION",
+      "owner": "QueuePaginationLoader / SearchCollectionService",
+      "context": "batchID,queueID,destructiveEpoch,providerID",
+      "requiredFields": "cursorRef,pageIndex",
+      "trigger": "循环",
+      "specLine": 289,
+      "productionCallSites": [
+        "Playback/QueuePaginationLoader.swift:130"
+      ],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "IMPLEMENTED",
+      "naReason": null
+    },
+    {
+      "eventName": "pagination.retry.started",
+      "domain": "PAGINATION",
+      "owner": "QueuePaginationLoader / SearchCollectionService",
+      "context": "batchID,queueID,destructiveEpoch,providerID",
+      "requiredFields": "cursorRef,pageIndex,attempt",
+      "trigger": "重试",
+      "specLine": 290,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "pagination.batch.cancelled",
+      "domain": "PAGINATION",
+      "owner": "QueuePaginationLoader / SearchCollectionService",
+      "context": "batchID,queueID,destructiveEpoch,providerID",
+      "requiredFields": "reasonCode",
+      "trigger": "取消",
+      "specLine": 291,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "pagination.batch.completed",
+      "domain": "PAGINATION",
+      "owner": "QueuePaginationLoader / SearchCollectionService",
+      "context": "batchID,queueID,destructiveEpoch,providerID",
+      "requiredFields": "totalPages,loadedCount,durationMs",
+      "trigger": "完成",
+      "specLine": 292,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "pagination.batch.failed",
+      "domain": "PAGINATION",
+      "owner": "QueuePaginationLoader / SearchCollectionService",
+      "context": "batchID,queueID,destructiveEpoch,providerID",
+      "requiredFields": "loadedCount,error,partial",
+      "trigger": "失败",
+      "specLine": 293,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "station.creation.requested",
+      "domain": "STATION",
+      "owner": "SearchCollectionService / PlaybackCoordinatorV2 / QueueManager / Engine",
+      "context": "stationRef,seedRef,currentItemRef,itemSequence,queueID",
+      "requiredFields": "seedKind",
+      "trigger": "创建请求",
+      "specLine": 300,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "station.creation.completed",
+      "domain": "STATION",
+      "owner": "SearchCollectionService / PlaybackCoordinatorV2 / QueueManager / Engine",
+      "context": "stationRef,seedRef,currentItemRef,itemSequence,queueID",
+      "requiredFields": "stationType,outcome",
+      "trigger": "创建结果",
+      "specLine": 301,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "station.session.created",
+      "domain": "STATION",
+      "owner": "SearchCollectionService / PlaybackCoordinatorV2 / QueueManager / Engine",
+      "context": "stationRef,seedRef,currentItemRef,itemSequence,queueID",
+      "requiredFields": "owner,stationType",
+      "trigger": "会话",
+      "specLine": 302,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "station.connection.started",
+      "domain": "STATION",
+      "owner": "SearchCollectionService / PlaybackCoordinatorV2 / QueueManager / Engine",
+      "context": "stationRef,seedRef,currentItemRef,itemSequence,queueID",
+      "requiredFields": "engineInstanceID",
+      "trigger": "连接",
+      "specLine": 303,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "station.connection.confirmed",
+      "domain": "STATION",
+      "owner": "SearchCollectionService / PlaybackCoordinatorV2 / QueueManager / Engine",
+      "context": "stationRef,seedRef,currentItemRef,itemSequence,queueID",
+      "requiredFields": "evidence",
+      "trigger": "连接确认",
+      "specLine": 304,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "station.current_item.changed",
+      "domain": "STATION",
+      "owner": "SearchCollectionService / PlaybackCoordinatorV2 / QueueManager / Engine",
+      "context": "stationRef,seedRef,currentItemRef,itemSequence,queueID",
+      "requiredFields": "previousItemRef,currentItemRef,originChanged",
+      "trigger": "动态歌曲",
+      "specLine": 305,
+      "productionCallSites": [
+        "Playback/PlaybackCoordinatorV2.swift:1503"
+      ],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "IMPLEMENTED",
+      "naReason": null
+    },
+    {
+      "eventName": "station.metadata.reset",
+      "domain": "STATION",
+      "owner": "SearchCollectionService / PlaybackCoordinatorV2 / QueueManager / Engine",
+      "context": "stationRef,seedRef,currentItemRef,itemSequence,queueID",
+      "requiredFields": "clearedFields",
+      "trigger": "清除旧关系",
+      "specLine": 306,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "station.capabilities.changed",
+      "domain": "STATION",
+      "owner": "SearchCollectionService / PlaybackCoordinatorV2 / QueueManager / Engine",
+      "context": "stationRef,seedRef,currentItemRef,itemSequence,queueID",
+      "requiredFields": "before,after,evidence",
+      "trigger": "能力",
+      "specLine": 307,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "station.skip.requested",
+      "domain": "STATION",
+      "owner": "SearchCollectionService / PlaybackCoordinatorV2 / QueueManager / Engine",
+      "context": "stationRef,seedRef,currentItemRef,itemSequence,queueID",
+      "requiredFields": "direction",
+      "trigger": "切歌",
+      "specLine": 308,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "station.skip.rejected",
+      "domain": "STATION",
+      "owner": "SearchCollectionService / PlaybackCoordinatorV2 / QueueManager / Engine",
+      "context": "stationRef,seedRef,currentItemRef,itemSequence,queueID",
+      "requiredFields": "reasonCode",
+      "trigger": "拒绝",
+      "specLine": 309,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "station.queue.read_attempted",
+      "domain": "STATION",
+      "owner": "SearchCollectionService / PlaybackCoordinatorV2 / QueueManager / Engine",
+      "context": "stationRef,seedRef,currentItemRef,itemSequence,queueID",
+      "requiredFields": "capability",
+      "trigger": "远端查询（仅实际支持）",
+      "specLine": 310,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "station.queue.unavailable",
+      "domain": "STATION",
+      "owner": "SearchCollectionService / PlaybackCoordinatorV2 / QueueManager / Engine",
+      "context": "stationRef,seedRef,currentItemRef,itemSequence,queueID",
+      "requiredFields": "availability,reasonCode",
+      "trigger": "未知非零",
+      "specLine": 311,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "station.mode_switch.requested",
+      "domain": "STATION",
+      "owner": "SearchCollectionService / PlaybackCoordinatorV2 / QueueManager / Engine",
+      "context": "stationRef,seedRef,currentItemRef,itemSequence,queueID",
+      "requiredFields": "intentKind",
+      "trigger": "模式切换",
+      "specLine": 312,
+      "productionCallSites": [
+        "Playback/PlaybackCoordinatorV2.swift:376"
+      ],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "IMPLEMENTED",
+      "naReason": null
+    },
+    {
+      "eventName": "station.mode_switch.confirmed",
+      "domain": "STATION",
+      "owner": "SearchCollectionService / PlaybackCoordinatorV2 / QueueManager / Engine",
+      "context": "stationRef,seedRef,currentItemRef,itemSequence,queueID",
+      "requiredFields": "confirmationRef",
+      "trigger": "确认",
+      "specLine": 313,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "station.mode_switch.cancelled",
+      "domain": "STATION",
+      "owner": "SearchCollectionService / PlaybackCoordinatorV2 / QueueManager / Engine",
+      "context": "stationRef,seedRef,currentItemRef,itemSequence,queueID",
+      "requiredFields": "reasonCode",
+      "trigger": "取消",
+      "specLine": 314,
+      "productionCallSites": [
+        "Playback/PlaybackCoordinatorV2.swift:416"
+      ],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "IMPLEMENTED",
+      "naReason": null
+    },
+    {
+      "eventName": "station.mode_switch.completed",
+      "domain": "STATION",
+      "owner": "SearchCollectionService / PlaybackCoordinatorV2 / QueueManager / Engine",
+      "context": "stationRef,seedRef,currentItemRef,itemSequence,queueID",
+      "requiredFields": "outcome,newOwner,autoPlay",
+      "trigger": "完成",
+      "specLine": 315,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "station.restore.completed",
+      "domain": "STATION",
+      "owner": "SearchCollectionService / PlaybackCoordinatorV2 / QueueManager / Engine",
+      "context": "stationRef,seedRef,currentItemRef,itemSequence,queueID",
+      "requiredFields": "resumePolicy,stationRef,autoPlay",
+      "trigger": "恢复",
+      "specLine": 316,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "station.session.ended",
+      "domain": "STATION",
+      "owner": "SearchCollectionService / PlaybackCoordinatorV2 / QueueManager / Engine",
+      "context": "stationRef,seedRef,currentItemRef,itemSequence,queueID",
+      "requiredFields": "reasonCode",
+      "trigger": "结束",
+      "specLine": 317,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "origin.captured",
+      "domain": "ORIGIN",
+      "owner": "PlaybackOrigin capture / NavigationService / Dock / LibraryWindowController",
+      "context": "providerID,entryID,resourceRef,navigationGeneration",
+      "requiredFields": "originKind,originRef,routeRef",
+      "trigger": "真实上下文",
+      "specLine": 324,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "origin.bound",
+      "domain": "ORIGIN",
+      "owner": "PlaybackOrigin capture / NavigationService / Dock / LibraryWindowController",
+      "context": "providerID,entryID,resourceRef,navigationGeneration",
+      "requiredFields": "entryID,originRef",
+      "trigger": "入队",
+      "specLine": 325,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "origin.confirmed",
+      "domain": "ORIGIN",
+      "owner": "PlaybackOrigin capture / NavigationService / Dock / LibraryWindowController",
+      "context": "providerID,entryID,resourceRef,navigationGeneration",
+      "requiredFields": "entryID,originRef",
+      "trigger": "已确认",
+      "specLine": 326,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "origin.changed",
+      "domain": "ORIGIN",
+      "owner": "PlaybackOrigin capture / NavigationService / Dock / LibraryWindowController",
+      "context": "providerID,entryID,resourceRef,navigationGeneration",
+      "requiredFields": "previousOriginRef,nextOriginRef",
+      "trigger": "来源切换",
+      "specLine": 327,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "origin.metadata.requested",
+      "domain": "ORIGIN",
+      "owner": "PlaybackOrigin capture / NavigationService / Dock / LibraryWindowController",
+      "context": "providerID,entryID,resourceRef,navigationGeneration",
+      "requiredFields": "itemSequence,requestedKinds",
+      "trigger": "补充关系",
+      "specLine": 328,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "origin.metadata.discarded",
+      "domain": "ORIGIN",
+      "owner": "PlaybackOrigin capture / NavigationService / Dock / LibraryWindowController",
+      "context": "providerID,entryID,resourceRef,navigationGeneration",
+      "requiredFields": "reasonCode,itemSequence",
+      "trigger": "旧关系",
+      "specLine": 329,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "origin.menu.resolved",
+      "domain": "ORIGIN",
+      "owner": "PlaybackOrigin capture / NavigationService / Dock / LibraryWindowController",
+      "context": "providerID,entryID,resourceRef,navigationGeneration",
+      "requiredFields": "actionIDs,dedupCount",
+      "trigger": "菜单",
+      "specLine": 330,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "origin.navigation.requested",
+      "domain": "ORIGIN",
+      "owner": "PlaybackOrigin capture / NavigationService / Dock / LibraryWindowController",
+      "context": "providerID,entryID,resourceRef,navigationGeneration",
+      "requiredFields": "originRef,routeRef",
+      "trigger": "跳转",
+      "specLine": 331,
+      "productionCallSites": [
+        "Application/ApplicationServices.swift:540"
+      ],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "IMPLEMENTED",
+      "naReason": null
+    },
+    {
+      "eventName": "navigation.route.resolved",
+      "domain": "ORIGIN",
+      "owner": "PlaybackOrigin capture / NavigationService / Dock / LibraryWindowController",
+      "context": "providerID,entryID,resourceRef,navigationGeneration",
+      "requiredFields": "routeRef,targetProviderID",
+      "trigger": "路由",
+      "specLine": 332,
+      "productionCallSites": [
+        "Application/ApplicationServices.swift:577"
+      ],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "IMPLEMENTED",
+      "naReason": null
+    },
+    {
+      "eventName": "navigation.page.opened",
+      "domain": "ORIGIN",
+      "owner": "PlaybackOrigin capture / NavigationService / Dock / LibraryWindowController",
+      "context": "providerID,entryID,resourceRef,navigationGeneration",
+      "requiredFields": "routeRef",
+      "trigger": "打开",
+      "specLine": 333,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "navigation.page.reused",
+      "domain": "ORIGIN",
+      "owner": "PlaybackOrigin capture / NavigationService / Dock / LibraryWindowController",
+      "context": "providerID,entryID,resourceRef,navigationGeneration",
+      "requiredFields": "routeRef",
+      "trigger": "复用",
+      "specLine": 334,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "navigation.track.locate.started",
+      "domain": "ORIGIN",
+      "owner": "PlaybackOrigin capture / NavigationService / Dock / LibraryWindowController",
+      "context": "providerID,entryID,resourceRef,navigationGeneration",
+      "requiredFields": "maxPages,resourceRef",
+      "trigger": "定位",
+      "specLine": 335,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "navigation.track.located",
+      "domain": "ORIGIN",
+      "owner": "PlaybackOrigin capture / NavigationService / Dock / LibraryWindowController",
+      "context": "providerID,entryID,resourceRef,navigationGeneration",
+      "requiredFields": "position,loadedPages",
+      "trigger": "位置",
+      "specLine": 336,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "navigation.track.not_found",
+      "domain": "ORIGIN",
+      "owner": "PlaybackOrigin capture / NavigationService / Dock / LibraryWindowController",
+      "context": "providerID,entryID,resourceRef,navigationGeneration",
+      "requiredFields": "reasonCode,loadedPages",
+      "trigger": "未找到",
+      "specLine": 337,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "navigation.failed",
+      "domain": "ORIGIN",
+      "owner": "PlaybackOrigin capture / NavigationService / Dock / LibraryWindowController",
+      "context": "providerID,entryID,resourceRef,navigationGeneration",
+      "requiredFields": "error",
+      "trigger": "失败",
+      "specLine": 338,
+      "productionCallSites": [
+        "Application/ApplicationServices.swift:553",
+        "Application/ApplicationServices.swift:566"
+      ],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "IMPLEMENTED",
+      "naReason": null
+    },
+    {
+      "eventName": "navigation.superseded",
+      "domain": "ORIGIN",
+      "owner": "PlaybackOrigin capture / NavigationService / Dock / LibraryWindowController",
+      "context": "providerID,entryID,resourceRef,navigationGeneration",
+      "requiredFields": "reasonCode",
+      "trigger": "过期",
+      "specLine": 339,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "navigation.completed",
+      "domain": "ORIGIN",
+      "owner": "PlaybackOrigin capture / NavigationService / Dock / LibraryWindowController",
+      "context": "providerID,entryID,resourceRef,navigationGeneration",
+      "requiredFields": "outcome,causedPlaybackMutation,causedQueueMutation",
+      "trigger": "因果副作用",
+      "specLine": 340,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "lyrics.lookup.requested",
+      "domain": "LYRICS",
+      "owner": "LyricsRepositoryV2 / LyricsEngine / PublicSyncedLyricsProvider",
+      "context": "resourceRef,providerID,requestID",
+      "requiredFields": "sourcePolicy",
+      "trigger": "请求",
+      "specLine": 347,
+      "productionCallSites": [
+        "Lyrics/LyricsRepositoryV2.swift:64"
+      ],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "IMPLEMENTED",
+      "naReason": null
+    },
+    {
+      "eventName": "lyrics.cache.hit",
+      "domain": "LYRICS",
+      "owner": "LyricsRepositoryV2 / LyricsEngine / PublicSyncedLyricsProvider",
+      "context": "resourceRef,providerID,requestID",
+      "requiredFields": "cacheSource",
+      "trigger": "命中",
+      "specLine": 348,
+      "productionCallSites": [
+        "Lyrics/LyricsRepositoryV2.swift:93"
+      ],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "IMPLEMENTED",
+      "naReason": null
+    },
+    {
+      "eventName": "lyrics.candidate.evaluated",
+      "domain": "LYRICS",
+      "owner": "LyricsRepositoryV2 / LyricsEngine / PublicSyncedLyricsProvider",
+      "context": "resourceRef,providerID,requestID",
+      "requiredFields": "source,durationDifferenceMs,matchOutcome",
+      "trigger": "匹配",
+      "specLine": 349,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "lyrics.lookup.completed",
+      "domain": "LYRICS",
+      "owner": "LyricsRepositoryV2 / LyricsEngine / PublicSyncedLyricsProvider",
+      "context": "resourceRef,providerID,requestID",
+      "requiredFields": "source,lineCount,timed,outcome,durationMs",
+      "trigger": "结果",
+      "specLine": 350,
+      "productionCallSites": [
+        "Lyrics/LyricsRepositoryV2.swift:157"
+      ],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "IMPLEMENTED",
+      "naReason": null
+    },
+    {
+      "eventName": "lyrics.parse.failed",
+      "domain": "LYRICS",
+      "owner": "LyricsRepositoryV2 / LyricsEngine / PublicSyncedLyricsProvider",
+      "context": "resourceRef,providerID,requestID",
+      "requiredFields": "error",
+      "trigger": "解析",
+      "specLine": 351,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "lyrics.result.discarded",
+      "domain": "LYRICS",
+      "owner": "LyricsRepositoryV2 / LyricsEngine / PublicSyncedLyricsProvider",
+      "context": "resourceRef,providerID,requestID",
+      "requiredFields": "reasonCode",
+      "trigger": "过期",
+      "specLine": 352,
+      "productionCallSites": [
+        "Lyrics/LyricsRepositoryV2.swift:83",
+        "Lyrics/LyricsRepositoryV2.swift:146"
+      ],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "IMPLEMENTED",
+      "naReason": null
+    },
+    {
+      "eventName": "lyrics.render.updated",
+      "domain": "LYRICS",
+      "owner": "LyricsRepositoryV2 / LyricsEngine / PublicSyncedLyricsProvider",
+      "context": "resourceRef,providerID,requestID",
+      "requiredFields": "visibleLineCount",
+      "trigger": "低频更新",
+      "specLine": 353,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "cache.hit",
+      "domain": "CACHE",
+      "owner": "LibraryRepositoryV2 / ImageCacheV2 / SQLiteCacheStore / MediaResourceStateStore",
+      "context": "scopeRef,resourceRef",
+      "requiredFields": "cacheKind,tier",
+      "trigger": "命中",
+      "specLine": 360,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "cache.miss",
+      "domain": "CACHE",
+      "owner": "LibraryRepositoryV2 / ImageCacheV2 / SQLiteCacheStore / MediaResourceStateStore",
+      "context": "scopeRef,resourceRef",
+      "requiredFields": "cacheKind",
+      "trigger": "未命中",
+      "specLine": 361,
+      "productionCallSites": [
+        "Infrastructure/Cache/SQLiteCacheStore.swift:145"
+      ],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "IMPLEMENTED",
+      "naReason": null
+    },
+    {
+      "eventName": "cache.stale",
+      "domain": "CACHE",
+      "owner": "LibraryRepositoryV2 / ImageCacheV2 / SQLiteCacheStore / MediaResourceStateStore",
+      "context": "scopeRef,resourceRef",
+      "requiredFields": "ageMs,policy",
+      "trigger": "陈旧",
+      "specLine": 362,
+      "productionCallSites": [
+        "Infrastructure/Cache/SQLiteCacheStore.swift:161"
+      ],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "IMPLEMENTED",
+      "naReason": null
+    },
+    {
+      "eventName": "cache.swr.started",
+      "domain": "CACHE",
+      "owner": "LibraryRepositoryV2 / ImageCacheV2 / SQLiteCacheStore / MediaResourceStateStore",
+      "context": "scopeRef,resourceRef",
+      "requiredFields": "refreshRef",
+      "trigger": "后台刷新",
+      "specLine": 363,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "cache.swr.completed",
+      "domain": "CACHE",
+      "owner": "LibraryRepositoryV2 / ImageCacheV2 / SQLiteCacheStore / MediaResourceStateStore",
+      "context": "scopeRef,resourceRef",
+      "requiredFields": "outcome,refreshRef",
+      "trigger": "刷新终态",
+      "specLine": 364,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "cache.write.completed",
+      "domain": "CACHE",
+      "owner": "LibraryRepositoryV2 / ImageCacheV2 / SQLiteCacheStore / MediaResourceStateStore",
+      "context": "scopeRef,resourceRef",
+      "requiredFields": "bytes,outcome",
+      "trigger": "写入",
+      "specLine": 365,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "cache.evicted",
+      "domain": "CACHE",
+      "owner": "LibraryRepositoryV2 / ImageCacheV2 / SQLiteCacheStore / MediaResourceStateStore",
+      "context": "scopeRef,resourceRef",
+      "requiredFields": "reasonCode,count,bytes",
+      "trigger": "淘汰",
+      "specLine": 366,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "cache.scope.invalidated",
+      "domain": "CACHE",
+      "owner": "LibraryRepositoryV2 / ImageCacheV2 / SQLiteCacheStore / MediaResourceStateStore",
+      "context": "scopeRef,resourceRef",
+      "requiredFields": "count,reasonCode",
+      "trigger": "失效",
+      "specLine": 367,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "cache.stats.aggregate",
+      "domain": "CACHE",
+      "owner": "LibraryRepositoryV2 / ImageCacheV2 / SQLiteCacheStore / MediaResourceStateStore",
+      "context": "scopeRef,resourceRef",
+      "requiredFields": "hits,misses,bytes,entryCount",
+      "trigger": "聚合",
+      "specLine": 368,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "artwork.download.completed",
+      "domain": "CACHE",
+      "owner": "LibraryRepositoryV2 / ImageCacheV2 / SQLiteCacheStore / MediaResourceStateStore",
+      "context": "scopeRef,resourceRef",
+      "requiredFields": "bytes,outcome,durationMs",
+      "trigger": "下载",
+      "specLine": 369,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "artwork.decode.completed",
+      "domain": "CACHE",
+      "owner": "LibraryRepositoryV2 / ImageCacheV2 / SQLiteCacheStore / MediaResourceStateStore",
+      "context": "scopeRef,resourceRef",
+      "requiredFields": "width,height,durationMs,outcome",
+      "trigger": "解码",
+      "specLine": 370,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "artwork.result.discarded",
+      "domain": "CACHE",
+      "owner": "LibraryRepositoryV2 / ImageCacheV2 / SQLiteCacheStore / MediaResourceStateStore",
+      "context": "scopeRef,resourceRef",
+      "requiredFields": "reasonCode",
+      "trigger": "旧图",
+      "specLine": 371,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "snapshot.save.begin",
+      "domain": "PERSISTENCE",
+      "owner": "PlaybackSnapshotStore / SQLiteDatabase / SQLiteCacheStore / credential storage (metadata only)",
+      "context": "providerID,scopeRef",
+      "requiredFields": "schemaVersion,revision",
+      "trigger": "保存",
+      "specLine": 378,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "snapshot.save.completed",
+      "domain": "PERSISTENCE",
+      "owner": "PlaybackSnapshotStore / SQLiteDatabase / SQLiteCacheStore / credential storage (metadata only)",
+      "context": "providerID,scopeRef",
+      "requiredFields": "outcome,bytes,durationMs",
+      "trigger": "结果",
+      "specLine": 379,
+      "productionCallSites": [
+        "Playback/PlaybackCoordinatorV2.swift:1223"
+      ],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "IMPLEMENTED",
+      "naReason": null
+    },
+    {
+      "eventName": "snapshot.restore.begin",
+      "domain": "PERSISTENCE",
+      "owner": "PlaybackSnapshotStore / SQLiteDatabase / SQLiteCacheStore / credential storage (metadata only)",
+      "context": "providerID,scopeRef",
+      "requiredFields": "schemaVersion",
+      "trigger": "恢复",
+      "specLine": 380,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "snapshot.restore.completed",
+      "domain": "PERSISTENCE",
+      "owner": "PlaybackSnapshotStore / SQLiteDatabase / SQLiteCacheStore / credential storage (metadata only)",
+      "context": "providerID,scopeRef",
+      "requiredFields": "outcome,scopeMatched,owner,resumePolicy",
+      "trigger": "恢复结果",
+      "specLine": 381,
+      "productionCallSites": [
+        "Playback/PlaybackSnapshotStore.swift:199"
+      ],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "IMPLEMENTED",
+      "naReason": null
+    },
+    {
+      "eventName": "snapshot.migration.completed",
+      "domain": "PERSISTENCE",
+      "owner": "PlaybackSnapshotStore / SQLiteDatabase / SQLiteCacheStore / credential storage (metadata only)",
+      "context": "providerID,scopeRef",
+      "requiredFields": "fromVersion,toVersion,outcome",
+      "trigger": "迁移",
+      "specLine": 382,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "snapshot.validation.failed",
+      "domain": "PERSISTENCE",
+      "owner": "PlaybackSnapshotStore / SQLiteDatabase / SQLiteCacheStore / credential storage (metadata only)",
+      "context": "providerID,scopeRef",
+      "requiredFields": "reasonCode",
+      "trigger": "校验",
+      "specLine": 383,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "snapshot.scope.rejected",
+      "domain": "PERSISTENCE",
+      "owner": "PlaybackSnapshotStore / SQLiteDatabase / SQLiteCacheStore / credential storage (metadata only)",
+      "context": "providerID,scopeRef",
+      "requiredFields": "reasonCode",
+      "trigger": "隔离",
+      "specLine": 384,
+      "productionCallSites": [
+        "Playback/PlaybackSnapshotStore.swift:164",
+        "Playback/PlaybackSnapshotStore.swift:182"
+      ],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "IMPLEMENTED",
+      "naReason": null
+    },
+    {
+      "eventName": "database.open.completed",
+      "domain": "PERSISTENCE",
+      "owner": "PlaybackSnapshotStore / SQLiteDatabase / SQLiteCacheStore / credential storage (metadata only)",
+      "context": "providerID,scopeRef",
+      "requiredFields": "outcome,durationMs",
+      "trigger": "数据库打开",
+      "specLine": 385,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "database.migration.completed",
+      "domain": "PERSISTENCE",
+      "owner": "PlaybackSnapshotStore / SQLiteDatabase / SQLiteCacheStore / credential storage (metadata only)",
+      "context": "providerID,scopeRef",
+      "requiredFields": "fromVersion,toVersion,outcome",
+      "trigger": "迁移",
+      "specLine": 386,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "database.query.aggregate",
+      "domain": "PERSISTENCE",
+      "owner": "PlaybackSnapshotStore / SQLiteDatabase / SQLiteCacheStore / credential storage (metadata only)",
+      "context": "providerID,scopeRef",
+      "requiredFields": "queryClass,count,p95Ms",
+      "trigger": "聚合",
+      "specLine": 387,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "database.transaction.completed",
+      "domain": "PERSISTENCE",
+      "owner": "PlaybackSnapshotStore / SQLiteDatabase / SQLiteCacheStore / credential storage (metadata only)",
+      "context": "providerID,scopeRef",
+      "requiredFields": "outcome,durationMs",
+      "trigger": "事务",
+      "specLine": 388,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "database.closed",
+      "domain": "PERSISTENCE",
+      "owner": "PlaybackSnapshotStore / SQLiteDatabase / SQLiteCacheStore / credential storage (metadata only)",
+      "context": "providerID,scopeRef",
+      "requiredFields": "outcome",
+      "trigger": "关闭",
+      "specLine": 389,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "storage.io.failed",
+      "domain": "PERSISTENCE",
+      "owner": "PlaybackSnapshotStore / SQLiteDatabase / SQLiteCacheStore / credential storage (metadata only)",
+      "context": "providerID,scopeRef",
+      "requiredFields": "storageClass,error",
+      "trigger": "I/O异常",
+      "specLine": 390,
+      "productionCallSites": [
+        "Playback/PlaybackCoordinatorV2.swift:1238",
+        "Application/MediaResourceStateStore.swift:824"
+      ],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "IMPLEMENTED",
+      "naReason": null
+    },
+    {
+      "eventName": "ui.action.triggered",
+      "domain": "UI",
+      "owner": "UnifiedStageController / PlayerView / LibraryWindowController / LiquidFusionQueueDockView / MediaPlayCapsuleMenu / MotionCoordinator",
+      "context": "windowRef,animationID",
+      "requiredFields": "action,location,traceID",
+      "trigger": "入口",
+      "specLine": 397,
+      "productionCallSites": [
+        "UI/Player/PlayerWindowController.swift:291"
+      ],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "IMPLEMENTED",
+      "naReason": null
+    },
+    {
+      "eventName": "ui.feedback.presented",
+      "domain": "UI",
+      "owner": "UnifiedStageController / PlayerView / LibraryWindowController / LiquidFusionQueueDockView / MediaPlayCapsuleMenu / MotionCoordinator",
+      "context": "windowRef,animationID",
+      "requiredFields": "feedbackCode,outcome,confirmationLevel",
+      "trigger": "可见反馈",
+      "specLine": 398,
+      "productionCallSites": [
+        "UI/Player/PlayerWindowController.swift:310"
+      ],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "IMPLEMENTED",
+      "naReason": null
+    },
+    {
+      "eventName": "ui.state.applied",
+      "domain": "UI",
+      "owner": "UnifiedStageController / PlayerView / LibraryWindowController / LiquidFusionQueueDockView / MediaPlayCapsuleMenu / MotionCoordinator",
+      "context": "windowRef,animationID",
+      "requiredFields": "sourceRevision,viewRevision",
+      "trigger": "投影",
+      "specLine": 399,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "PENDING_INTEGRATION",
+      "naReason": null
+    },
+    {
+      "eventName": "window.created",
+      "domain": "UI",
+      "owner": "UnifiedStageController / PlayerView / LibraryWindowController / LiquidFusionQueueDockView / MediaPlayCapsuleMenu / MotionCoordinator",
+      "context": "windowRef,animationID",
+      "requiredFields": "windowKind,hostRef",
+      "trigger": "创建",
+      "specLine": 400,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "PENDING_INTEGRATION",
+      "naReason": null
+    },
+    {
+      "eventName": "window.visibility.changed",
+      "domain": "UI",
+      "owner": "UnifiedStageController / PlayerView / LibraryWindowController / LiquidFusionQueueDockView / MediaPlayCapsuleMenu / MotionCoordinator",
+      "context": "windowRef,animationID",
+      "requiredFields": "before,after,reasonCode",
+      "trigger": "可见性",
+      "specLine": 401,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "PENDING_INTEGRATION",
+      "naReason": null
+    },
+    {
+      "eventName": "window.mode.changed",
+      "domain": "UI",
+      "owner": "UnifiedStageController / PlayerView / LibraryWindowController / LiquidFusionQueueDockView / MediaPlayCapsuleMenu / MotionCoordinator",
+      "context": "windowRef,animationID",
+      "requiredFields": "before,after",
+      "trigger": "Normal/Mini",
+      "specLine": 402,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "PENDING_INTEGRATION",
+      "naReason": null
+    },
+    {
+      "eventName": "window.layout.changed",
+      "domain": "UI",
+      "owner": "UnifiedStageController / PlayerView / LibraryWindowController / LiquidFusionQueueDockView / MediaPlayCapsuleMenu / MotionCoordinator",
+      "context": "windowRef,animationID",
+      "requiredFields": "layoutRevision,bounds",
+      "trigger": "布局",
+      "specLine": 403,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "PENDING_INTEGRATION",
+      "naReason": null
+    },
+    {
+      "eventName": "window.screen.changed",
+      "domain": "UI",
+      "owner": "UnifiedStageController / PlayerView / LibraryWindowController / LiquidFusionQueueDockView / MediaPlayCapsuleMenu / MotionCoordinator",
+      "context": "windowRef,animationID",
+      "requiredFields": "scale,refreshHz",
+      "trigger": "屏幕",
+      "specLine": 404,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "PENDING_INTEGRATION",
+      "naReason": null
+    },
+    {
+      "eventName": "window.focus.changed",
+      "domain": "UI",
+      "owner": "UnifiedStageController / PlayerView / LibraryWindowController / LiquidFusionQueueDockView / MediaPlayCapsuleMenu / MotionCoordinator",
+      "context": "windowRef,animationID",
+      "requiredFields": "focused",
+      "trigger": "焦点",
+      "specLine": 405,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "PENDING_INTEGRATION",
+      "naReason": null
+    },
+    {
+      "eventName": "dock.layout.resolved",
+      "domain": "UI",
+      "owner": "UnifiedStageController / PlayerView / LibraryWindowController / LiquidFusionQueueDockView / MediaPlayCapsuleMenu / MotionCoordinator",
+      "context": "windowRef,animationID",
+      "requiredFields": "layoutRevision,bounds",
+      "trigger": "Dock布局",
+      "specLine": 406,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "PENDING_INTEGRATION",
+      "naReason": null
+    },
+    {
+      "eventName": "dock.bounds.clamped",
+      "domain": "UI",
+      "owner": "UnifiedStageController / PlayerView / LibraryWindowController / LiquidFusionQueueDockView / MediaPlayCapsuleMenu / MotionCoordinator",
+      "context": "windowRef,animationID",
+      "requiredFields": "reasonCode",
+      "trigger": "边界",
+      "specLine": 407,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "PENDING_INTEGRATION",
+      "naReason": null
+    },
+    {
+      "eventName": "motion.transition.begin",
+      "domain": "UI",
+      "owner": "UnifiedStageController / PlayerView / LibraryWindowController / LiquidFusionQueueDockView / MediaPlayCapsuleMenu / MotionCoordinator",
+      "context": "windowRef,animationID",
+      "requiredFields": "transition,from,to,expectedDurationMs",
+      "trigger": "动画开始",
+      "specLine": 408,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "PENDING_INTEGRATION",
+      "naReason": null
+    },
+    {
+      "eventName": "motion.transition.reversed",
+      "domain": "UI",
+      "owner": "UnifiedStageController / PlayerView / LibraryWindowController / LiquidFusionQueueDockView / MediaPlayCapsuleMenu / MotionCoordinator",
+      "context": "windowRef,animationID",
+      "requiredFields": "reasonCode",
+      "trigger": "反向",
+      "specLine": 409,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "PENDING_INTEGRATION",
+      "naReason": null
+    },
+    {
+      "eventName": "motion.transition.interrupted",
+      "domain": "UI",
+      "owner": "UnifiedStageController / PlayerView / LibraryWindowController / LiquidFusionQueueDockView / MediaPlayCapsuleMenu / MotionCoordinator",
+      "context": "windowRef,animationID",
+      "requiredFields": "reasonCode",
+      "trigger": "抢占",
+      "specLine": 410,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "PENDING_INTEGRATION",
+      "naReason": null
+    },
+    {
+      "eventName": "motion.transition.completed",
+      "domain": "UI",
+      "owner": "UnifiedStageController / PlayerView / LibraryWindowController / LiquidFusionQueueDockView / MediaPlayCapsuleMenu / MotionCoordinator",
+      "context": "windowRef,animationID",
+      "requiredFields": "outcome,durationMs",
+      "trigger": "终态",
+      "specLine": 411,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "PENDING_INTEGRATION",
+      "naReason": null
+    },
+    {
+      "eventName": "motion.callback.discarded",
+      "domain": "UI",
+      "owner": "UnifiedStageController / PlayerView / LibraryWindowController / LiquidFusionQueueDockView / MediaPlayCapsuleMenu / MotionCoordinator",
+      "context": "windowRef,animationID",
+      "requiredFields": "reasonCode,expectedGeneration,actualGeneration",
+      "trigger": "过期回调",
+      "specLine": 412,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "PENDING_INTEGRATION",
+      "naReason": null
+    },
+    {
+      "eventName": "glass.material.resolved",
+      "domain": "UI",
+      "owner": "UnifiedStageController / PlayerView / LibraryWindowController / LiquidFusionQueueDockView / MediaPlayCapsuleMenu / MotionCoordinator",
+      "context": "windowRef,animationID",
+      "requiredFields": "mode,materialPath,evidence",
+      "trigger": "实际材质",
+      "specLine": 413,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "PENDING_INTEGRATION",
+      "naReason": null
+    },
+    {
+      "eventName": "glass.container.layout",
+      "domain": "UI",
+      "owner": "UnifiedStageController / PlayerView / LibraryWindowController / LiquidFusionQueueDockView / MediaPlayCapsuleMenu / MotionCoordinator",
+      "context": "windowRef,animationID",
+      "requiredFields": "elementCount,bounds",
+      "trigger": "融合布局",
+      "specLine": 414,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "PENDING_INTEGRATION",
+      "naReason": null
+    },
+    {
+      "eventName": "glass.menu.opened",
+      "domain": "UI",
+      "owner": "UnifiedStageController / PlayerView / LibraryWindowController / LiquidFusionQueueDockView / MediaPlayCapsuleMenu / MotionCoordinator",
+      "context": "windowRef,animationID",
+      "requiredFields": "menuKind,anchorRef",
+      "trigger": "菜单",
+      "specLine": 415,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "PENDING_INTEGRATION",
+      "naReason": null
+    },
+    {
+      "eventName": "glass.menu.closed",
+      "domain": "UI",
+      "owner": "UnifiedStageController / PlayerView / LibraryWindowController / LiquidFusionQueueDockView / MediaPlayCapsuleMenu / MotionCoordinator",
+      "context": "windowRef,animationID",
+      "requiredFields": "menuKind,reasonCode",
+      "trigger": "关闭",
+      "specLine": 416,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "PENDING_INTEGRATION",
+      "naReason": null
+    },
+    {
+      "eventName": "glass.hit_test.failed",
+      "domain": "UI",
+      "owner": "UnifiedStageController / PlayerView / LibraryWindowController / LiquidFusionQueueDockView / MediaPlayCapsuleMenu / MotionCoordinator",
+      "context": "windowRef,animationID",
+      "requiredFields": "reasonCode",
+      "trigger": "命中异常",
+      "specLine": 417,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "PENDING_INTEGRATION",
+      "naReason": null
+    },
+    {
+      "eventName": "render.frame.aggregate",
+      "domain": "UI",
+      "owner": "UnifiedStageController / PlayerView / LibraryWindowController / LiquidFusionQueueDockView / MediaPlayCapsuleMenu / MotionCoordinator",
+      "context": "windowRef,animationID",
+      "requiredFields": "sampleCount,p50Ms,p95Ms,maxMs,source",
+      "trigger": "实际聚合",
+      "specLine": 418,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "PENDING_INTEGRATION",
+      "naReason": null
+    },
+    {
+      "eventName": "render.frame.slow",
+      "domain": "UI",
+      "owner": "UnifiedStageController / PlayerView / LibraryWindowController / LiquidFusionQueueDockView / MediaPlayCapsuleMenu / MotionCoordinator",
+      "context": "windowRef,animationID",
+      "requiredFields": "count,budgetMs,source",
+      "trigger": "慢帧统计",
+      "specLine": 419,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "PENDING_INTEGRATION",
+      "naReason": null
+    },
+    {
+      "eventName": "accessibility.mode.changed",
+      "domain": "UI",
+      "owner": "UnifiedStageController / PlayerView / LibraryWindowController / LiquidFusionQueueDockView / MediaPlayCapsuleMenu / MotionCoordinator",
+      "context": "windowRef,animationID",
+      "requiredFields": "reduceMotion,reduceTransparency",
+      "trigger": "辅助功能",
+      "specLine": 420,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "PENDING_INTEGRATION",
+      "naReason": null
+    },
+    {
+      "eventName": "diagnostic.capture.started",
+      "domain": "DIAGNOSTICS",
+      "owner": "AppLogger / collector / exporter / LogWindowController",
+      "context": "runID",
+      "requiredFields": "mode,policyVersion",
+      "trigger": "采集",
+      "specLine": 427,
+      "productionCallSites": [
+        "Infrastructure/Logging/AppLogger.swift:312"
+      ],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "IMPLEMENTED",
+      "naReason": null
+    },
+    {
+      "eventName": "diagnostic.capture.completed",
+      "domain": "DIAGNOSTICS",
+      "owner": "AppLogger / collector / exporter / LogWindowController",
+      "context": "runID",
+      "requiredFields": "outcome,sequenceRange",
+      "trigger": "终态",
+      "specLine": 428,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "diagnostic.events.dropped",
+      "domain": "DIAGNOSTICS",
+      "owner": "AppLogger / collector / exporter / LogWindowController",
+      "context": "runID",
+      "requiredFields": "sequenceRanges,count,levelCounts,reasonCode",
+      "trigger": "明确缺口",
+      "specLine": 429,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "diagnostic.sink.failed",
+      "domain": "DIAGNOSTICS",
+      "owner": "AppLogger / collector / exporter / LogWindowController",
+      "context": "runID",
+      "requiredFields": "sink,error,affectedRange",
+      "trigger": "落盘失败",
+      "specLine": 430,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "diagnostic.segment.rotated",
+      "domain": "DIAGNOSTICS",
+      "owner": "AppLogger / collector / exporter / LogWindowController",
+      "context": "runID",
+      "requiredFields": "segmentRef,sequenceRange",
+      "trigger": "轮转",
+      "specLine": 431,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "diagnostic.segment.evicted",
+      "domain": "DIAGNOSTICS",
+      "owner": "AppLogger / collector / exporter / LogWindowController",
+      "context": "runID",
+      "requiredFields": "segmentRef,sequenceRange,reasonCode",
+      "trigger": "覆盖",
+      "specLine": 432,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "diagnostic.snapshot.completed",
+      "domain": "DIAGNOSTICS",
+      "owner": "AppLogger / collector / exporter / LogWindowController",
+      "context": "runID",
+      "requiredFields": "snapshotRef,componentStatuses",
+      "trigger": "快照",
+      "specLine": 433,
+      "productionCallSites": [
+        "Infrastructure/Diagnostics/DiagnosticSnapshotCoordinator.swift:157"
+      ],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "IMPLEMENTED",
+      "naReason": null
+    },
+    {
+      "eventName": "diagnostic.export.completed",
+      "domain": "DIAGNOSTICS",
+      "owner": "AppLogger / collector / exporter / LogWindowController",
+      "context": "runID",
+      "requiredFields": "exportRef,outcome,coverage,gapCount",
+      "trigger": "导出",
+      "specLine": 434,
+      "productionCallSites": [
+        "Infrastructure/Diagnostics/DiagnosticBundleExporter.swift:188"
+      ],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "IMPLEMENTED",
+      "naReason": null
+    },
+    {
+      "eventName": "diagnostic.probe.requested",
+      "domain": "DIAGNOSTICS",
+      "owner": "AppLogger / collector / exporter / LogWindowController",
+      "context": "runID",
+      "requiredFields": "probeKind,userConsent",
+      "trigger": "主动探测",
+      "specLine": 435,
+      "productionCallSites": [
+        "UI/Log/LogWindowController.swift:498"
+      ],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "IMPLEMENTED",
+      "naReason": null
+    },
+    {
+      "eventName": "diagnostic.probe.completed",
+      "domain": "DIAGNOSTICS",
+      "owner": "AppLogger / collector / exporter / LogWindowController",
+      "context": "runID",
+      "requiredFields": "outcome,durationMs",
+      "trigger": "探测终态",
+      "specLine": 436,
+      "productionCallSites": [
+        "UI/Log/LogWindowController.swift:518",
+        "UI/Log/LogWindowController.swift:530",
+        "UI/Log/LogWindowController.swift:541"
+      ],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "IMPLEMENTED",
+      "naReason": null
+    },
+    {
+      "eventName": "diagnostic.clear.completed",
+      "domain": "DIAGNOSTICS",
+      "owner": "AppLogger / collector / exporter / LogWindowController",
+      "context": "runID",
+      "requiredFields": "scope,outcome",
+      "trigger": "清理",
+      "specLine": 437,
+      "productionCallSites": [],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "TODO",
+      "naReason": null
+    },
+    {
+      "eventName": "diagnostic.subscriber.changed",
+      "domain": "DIAGNOSTICS",
+      "owner": "AppLogger / collector / exporter / LogWindowController",
+      "context": "runID",
+      "requiredFields": "subscriberCount,visible",
+      "trigger": "订阅",
+      "specLine": 438,
+      "productionCallSites": [
+        "UI/Log/LogWindowController.swift:124",
+        "UI/Log/LogWindowController.swift:145"
+      ],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "IMPLEMENTED",
+      "naReason": null
+    },
+    {
+      "eventName": "invariant.violation",
+      "domain": "DIAGNOSTICS",
+      "owner": "AppLogger / collector / exporter / LogWindowController",
+      "context": "runID",
+      "requiredFields": "invariantID,evidence,snapshotRef",
+      "trigger": "不变量",
+      "specLine": 439,
+      "productionCallSites": [
+        "Infrastructure/Diagnostics/DiagnosticSnapshotCoordinator.swift:138"
+      ],
+      "branches": {
+        "success": false,
+        "failure": false,
+        "cancelled": false,
+        "superseded": false
+      },
+      "tests": [],
+      "status": "IMPLEMENTED",
+      "naReason": null
+    }
+  ],
+  "summary": {
+    "totalEvents": 309,
+    "wiredProductionEvents": 101,
+    "unwiredEvents": 208
+  }
+}

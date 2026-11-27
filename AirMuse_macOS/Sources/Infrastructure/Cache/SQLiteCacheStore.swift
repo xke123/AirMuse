@@ -140,7 +140,16 @@ public actor SQLiteCacheStore {
             }
         )
 
-        guard let row = rows.first else { return nil }
+        guard let row = rows.first else {
+            AppLogger.shared.emit(
+                eventName: "cache.miss",
+                category: "CACHE",
+                level: .trace,
+                source: DiagnosticSourceLocation(module: "Infrastructure", component: "SQLiteCacheStore", function: "read"),
+                payload: { DiagnosticEventPayload(fields: ["cacheKind": .string("sqlite")], message: "Cache miss") }
+            )
+            return nil
+        }
         let (fetchedSec, expiresSec, maxStaleSec, compStr, data) = row
 
         // Never serve entries beyond maxStaleAt (especially private caches)
@@ -148,6 +157,13 @@ public actor SQLiteCacheStore {
             try? await db.execute("DELETE FROM cache_entries WHERE cache_key = ?;") { stmt in
                 sqlite3_bind_text(stmt, 1, rawKey, -1, sqliteTransientDestructor)
             }
+            AppLogger.shared.emit(
+                eventName: "cache.stale",
+                category: "CACHE",
+                level: .trace,
+                source: DiagnosticSourceLocation(module: "Infrastructure", component: "SQLiteCacheStore", function: "read"),
+                payload: { DiagnosticEventPayload(fields: ["ageMs": .int64((nowSec - fetchedSec) * 1000), "policy": .string("expired_evicted")], message: "Cache entry expired") }
+            )
             return nil
         }
 
@@ -161,6 +177,18 @@ public actor SQLiteCacheStore {
         }
 
         let isFresh = nowSec <= expiresSec
+        AppLogger.shared.emit(
+            eventName: isFresh ? "cache.hit" : "cache.stale",
+            category: "CACHE",
+            level: .trace,
+            source: DiagnosticSourceLocation(module: "Infrastructure", component: "SQLiteCacheStore", function: "read"),
+            payload: {
+                DiagnosticEventPayload(
+                    fields: ["cacheKind": .string("sqlite"), "tier": .string("disk"), "fresh": .bool(isFresh)],
+                    message: isFresh ? "SQLite cache hit" : "SQLite cache stale hit"
+                )
+            }
+        )
         return CacheReadResult(
             value: decoded,
             isFresh: isFresh,

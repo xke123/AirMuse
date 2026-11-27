@@ -130,6 +130,20 @@ public actor SessionCoordinator: SessionCoordinatorProtocol {
     public func beginLoginAttempt() -> UUID {
         let attemptID = UUID()
         activeLoginAttemptID = attemptID
+        AppLogger.shared.emit(
+            eventName: "auth.login.begin",
+            category: "AUTH",
+            level: .info,
+            phase: .begin,
+            source: DiagnosticSourceLocation(module: "Providers", component: "SessionCoordinator", function: "beginLoginAttempt"),
+            payload: {
+                DiagnosticEventPayload(
+                    context: DiagnosticContext(providerID: providerID),
+                    fields: ["method": .string("web_session"), "attemptRef": .string(attemptID.uuidString)],
+                    message: "Login attempt started"
+                )
+            }
+        )
         publish(SessionSnapshot(
             context: _snapshot.context,
             sessionState: .authenticating,
@@ -146,6 +160,21 @@ public actor SessionCoordinator: SessionCoordinatorProtocol {
     public func cancelLoginAttempt(_ attemptID: UUID) {
         guard activeLoginAttemptID == attemptID else { return }
         activeLoginAttemptID = nil
+        AppLogger.shared.emit(
+            eventName: "auth.login.completed",
+            category: "AUTH",
+            level: .info,
+            phase: .end,
+            outcome: .cancelled,
+            source: DiagnosticSourceLocation(module: "Providers", component: "SessionCoordinator", function: "cancelLoginAttempt"),
+            payload: {
+                DiagnosticEventPayload(
+                    context: DiagnosticContext(providerID: providerID),
+                    fields: ["attemptRef": .string(attemptID.uuidString)],
+                    message: "Login attempt cancelled"
+                )
+            }
+        )
         if _snapshot.sessionState == .authenticating {
             publish(SessionSnapshot(
                 context: _snapshot.context,
@@ -259,6 +288,21 @@ public actor SessionCoordinator: SessionCoordinatorProtocol {
             engineState: _snapshot.engineState,
             account: account
         ))
+        AppLogger.shared.emit(
+            eventName: "auth.login.completed",
+            category: "AUTH",
+            level: .info,
+            phase: .end,
+            outcome: .succeeded,
+            source: DiagnosticSourceLocation(module: "Providers", component: "SessionCoordinator", function: "completeLoginAttempt"),
+            payload: {
+                DiagnosticEventPayload(
+                    context: DiagnosticContext(providerID: providerID, accountRef: accountID, storefront: sf, sessionID: ctx.sessionID, sessionGeneration: newGen),
+                    fields: ["subscriptionState": .string(String(describing: verification.subscriptionState))],
+                    message: "Login attempt succeeded (gen=\(newGen))"
+                )
+            }
+        )
         return ctx
     }
 
@@ -268,6 +312,14 @@ public actor SessionCoordinator: SessionCoordinatorProtocol {
     /// Offline network never deletes user credentials and enters `.offlineUnverified` (not `.authenticated`).
     public func restoreFromStorage(defaultStorefront: String = "cn") async {
         let genAtStart = generation
+        AppLogger.shared.emit(
+            eventName: "session.restore.begin",
+            category: "SESSION",
+            level: .info,
+            phase: .begin,
+            source: DiagnosticSourceLocation(module: "Providers", component: "SessionCoordinator", function: "restoreFromStorage"),
+            payload: { DiagnosticEventPayload(context: DiagnosticContext(providerID: providerID), message: "Session restore begin") }
+        )
         publish(SessionSnapshot(
             context: nil,
             sessionState: .restoring,
@@ -301,6 +353,21 @@ public actor SessionCoordinator: SessionCoordinatorProtocol {
                 engineState: .idle,
                 account: nil
             ))
+            AppLogger.shared.emit(
+                eventName: "session.restore.completed",
+                category: "SESSION",
+                level: .info,
+                phase: .end,
+                outcome: .succeeded,
+                source: DiagnosticSourceLocation(module: "Providers", component: "SessionCoordinator", function: "restoreFromStorage"),
+                payload: {
+                    DiagnosticEventPayload(
+                        context: DiagnosticContext(providerID: providerID),
+                        fields: ["hasStoredSession": .bool(false), "authorizationState": .string("signedOut")],
+                        message: "Session restore completed (signedOut)"
+                    )
+                }
+            )
             return
         }
 
@@ -558,6 +625,19 @@ public actor SessionCoordinator: SessionCoordinatorProtocol {
         }
 
         let oldContext = _snapshot.context
+        AppLogger.shared.emit(
+            eventName: "session.invalidated",
+            category: "SESSION",
+            level: .notice,
+            source: DiagnosticSourceLocation(module: "Providers", component: "SessionCoordinator", function: "invalidate"),
+            payload: {
+                DiagnosticEventPayload(
+                    context: DiagnosticContext(providerID: providerID, sessionID: oldContext?.sessionID, sessionGeneration: generation),
+                    fields: ["reasonCode": .string(String(describing: reason))],
+                    message: "Session invalidated (gen=\(generation))"
+                )
+            }
+        )
 
         switch reason {
         case .networkOffline:

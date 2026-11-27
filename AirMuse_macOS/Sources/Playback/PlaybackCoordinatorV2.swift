@@ -59,7 +59,32 @@ private struct RandomizerAdapter: RandomNumberGenerator {
 /// Authoritative Core V2 playback scheduler & sole queue writer.
 /// Separates `playbackGeneration` (source selection), `transportRevision` (play/pause/seek),
 /// `queueManager.revision` (structural edits), and `publishSequence` (monotonic atomic Store commits).
-public actor PlaybackCoordinatorV2 {
+public actor PlaybackCoordinatorV2: DiagnosticSnapshotProvider {
+    public nonisolated var componentName: String { "PlaybackCoordinatorV2" }
+
+    public func captureDiagnosticSnapshot() async -> DiagnosticComponentSnapshot {
+        let snap = queueManager.makeSnapshot()
+        let entryIDs = snap.upcomingEntries.map(\.id) + (snap.confirmedCurrent.map { [$0.id] } ?? [])
+        let unique = entryIDs.count == Set(entryIDs).count
+        return DiagnosticComponentSnapshot(
+            component: componentName,
+            ownerRevision: snap.revision,
+            scopeRef: activeSession?.providerID,
+            availability: .available,
+            data: [
+                "queueID": .string(snap.queueID.uuidString),
+                "revision": .uint64(snap.revision),
+                "destructiveEpoch": .uint64(snap.destructiveEpoch),
+                "owner": .string(snap.owner.rawValue),
+                "upcomingCount": .int(snap.upcomingEntries.count),
+                "historyCount": .int(snap.historyCount),
+                "desiredTransport": .string(String(describing: desiredTransport)),
+                "actualStatus": .string(String(describing: actualStatus)),
+                "playbackGeneration": .uint64(playbackGeneration),
+                "entryUUIDsUnique": .bool(unique)
+            ]
+        )
+    }
     private let store: PlaybackStore
     private let engine: any PlaybackEngineProtocol
     private let clock: any ClockProtocol
@@ -225,6 +250,20 @@ public actor PlaybackCoordinatorV2 {
                 pickRandomFirstWhenShuffling: false
             )
             let snap = queueManager.makeSnapshot()
+            AppLogger.shared.emit(
+                eventName: "playback.intent.accepted",
+                category: "PLAYBACK",
+                level: .info,
+                outcome: .accepted,
+                source: DiagnosticSourceLocation(module: "Playback", component: "PlaybackCoordinatorV2", function: "submitIntent"),
+                payload: {
+                    DiagnosticEventPayload(
+                        context: DiagnosticContext(queueID: snap.queueID, queueRevision: snap.revision, destructiveEpoch: snap.destructiveEpoch),
+                        fields: ["acceptedCount": .int(entries.count), "intentKind": .string("replaceAndPlay")],
+                        message: "Accepted replaceAndPlay (\(entries.count) entries, rev=\(snap.revision))"
+                    )
+                }
+            )
             return QueueCommandResult(
                 queueID: snap.queueID,
                 revision: snap.revision,
@@ -333,10 +372,39 @@ public actor PlaybackCoordinatorV2 {
         let preAwaitEpoch = queueManager.destructiveEpoch
         let oldStopCtx = await currentContext(trackID: desiredTrack?.id ?? "")
 
+        AppLogger.shared.emit(
+            eventName: "station.mode_switch.requested",
+            category: "STATION",
+            level: .info,
+            phase: .begin,
+            source: DiagnosticSourceLocation(module: "Playback", component: "PlaybackCoordinatorV2", function: "switchRemoteToStagedLocal"),
+            payload: {
+                DiagnosticEventPayload(
+                    context: DiagnosticContext(playbackGeneration: preAwaitGen, queueID: preAwaitQueueID, destructiveEpoch: preAwaitEpoch),
+                    fields: ["intentKind": .string("remote_to_staged_local"), "entryCount": .int(entries.count)],
+                    message: "Requested station mode switch to staged local queue"
+                )
+            }
+        )
+
         // B10: Stop & confirm old remote audio BEFORE mutating queue or publishing idle.
         do {
             try await engine.execute(.stop, context: oldStopCtx)
         } catch {
+            AppLogger.shared.emit(
+                eventName: "audio.ownership.release_failed",
+                category: "ENGINE_ROUTER",
+                level: .error,
+                outcome: .failed,
+                source: DiagnosticSourceLocation(module: "Playback", component: "PlaybackCoordinatorV2", function: "switchRemoteToStagedLocal"),
+                payload: {
+                    DiagnosticEventPayload(
+                        context: DiagnosticContext(playbackGeneration: preAwaitGen, queueID: preAwaitQueueID),
+                        error: LogSanitizer.sanitizeError(error, stage: "stop_remote_station"),
+                        message: "Failed to stop remote station before staging local queue"
+                    )
+                }
+            )
             throw CoreError.handoffFailed("无法确认远端电台已停止: \(error.localizedDescription)")
         }
 
@@ -344,6 +412,21 @@ public actor PlaybackCoordinatorV2 {
         guard playbackGeneration == preAwaitGen,
               queueManager.queueID == preAwaitQueueID,
               queueManager.destructiveEpoch == preAwaitEpoch else {
+            AppLogger.shared.emit(
+                eventName: "station.mode_switch.cancelled",
+                category: "STATION",
+                level: .info,
+                phase: .end,
+                outcome: .superseded,
+                source: DiagnosticSourceLocation(module: "Playback", component: "PlaybackCoordinatorV2", function: "switchRemoteToStagedLocal"),
+                payload: {
+                    DiagnosticEventPayload(
+                        context: DiagnosticContext(playbackGeneration: playbackGeneration, queueID: queueManager.queueID),
+                        fields: ["reasonCode": .string("superseded_during_stop")],
+                        message: "Station mode switch cancelled: superseded during stop"
+                    )
+                }
+            )
             throw CoreError.superseded
         }
         if let expectedSessionScope, queueManager.sessionScope != expectedSessionScope {
@@ -854,12 +937,27 @@ public actor PlaybackCoordinatorV2 {
 
     public func removeEntries(ids: [UUID], expectedQueueID: UUID? = nil) async throws {
         try queueManager.validateEditContext(expectedQueueID: expectedQueueID)
+        let fromRev = queueManager.revision
         try queueManager.removeEntries(ids: ids)
-        AppLogger.shared.log(
-            category: .queue,
+        let toRev = queueManager.revision
+        AppLogger.shared.emit(
+            eventName: "queue.entries.removed",
+            category: "QUEUE",
             level: .info,
-            correlationID: queueCorrelationID,
-            message: "移除待播条目: \(ids.count) 首 (剩余待播 \(queueManager.upcomingEntries.count) 首)"
+            outcome: .succeeded,
+            source: DiagnosticSourceLocation(module: "Playback", component: "PlaybackCoordinatorV2", function: "removeEntries"),
+            payload: {
+                DiagnosticEventPayload(
+                    context: DiagnosticContext(queueID: queueManager.queueID, queueRevision: toRev, destructiveEpoch: queueManager.destructiveEpoch),
+                    fields: [
+                        "fromRevision": .uint64(fromRev),
+                        "toRevision": .uint64(toRev),
+                        "removedCount": .int(ids.count),
+                        "removedRefs": .strings(ids.prefix(32).map(\.uuidString))
+                    ],
+                    message: "Removed \(ids.count) queue entries (rev \(fromRev)->\(toRev))"
+                )
+            }
         )
         await publishToStore(includeQueue: true)
         scheduleDebouncedSnapshotSave(immediate: true)
@@ -867,13 +965,27 @@ public actor PlaybackCoordinatorV2 {
 
     public func moveEntries(ids: [UUID], before targetID: UUID?, expectedQueueID: UUID? = nil) async throws {
         try queueManager.validateEditContext(expectedQueueID: expectedQueueID)
+        let fromRev = queueManager.revision
         try queueManager.moveEntries(ids: ids, before: targetID)
-        let targetDesc = targetID.map { String($0.uuidString.prefix(6)) } ?? "末尾"
-        AppLogger.shared.log(
-            category: .queue,
+        let toRev = queueManager.revision
+        AppLogger.shared.emit(
+            eventName: "queue.entries.moved",
+            category: "QUEUE",
             level: .info,
-            correlationID: queueCorrelationID,
-            message: "重排待播条目: 移动 \(ids.count) 首至 \(targetDesc)"
+            outcome: .succeeded,
+            source: DiagnosticSourceLocation(module: "Playback", component: "PlaybackCoordinatorV2", function: "moveEntries"),
+            payload: {
+                DiagnosticEventPayload(
+                    context: DiagnosticContext(queueID: queueManager.queueID, queueRevision: toRev, destructiveEpoch: queueManager.destructiveEpoch),
+                    fields: [
+                        "fromRevision": .uint64(fromRev),
+                        "toRevision": .uint64(toRev),
+                        "orderedEntryRefs": .strings(ids.prefix(32).map(\.uuidString)),
+                        "anchorRef": .string(targetID?.uuidString ?? "end")
+                    ],
+                    message: "Moved \(ids.count) queue entries (rev \(fromRev)->\(toRev))"
+                )
+            }
         )
         await publishToStore(includeQueue: true)
         scheduleDebouncedSnapshotSave(immediate: true)
@@ -881,25 +993,54 @@ public actor PlaybackCoordinatorV2 {
 
     public func clearUpcoming(expectedQueueID: UUID? = nil) async throws {
         try queueManager.validateEditContext(expectedQueueID: expectedQueueID)
+        let fromRev = queueManager.revision
         let prevCount = queueManager.upcomingEntries.count
         try queueManager.clearUpcoming()
-        AppLogger.shared.log(
-            category: .queue,
+        let toRev = queueManager.revision
+        AppLogger.shared.emit(
+            eventName: "queue.cleared",
+            category: "QUEUE",
             level: .info,
-            correlationID: queueCorrelationID,
-            message: "清空待播队列: 已移除 \(prevCount) 首 (当前播放保持不变)"
+            outcome: .succeeded,
+            source: DiagnosticSourceLocation(module: "Playback", component: "PlaybackCoordinatorV2", function: "clearUpcoming"),
+            payload: {
+                DiagnosticEventPayload(
+                    context: DiagnosticContext(queueID: queueManager.queueID, queueRevision: toRev, destructiveEpoch: queueManager.destructiveEpoch),
+                    fields: [
+                        "fromRevision": .uint64(fromRev),
+                        "toRevision": .uint64(toRev),
+                        "scope": .string("upcoming"),
+                        "removedCount": .int(prevCount)
+                    ],
+                    message: "Cleared \(prevCount) upcoming entries (rev \(fromRev)->\(toRev))"
+                )
+            }
         )
         await publishToStore(includeQueue: true)
         scheduleDebouncedSnapshotSave(immediate: true)
     }
 
     public func undoLastQueueEdit(expectedQueueID: UUID) async throws {
+        let fromRev = queueManager.revision
         try queueManager.undo(expectedQueueID: expectedQueueID, expectedSessionScope: queueManager.sessionScope)
-        AppLogger.shared.log(
-            category: .queue,
+        let toRev = queueManager.revision
+        AppLogger.shared.emit(
+            eventName: "queue.undo.applied",
+            category: "QUEUE",
             level: .info,
-            correlationID: queueCorrelationID,
-            message: "撤销队列编辑成功 (恢复后待播 \(queueManager.upcomingEntries.count) 首)"
+            outcome: .succeeded,
+            source: DiagnosticSourceLocation(module: "Playback", component: "PlaybackCoordinatorV2", function: "undoLastQueueEdit"),
+            payload: {
+                DiagnosticEventPayload(
+                    context: DiagnosticContext(queueID: queueManager.queueID, queueRevision: toRev, destructiveEpoch: queueManager.destructiveEpoch),
+                    fields: [
+                        "fromRevision": .uint64(fromRev),
+                        "toRevision": .uint64(toRev),
+                        "upcomingCount": .int(queueManager.upcomingEntries.count)
+                    ],
+                    message: "Undo queue edit applied (rev \(fromRev)->\(toRev))"
+                )
+            }
         )
         await publishToStore(includeQueue: true)
         scheduleDebouncedSnapshotSave(immediate: true)
@@ -1076,7 +1217,39 @@ public actor PlaybackCoordinatorV2 {
             shuffleEnabled: payload.shuffleEnabled,
             savedAt: clock.now
         )
-        try? await snapshotStore.save(snap)
+        do {
+            try await snapshotStore.save(snap)
+            AppLogger.shared.emit(
+                eventName: "snapshot.save.completed",
+                category: "PERSISTENCE",
+                level: .debug,
+                outcome: .succeeded,
+                source: DiagnosticSourceLocation(module: "Playback", component: "PlaybackCoordinatorV2", function: "flushSnapshot"),
+                payload: {
+                    DiagnosticEventPayload(
+                        context: DiagnosticContext(providerID: session.providerID, queueID: payload.queueID),
+                        fields: ["schemaVersion": .int(2)],
+                        message: "Saved playback snapshot"
+                    )
+                }
+            )
+        } catch {
+            AppLogger.shared.emit(
+                eventName: "storage.io.failed",
+                category: "PERSISTENCE",
+                level: .error,
+                outcome: .failed,
+                source: DiagnosticSourceLocation(module: "Playback", component: "PlaybackCoordinatorV2", function: "flushSnapshot"),
+                payload: {
+                    DiagnosticEventPayload(
+                        context: DiagnosticContext(providerID: session.providerID, queueID: payload.queueID),
+                        fields: ["storageClass": .string("playback_snapshot")],
+                        error: LogSanitizer.sanitizeError(error, stage: "flushSnapshot"),
+                        message: "Failed to save playback snapshot"
+                    )
+                }
+            )
+        }
     }
 
     private func scheduleDebouncedSnapshotSave(immediate: Bool) {
@@ -1207,7 +1380,23 @@ public actor PlaybackCoordinatorV2 {
             break
 
         case .stateChanged(let ctx, let status):
-            guard ctx.engineInstanceID == currentEngineID, ctx.operationID == activePlayGeneration else { return }
+            guard ctx.engineInstanceID == currentEngineID, ctx.operationID == activePlayGeneration else {
+                AppLogger.shared.emit(
+                    eventName: "engine.event.discarded",
+                    category: "ENGINE",
+                    level: .debug,
+                    outcome: .discarded,
+                    source: DiagnosticSourceLocation(module: "Playback", component: "PlaybackCoordinatorV2", function: "handleEngineEvent"),
+                    payload: {
+                        DiagnosticEventPayload(
+                            context: DiagnosticContext(engineInstanceID: currentEngineID, playbackGeneration: activePlayGeneration, operationID: ctx.operationID),
+                            fields: ["eventType": .string("stateChanged"), "reasonCode": .string("stale_engine_or_generation")],
+                            message: "Discarded stale engine stateChanged event"
+                        )
+                    }
+                )
+                return
+            }
             if desiredTransport == .paused && status == .playing { return }
             if desiredTransport == .stopped && status != .idle { return }
             let nowNs = clock.monotonicNanoseconds
@@ -1217,6 +1406,21 @@ public actor PlaybackCoordinatorV2 {
                 actualStatus = .failed(msg)
                 queueManager.markPendingFailed()
                 timeAnchor = PlaybackTimeAnchor(positionMs: currentPos, durationMs: timeAnchor.durationMs, monotonicNs: nowNs, isPlaying: false)
+                AppLogger.shared.emit(
+                    eventName: "playback.failed",
+                    category: "PLAYBACK",
+                    level: .error,
+                    outcome: .failed,
+                    source: DiagnosticSourceLocation(module: "Playback", component: "PlaybackCoordinatorV2", function: "handleEngineEvent"),
+                    payload: {
+                        DiagnosticEventPayload(
+                            context: DiagnosticContext(engineInstanceID: currentEngineID, playbackGeneration: activePlayGeneration, operationID: ctx.operationID),
+                            fields: ["stage": .string("engine_state")],
+                            error: DiagnosticErrorInfo(domain: "AirMuse.Engine", code: "failed", stage: "playback", safeSummary: LogSanitizer.redact(msg)),
+                            message: "Engine reported playback failure"
+                        )
+                    }
+                )
                 await publishToStore(includeQueue: true)
                 return
             }
@@ -1227,6 +1431,20 @@ public actor PlaybackCoordinatorV2 {
                queueManager.pendingReservationID == entryID {
                 queueManager.confirmEntry(entryID)
                 queueChanged = true
+                AppLogger.shared.emit(
+                    eventName: "playback.current.confirmed",
+                    category: "PLAYBACK",
+                    level: .info,
+                    outcome: .confirmed,
+                    source: DiagnosticSourceLocation(module: "Playback", component: "PlaybackCoordinatorV2", function: "handleEngineEvent"),
+                    payload: {
+                        DiagnosticEventPayload(
+                            context: DiagnosticContext(engineInstanceID: currentEngineID, playbackGeneration: activePlayGeneration, operationID: ctx.operationID, entryID: entryID),
+                            fields: ["evidence": .string("engine_state_playing")],
+                            message: "Engine confirmed playing state (not claiming physical audio)"
+                        )
+                    }
+                )
             }
 
             actualStatus = status
@@ -1280,14 +1498,29 @@ public actor PlaybackCoordinatorV2 {
                 desiredTrack = updatedTrack
                 // NOTE: activeTargetResource stays pointing to the original station ID! (P0-04)
                 queueManager.updateRemoteCurrentTrack(updatedTrack)
-                AppLogger.shared.log(
-                    category: .queue,
-                    level: .info,
-                    correlationID: queueCorrelationID,
-                    message: trackChanged
-                        ? "远端电台切歌元数据更新: \(title) (trackID=\(effectiveID), station=\(activeTargetResource?.providerResourceID ?? "-"), 缺失字段已置空)"
-                        : "远端电台同曲元数据增量补全: \(title) (trackID=\(effectiveID))"
-                )
+                if trackChanged {
+                    AppLogger.shared.emit(
+                        eventName: "station.current_item.changed",
+                        category: "STATION",
+                        level: .info,
+                        source: DiagnosticSourceLocation(module: "Playback", component: "PlaybackCoordinatorV2", function: "handleEngineEvent"),
+                        payload: {
+                            DiagnosticEventPayload(
+                                context: DiagnosticContext(
+                                    queueID: queueManager.queueID,
+                                    stationRef: activeTargetResource?.providerResourceID,
+                                    currentItemRef: effectiveID
+                                ),
+                                fields: [
+                                    "previousItemRef": .string(AppLogger.shared.hasher.reference(for: current.id, prefix: "item")),
+                                    "currentItemRef": .string(AppLogger.shared.hasher.reference(for: effectiveID, prefix: "item")),
+                                    "originChanged": .bool(true)
+                                ],
+                                message: "Station current item changed (station kept constant)"
+                            )
+                        }
+                    )
+                }
                 timeAnchor = PlaybackTimeAnchor(
                     positionMs: trackChanged ? 0 : timeAnchor.interpolatedPositionMs(at: nowNs),
                     durationMs: effectiveDurMs,

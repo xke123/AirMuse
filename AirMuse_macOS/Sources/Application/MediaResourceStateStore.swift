@@ -1,5 +1,6 @@
 import Foundation
 import Domain
+import Infrastructure
 
 // MARK: - MediaResourceStateStore
 
@@ -86,6 +87,9 @@ public final class MediaResourceStateStore {
     /// Switches account/storefront scope, cancelling all in-flight reads/writes and clearing stale state.
     public func setScope(_ scope: Scope) {
         guard scope != currentScope else { return }
+        let prevScope = "\(currentScope.providerID)|\(currentScope.storefront)"
+        let nextScope = "\(scope.providerID)|\(scope.storefront)"
+        let cancelledCount = inFlightReads.count + activeWriteTasks.count
         diskSaveTask?.cancel()
         diskSaveTask = nil
         currentScope = scope
@@ -100,6 +104,23 @@ public final class MediaResourceStateStore {
         states.removeAll()
         keyOrder.removeAll()
         cachedCapabilities.removeAll()
+        AppLogger.shared.emit(
+            eventName: "mutation.scope.invalidated",
+            category: "MEDIA_ACTION",
+            level: .info,
+            source: DiagnosticSourceLocation(module: "Application", component: "MediaResourceStateStore", function: "setScope"),
+            payload: {
+                DiagnosticEventPayload(
+                    context: DiagnosticContext(providerID: scope.providerID, scopeRef: nextScope),
+                    fields: [
+                        "previousScopeRef": .string(AppLogger.shared.hasher.reference(for: prevScope, prefix: "scope")),
+                        "nextScopeRef": .string(AppLogger.shared.hasher.reference(for: nextScope, prefix: "scope")),
+                        "taskCount": .int(cancelledCount)
+                    ],
+                    message: "MediaResourceStateStore scope switched (cancelledTasks=\(cancelledCount))"
+                )
+            }
+        )
         hydrateFromDiskIfNeeded()
     }
 
@@ -290,6 +311,24 @@ public final class MediaResourceStateStore {
         fieldRevisions[key] = rev
         storeState(pendingState, forKey: key, normalizedKey: resource.normalizedKey)
 
+        AppLogger.shared.emit(
+            eventName: "mutation.state.pending",
+            category: "MEDIA_ACTION",
+            level: .info,
+            source: DiagnosticSourceLocation(module: "Application", component: "MediaResourceStateStore", function: "setFavoriteWithOutcome"),
+            payload: {
+                DiagnosticEventPayload(
+                    context: DiagnosticContext(providerID: resource.providerID, resourceRef: resource.normalizedKey, mutationID: opID, fieldRevision: rev.favorite),
+                    fields: [
+                        "field": .string("favorite"),
+                        "confirmed": previousConfirmed.map { .bool($0) } ?? .absent,
+                        "desired": .bool(enabled)
+                    ],
+                    message: "Favorite mutation pending (desired=\(enabled), rev=\(rev.favorite))"
+                )
+            }
+        )
+
         let priorTask = activeWriteTasks[key]?.task
         let task = Task<MediaMutationOutcome, Error> { @MainActor [weak self] in
             if let priorTask {
@@ -299,6 +338,20 @@ public final class MediaResourceStateStore {
                 throw MediaActionError.accountMismatch
             }
             if let latest = self.latestFavoriteIntent[key], latest.operationID != opID {
+                AppLogger.shared.emit(
+                    eventName: "mutation.superseded",
+                    category: "MEDIA_ACTION",
+                    level: .info,
+                    outcome: .superseded,
+                    source: DiagnosticSourceLocation(module: "Application", component: "MediaResourceStateStore", function: "setFavoriteWithOutcome"),
+                    payload: {
+                        DiagnosticEventPayload(
+                            context: DiagnosticContext(providerID: resource.providerID, resourceRef: resource.normalizedKey, mutationID: opID),
+                            fields: ["supersededBy": .string(latest.operationID.uuidString), "reasonCode": .string("newer_intent")],
+                            message: "Favorite mutation superseded before dispatch"
+                        )
+                    }
+                )
                 return .superseded(self.states[key] ?? .unknown)
             }
 
@@ -308,6 +361,20 @@ public final class MediaResourceStateStore {
                     throw MediaActionError.accountMismatch
                 }
                 if let latest = self.latestFavoriteIntent[key], latest.operationID != opID {
+                    AppLogger.shared.emit(
+                        eventName: "mutation.superseded",
+                        category: "MEDIA_ACTION",
+                        level: .info,
+                        outcome: .superseded,
+                        source: DiagnosticSourceLocation(module: "Application", component: "MediaResourceStateStore", function: "setFavoriteWithOutcome"),
+                        payload: {
+                            DiagnosticEventPayload(
+                                context: DiagnosticContext(providerID: resource.providerID, resourceRef: resource.normalizedKey, mutationID: opID),
+                                fields: ["supersededBy": .string(latest.operationID.uuidString), "reasonCode": .string("newer_intent_after_receipt")],
+                                message: "Favorite mutation superseded after receipt"
+                            )
+                        }
+                    )
                     return .superseded(self.states[key] ?? .unknown)
                 }
                 let merged = self.mergeMutationReceipt(
@@ -320,8 +387,36 @@ public final class MediaResourceStateStore {
                 )
                 self.storeState(merged, forKey: key, normalizedKey: resource.normalizedKey)
                 if case .unknown = merged.favorite {
+                    AppLogger.shared.emit(
+                        eventName: "mutation.outcome.unknown",
+                        category: "MEDIA_ACTION",
+                        level: .warn,
+                        outcome: .unknown,
+                        source: DiagnosticSourceLocation(module: "Application", component: "MediaResourceStateStore", function: "setFavoriteWithOutcome"),
+                        payload: {
+                            DiagnosticEventPayload(
+                                context: DiagnosticContext(providerID: resource.providerID, resourceRef: resource.normalizedKey, mutationID: opID),
+                                fields: ["reasonCode": .string("receipt_unknown"), "field": .string("favorite")],
+                                message: "Favorite mutation receipt unknown"
+                            )
+                        }
+                    )
                     return .unknownOutcome(merged, message: "收藏状态尚待确认")
                 }
+                AppLogger.shared.emit(
+                    eventName: "mutation.state.confirmed",
+                    category: "MEDIA_ACTION",
+                    level: .info,
+                    outcome: .confirmed,
+                    source: DiagnosticSourceLocation(module: "Application", component: "MediaResourceStateStore", function: "setFavoriteWithOutcome"),
+                    payload: {
+                        DiagnosticEventPayload(
+                            context: DiagnosticContext(providerID: resource.providerID, resourceRef: resource.normalizedKey, mutationID: opID, fieldRevision: self.fieldRevisions[key]?.favorite),
+                            fields: ["field": .string("favorite"), "confirmed": merged.favorite.confirmedBool.map { .bool($0) } ?? .absent],
+                            message: "Favorite mutation confirmed"
+                        )
+                    }
+                )
                 return .confirmed(merged, message: receipt.message)
             } catch {
                 guard capturedGen == self.scopeGeneration, !Task.isCancelled else {
@@ -331,6 +426,20 @@ public final class MediaResourceStateStore {
                     return .superseded(self.states[key] ?? .unknown)
                 }
                 if Self.isTimeoutError(error) {
+                    AppLogger.shared.emit(
+                        eventName: "mutation.reconcile.begin",
+                        category: "MEDIA_ACTION",
+                        level: .info,
+                        phase: .begin,
+                        source: DiagnosticSourceLocation(module: "Application", component: "MediaResourceStateStore", function: "setFavoriteWithOutcome"),
+                        payload: {
+                            DiagnosticEventPayload(
+                                context: DiagnosticContext(providerID: resource.providerID, resourceRef: resource.normalizedKey, mutationID: opID),
+                                fields: ["field": .string("favorite")],
+                                message: "Favorite mutation timed out; reconciling"
+                            )
+                        }
+                    )
                     if let reconciled = try? await provider.fetchResourceState(resource) {
                         guard capturedGen == self.scopeGeneration, !Task.isCancelled else {
                             throw MediaActionError.accountMismatch
@@ -348,6 +457,21 @@ public final class MediaResourceStateStore {
                         )
                         self.storeState(merged, forKey: key, normalizedKey: resource.normalizedKey)
                         if case .known(let actual) = merged.favorite {
+                            AppLogger.shared.emit(
+                                eventName: "mutation.reconcile.completed",
+                                category: "MEDIA_ACTION",
+                                level: .info,
+                                phase: .end,
+                                outcome: actual == enabled ? .confirmed : .succeeded,
+                                source: DiagnosticSourceLocation(module: "Application", component: "MediaResourceStateStore", function: "setFavoriteWithOutcome"),
+                                payload: {
+                                    DiagnosticEventPayload(
+                                        context: DiagnosticContext(providerID: resource.providerID, resourceRef: resource.normalizedKey, mutationID: opID, fieldRevision: self.fieldRevisions[key]?.favorite),
+                                        fields: ["field": .string("favorite"), "actual": .bool(actual)],
+                                        message: "Favorite reconciled (actual=\(actual))"
+                                    )
+                                }
+                            )
                             if actual == enabled {
                                 return .confirmed(merged, message: nil)
                             }
@@ -357,11 +481,40 @@ public final class MediaResourceStateStore {
                     var unknownState = self.states[key] ?? .unknown
                     unknownState.favorite = .failed(lastKnown: previousConfirmed, errorMessage: "请求超时，状态未知")
                     self.storeState(unknownState, forKey: key, normalizedKey: resource.normalizedKey)
+                    AppLogger.shared.emit(
+                        eventName: "mutation.outcome.unknown",
+                        category: "MEDIA_ACTION",
+                        level: .warn,
+                        outcome: .unknown,
+                        source: DiagnosticSourceLocation(module: "Application", component: "MediaResourceStateStore", function: "setFavoriteWithOutcome"),
+                        payload: {
+                            DiagnosticEventPayload(
+                                context: DiagnosticContext(providerID: resource.providerID, resourceRef: resource.normalizedKey, mutationID: opID),
+                                fields: ["reasonCode": .string("reconcile_failed_timeout"), "field": .string("favorite")],
+                                message: "Favorite reconciliation outcome unknown"
+                            )
+                        }
+                    )
                     return .unknownOutcome(unknownState, message: "请求超时，收藏状态未知")
                 }
                 var failedState = self.states[key] ?? .unknown
                 failedState.favorite = .failed(lastKnown: previousConfirmed, errorMessage: error.localizedDescription)
                 self.storeState(failedState, forKey: key, normalizedKey: resource.normalizedKey)
+                AppLogger.shared.emit(
+                    eventName: "mutation.rollback",
+                    category: "MEDIA_ACTION",
+                    level: .error,
+                    outcome: .failed,
+                    source: DiagnosticSourceLocation(module: "Application", component: "MediaResourceStateStore", function: "setFavoriteWithOutcome"),
+                    payload: {
+                        DiagnosticEventPayload(
+                            context: DiagnosticContext(providerID: resource.providerID, resourceRef: resource.normalizedKey, mutationID: opID),
+                            fields: ["field": .string("favorite"), "confirmed": previousConfirmed.map { .bool($0) } ?? .absent, "reasonCode": .string("mutation_error")],
+                            error: LogSanitizer.sanitizeError(error, stage: "favorite"),
+                            message: "Favorite mutation failed; rolled back"
+                        )
+                    }
+                )
                 throw error
             }
         }
@@ -662,10 +815,26 @@ public final class MediaResourceStateStore {
             entries.append(DiskSnapshotEntry(normalizedKey: normalizedKey, libraryMembership: lib, favorite: fav, updatedAt: now))
         }
         if let dir = persistenceDirectory {
-            try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-        }
-        if let encoded = try? JSONEncoder().encode(entries) {
-            try? encoded.write(to: fileURL, options: .atomic)
+            do {
+                try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+                let encoded = try JSONEncoder().encode(entries)
+                try encoded.write(to: fileURL, options: .atomic)
+            } catch {
+                AppLogger.shared.emit(
+                    eventName: "storage.io.failed",
+                    category: "PERSISTENCE",
+                    level: .error,
+                    outcome: .failed,
+                    source: DiagnosticSourceLocation(module: "Application", component: "MediaResourceStateStore", function: "flushDiskSnapshot"),
+                    payload: {
+                        DiagnosticEventPayload(
+                            fields: ["storageClass": .string("media_state_snapshot")],
+                            error: LogSanitizer.sanitizeError(error, stage: "flushDiskSnapshot"),
+                            message: "Failed to persist media resource state snapshot"
+                        )
+                    }
+                )
+            }
         }
     }
 

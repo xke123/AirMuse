@@ -91,11 +91,22 @@ public actor AppleMusicAmpClient {
         config.timeoutIntervalForRequest = 15
         self.session = URLSession(configuration: config)
 
-        AppLogger.shared.log(
-            category: .ampAPI,
+        AppLogger.shared.emit(
+            eventName: "auth.credential.detected",
+            category: "AUTH",
             level: .info,
-            message: "AppleMusicAmpClient 初始化完成",
-            details: "Developer Token: \(devToken != nil ? "已设置 (\(devToken!.count) 字符)" : "未就绪 (等待 Web 会话捕获)") | 用户登录令牌: \(userToken != nil ? "已设置" : "未登录 (访客模式)")"
+            source: DiagnosticSourceLocation(module: "Providers", component: "AppleMusicAmpClient", function: "init"),
+            payload: {
+                DiagnosticEventPayload(
+                    context: DiagnosticContext(providerID: "apple_music"),
+                    fields: [
+                        "credentialKind": .string("client_and_user"),
+                        "hasClientToken": .bool(devToken != nil),
+                        "hasUserToken": .bool(userToken != nil)
+                    ],
+                    message: "AppleMusicAmpClient initialized (clientPresent=\(devToken != nil), userPresent=\(userToken != nil))"
+                )
+            }
         )
     }
 
@@ -313,21 +324,51 @@ public actor AppleMusicAmpClient {
             }
 
             let start = CFAbsoluteTimeGetCurrent()
+            let sanitizedURL = LogSanitizer.sanitizeURL(url)
+            let reqID = UUID()
             if attempt == 0 {
-                let devSnippet = currentDevToken.prefix(12)
-                let userSnippet = userToken.map { $0.prefix(12) + "..." } ?? "未登录"
-                AppLogger.shared.log(
-                    category: .ampAPI,
-                    level: .info,
-                    message: "发起 Amp-API 请求: GET \(url.path)",
-                    details: "URL: \(url.absoluteString)\nNeedAuth: \(needAuth), UserToken: \(userToken != nil) [\(userSnippet)], DevToken: \(devSnippet)..."
+                AppLogger.shared.emit(
+                    eventName: "http.request.created",
+                    category: "HTTP",
+                    level: .debug,
+                    phase: .begin,
+                    source: DiagnosticSourceLocation(module: "Providers", component: "AppleMusicAmpClient", function: "performRequest"),
+                    payload: {
+                        DiagnosticEventPayload(
+                            context: DiagnosticContext(providerID: "apple_music", requestID: reqID, attempt: attempt + 1),
+                            fields: [
+                                "method": .string("GET"),
+                                "hostClass": .string(sanitizedURL.hostClass),
+                                "endpointTemplate": .string(sanitizedURL.endpointTemplate),
+                                "needAuth": .bool(needAuth)
+                            ],
+                            message: "Amp-API GET \(sanitizedURL.endpointTemplate)"
+                        )
+                    }
                 )
             }
 
             do {
                 let (data, response) = try await session.data(for: req)
                 if let reqGen = generation, reqGen != activeGeneration {
-                    AppLogger.shared.log(category: .ampAPI, level: .warn, message: "丢弃过期会话数据 (请求世代: \(reqGen) != 当前世代: \(self.activeGeneration))")
+                    AppLogger.shared.emit(
+                        eventName: "http.response.discarded",
+                        category: "HTTP",
+                        level: .warn,
+                        outcome: .discarded,
+                        source: DiagnosticSourceLocation(module: "Providers", component: "AppleMusicAmpClient", function: "performRequest"),
+                        payload: {
+                            DiagnosticEventPayload(
+                                context: DiagnosticContext(providerID: "apple_music", requestID: reqID),
+                                fields: [
+                                    "reasonCode": .string("session_generation_mismatch"),
+                                    "expectedGeneration": .int(self.activeGeneration),
+                                    "actualGeneration": .int(reqGen)
+                                ],
+                                message: "Discarded stale Amp-API response (gen \(reqGen) != \(self.activeGeneration))"
+                            )
+                        }
+                    )
                     throw AppleMusicSessionError.sessionGenerationMismatch
                 }
 

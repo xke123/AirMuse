@@ -124,7 +124,22 @@ public actor QueuePaginationLoader {
 
             while let currentCursor = cursor {
                 guard !Task.isCancelled, self.activeRunID == runID else { return }
+                let cursorRef = AppLogger.shared.hasher.reference(for: currentCursor.opaqueToken, prefix: "cur")
                 guard visited.insert(currentCursor.opaqueToken).inserted else {
+                    AppLogger.shared.emit(
+                        eventName: "pagination.cursor.repeated",
+                        category: "PAGINATION",
+                        level: .warn,
+                        outcome: .rejected,
+                        source: DiagnosticSourceLocation(module: "Playback", component: "QueuePaginationLoader", function: "startBackgroundPagination"),
+                        payload: {
+                            DiagnosticEventPayload(
+                                context: DiagnosticContext(queueID: expectedQueueID, destructiveEpoch: expectedDestructiveEpoch, batchID: batchID),
+                                fields: ["cursorRef": .string(cursorRef), "pageIndex": .int(pageCount)],
+                                message: "Detected repeated pagination cursor; stopping"
+                            )
+                        }
+                    )
                     await coordinator.updateQueueLoadingState(
                         .failed(loadedCount: loadedCount, totalCount: knownTotal, message: "检测到重复分页游标，已停止加载", isRetryable: false),
                         expectedQueueID: expectedQueueID,
@@ -135,6 +150,19 @@ public actor QueuePaginationLoader {
                     return
                 }
                 guard pageCount < self.maxPages else {
+                    AppLogger.shared.emit(
+                        eventName: "pagination.boundary.reached",
+                        category: "PAGINATION",
+                        level: .info,
+                        source: DiagnosticSourceLocation(module: "Playback", component: "QueuePaginationLoader", function: "startBackgroundPagination"),
+                        payload: {
+                            DiagnosticEventPayload(
+                                context: DiagnosticContext(queueID: expectedQueueID, destructiveEpoch: expectedDestructiveEpoch, batchID: batchID),
+                                fields: ["loadedCount": .int(loadedCount)],
+                                message: "Pagination maxPages boundary reached"
+                            )
+                        }
+                    )
                     await coordinator.updateQueueLoadingState(
                         .partial(loadedCount: loadedCount, totalCount: knownTotal),
                         expectedQueueID: expectedQueueID,
@@ -147,6 +175,19 @@ public actor QueuePaginationLoader {
                 pageCount += 1
 
                 do {
+                    AppLogger.shared.emit(
+                        eventName: "pagination.page.requested",
+                        category: "PAGINATION",
+                        level: .debug,
+                        source: DiagnosticSourceLocation(module: "Playback", component: "QueuePaginationLoader", function: "startBackgroundPagination"),
+                        payload: {
+                            DiagnosticEventPayload(
+                                context: DiagnosticContext(queueID: expectedQueueID, destructiveEpoch: expectedDestructiveEpoch, batchID: batchID),
+                                fields: ["pageIndex": .int(pageCount), "cursorRef": .string(cursorRef)],
+                                message: "Requested pagination page \(pageCount)"
+                            )
+                        }
+                    )
                     let page = try await fetchNextPage(currentCursor)
                     guard !Task.isCancelled, self.activeRunID == runID else { return }
                     if let t = page.totalCount { knownTotal = t }
@@ -163,6 +204,25 @@ public actor QueuePaginationLoader {
                         expectedSessionScope: expectedSessionScope,
                         expectedDestructiveEpoch: expectedDestructiveEpoch,
                         loadingState: loadingState
+                    )
+                    AppLogger.shared.emit(
+                        eventName: committed ? "pagination.page.committed" : "pagination.page.discarded",
+                        category: "PAGINATION",
+                        level: committed ? .debug : .info,
+                        outcome: committed ? .confirmed : .discarded,
+                        source: DiagnosticSourceLocation(module: "Playback", component: "QueuePaginationLoader", function: "startBackgroundPagination"),
+                        payload: {
+                            DiagnosticEventPayload(
+                                context: DiagnosticContext(queueID: expectedQueueID, destructiveEpoch: expectedDestructiveEpoch, batchID: batchID),
+                                fields: [
+                                    "pageIndex": .int(pageCount),
+                                    "receivedCount": .int(page.tracks.count),
+                                    "acceptedCount": .int(committed ? entries.count : 0),
+                                    "loadedCount": .int(loadedCount)
+                                ],
+                                message: committed ? "Committed \(entries.count) paginated tracks" : "Discarded \(page.tracks.count) paginated tracks"
+                            )
+                        }
                     )
                     if !committed { return }
                 } catch is CancellationError {

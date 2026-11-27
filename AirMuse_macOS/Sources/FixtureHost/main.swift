@@ -19,8 +19,12 @@ struct FixtureHostMain {
         let engine = NoOpFixtureEngine()
         let coordinator = PlaybackCoordinatorV2(store: store, engine: engine)
         let libraryController = LibraryWindowController(coordinator: coordinator, registry: registry)
-        _ = libraryController
-        print("FixtureHost booted cleanly without AppleMusicAdapter (browsingProvider=\(String(describing: await registry.browsingProviderID)))")
+        let logController = LogWindowController()
+        await DiagnosticSnapshotCoordinator.shared.register(registry)
+        await DiagnosticSnapshotCoordinator.shared.register(coordinator)
+        let snapBundle = await DiagnosticSnapshotCoordinator.shared.captureAll()
+        _ = (libraryController, logController)
+        print("FixtureHost booted cleanly without AppleMusicAdapter (browsingProvider=\(String(describing: await registry.browsingProviderID)), snapshots=\(snapBundle.components.count))")
     }
 }
 

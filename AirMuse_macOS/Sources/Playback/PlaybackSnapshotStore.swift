@@ -1,5 +1,6 @@
 import Foundation
 import Domain
+import Infrastructure
 
 // MARK: - PlaybackSnapshot
 
@@ -159,13 +160,55 @@ public actor PlaybackSnapshotStore {
               !snap.providerID.isEmpty,
               snap.providerID != ProviderID.unknown.rawValue,
               snap.providerID == expectedProviderID else {
+            AppLogger.shared.emit(
+                eventName: "snapshot.scope.rejected",
+                category: "PERSISTENCE",
+                level: .debug,
+                outcome: .rejected,
+                source: DiagnosticSourceLocation(module: "Playback", component: "PlaybackSnapshotStore", function: "load"),
+                payload: {
+                    DiagnosticEventPayload(
+                        context: DiagnosticContext(providerID: expectedProviderID),
+                        fields: ["reasonCode": .string("missing_or_provider_mismatch")],
+                        message: "Snapshot load skipped or rejected for provider \(expectedProviderID)"
+                    )
+                }
+            )
             return nil
         }
         if let snapAccount = snap.accountID {
             guard let expectedAccountID, snapAccount == expectedAccountID else {
+                AppLogger.shared.emit(
+                    eventName: "snapshot.scope.rejected",
+                    category: "PERSISTENCE",
+                    level: .warn,
+                    outcome: .rejected,
+                    source: DiagnosticSourceLocation(module: "Playback", component: "PlaybackSnapshotStore", function: "load"),
+                    payload: {
+                        DiagnosticEventPayload(
+                            context: DiagnosticContext(providerID: expectedProviderID),
+                            fields: ["reasonCode": .string("account_mismatch")],
+                            message: "Rejected playback snapshot due to account mismatch"
+                        )
+                    }
+                )
                 return nil
             }
         }
+        AppLogger.shared.emit(
+            eventName: "snapshot.restore.completed",
+            category: "PERSISTENCE",
+            level: .info,
+            outcome: .succeeded,
+            source: DiagnosticSourceLocation(module: "Playback", component: "PlaybackSnapshotStore", function: "load"),
+            payload: {
+                DiagnosticEventPayload(
+                    context: DiagnosticContext(providerID: snap.providerID),
+                    fields: ["schemaVersion": .int(snap.schemaVersion), "scopeMatched": .bool(true)],
+                    message: "Loaded playback snapshot (v\(snap.schemaVersion))"
+                )
+            }
+        )
         return snap
     }
 

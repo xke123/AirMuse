@@ -141,25 +141,19 @@ open class PlayerWindowController: NSWindowController {
 
     private func wireActions() {
         playerView.onPlayPause = { [weak self] in
-            AppLogger.shared.log(category: .userAction, level: .info, message: "用户点击主界面 [播放/暂停] 按钮")
-            self?.executeCommand { try await self?.coordinator.playPause() }
+            self?.executeCommand(action: "play_pause", location: "main_player") { try await self?.coordinator.playPause() }
         }
         playerView.onStop = { [weak self] in
-            AppLogger.shared.log(category: .userAction, level: .info, message: "用户点击主界面 [停止] 按钮")
-            self?.executeCommand { try await self?.coordinator.pause() }
+            self?.executeCommand(action: "stop", location: "main_player") { try await self?.coordinator.pause() }
         }
         playerView.onNext = { [weak self] in
-            AppLogger.shared.log(category: .userAction, level: .info, message: "用户点击主界面 [下一首] 按钮")
-            self?.executeCommand { try await self?.coordinator.skipToNext() }
+            self?.executeCommand(action: "skip_next", location: "main_player") { try await self?.coordinator.skipToNext() }
         }
         playerView.onPrevious = { [weak self] in
-            AppLogger.shared.log(category: .userAction, level: .info, message: "用户点击主界面 [上一首] 按钮")
-            self?.executeCommand { try await self?.coordinator.skipToPrevious() }
+            self?.executeCommand(action: "skip_previous", location: "main_player") { try await self?.coordinator.skipToPrevious() }
         }
         playerView.onSeek = { [weak self] targetMs in
-            let sec = String(format: "%.1f", Double(targetMs) / 1000.0)
-            AppLogger.shared.log(category: .userAction, level: .info, message: "用户拖动进度条跳转至: \(sec)s (\(targetMs)ms)")
-            self?.executeCommand { try await self?.coordinator.seek(toMs: targetMs) }
+            self?.executeCommand(action: "seek", location: "main_player") { try await self?.coordinator.seek(toMs: targetMs) }
         }
         playerView.onVolumeChanged = { [weak self] vol in
             self?.executeCommand { try await self?.coordinator.setVolume(vol) }
@@ -207,20 +201,16 @@ open class PlayerWindowController: NSWindowController {
         }
 
         miniPlayerView.onPlayPause = { [weak self] in
-            AppLogger.shared.log(category: .userAction, level: .info, message: "用户点击迷你栏 [播放/暂停] 按钮")
-            self?.executeCommand { try await self?.coordinator.playPause() }
+            self?.executeCommand(action: "play_pause", location: "mini_player") { try await self?.coordinator.playPause() }
         }
         miniPlayerView.onStop = { [weak self] in
-            AppLogger.shared.log(category: .userAction, level: .info, message: "用户点击迷你栏 [停止] 按钮")
-            self?.executeCommand { try await self?.coordinator.pause() }
+            self?.executeCommand(action: "stop", location: "mini_player") { try await self?.coordinator.pause() }
         }
         miniPlayerView.onNext = { [weak self] in
-            AppLogger.shared.log(category: .userAction, level: .info, message: "用户点击迷你栏 [下一首] 按钮")
-            self?.executeCommand { try await self?.coordinator.skipToNext() }
+            self?.executeCommand(action: "skip_next", location: "mini_player") { try await self?.coordinator.skipToNext() }
         }
         miniPlayerView.onPrevious = { [weak self] in
-            AppLogger.shared.log(category: .userAction, level: .info, message: "用户点击迷你栏 [上一首] 按钮")
-            self?.executeCommand { try await self?.coordinator.skipToPrevious() }
+            self?.executeCommand(action: "skip_previous", location: "mini_player") { try await self?.coordinator.skipToPrevious() }
         }
         miniPlayerView.onExpand = { [weak self] in
             AppLogger.shared.log(category: .userAction, level: .info, message: "用户点击迷你栏 [还原展开] 按钮")
@@ -295,12 +285,42 @@ open class PlayerWindowController: NSWindowController {
         playerView.playScrollCollapse(completion: completion)
     }
 
-    private func executeCommand(_ block: @escaping () async throws -> Void) {
+    private func executeCommand(action: String = "command", location: String = "player", _ block: @escaping () async throws -> Void) {
+        let rootTrace = DiagnosticTrace.makeRoot(context: DiagnosticContext(windowRef: "player_window"))
+        AppLogger.shared.emit(
+            eventName: "ui.action.triggered",
+            category: "UI",
+            level: .info,
+            traceContext: rootTrace,
+            source: DiagnosticSourceLocation(module: "UI", component: "PlayerWindowController", function: "executeCommand"),
+            payload: {
+                DiagnosticEventPayload(
+                    fields: ["action": .string(action), "location": .string(location)],
+                    message: "UI action \(action) (\(location))"
+                )
+            }
+        )
         Task {
             do {
-                try await block()
+                try await DiagnosticTrace.withContext(rootTrace) {
+                    try await block()
+                }
             } catch {
-                AppLogger.shared.log(category: .playback, level: .warn, message: "播放控制指令失败: \(error.localizedDescription)")
+                AppLogger.shared.emit(
+                    eventName: "ui.feedback.presented",
+                    category: "UI",
+                    level: .warn,
+                    outcome: .failed,
+                    traceContext: rootTrace,
+                    source: DiagnosticSourceLocation(module: "UI", component: "PlayerWindowController", function: "executeCommand"),
+                    payload: {
+                        DiagnosticEventPayload(
+                            fields: ["feedbackCode": .string("playback_command_failed")],
+                            error: LogSanitizer.sanitizeError(error, stage: "ui_command"),
+                            message: "Playback command \(action) failed"
+                        )
+                    }
+                )
             }
         }
     }

@@ -70,25 +70,17 @@ public final class AppLifecycleCoordinator {
             registry: root.providerRegistry
         )
         let logCtrl = LogWindowController(
-            diagnosticFetch: { [provider = self.appleMusicProvider] in
-                try await provider.fetchTopCharts()
-            },
-            diagnosticsProvider: { [root = self.root] in
-                let sessSnap = await root.sessionCoordinator.snapshot
-                let pbState = await root.playbackStore.state
-                let cacheBytes = (try? await root.sqlCacheStore.totalCachedBytes()) ?? 0
-                let imgBytes = await root.imageCache.diskUsageBytes()
-                let (engineID, isReady, isAuth) = await MainActor.run {
-                    (root.webRuntime.engineInstanceID, root.webRuntime.isReady, root.webRuntime.isAuthorized)
-                }
-                return """
-                Session: state=\(sessSnap.sessionState) | gen=\(sessSnap.context?.generation ?? 0) | storefront=\(sessSnap.context?.storefront ?? "nil") | account=\(sessSnap.account?.displayName ?? "nil")
-                WebEngine: id=\(engineID.uuidString.prefix(8)) | ready=\(isReady) | authorized=\(isAuth)
-                Playback: status=\(pbState.status) | track=\(pbState.currentTrack?.title ?? "none") | posMs=\(pbState.estimatedPositionMs)
-                Cache: sqlBytes=\(cacheBytes) | imageDiskBytes=\(imgBytes) | logFile=\(AppLogger.shared.activeLogFileURL.lastPathComponent)
-                """
+            activeProbe: { [provider = self.appleMusicProvider] in
+                let tracks = try await provider.fetchTopCharts()
+                return "apple_music_top_charts=\(tracks.count)"
             }
         )
+        Task { [root = self.root] in
+            await DiagnosticSnapshotCoordinator.shared.register(root.providerRegistry)
+            await DiagnosticSnapshotCoordinator.shared.register(root.engineRouter)
+            await DiagnosticSnapshotCoordinator.shared.register(root.playbackCoordinatorV2)
+            await DiagnosticSnapshotCoordinator.shared.register(root.httpClient)
+        }
         let authCtrl = AppleMusicAuthWindowController(
             sessionCoordinator: sessionCoordinator,
             webLoginController: root.webLoginController
