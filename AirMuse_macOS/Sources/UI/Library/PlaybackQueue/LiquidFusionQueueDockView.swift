@@ -134,21 +134,33 @@ public enum QueueAdditionVisualKind: Sendable, Equatable {
     case station
 }
 
+// MARK: - DockInteractionMode
+
+public enum DockInteractionMode: Sendable, Equatable {
+    case collapsed
+    case originOpen
+    case queueOpen
+}
+
 // MARK: - LiquidFusionQueueDockView
 
-/// Bottom-right Liquid Fusion Dock queue control & expandable upcoming queue overlay.
-/// Uses native `NSGlassEffectContainerView` + `NSGlassEffectView` on macOS 26+ with
-/// interruptible morph geometry, keyboard/drag support, and zero-overhead idle state.
+/// Bottom-right Liquid Fusion Dock dual-glass control:
+/// 1. Origin Capsule (`originGlassView` sibling inside `glassContainer`) + pure-navigation menu
+/// 2. Adaptive Queue / Remote Station Capsule & expandable panel (`morphGlassView`)
 @MainActor
 public final class LiquidFusionQueueDockView: NSView, NSTableViewDataSource, NSTableViewDelegate {
 
     // MARK: - Public Callbacks & State
 
     public var onNavigateToOrigin: ((PlaybackOrigin) -> Void)?
+    public var onOriginNavigateAction: ((MediaAction, QueueEntry) -> Void)?
+    public var onResolveTrackRelationships: ((MusicTrack) async -> MusicTrack?)?
+    public var currentDetailIdentityProvider: (() -> MediaDetailIdentity?)?
     public var onQueueMediaAction: ((MediaAction) -> Void)?
     public var queueContextBuilder: ((MediaResourceReference, [UUID]) -> MediaActionContext)?
     public var onReportError: ((String) -> Void)?
     public var onRetryPagination: (() -> Void)?
+    public private(set) var interactionMode: DockInteractionMode = .collapsed
     public private(set) var isExpanded: Bool = false
 
     private let coordinator: PlaybackCoordinatorV2
@@ -162,14 +174,30 @@ public final class LiquidFusionQueueDockView: NSView, NSTableViewDataSource, NST
     private let motionOwnerID = "QueueDock-\(UUID().uuidString)"
     private var isAnimatingMorph: Bool = false
     private var isCollapsedHovered: Bool = false
+    private var isOriginHovered: Bool = false
     private var collapsedTrackingArea: NSTrackingArea?
+    private var originTrackingArea: NSTrackingArea?
     private var lastObservedQueueCount: Int = 0
     private var hasObservedInitialSnapshot: Bool = false
     private var lastExplicitAnimationAt: CFTimeInterval = 0
+    private var lastDisplayedOriginSignature: String?
+    private var originPopoverController: MediaPlayMenuPopoverController?
+    private var originResolveTask: Task<Void, Never>?
+    private var resolvedTrackCache: [String: MusicTrack] = [:]
+    private var activeOriginMenuEntryID: UUID?
+    private var activeOriginMenuTrackKey: String?
+    private var frozenOriginMenuEntry: QueueEntry?
 
     // MARK: - Native Glass Hierarchy
 
     private let glassContainer = NSGlassEffectContainerView(frame: .zero)
+    private let originGlassView = NSGlassEffectView(frame: .zero)
+    private let originOverlayView = NSView(frame: .zero)
+    private let originFallbackView = NSView(frame: .zero)
+    private let originIconView = NSImageView(frame: .zero)
+    private let originLabel = NSTextField(labelWithString: "")
+    private let originButton = NSButton(frame: .zero)
+
     private let morphGlassView = NSGlassEffectView(frame: .zero)
     private let glassContentView = NSView(frame: .zero)
     private let reduceTransparencyFallbackView = NSView(frame: .zero)
@@ -198,9 +226,16 @@ public final class LiquidFusionQueueDockView: NSView, NSTableViewDataSource, NST
     private let scrollView = NSScrollView(frame: .zero)
     private let tableView = QueueTableView(frame: .zero)
     private let emptyStateLabel = NSTextField(labelWithString: "待播队列为空")
+    private let remoteStationTitleLabel = NSTextField(labelWithString: "")
+    private let remoteStationTrackLabel = NSTextField(labelWithString: "")
+    private let remoteStationArtistLabel = NSTextField(labelWithString: "")
+    private let remotePlayPauseButton = NSButton(frame: .zero)
+    private let remoteNextButton = NSButton(frame: .zero)
 
-    // Metrics (QUEUE_UI.md)
+    // Metrics (PO_UI.md)
     private let buttonSize: CGFloat = 24
+    private let originMaxWidth: CGFloat = 400
+    private let capsuleSpacing: CGFloat = 4
     private let cornerMargin: CGFloat = 10
     public var bottomBarHeight: CGFloat = 30 {
         didSet {
@@ -229,21 +264,32 @@ public final class LiquidFusionQueueDockView: NSView, NSTableViewDataSource, NST
         if let upMonitor = mouseUpSwallowMonitor {
             NSEvent.removeMonitor(upMonitor)
         }
+        if let tracking = originTrackingArea {
+            originOverlayView.removeTrackingArea(tracking)
+        }
+        originResolveTask?.cancel()
+        originPopoverController?.dismiss(returnFocus: false)
         MotionCoordinator.shared.cancelAll(owner: motionOwnerID)
     }
 
     // MARK: - Hit Testing
 
-    /// Intercepts clicks on the capsule button when collapsed (never falling through),
+    /// Intercepts clicks on the origin or queue capsule independently when collapsed,
     /// and absorbs all clicks inside the panel when expanded so outside clicks only dismiss.
     public override func hitTest(_ point: NSPoint) -> NSView? {
         let localPt = convert(point, from: superview)
         if isExpanded {
+            if !originOverlayView.isHidden && originOverlayView.frame.contains(localPt) {
+                return originButton
+            }
             if morphGlassView.frame.contains(localPt) {
                 return super.hitTest(point) ?? expandedContentView
             }
             return bounds.contains(localPt) ? self : nil
         } else {
+            if !originOverlayView.isHidden && originOverlayView.frame.contains(localPt) {
+                return originButton
+            }
             guard collapsedOverlayView.frame.contains(localPt) else {
                 return nil
             }
@@ -278,9 +324,51 @@ public final class LiquidFusionQueueDockView: NSView, NSTableViewDataSource, NST
     private func setupUI() {
         wantsLayer = true
 
-        glassContainer.spacing = 6
+        glassContainer.spacing = capsuleSpacing
         addSubview(glassContainer)
 
+        // Sibling 1: Origin Capsule (`NSGlassEffectView` inside `NSGlassEffectContainerView`, visible on hover/open)
+        originGlassView.style = .clear
+        originGlassView.cornerRadius = buttonSize * 0.5
+        originGlassView.isHidden = true
+        originGlassView.contentView = originFallbackView
+        glassContainer.addSubview(originGlassView)
+
+        originFallbackView.wantsLayer = true
+        originFallbackView.layer?.backgroundColor = NSColor(calibratedWhite: 0.14, alpha: 0.92).cgColor
+        originFallbackView.layer?.cornerRadius = buttonSize * 0.5
+        originFallbackView.layer?.borderWidth = 0.5
+        originFallbackView.layer?.borderColor = NSColor(white: 1.0, alpha: 0.16).cgColor
+        originFallbackView.isHidden = true
+
+        originOverlayView.wantsLayer = true
+        originOverlayView.isHidden = true
+        addSubview(originOverlayView)
+
+        originIconView.imageScaling = .scaleProportionallyDown
+        originIconView.contentTintColor = .secondaryLabelColor
+        originOverlayView.addSubview(originIconView)
+
+        originLabel.font = NSFont.systemFont(ofSize: 11, weight: .medium)
+        originLabel.textColor = .labelColor
+        originLabel.lineBreakMode = .byTruncatingTail
+        originLabel.isBezeled = false
+        originLabel.drawsBackground = false
+        originLabel.isEditable = false
+        originLabel.isSelectable = false
+        originOverlayView.addSubview(originLabel)
+
+        originButton.isBordered = false
+        originButton.bezelStyle = .regularSquare
+        originButton.focusRingType = .none
+        originButton.title = ""
+        originButton.image = nil
+        originButton.setAccessibilityLabel("当前播放来源")
+        originButton.target = self
+        originButton.action = #selector(originCapsuleClicked)
+        originOverlayView.addSubview(originButton)
+
+        // Sibling 2: Morphing Queue / Radio Capsule (`NSGlassEffectView` inside `NSGlassEffectContainerView`)
         morphGlassView.style = .clear
         morphGlassView.cornerRadius = buttonSize * 0.5
         morphGlassView.isHidden = true
@@ -438,6 +526,33 @@ public final class LiquidFusionQueueDockView: NSView, NSTableViewDataSource, NST
         emptyStateLabel.textColor = .secondaryLabelColor
         emptyStateLabel.alignment = .center
         expandedContentView.addSubview(emptyStateLabel)
+
+        // Remote station compact info & capability-gated transport controls
+        remoteStationTitleLabel.font = NSFont.systemFont(ofSize: 13, weight: .semibold)
+        remoteStationTitleLabel.textColor = .labelColor
+        remoteStationTitleLabel.lineBreakMode = .byTruncatingTail
+        remoteStationTitleLabel.isHidden = true
+        expandedContentView.addSubview(remoteStationTitleLabel)
+
+        remoteStationTrackLabel.font = NSFont.systemFont(ofSize: 12.5, weight: .medium)
+        remoteStationTrackLabel.textColor = .labelColor
+        remoteStationTrackLabel.lineBreakMode = .byTruncatingTail
+        remoteStationTrackLabel.isHidden = true
+        expandedContentView.addSubview(remoteStationTrackLabel)
+
+        remoteStationArtistLabel.font = NSFont.systemFont(ofSize: 11, weight: .regular)
+        remoteStationArtistLabel.textColor = .secondaryLabelColor
+        remoteStationArtistLabel.lineBreakMode = .byTruncatingTail
+        remoteStationArtistLabel.isHidden = true
+        expandedContentView.addSubview(remoteStationArtistLabel)
+
+        configureToolbarButton(remotePlayPauseButton, symbol: "playpause.fill", tooltip: "播放/暂停", action: #selector(remotePlayPauseClicked))
+        remotePlayPauseButton.isHidden = true
+        expandedContentView.addSubview(remotePlayPauseButton)
+
+        configureToolbarButton(remoteNextButton, symbol: "forward.fill", tooltip: "下一首", action: #selector(remoteNextClicked))
+        remoteNextButton.isHidden = true
+        expandedContentView.addSubview(remoteNextButton)
     }
 
     // MARK: - Layout & Morph Geometry
@@ -450,10 +565,14 @@ public final class LiquidFusionQueueDockView: NSView, NSTableViewDataSource, NST
             morphGlassView.frame = targetRect
             morphGlassView.cornerRadius = isExpanded ? 14 : buttonSize * 0.5
         }
+        layoutOriginCapsule(relativeTo: morphGlassView.frame)
         layoutMorphSubviews(in: morphGlassView.bounds)
     }
 
     private func collapsedWidth(for count: Int) -> CGFloat {
+        if snapshot.owner == .remoteEngine {
+            return buttonSize
+        }
         guard count > 0 else { return buttonSize }
         let digits = count >= 1000 ? 4 : (count >= 100 ? 3 : (count >= 10 ? 2 : 1))
         return buttonSize + CGFloat(digits * 7 + 8)
@@ -476,13 +595,59 @@ public final class LiquidFusionQueueDockView: NSView, NSTableViewDataSource, NST
         let maxAvailW = max(120, w - cornerMargin * 2)
         let maxAvailH = max(120, h - barH * 2 - 12)
         let targetW = min(max(240, w * 0.5), maxAvailW)
-        let targetH = min(max(220, h * 0.65), maxAvailH)
+        let targetH: CGFloat
+        if snapshot.owner == .remoteEngine {
+            targetH = min(max(180, h * 0.36), maxAvailH)
+        } else {
+            targetH = min(max(220, h * 0.70), maxAvailH)
+        }
         return NSRect(
             x: max(cornerMargin, w - targetW - cornerMargin),
             y: collapsedY,
             width: targetW,
             height: targetH
         )
+    }
+
+    private func layoutOriginCapsule(relativeTo morphRect: NSRect) {
+        guard let confirmed = snapshot.confirmedCurrent else {
+            originOverlayView.isHidden = true
+            originGlassView.isHidden = true
+            return
+        }
+        let barH = max(buttonSize + 4, bottomBarHeight)
+        let collapsedY = max(2, (barH - buttonSize) * 0.5)
+        let maxRight = morphRect.minX - capsuleSpacing
+        let availW = max(0, maxRight - cornerMargin)
+        if availW < buttonSize {
+            originOverlayView.isHidden = true
+            originGlassView.isHidden = true
+            return
+        }
+        originOverlayView.isHidden = false
+        let font = originLabel.font ?? NSFont.systemFont(ofSize: 11, weight: .medium)
+        let textW = ceil((originLabel.stringValue as NSString).size(withAttributes: [.font: font]).width)
+        let idealW = min(originMaxWidth, 8 + 14 + 5 + textW + 12)
+        let finalW = min(availW, max(buttonSize, idealW))
+        let iconOnly = finalW < 56
+        let pillFrame = NSRect(x: max(cornerMargin, maxRight - finalW), y: collapsedY, width: finalW, height: buttonSize)
+        originOverlayView.frame = pillFrame
+        originGlassView.frame = pillFrame
+        originFallbackView.frame = originGlassView.bounds
+        originFallbackView.layer?.cornerRadius = buttonSize * 0.5
+        originButton.frame = originOverlayView.bounds
+
+        if iconOnly {
+            originIconView.frame = NSRect(x: (finalW - 14) * 0.5, y: (buttonSize - 14) * 0.5, width: 14, height: 14)
+            originLabel.isHidden = true
+        } else {
+            originIconView.frame = NSRect(x: 8, y: (buttonSize - 14) * 0.5, width: 14, height: 14)
+            originLabel.frame = NSRect(x: 26, y: (buttonSize - 15) * 0.5, width: max(8, finalW - 34), height: 15)
+            originLabel.isHidden = false
+        }
+        _ = confirmed
+        updateOriginTrackingArea()
+        updateOriginGlassVisibility()
     }
 
     private func layoutMorphSubviews(in rect: NSRect) {
@@ -492,7 +657,7 @@ public final class LiquidFusionQueueDockView: NSView, NSTableViewDataSource, NST
         let collapsedRect = targetMorphRect(expanded: false)
         collapsedOverlayView.frame = collapsedRect
         toggleButton.frame = NSRect(x: 0, y: 0, width: collapsedRect.width, height: buttonSize)
-        if displayedEntries.isEmpty {
+        if snapshot.owner == .remoteEngine || displayedEntries.isEmpty {
             toggleIconView.frame = NSRect(x: max(0, (collapsedRect.width - 14) * 0.5), y: (buttonSize - 14) * 0.5, width: 14, height: 14)
             countLabel.isHidden = true
         } else {
@@ -530,12 +695,22 @@ public final class LiquidFusionQueueDockView: NSView, NSTableViewDataSource, NST
         let statusW = retryButton.isHidden ? max(20, w - pad * 2) : max(20, w - pad * 2 - 48)
         statusLabel.frame = NSRect(x: pad, y: statusY, width: statusW, height: 16)
 
-        let listH = max(20, statusY - 8)
-        scrollView.frame = NSRect(x: 4, y: 6, width: max(40, w - 8), height: listH)
-        if let col = tableView.tableColumns.first {
-            col.width = max(40, scrollView.bounds.width - 4)
+        if snapshot.owner == .remoteEngine {
+            remoteStationTitleLabel.frame = NSRect(x: 0, y: 4, width: max(40, tw - 60), height: 20)
+            remoteNextButton.frame = NSRect(x: tw - 24, y: 2, width: 24, height: 24)
+            remotePlayPauseButton.frame = NSRect(x: tw - 52, y: 2, width: 24, height: 24)
+            let infoTop = statusY - 14
+            remoteStationTrackLabel.frame = NSRect(x: pad, y: max(40, infoTop - 18), width: max(40, w - pad * 2), height: 18)
+            remoteStationArtistLabel.frame = NSRect(x: pad, y: max(22, infoTop - 36), width: max(40, w - pad * 2), height: 16)
+            emptyStateLabel.frame = NSRect(x: pad, y: 14, width: max(40, w - pad * 2), height: 20)
+        } else {
+            let listH = max(20, statusY - 8)
+            scrollView.frame = NSRect(x: 4, y: 6, width: max(40, w - 8), height: listH)
+            if let col = tableView.tableColumns.first {
+                col.width = max(40, scrollView.bounds.width - 4)
+            }
+            emptyStateLabel.frame = NSRect(x: pad, y: 6 + (listH - 20) * 0.5, width: max(40, w - pad * 2), height: 20)
         }
-        emptyStateLabel.frame = NSRect(x: pad, y: 6 + (listH - 20) * 0.5, width: max(40, w - pad * 2), height: 20)
     }
 
     // MARK: - Expand / Collapse (Interruptible Liquid Fusion Morph)
@@ -546,6 +721,11 @@ public final class LiquidFusionQueueDockView: NSView, NSTableViewDataSource, NST
 
     public func setExpanded(_ expanded: Bool) {
         guard isExpanded != expanded else { return }
+        if expanded {
+            originResolveTask?.cancel()
+            originPopoverController?.dismiss(returnFocus: false)
+        }
+        interactionMode = expanded ? .queueOpen : .collapsed
         isExpanded = expanded
         AppLogger.shared.log(
             category: .userAction,
@@ -614,18 +794,37 @@ public final class LiquidFusionQueueDockView: NSView, NSTableViewDataSource, NST
     public override func viewDidHide() {
         super.viewDidHide()
         removeOutsideClickMonitor()
+        originResolveTask?.cancel()
+        originPopoverController?.dismiss(returnFocus: false)
         MotionCoordinator.shared.cancelAll(owner: motionOwnerID)
+        interactionMode = .collapsed
         if isExpanded {
             isExpanded = false
             isCollapsedHovered = false
             expandedContentView.isHidden = true
             expandedContentView.alphaValue = 0
             collapsedOverlayView.isHidden = false
-            countLabel.isHidden = displayedEntries.isEmpty
+            countLabel.isHidden = (snapshot.owner == .remoteEngine) || displayedEntries.isEmpty
             morphGlassView.style = .clear
             morphGlassView.isHidden = true
             needsLayout = true
         }
+    }
+
+    private func updateOriginTrackingArea() {
+        if let existing = originTrackingArea {
+            originOverlayView.removeTrackingArea(existing)
+            originTrackingArea = nil
+        }
+        guard !originOverlayView.isHidden else { return }
+        let area = NSTrackingArea(
+            rect: originOverlayView.bounds,
+            options: [.mouseEnteredAndExited, .activeInKeyWindow, .inVisibleRect],
+            owner: self,
+            userInfo: ["capsule": "origin"]
+        )
+        originOverlayView.addTrackingArea(area)
+        originTrackingArea = area
     }
 
     private func updateCollapsedTrackingArea() {
@@ -637,22 +836,37 @@ public final class LiquidFusionQueueDockView: NSView, NSTableViewDataSource, NST
             rect: collapsedOverlayView.bounds,
             options: [.mouseEnteredAndExited, .activeInKeyWindow, .inVisibleRect],
             owner: self,
-            userInfo: nil
+            userInfo: ["capsule": "queue"]
         )
         collapsedOverlayView.addTrackingArea(area)
         collapsedTrackingArea = area
     }
 
     public override func mouseEntered(with event: NSEvent) {
+        if let capsule = event.trackingArea?.userInfo?["capsule"] as? String, capsule == "origin" {
+            isOriginHovered = true
+            updateOriginGlassVisibility()
+            return
+        }
         guard !isExpanded else { return }
         isCollapsedHovered = true
         updateCollapsedGlassVisibility()
     }
 
     public override func mouseExited(with event: NSEvent) {
+        if let capsule = event.trackingArea?.userInfo?["capsule"] as? String, capsule == "origin" {
+            isOriginHovered = false
+            updateOriginGlassVisibility()
+            return
+        }
         guard isCollapsedHovered else { return }
         isCollapsedHovered = false
         updateCollapsedGlassVisibility()
+    }
+
+    private func updateOriginGlassVisibility() {
+        let shouldShow = (snapshot.confirmedCurrent != nil) && !originOverlayView.isHidden && (isOriginHovered || interactionMode == .originOpen)
+        originGlassView.isHidden = !shouldShow
     }
 
     private func updateCollapsedGlassVisibility() {
@@ -710,6 +924,7 @@ public final class LiquidFusionQueueDockView: NSView, NSTableViewDataSource, NST
     private func applyAccessibilityAndTransparencyStyle() {
         let reduceTransparency = NSWorkspace.shared.accessibilityDisplayShouldReduceTransparency
         reduceTransparencyFallbackView.isHidden = !reduceTransparency
+        originFallbackView.isHidden = !reduceTransparency
     }
 
     // MARK: - Snapshot Observation & Diffing
@@ -768,14 +983,240 @@ public final class LiquidFusionQueueDockView: NSView, NSTableViewDataSource, NST
         }
 
         updateQueueCountBadge(previousCount: oldIDs.count, newCount: newIDs.count)
+        updateOriginCapsule(from: newSnapshot)
         updateToolbarAndStatus()
     }
 
+    private func updateOriginCapsule(from newSnapshot: QueueSnapshot) {
+        // Cancel open origin popover if confirmedCurrent changed (P33)
+        if let openID = activeOriginMenuEntryID {
+            let curID = newSnapshot.confirmedCurrent?.id
+            let curKey = newSnapshot.confirmedCurrent?.track.trackKey
+            if curID != openID || curKey != activeOriginMenuTrackKey {
+                AppLogger.shared.log(category: .userAction, level: .info, message: "当前播放曲目已变化，自动关闭过期来源菜单")
+                originResolveTask?.cancel()
+                originPopoverController?.dismiss(returnFocus: false)
+            }
+        }
+
+        guard let confirmed = newSnapshot.confirmedCurrent else {
+            lastDisplayedOriginSignature = nil
+            originOverlayView.isHidden = true
+            originGlassView.isHidden = true
+            originButton.isEnabled = false
+            needsLayout = true
+            return
+        }
+
+        let effectiveEntry = mergedCachedTrackEntry(for: confirmed)
+        let origin = effectiveEntry.origin
+        let signature = "\(origin.kind.rawValue)|\(origin.sourceID ?? "")|\(origin.displayTitle)|\(newSnapshot.owner.rawValue)"
+        let originChanged = (lastDisplayedOriginSignature != nil && lastDisplayedOriginSignature != signature)
+        lastDisplayedOriginSignature = signature
+
+        let symName: String
+        switch origin.kind {
+        case .album: symName = "square.stack"
+        case .playlist: symName = "music.note.list"
+        case .artist: symName = "music.mic"
+        case .station: symName = "dot.radiowaves.left.and.right"
+        case .search: symName = "magnifyingglass"
+        case .library: symName = "books.vertical"
+        case .chart: symName = "chart.bar"
+        case .forYou, .browse: symName = "sparkles"
+        case .song: symName = "music.note"
+        case .unknown: symName = "questionmark.circle"
+        }
+
+        let descriptor = MediaActionResolver.resolveOriginMenu(
+            for: effectiveEntry,
+            owner: newSnapshot.owner,
+            currentDetail: currentDetailIdentityProvider?()
+        )
+        let needsRelationshipLookup = (effectiveEntry.track.albumID == nil || effectiveEntry.track.artists.isEmpty) && onResolveTrackRelationships != nil
+        let hasActions = descriptor.sections.contains { !$0.actions.isEmpty }
+        originButton.isEnabled = hasActions || needsRelationshipLookup
+        originButton.toolTip = origin.displayTitle
+        originButton.setAccessibilityLabel("播放来源")
+        originButton.setAccessibilityValue(origin.displayTitle)
+
+        let displayTitle = origin.displayTitle
+        if originChanged && !MotionCoordinator.shared.isReduceMotionEnabled && window != nil && !isHidden {
+            NSAnimationContext.runAnimationGroup { ctx in
+                ctx.duration = 0.19
+                ctx.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+                originIconView.animator().alphaValue = 0.35
+                originLabel.animator().alphaValue = 0.35
+            } completionHandler: { [weak self] in
+                Task { @MainActor in
+                    guard let self else { return }
+                    let symCfg = NSImage.SymbolConfiguration(pointSize: 11.5, weight: .semibold)
+                    self.originIconView.image = NSImage(systemSymbolName: symName, accessibilityDescription: displayTitle)?.withSymbolConfiguration(symCfg)
+                    self.originLabel.stringValue = displayTitle
+                    self.needsLayout = true
+                    NSAnimationContext.runAnimationGroup { ctx in
+                        ctx.duration = 0.19
+                        self.originIconView.animator().alphaValue = 1.0
+                        self.originLabel.animator().alphaValue = 1.0
+                    }
+                }
+            }
+        } else {
+            let symCfg = NSImage.SymbolConfiguration(pointSize: 11.5, weight: .semibold)
+            self.originIconView.image = NSImage(systemSymbolName: symName, accessibilityDescription: displayTitle)?.withSymbolConfiguration(symCfg)
+            self.originLabel.stringValue = displayTitle
+            self.needsLayout = true
+        }
+    }
+
+    private func mergedCachedTrackEntry(for entry: QueueEntry) -> QueueEntry {
+        guard let cached = resolvedTrackCache[entry.track.trackKey] else { return entry }
+        let t = entry.track
+        let merged = MusicTrack(
+            id: t.id,
+            title: t.title,
+            artistName: t.artistName,
+            albumTitle: t.albumTitle.isEmpty ? cached.albumTitle : t.albumTitle,
+            durationMs: t.durationMs > 0 ? t.durationMs : cached.durationMs,
+            artworkURL: t.artworkURL ?? cached.artworkURL,
+            providerID: t.providerID,
+            providerTrackID: t.providerTrackID,
+            albumID: t.albumID ?? cached.albumID,
+            artists: t.artists.isEmpty ? cached.artists : t.artists,
+            isLibrary: t.isLibrary,
+            catalogID: t.catalogID ?? cached.catalogID,
+            libraryID: t.libraryID ?? cached.libraryID
+        )
+        return QueueEntry(id: entry.id, track: merged, origin: entry.origin, batchID: entry.batchID, addedAt: entry.addedAt)
+    }
+
+    @objc public func originCapsuleClicked() {
+        if interactionMode == .originOpen {
+            originResolveTask?.cancel()
+            originPopoverController?.dismiss(returnFocus: true)
+            interactionMode = .collapsed
+            return
+        }
+        guard let confirmed = snapshot.confirmedCurrent else { return }
+        if isExpanded {
+            setExpanded(false)
+        }
+
+        let effectiveEntry = mergedCachedTrackEntry(for: confirmed)
+        let descriptor = MediaActionResolver.resolveOriginMenu(
+            for: effectiveEntry,
+            owner: snapshot.owner,
+            currentDetail: currentDetailIdentityProvider?()
+        )
+        let needsRelationshipLookup = (effectiveEntry.track.albumID == nil || effectiveEntry.track.artists.isEmpty) && onResolveTrackRelationships != nil
+        guard !descriptor.isEmpty || needsRelationshipLookup else { return }
+
+        let initialDescriptor = descriptor.isEmpty
+            ? MediaActionMenuDescriptor(sections: [MediaActionMenuSection(actions: [.originStatusPlaceholder(title: "正在解析来源与专辑信息…")])])
+            : descriptor
+
+        interactionMode = .originOpen
+        frozenOriginMenuEntry = effectiveEntry
+        activeOriginMenuEntryID = effectiveEntry.id
+        activeOriginMenuTrackKey = effectiveEntry.track.trackKey
+        AppLogger.shared.log(
+            category: .userAction,
+            level: .info,
+            message: "用户展开播放来源菜单: 「\(effectiveEntry.origin.displayTitle)」(kind=\(effectiveEntry.origin.kind.rawValue), owner=\(snapshot.owner.rawValue), 曲目=\(effectiveEntry.track.title))"
+        )
+
+        let controller = MediaPlayMenuPopoverController(
+            descriptor: initialDescriptor,
+            anchorView: originOverlayView,
+            preferAboveAnchor: true,
+            onSelect: { [weak self] action in
+                guard let self, let entry = self.frozenOriginMenuEntry else { return }
+                AppLogger.shared.log(
+                    category: .userAction,
+                    level: .info,
+                    message: "用户在来源菜单选择纯内部导航: \(action.title) (来源=\(entry.origin.displayTitle), 曲目=\(entry.track.title))"
+                )
+                if let onOriginNavigateAction = self.onOriginNavigateAction {
+                    onOriginNavigateAction(action, entry)
+                } else if case .navigateToOrigin(let origin) = action {
+                    self.onNavigateToOrigin?(origin)
+                } else if case .navigateToOriginConcise(let origin) = action {
+                    self.onNavigateToOrigin?(origin)
+                }
+            },
+            onDismissed: { [weak self] in
+                guard let self else { return }
+                self.originResolveTask?.cancel()
+                self.originPopoverController = nil
+                self.activeOriginMenuEntryID = nil
+                self.activeOriginMenuTrackKey = nil
+                if self.interactionMode == .originOpen {
+                    self.interactionMode = .collapsed
+                }
+                self.updateOriginGlassVisibility()
+            }
+        )
+        originPopoverController = controller
+        updateOriginGlassVisibility()
+        controller.present()
+
+        if needsRelationshipLookup, let resolver = onResolveTrackRelationships {
+            let expectedEntryID = effectiveEntry.id
+            let expectedTrackKey = effectiveEntry.track.trackKey
+            let targetTrack = effectiveEntry.track
+            originResolveTask?.cancel()
+            originResolveTask = Task { @MainActor [weak self] in
+                guard let resolved = await resolver(targetTrack),
+                      let self,
+                      !Task.isCancelled,
+                      self.activeOriginMenuEntryID == expectedEntryID,
+                      self.activeOriginMenuTrackKey == expectedTrackKey,
+                      let popover = self.originPopoverController else { return }
+
+                if self.resolvedTrackCache.count >= 128, let firstKey = self.resolvedTrackCache.keys.first {
+                    self.resolvedTrackCache.removeValue(forKey: firstKey)
+                }
+                self.resolvedTrackCache[expectedTrackKey] = resolved
+
+                guard let currentFrozen = self.frozenOriginMenuEntry else { return }
+                let updatedEntry = self.mergedCachedTrackEntry(for: currentFrozen)
+                self.frozenOriginMenuEntry = updatedEntry
+                let updatedDescriptor = MediaActionResolver.resolveOriginMenu(
+                    for: updatedEntry,
+                    owner: self.snapshot.owner,
+                    currentDetail: self.currentDetailIdentityProvider?()
+                )
+                if !updatedDescriptor.isEmpty {
+                    AppLogger.shared.log(
+                        category: .render,
+                        level: .info,
+                        message: "来源菜单关系补全完成: albumID=\(updatedEntry.track.albumID ?? "-"), artists=\(updatedEntry.track.artists.count)"
+                    )
+                    popover.updateDescriptor(updatedDescriptor)
+                }
+            }
+        }
+    }
+
     private func updateQueueCountBadge(previousCount: Int, newCount: Int) {
-        countLabel.stringValue = newCount > 0 ? "\(newCount)" : ""
-        countLabel.isHidden = isExpanded || newCount == 0
-        toggleButton.toolTip = newCount > 0 ? "播放队列（\(newCount) 首待播）" : "播放队列"
-        toggleButton.setAccessibilityValue(newCount > 0 ? "\(newCount) 首待播" : "空")
+        let isRemote = (snapshot.owner == .remoteEngine)
+        let symName = isRemote ? "dot.radiowaves.left.and.right" : "music.note.list"
+        let symCfg = NSImage.SymbolConfiguration(pointSize: 12.0, weight: .semibold)
+        toggleIconView.image = NSImage(systemSymbolName: symName, accessibilityDescription: isRemote ? "电台会话" : "播放队列")?.withSymbolConfiguration(symCfg)
+
+        if isRemote {
+            countLabel.stringValue = ""
+            countLabel.isHidden = true
+            toggleButton.toolTip = "电台会话"
+            toggleButton.setAccessibilityLabel("电台会话")
+            toggleButton.setAccessibilityValue(snapshot.activeTarget?.title ?? "电台")
+        } else {
+            countLabel.stringValue = newCount > 0 ? "\(newCount)" : ""
+            countLabel.isHidden = isExpanded || newCount == 0
+            toggleButton.toolTip = newCount > 0 ? "播放队列（\(newCount) 首待播）" : "播放队列"
+            toggleButton.setAccessibilityLabel("播放队列")
+            toggleButton.setAccessibilityValue(newCount > 0 ? "\(newCount) 首待播" : "空")
+        }
 
         if !isExpanded && !isAnimatingMorph {
             morphGlassView.frame = targetMorphRect(expanded: false)
@@ -1035,32 +1476,79 @@ public final class LiquidFusionQueueDockView: NSView, NSTableViewDataSource, NST
 
     private func updateToolbarAndStatus() {
         let caps = snapshot.capabilities
+        let isRemote = (snapshot.owner == .remoteEngine)
 
-        clearButton.isEnabled = caps.canClear && snapshot.canClearUpcoming
-        clearButton.toolTip = caps.canClear ? "清空待播队列" : "当前播放模式不支持清空"
+        clearButton.isHidden = isRemote
+        undoButton.isHidden = isRemote || !snapshot.canUndo
+        shuffleButton.isHidden = isRemote
+        repeatOneButton.isHidden = isRemote
+        repeatAllButton.isHidden = isRemote
+        scrollView.isHidden = isRemote
 
-        undoButton.isHidden = !snapshot.canUndo
-        undoButton.toolTip = snapshot.undoDescription ?? "撤销"
+        remoteStationTitleLabel.isHidden = !isRemote
+        remoteStationTrackLabel.isHidden = !isRemote
+        remoteStationArtistLabel.isHidden = !isRemote
+        remotePlayPauseButton.isHidden = !isRemote
+        remoteNextButton.isHidden = !isRemote
 
-        shuffleButton.isEnabled = caps.canToggleShuffle
-        styleModeButton(shuffleButton, active: snapshot.shuffleEnabled, label: "随机播放")
-        shuffleButton.toolTip = caps.canToggleShuffle ? "随机播放" : "当前播放模式不支持随机"
+        if !isRemote {
+            clearButton.isEnabled = caps.canClear && snapshot.canClearUpcoming
+            clearButton.toolTip = caps.canClear ? "清空待播队列" : "当前播放模式不支持清空"
 
-        repeatOneButton.isEnabled = caps.canRepeatOne
-        styleModeButton(repeatOneButton, active: snapshot.repeatMode == .one, label: "单曲循环")
-        repeatOneButton.toolTip = caps.canRepeatOne ? "单曲循环" : "当前播放模式不支持单曲循环"
+            undoButton.toolTip = snapshot.undoDescription ?? "撤销"
 
-        repeatAllButton.isEnabled = caps.canRepeatAll
-        styleModeButton(repeatAllButton, active: snapshot.repeatMode == .all, label: "列表循环")
-        repeatAllButton.toolTip = caps.canRepeatAll ? "列表循环" : "当前播放模式不支持列表循环"
+            shuffleButton.isEnabled = caps.canToggleShuffle
+            styleModeButton(shuffleButton, active: snapshot.shuffleEnabled, label: "随机播放")
+            shuffleButton.toolTip = caps.canToggleShuffle ? "随机播放" : "当前播放模式不支持随机"
+
+            repeatOneButton.isEnabled = caps.canRepeatOne
+            styleModeButton(repeatOneButton, active: snapshot.repeatMode == .one, label: "单曲循环")
+            repeatOneButton.toolTip = caps.canRepeatOne ? "单曲循环" : "当前播放模式不支持单曲循环"
+
+            repeatAllButton.isEnabled = caps.canRepeatAll
+            styleModeButton(repeatAllButton, active: snapshot.repeatMode == .all, label: "列表循环")
+            repeatAllButton.toolTip = caps.canRepeatAll ? "列表循环" : "当前播放模式不支持列表循环"
+        }
 
         retryButton.isHidden = true
         if let transientFeedbackMessage {
             statusLabel.stringValue = transientFeedbackMessage
-        } else if snapshot.owner == .remoteEngine {
-            statusLabel.stringValue = "电台自动续播中"
-            emptyStateLabel.stringValue = "电台由远端自动续播"
-            emptyStateLabel.isHidden = !displayedEntries.isEmpty
+        } else if isRemote {
+            let stationName = snapshot.activeTarget?.title ?? snapshot.confirmedCurrent?.origin.displayTitle ?? "电台"
+            remoteStationTitleLabel.stringValue = stationName
+
+            let currentTrack = snapshot.confirmedCurrent?.track
+            if let currentTrack, !currentTrack.title.isEmpty {
+                remoteStationTrackLabel.stringValue = currentTrack.title
+                remoteStationArtistLabel.stringValue = currentTrack.artistName.isEmpty ? "未知艺人" : currentTrack.artistName
+            } else {
+                remoteStationTrackLabel.stringValue = snapshot.isPendingTargetFailed ? "电台连接失败" : "正在连接电台..."
+                remoteStationArtistLabel.stringValue = ""
+            }
+
+            remotePlayPauseButton.isEnabled = caps.canPause
+            remotePlayPauseButton.image = NSImage(
+                systemSymbolName: snapshot.playbackPhase == .playing ? "pause.fill" : "play.fill",
+                accessibilityDescription: snapshot.playbackPhase == .playing ? "暂停" : "播放"
+            )
+            remoteNextButton.isEnabled = caps.canSkipNext
+            remoteNextButton.toolTip = caps.canSkipNext ? "下一首" : "当前电台不支持跳过"
+
+            // Priority: failure > connecting/preparing > paused > exhausted > playing
+            if snapshot.isPendingTargetFailed || snapshot.playbackPhase == .failed {
+                statusLabel.stringValue = "电台连接失败"
+                retryButton.isHidden = false
+            } else if snapshot.playbackPhase == .preparing {
+                statusLabel.stringValue = "正在连接电台..."
+            } else if snapshot.playbackPhase == .paused {
+                statusLabel.stringValue = "电台已暂停"
+            } else if snapshot.playbackPhase == .exhausted || snapshot.playbackPhase == .stoppedByUser {
+                statusLabel.stringValue = "电台已停止"
+            } else {
+                statusLabel.stringValue = "电台自动续播中"
+            }
+            emptyStateLabel.stringValue = "后续内容由电台决定，待播列表不可读取"
+            emptyStateLabel.isHidden = false
         } else if snapshot.isPendingTargetFailed {
             statusLabel.stringValue = "当前曲目播放失败"
             retryButton.isHidden = false
@@ -1210,7 +1698,35 @@ public final class LiquidFusionQueueDockView: NSView, NSTableViewDataSource, NST
         }
     }
 
+    @objc private func remotePlayPauseClicked() {
+        AppLogger.shared.log(category: .userAction, level: .info, message: "用户在电台面板点击 [播放/暂停]")
+        Task {
+            do {
+                try await coordinator.playPause()
+            } catch {
+                onReportError?(error.localizedDescription)
+            }
+        }
+    }
+
+    @objc private func remoteNextClicked() {
+        AppLogger.shared.log(category: .userAction, level: .info, message: "用户在电台面板点击 [下一首]")
+        Task {
+            do {
+                try await coordinator.skipToNext()
+            } catch {
+                onReportError?(error.localizedDescription)
+            }
+        }
+    }
+
     @objc private func retryClicked() {
+        if snapshot.owner == .remoteEngine || snapshot.isPendingTargetFailed {
+            Task {
+                try? await coordinator.retryPendingOrCurrent()
+            }
+            return
+        }
         if case .failed(_, _, _, let retryable) = snapshot.loadingState, retryable {
             onRetryPagination?()
         } else {

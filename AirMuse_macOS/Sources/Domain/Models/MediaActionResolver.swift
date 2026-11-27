@@ -6,6 +6,71 @@ import Foundation
 /// from typed resource, location, capabilities, state, and current detail context.
 public enum MediaActionResolver {
 
+    /// Resolves the pure internal navigation menu for the bottom Origin Capsule.
+    /// Always shows the three fixed options (Go to Origin, View Album, View Artist) and never emits
+    /// playback, queue mutation, or platform write actions.
+    public static func resolveOriginMenu(
+        for entry: QueueEntry,
+        owner: QueueOwner,
+        currentDetail: MediaDetailIdentity?
+    ) -> MediaActionMenuDescriptor {
+        var originActions: [MediaAction] = []
+        var trackActions: [MediaAction] = []
+
+        let origin = entry.origin
+        if origin.canNavigate {
+            originActions.append(.navigateToOriginConcise(origin))
+        } else {
+            originActions.append(.originStatusPlaceholder(title: "前往来源（未知）"))
+        }
+
+        if owner == .remoteEngine, let seed = origin.stationContext?.seedResource {
+            switch seed.kind {
+            case .artist:
+                if !seed.id.isEmpty {
+                    originActions.append(.navigateToSeedArtist(MediaArtistRef(id: seed.id, name: seed.title, isLibrary: seed.isLibrary)))
+                }
+            case .song:
+                if let albumID = seed.albumID, !albumID.isEmpty {
+                    originActions.append(.navigateToSeedAlbum(id: albumID, title: seed.albumTitle ?? "种子专辑", isLibrary: seed.isLibrary))
+                }
+            case .album:
+                if !seed.id.isEmpty {
+                    originActions.append(.navigateToSeedAlbum(id: seed.id, title: seed.title, isLibrary: seed.isLibrary))
+                }
+            default:
+                break
+            }
+        }
+
+        let track = entry.track
+        let isLib = track.isLibrary || track.id.hasPrefix("i.")
+        if let albumID = track.albumID, !albumID.isEmpty {
+            trackActions.append(.navigateToAlbum(id: albumID, title: track.albumTitle.isEmpty ? "专辑" : track.albumTitle, isLibrary: isLib))
+        } else {
+            trackActions.append(.originStatusPlaceholder(title: "查看专辑（未知）"))
+        }
+
+        var seenArtistIDs = Set<String>()
+        var artistRefs: [MediaArtistRef] = []
+        for artist in track.artists where !artist.id.isEmpty && seenArtistIDs.insert(artist.id).inserted {
+            artistRefs.append(artist)
+        }
+        if artistRefs.count == 1 {
+            trackActions.append(.navigateToArtist(artistRefs[0]))
+        } else if artistRefs.count > 1 {
+            trackActions.append(.navigateToArtistsSubmenu(artistRefs))
+        } else {
+            trackActions.append(.originStatusPlaceholder(title: "查看歌手（未知）"))
+        }
+
+        _ = currentDetail
+        return MediaActionMenuDescriptor(sections: [
+            MediaActionMenuSection(actions: originActions),
+            MediaActionMenuSection(actions: trackActions)
+        ])
+    }
+
     /// Resolves the page Play Capsule menu items for a resource.
     /// - Returns: Grouped sections for the Play Capsule (`[replace, shuffle]` and `[interrupt, prepend, append]`, or `[listen]` for station).
     public static func resolvePlayMenu(for context: MediaActionContext) -> MediaActionMenuDescriptor {

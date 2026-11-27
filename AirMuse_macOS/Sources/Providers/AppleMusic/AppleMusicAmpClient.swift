@@ -748,6 +748,18 @@ public actor AppleMusicAmpClient {
         }
     }
 
+    /// Fetches a single song with `albums` and `artists` relationships for bounded on-demand origin navigation.
+    public func fetchSongWithRelationships(songID: String, isLibrary: Bool, generation: Int? = nil) async throws -> MusicTrack? {
+        guard !songID.isEmpty else { return nil }
+        let isLib = isLibrary || songID.hasPrefix("i.")
+        let urlString = isLib
+            ? "https://amp-api.music.apple.com/v1/me/library/songs/\(songID)?include=albums,artists,catalog&l=zh-Hans-CN&platform=web"
+            : "https://amp-api.music.apple.com/v1/catalog/\(storefront)/songs/\(songID)?include=albums,artists&l=zh-Hans-CN&platform=web"
+        guard let url = URL(string: urlString) else { return nil }
+        let data = try await execute(url: url, needAuth: isLib, generation: generation)
+        return parseSongsPage(data: data).tracks.first
+    }
+
     public func fetchAlbumTracks(albumID: String, isLibrary: Bool? = nil, limit: Int = 100, generation: Int? = nil) async throws -> [MusicTrack] {
         try await fetchAlbumTracksPage(albumID: albumID, isLibrary: isLibrary, limit: limit, generation: generation).tracks
     }

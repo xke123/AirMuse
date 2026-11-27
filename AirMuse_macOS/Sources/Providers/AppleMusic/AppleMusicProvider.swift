@@ -432,6 +432,15 @@ public actor AppleMusicProvider:
         return try await ampClient.fetchSongStation(songID: songID, generation: gen)
     }
 
+    /// Resolves missing `albumID` and `artists` relationships for a track on demand (bounded, non-blocking).
+    public func resolveTrackRelationships(for track: MusicTrack) async -> MusicTrack? {
+        let targetID = track.catalogID ?? (track.providerTrackID.isEmpty ? track.id : track.providerTrackID)
+        guard !targetID.isEmpty else { return nil }
+        let isLib = track.isLibrary || targetID.hasPrefix("i.")
+        let gen = await sessionAdapter.currentGeneration
+        return try? await ampClient.fetchSongWithRelationships(songID: targetID, isLibrary: isLib, generation: gen)
+    }
+
     // MARK: - MediaResourceMutationProvider
 
     public func mediaActionCapabilities(for resource: MediaResourceReference) async -> MediaActionCapabilities {

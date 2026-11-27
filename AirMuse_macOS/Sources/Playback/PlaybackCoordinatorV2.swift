@@ -301,6 +301,84 @@ public actor PlaybackCoordinatorV2 {
         }
     }
 
+    /// Atomically transitions from a remote radio session to a staged local queue without auto-playing.
+    /// Captures and invalidates the old remote playback generation before issuing `.stop` with the old context.
+    @discardableResult
+    public func switchRemoteToStagedLocal(
+        entries: [QueueEntry],
+        loadingState: QueueLoadingState? = nil,
+        batchID: UUID? = nil,
+        expectedQueueID: UUID? = nil,
+        expectedDestructiveEpoch: UInt64? = nil,
+        expectedSessionScope: String? = nil
+    ) async throws -> QueueCommandResult {
+        guard !entries.isEmpty else {
+            throw QueueEditError.emptyBatch
+        }
+        for e in entries where e.origin.kind == .station {
+            throw QueueEditError.remoteStationMixedNotAllowed
+        }
+        if let expectedSessionScope, queueManager.sessionScope != expectedSessionScope {
+            throw QueueEditError.sessionMismatch
+        }
+        if let expectedQueueID, queueManager.queueID != expectedQueueID {
+            throw QueueEditError.queueMismatch(expected: expectedQueueID, actual: queueManager.queueID)
+        }
+        if let expectedDestructiveEpoch, queueManager.destructiveEpoch != expectedDestructiveEpoch {
+            throw QueueEditError.staleEpoch
+        }
+
+        let oldStopCtx = await currentContext(trackID: desiredTrack?.id ?? "")
+        playbackGeneration &+= 1
+        transportRevision &+= 1
+        activePlayGeneration = playbackGeneration
+        operationEntryMap.removeAll()
+        desiredTrack = nil
+        activeTargetResource = nil
+        desiredTransport = .stopped
+        pendingSeekSeconds = nil
+        restoredNeedsEngineLoad = false
+        needsPlayItemExecution = false
+        needsPlayItemOnResume = false
+        needsTransportSync = false
+        lastEndedOperationKey = nil
+        actualStatus = .idle
+        timeAnchor = .zero
+
+        let resolvedLoading = loadingState ?? .complete(totalCount: entries.count)
+        _ = queueManager.replaceQueue(
+            entries: entries,
+            startIndex: 0,
+            owner: .localCoordinator,
+            target: nil,
+            capabilities: .fullLocal,
+            loadingState: resolvedLoading,
+            batchID: batchID,
+            startPlayback: false,
+            shuffleOverride: false,
+            using: &rngAdapter
+        )
+
+        AppLogger.shared.log(
+            category: .queue,
+            level: .info,
+            correlationID: queueCorrelationID,
+            message: "结束电台并原子暂存本地队列: \(entries.count) 首 (不自动播放)"
+        )
+        await publishToStore(includeQueue: true)
+        scheduleDebouncedSnapshotSave(immediate: true)
+        try? await engine.execute(.stop, context: oldStopCtx)
+
+        let snap = queueManager.makeSnapshot()
+        return QueueCommandResult(
+            queueID: snap.queueID,
+            revision: snap.revision,
+            destructiveEpoch: snap.destructiveEpoch,
+            acceptedCount: entries.count,
+            message: entries.count == 1 ? "已结束电台并建立队列「\(entries[0].track.title)」" : "已结束电台并建立 \(entries.count) 首待播队列"
+        )
+    }
+
     // MARK: - Playback Intents
 
     public func playEntries(
@@ -315,23 +393,39 @@ public actor PlaybackCoordinatorV2 {
         guard !entries.isEmpty else { return }
         let safeIndex = min(max(0, startIndex), entries.count - 1)
         let selected = entries[safeIndex]
-        let resolvedKind: PlayableKind = kind ?? (
-            selected.track.providerTrackID.hasPrefix("ra.") || selected.track.id.hasPrefix("ra.") || selected.origin.kind == .station
-                ? .station
-                : .song
-        )
+        let resolvedKind: PlayableKind = kind ?? .song
         let owner: QueueOwner = (resolvedKind == .station) ? .remoteEngine : .localCoordinator
-        if owner == .localCoordinator {
+        if owner == .remoteEngine {
+            guard entries.count == 1 else {
+                throw QueueEditError.remoteStationMixedNotAllowed
+            }
+        } else {
             for e in entries where e.origin.kind == .station {
                 throw QueueEditError.remoteStationMixedNotAllowed
             }
         }
         let resolvedLoading = loadingState ?? .complete(totalCount: entries.count)
         let resourceID: String
+        let resolvedCaps: QueueCapabilities
         if resolvedKind == .station {
-            resourceID = selected.origin.sourceID ?? (selected.track.providerTrackID.isEmpty ? selected.track.id : selected.track.providerTrackID)
+            let stationID = selected.origin.stationContext?.stationID
+                ?? selected.origin.sourceID
+                ?? (selected.track.providerTrackID.isEmpty ? selected.track.id : selected.track.providerTrackID)
+            guard !stationID.isEmpty else {
+                throw QueueEditError.invalidTarget(selected.id)
+            }
+            resourceID = stationID
+            switch selected.origin.stationContext?.stationType ?? .unknown {
+            case .algorithmic:
+                resolvedCaps = .remoteStationAlgorithmic
+            case .live:
+                resolvedCaps = .remoteStationLive
+            case .unknown:
+                resolvedCaps = .remoteStationUnknown
+            }
         } else {
             resourceID = selected.track.providerTrackID.isEmpty ? selected.track.id : selected.track.providerTrackID
+            resolvedCaps = .fullLocal
         }
         let initialTarget = PlaybackTarget(
             kind: resolvedKind,
@@ -345,6 +439,7 @@ public actor PlaybackCoordinatorV2 {
             startIndex: safeIndex,
             owner: owner,
             target: initialTarget,
+            capabilities: resolvedCaps,
             loadingState: resolvedLoading,
             batchID: batchID,
             startPlayback: true,
@@ -391,7 +486,12 @@ public actor PlaybackCoordinatorV2 {
                 effectiveIndex = min(max(0, startIndex), entries.count - 1)
             }
         }
-        try await playEntries(entries, startIndex: effectiveIndex, kind: kind)
+        if kind == .station {
+            let single = entries[effectiveIndex]
+            try await playEntries([single], startIndex: 0, kind: .station)
+        } else {
+            try await playEntries(entries, startIndex: effectiveIndex, kind: kind)
+        }
     }
 
     public func play() async throws {
@@ -456,6 +556,12 @@ public actor PlaybackCoordinatorV2 {
     }
 
     public func pause() async throws {
+        if queueManager.owner == .remoteEngine {
+            guard queueManager.capabilities.canPause else {
+                AppLogger.shared.log(category: .queue, level: .warn, correlationID: queueCorrelationID, message: "拒绝暂停: 当前电台能力不支持暂停")
+                throw QueueEditError.unsupportedCapability("当前电台不支持暂停")
+            }
+        }
         transportRevision &+= 1
         desiredTransport = .paused
         if needsPlayItemExecution {
@@ -488,6 +594,12 @@ public actor PlaybackCoordinatorV2 {
     }
 
     public func seek(toMs ms: Int64) async throws {
+        if queueManager.owner == .remoteEngine {
+            guard queueManager.capabilities.canSeek else {
+                AppLogger.shared.log(category: .queue, level: .warn, correlationID: queueCorrelationID, message: "拒绝进度跳转: 当前电台能力不支持 seek")
+                throw QueueEditError.unsupportedCapability("当前电台不支持快进/快退")
+            }
+        }
         transportRevision &+= 1
         let clampedMs = max(0, ms)
         pendingSeekSeconds = Double(clampedMs) / 1000.0
@@ -543,6 +655,10 @@ public actor PlaybackCoordinatorV2 {
 
     public func skipToNext() async throws {
         if queueManager.owner == .remoteEngine {
+            guard queueManager.capabilities.canSkipNext else {
+                AppLogger.shared.log(category: .queue, level: .warn, correlationID: queueCorrelationID, message: "拒绝下一首: 当前电台能力不支持跳过")
+                throw QueueEditError.unsupportedCapability("当前电台不支持下一首")
+            }
             AppLogger.shared.log(category: .queue, level: .info, correlationID: queueCorrelationID, message: "远端电台切换下一首")
             let ctx = await currentContext(trackID: desiredTrack?.id ?? "")
             try await engine.execute(.skipNext, context: ctx)
@@ -572,7 +688,10 @@ public actor PlaybackCoordinatorV2 {
 
     public func skipToPrevious() async throws {
         if queueManager.owner == .remoteEngine {
-            guard queueManager.capabilities.canSkipPrevious else { return }
+            guard queueManager.capabilities.canSkipPrevious else {
+                AppLogger.shared.log(category: .queue, level: .warn, correlationID: queueCorrelationID, message: "拒绝上一首: 当前电台能力不支持回退")
+                throw QueueEditError.unsupportedCapability("当前电台不支持上一首")
+            }
             let ctx = await currentContext(trackID: desiredTrack?.id ?? "")
             try await engine.execute(.skipPrevious, context: ctx)
             return
@@ -613,6 +732,14 @@ public actor PlaybackCoordinatorV2 {
     }
 
     public func advancePastWaitingBatch() async throws {
+        if queueManager.owner == .remoteEngine {
+            AppLogger.shared.log(category: .queue, level: .info, correlationID: queueCorrelationID, message: "远端电台播放结束事件: 停止传输 (不执行本地推进)")
+            desiredTransport = .stopped
+            actualStatus = .idle
+            queueManager.setPlaybackPhase(.exhausted)
+            await publishToStore(includeQueue: true)
+            return
+        }
         guard queueManager.owner == .localCoordinator else { return }
         if case .play(let next, _) = queueManager.advanceNext(using: &rngAdapter, allowCrossBatchBoundary: true) {
             let target = PlaybackTarget(
@@ -1106,12 +1233,14 @@ public actor PlaybackCoordinatorV2 {
             var didMutateQueue = false
 
             if queueManager.owner == .remoteEngine, !title.isEmpty, let current = desiredTrack {
-                let effectiveID = trackID.isEmpty ? current.id : trackID
-                let effectiveArtist = artist.isEmpty ? current.artistName : artist
-                let effectiveAlbum = albumTitle.isEmpty ? current.albumTitle : albumTitle
-                let effectiveArt = URL(string: artworkURL) ?? current.artworkURL
-                let effectiveDurMs = durSec > 0 ? Int64(durSec * 1000) : current.durationMs
-                let trackChanged = (current.title != title || current.artistName != effectiveArtist || (!trackID.isEmpty && current.providerTrackID != trackID))
+                let idChanged = !trackID.isEmpty && !current.providerTrackID.isEmpty && current.providerTrackID != trackID
+                let titleChanged = current.title != title
+                let trackChanged = idChanged || titleChanged
+                let effectiveID = trackID.isEmpty ? (trackChanged ? title : current.id) : trackID
+                let effectiveArtist = trackChanged ? artist : (artist.isEmpty ? current.artistName : artist)
+                let effectiveAlbum = trackChanged ? albumTitle : (albumTitle.isEmpty ? current.albumTitle : albumTitle)
+                let effectiveArt = trackChanged ? URL(string: artworkURL) : (URL(string: artworkURL) ?? current.artworkURL)
+                let effectiveDurMs = trackChanged ? (durSec > 0 ? Int64(durSec * 1000) : 0) : (durSec > 0 ? Int64(durSec * 1000) : current.durationMs)
                 let updatedTrack = MusicTrack(
                     id: effectiveID,
                     title: title,
@@ -1125,6 +1254,14 @@ public actor PlaybackCoordinatorV2 {
                 desiredTrack = updatedTrack
                 // NOTE: activeTargetResource stays pointing to the original station ID! (P0-04)
                 queueManager.updateRemoteCurrentTrack(updatedTrack)
+                AppLogger.shared.log(
+                    category: .queue,
+                    level: .info,
+                    correlationID: queueCorrelationID,
+                    message: trackChanged
+                        ? "远端电台切歌元数据更新: \(title) (trackID=\(effectiveID), station=\(activeTargetResource?.providerResourceID ?? "-"), 缺失字段已置空)"
+                        : "远端电台同曲元数据增量补全: \(title) (trackID=\(effectiveID))"
+                )
                 timeAnchor = PlaybackTimeAnchor(
                     positionMs: trackChanged ? 0 : timeAnchor.interpolatedPositionMs(at: nowNs),
                     durationMs: effectiveDurMs,
@@ -1171,6 +1308,14 @@ public actor PlaybackCoordinatorV2 {
         guard lastEndedOperationKey != dedupKey else { return }
         lastEndedOperationKey = dedupKey
 
+        if queueManager.owner == .remoteEngine {
+            AppLogger.shared.log(category: .queue, level: .info, correlationID: queueCorrelationID, message: "远端电台播放结束事件: 停止传输 (不执行本地推进)")
+            desiredTransport = .stopped
+            actualStatus = .idle
+            queueManager.setPlaybackPhase(.exhausted)
+            await publishToStore(includeQueue: true)
+            return
+        }
         guard queueManager.owner == .localCoordinator else { return }
         // Only advance if the ended operation corresponds to the current active entry
         guard let endedEntryID = operationEntryMap[opID] else { return }

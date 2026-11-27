@@ -218,6 +218,9 @@ struct PlaybackCoordinatorQueueTests {
 
         let e1 = makeEntry("E1"), e2 = makeEntry("E2")
         try await coord1.playEntries([e1, e2], startIndex: 0)
+        let eid1 = await engine1.engineInstanceID
+        await engine1.emit(.stateChanged(context: PlaybackOperationContext(sessionID: sessA.sessionID, engineInstanceID: eid1, operationID: 1, trackID: "E1"), status: .playing))
+        try await Task.sleep(for: .milliseconds(20))
         await coord1.setShuffleEnabled(true)
         await coord1.flushSnapshot()
 

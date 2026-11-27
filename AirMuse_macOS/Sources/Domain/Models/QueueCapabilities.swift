@@ -17,6 +17,8 @@ public struct QueueCapabilities: Sendable, Codable, Equatable {
     public var canRepeatAll: Bool
     public var canSkipNext: Bool
     public var canSkipPrevious: Bool
+    public var canSeek: Bool
+    public var canPause: Bool
 
     public init(
         canRead: Bool = false,
@@ -30,7 +32,9 @@ public struct QueueCapabilities: Sendable, Codable, Equatable {
         canRepeatOne: Bool = false,
         canRepeatAll: Bool = false,
         canSkipNext: Bool = false,
-        canSkipPrevious: Bool = false
+        canSkipPrevious: Bool = false,
+        canSeek: Bool = true,
+        canPause: Bool = true
     ) {
         self.canRead = canRead
         self.canPlayEntry = canPlayEntry
@@ -44,6 +48,8 @@ public struct QueueCapabilities: Sendable, Codable, Equatable {
         self.canRepeatAll = canRepeatAll
         self.canSkipNext = canSkipNext
         self.canSkipPrevious = canSkipPrevious
+        self.canSeek = canSeek
+        self.canPause = canPause
     }
 
     /// Full local coordinator queue capabilities.
@@ -59,12 +65,49 @@ public struct QueueCapabilities: Sendable, Codable, Equatable {
         canRepeatOne: true,
         canRepeatAll: true,
         canSkipNext: true,
-        canSkipPrevious: true
+        canSkipPrevious: true,
+        canSeek: true,
+        canPause: true
     )
 
-    /// Default remote station/radio capabilities before runtime verification:
-    /// no local queue editing, shuffle/repeat disabled, next skip allowed by MusicKit.
-    public static let remoteStationDefault = QueueCapabilities(
+    /// Conservative capabilities for unknown/unverified remote stations.
+    public static let remoteStationUnknown = QueueCapabilities(
+        canRead: false,
+        canPlayEntry: false,
+        canInsertNext: false,
+        canAppend: false,
+        canRemove: false,
+        canReorder: false,
+        canClear: false,
+        canToggleShuffle: false,
+        canRepeatOne: false,
+        canRepeatAll: false,
+        canSkipNext: false,
+        canSkipPrevious: false,
+        canSeek: false,
+        canPause: true
+    )
+
+    /// Conservative capabilities for live broadcast stations (no skip/seek).
+    public static let remoteStationLive = QueueCapabilities(
+        canRead: false,
+        canPlayEntry: false,
+        canInsertNext: false,
+        canAppend: false,
+        canRemove: false,
+        canReorder: false,
+        canClear: false,
+        canToggleShuffle: false,
+        canRepeatOne: false,
+        canRepeatAll: false,
+        canSkipNext: false,
+        canSkipPrevious: false,
+        canSeek: false,
+        canPause: true
+    )
+
+    /// Capabilities for verified algorithmic stations.
+    public static let remoteStationAlgorithmic = QueueCapabilities(
         canRead: false,
         canPlayEntry: false,
         canInsertNext: false,
@@ -76,8 +119,14 @@ public struct QueueCapabilities: Sendable, Codable, Equatable {
         canRepeatOne: false,
         canRepeatAll: false,
         canSkipNext: true,
-        canSkipPrevious: false
+        canSkipPrevious: false,
+        canSeek: true,
+        canPause: true
     )
+
+    /// Default remote station/radio capabilities before runtime verification:
+    /// conservative unknown capabilities until verified.
+    public static let remoteStationDefault = remoteStationUnknown
 }
 
 // MARK: - QueueLoadingState

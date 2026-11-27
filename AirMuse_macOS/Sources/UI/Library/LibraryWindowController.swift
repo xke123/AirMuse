@@ -91,8 +91,10 @@ open class LibraryWindowController: NSWindowController {
     private var searchGeneration: UInt64 = 0
     private var detailGeneration: UInt64 = 0
     private var artistGeneration: UInt64 = 0
+    private var navigationGeneration: UInt64 = 0
     private var detailLoadTask: Task<Void, Never>?
     private var artistLoadTask: Task<Void, Never>?
+    private var locateTask: Task<Void, Never>?
     private var isLoadingHomeSidebar: Bool = false
     private let queuePaginationLoader = QueuePaginationLoader()
     private var currentDetailOrigin: PlaybackOrigin = .unknown
@@ -707,19 +709,31 @@ open class LibraryWindowController: NSWindowController {
         }
 
         queueDockView.onNavigateToOrigin = { [weak self] origin in
-            guard let self, let sourceID = origin.sourceID else { return }
-            switch origin.kind {
-            case .album:
-                let card = MediaCardItem(id: sourceID, title: origin.displayTitle, subtitle: "", type: .album, artworkURL: origin.artworkURL, albumID: sourceID, isLibrary: origin.isLibrary)
-                self.handleItemClicked(card)
-            case .playlist:
-                let card = MediaCardItem(id: sourceID, title: origin.displayTitle, subtitle: "", type: .playlist, artworkURL: origin.artworkURL, playlistID: sourceID, isLibrary: origin.isLibrary)
-                self.handleItemClicked(card)
-            case .artist:
-                self.openArtistPage(artistID: sourceID, isLibrary: origin.isLibrary, initialName: origin.displayTitle, artworkURL: origin.artworkURL)
+            self?.navigateToOriginPurely(origin, targetTrack: nil)
+        }
+        queueDockView.onOriginNavigateAction = { [weak self] action, entry in
+            guard let self else { return }
+            switch action {
+            case .navigateToOrigin(let origin), .navigateToOriginConcise(let origin):
+                self.navigateToOriginPurely(origin, targetTrack: entry.track)
+            case .navigateToAlbum(let id, let title, let isLibrary):
+                let origin = PlaybackOrigin(
+                    kind: .album,
+                    sourceID: id,
+                    sourceTitle: title,
+                    isLibrary: isLibrary,
+                    navigationTarget: .resource(kind: .album, id: id, isLibrary: isLibrary, providerID: entry.track.providerID)
+                )
+                self.navigateToOriginPurely(origin, targetTrack: entry.track)
             default:
-                break
+                self.dispatchMediaAction(action)
             }
+        }
+        queueDockView.currentDetailIdentityProvider = { [weak self] in
+            self?.currentDetailIdentity()
+        }
+        queueDockView.onResolveTrackRelationships = { [weak self] track in
+            await self?.appleMusicProvider?.resolveTrackRelationships(for: track)
         }
 
         queueDockView.onReportError = { [weak self] message in
@@ -1671,7 +1685,14 @@ open class LibraryWindowController: NSWindowController {
         case .album:
             let albumID = item.albumID ?? item.id
             let isLib = item.isLibrary ?? (albumID.hasPrefix("l.") || albumID.hasPrefix("i."))
-            currentDetailOrigin = PlaybackOrigin(kind: .album, sourceID: albumID, sourceTitle: item.title, isLibrary: isLib, artworkURL: item.artworkURL)
+            currentDetailOrigin = PlaybackOrigin(
+                kind: .album,
+                sourceID: albumID,
+                sourceTitle: item.title,
+                isLibrary: isLib,
+                artworkURL: item.artworkURL,
+                navigationTarget: .resource(kind: .album, id: albumID, isLibrary: isLib, providerID: "apple_music")
+            )
             currentDetailIsLibrary = isLib
             currentDetailNextURL = nil
             currentDetailTotalCount = nil
@@ -1700,7 +1721,14 @@ open class LibraryWindowController: NSWindowController {
         case .playlist:
             let playlistID = item.playlistID ?? item.id
             let isLib = item.isLibrary ?? (playlistID.hasPrefix("p.") || playlistID.hasPrefix("l."))
-            currentDetailOrigin = PlaybackOrigin(kind: .playlist, sourceID: playlistID, sourceTitle: item.title, isLibrary: isLib, artworkURL: item.artworkURL)
+            currentDetailOrigin = PlaybackOrigin(
+                kind: .playlist,
+                sourceID: playlistID,
+                sourceTitle: item.title,
+                isLibrary: isLib,
+                artworkURL: item.artworkURL,
+                navigationTarget: .resource(kind: .playlist, id: playlistID, isLibrary: isLib, providerID: "apple_music")
+            )
             currentDetailIsLibrary = isLib
             currentDetailNextURL = nil
             currentDetailTotalCount = nil
@@ -1735,10 +1763,36 @@ open class LibraryWindowController: NSWindowController {
             }
             openArtistPage(artistID: artistID, isLibrary: isLib, initialName: item.title, artworkURL: item.artworkURL)
 
-        case .song, .radio, .chart:
-            let allItems = contentView.displayedItems
+        case .radio:
             let origin = currentBrowseOrigin(for: item)
-            let entries: [QueueEntry] = allItems.compactMap { it in
+            let stationTrack = item.track ?? MusicTrack(
+                id: item.id,
+                title: item.title,
+                artistName: item.subtitle,
+                albumTitle: "电台",
+                durationMs: 0,
+                artworkURL: item.artworkURL,
+                providerID: "apple_music",
+                providerTrackID: item.id
+            )
+            let stationEntry = QueueEntry(track: stationTrack, origin: origin)
+            playIntentGeneration &+= 1
+            let expectedIntentGen = playIntentGeneration
+            Task {
+                await self.queuePaginationLoader.cancel()
+                guard self.playIntentGeneration == expectedIntentGen else { return }
+                do {
+                    try await self.coordinator.playEntries([stationEntry], startIndex: 0, kind: .station)
+                    self.queueDockView.playQueueAdditionAnimation(kind: .station, message: "已提交播放「\(stationTrack.title)」")
+                } catch {
+                    self.handlePlaybackError(error)
+                }
+            }
+
+        case .song, .chart:
+            let playableItems = contentView.displayedItems.filter { $0.type == .song || $0.type == .chart }
+            let origin = currentBrowseOrigin(for: item)
+            let entries: [QueueEntry] = playableItems.map { it in
                 let track = it.track ?? MusicTrack(
                     id: it.id,
                     title: it.title,
@@ -1763,15 +1817,14 @@ open class LibraryWindowController: NSWindowController {
             )
             let index = entries.firstIndex(where: { $0.track.id == clickedTrack.id }) ?? 0
             let effectiveEntries = entries.isEmpty ? [QueueEntry(track: clickedTrack, origin: origin)] : entries
-            let kind: PlayableKind = (item.type == .radio) ? .station : .song
             playIntentGeneration &+= 1
             let expectedIntentGen = playIntentGeneration
             Task {
                 await self.queuePaginationLoader.cancel()
                 guard self.playIntentGeneration == expectedIntentGen else { return }
                 do {
-                    try await self.coordinator.playEntries(effectiveEntries, startIndex: index, kind: kind)
-                    let vKind: QueueAdditionVisualKind = (kind == .station) ? .station : (effectiveEntries.count > 1 ? .multiSongs(count: effectiveEntries.count) : .song)
+                    try await self.coordinator.playEntries(effectiveEntries, startIndex: index, kind: .song)
+                    let vKind: QueueAdditionVisualKind = effectiveEntries.count > 1 ? .multiSongs(count: effectiveEntries.count) : .song
                     self.queueDockView.playQueueAdditionAnimation(kind: vKind, message: "已提交播放「\(clickedTrack.title)」")
                 } catch {
                     self.handlePlaybackError(error)
@@ -1950,12 +2003,14 @@ open class LibraryWindowController: NSWindowController {
             queueDockView.showFeedback("该艺人暂无可播放热门歌曲")
             return
         }
+        let isArtistLib = detail.artist.id.hasPrefix("r.") || detail.artist.id.hasPrefix("l.") || detail.artist.id.hasPrefix("i.")
         let origin = PlaybackOrigin(
             kind: .artist,
             sourceID: detail.artist.id,
             sourceTitle: detail.artist.name,
-            isLibrary: detail.artist.id.hasPrefix("r.") || detail.artist.id.hasPrefix("l.") || detail.artist.id.hasPrefix("i."),
-            artworkURL: detail.artist.artworkURL
+            isLibrary: isArtistLib,
+            artworkURL: detail.artist.artworkURL,
+            navigationTarget: .resource(kind: .artist, id: detail.artist.id, isLibrary: isArtistLib, providerID: "apple_music")
         )
         handleTracksQueueAction(tracks, origin: origin, intent: intent)
     }
@@ -2085,12 +2140,27 @@ open class LibraryWindowController: NSWindowController {
                     providerID: "apple_music",
                     providerTrackID: station.id
                 )
+                let seed = StationSeedResource(
+                    kind: .artist,
+                    id: artistRef.id,
+                    title: artistRef.name,
+                    isLibrary: artistRef.isLibrary,
+                    providerID: "apple_music"
+                )
+                let stationCtx = StationOriginContext(
+                    stationID: station.id,
+                    stationType: station.isLive ? .live : .algorithmic,
+                    seedResource: seed,
+                    sourceNavigationTarget: .resource(kind: .artist, id: artistRef.id, isLibrary: artistRef.isLibrary, providerID: "apple_music")
+                )
                 let origin = PlaybackOrigin(
                     kind: .station,
                     sourceID: station.id,
                     sourceTitle: station.name,
                     isLibrary: false,
-                    artworkURL: artURL
+                    artworkURL: artURL,
+                    navigationTarget: .resource(kind: .artist, id: artistRef.id, isLibrary: artistRef.isLibrary, providerID: "apple_music"),
+                    stationContext: stationCtx
                 )
                 let entry = QueueEntry(track: track, origin: origin)
                 await self.queuePaginationLoader.cancel()
@@ -2135,22 +2205,100 @@ open class LibraryWindowController: NSWindowController {
     // MARK: - Queue Actions & Pagination Helpers
 
     private func currentBrowseOrigin(for item: MediaCardItem) -> PlaybackOrigin {
+        let cats = categoriesForTab(activeTabIndex)
+        let activeCat = (activeCategoryIndex >= 0 && activeCategoryIndex < cats.count) ? cats[activeCategoryIndex] : nil
+        let browseNav: OriginNavigationTarget? = activeCat.map {
+            if activeTabIndex == 3 {
+                return .librarySection(id: $0.id, title: $0.title)
+            }
+            return .browseSection(id: $0.id, title: $0.title)
+        }
+
         if item.type == .radio {
-            return PlaybackOrigin(kind: .station, sourceID: item.id, sourceTitle: item.title, isLibrary: false, artworkURL: item.artworkURL)
+            let stationCtx = StationOriginContext(
+                stationID: item.id,
+                stationType: .unknown,
+                seedResource: nil,
+                sourceNavigationTarget: browseNav
+            )
+            return PlaybackOrigin(
+                kind: .station,
+                sourceID: item.id,
+                sourceTitle: item.title,
+                isLibrary: false,
+                artworkURL: item.artworkURL,
+                navigationTarget: browseNav,
+                stationContext: stationCtx
+            )
         }
         if topBar.isArtistMode, let detail = artistStack.last {
             let isLib = detail.artist.id.hasPrefix("r.") || detail.artist.id.hasPrefix("l.") || detail.artist.id.hasPrefix("i.")
-            return PlaybackOrigin(kind: .artist, sourceID: detail.artist.id, sourceTitle: detail.artist.name, isLibrary: isLib, artworkURL: detail.artist.artworkURL)
+            return PlaybackOrigin(
+                kind: .artist,
+                sourceID: detail.artist.id,
+                sourceTitle: detail.artist.name,
+                isLibrary: isLib,
+                artworkURL: detail.artist.artworkURL,
+                navigationTarget: .resource(kind: .artist, id: detail.artist.id, isLibrary: isLib, providerID: "apple_music")
+            )
         }
         if topBar.isSearchMode {
-            return PlaybackOrigin(kind: .search, sourceID: nil, sourceTitle: "搜索结果", isLibrary: false, artworkURL: item.artworkURL)
+            let query = topBar.currentSearchText.trimmingCharacters(in: .whitespacesAndNewlines)
+            let scope = topBar.currentSearchScope == 1 ? "library" : "catalog"
+            let secID = (activeSearchSectionIndex >= 0 && activeSearchSectionIndex < searchSections.count) ? searchSections[activeSearchSectionIndex].id : nil
+            let nav: OriginNavigationTarget? = query.isEmpty ? nil : .search(query: query, scope: scope, sectionID: secID)
+            let title = query.isEmpty ? "搜索结果" : "搜索「\(query)」"
+            return PlaybackOrigin(
+                kind: .search,
+                sourceID: query.isEmpty ? nil : query,
+                sourceTitle: title,
+                isLibrary: topBar.currentSearchScope == 1,
+                artworkURL: item.artworkURL,
+                navigationTarget: nav
+            )
         }
         switch activeTabIndex {
-        case 0: return PlaybackOrigin(kind: .forYou, sourceID: nil, sourceTitle: "为你推荐", isLibrary: false, artworkURL: item.artworkURL)
-        case 1: return PlaybackOrigin(kind: .browse, sourceID: nil, sourceTitle: "浏览", isLibrary: false, artworkURL: item.artworkURL)
-        case 2: return PlaybackOrigin(kind: .station, sourceID: item.id, sourceTitle: item.title, isLibrary: false, artworkURL: item.artworkURL)
-        case 3: return PlaybackOrigin(kind: .library, sourceID: nil, sourceTitle: "资料库", isLibrary: true, artworkURL: item.artworkURL)
-        default: return .unknown
+        case 0:
+            return PlaybackOrigin(
+                kind: .forYou,
+                sourceID: activeCat?.id,
+                sourceTitle: activeCat?.title ?? "为你推荐",
+                isLibrary: false,
+                artworkURL: item.artworkURL,
+                navigationTarget: browseNav
+            )
+        case 1:
+            let isChart = (item.type == .chart)
+            let nav = activeCat.map { isChart ? OriginNavigationTarget.chart(id: $0.id, title: $0.title, isLibrary: false) : .browseSection(id: $0.id, title: $0.title) }
+            return PlaybackOrigin(
+                kind: isChart ? .chart : .browse,
+                sourceID: activeCat?.id,
+                sourceTitle: activeCat?.title ?? "浏览",
+                isLibrary: false,
+                artworkURL: item.artworkURL,
+                navigationTarget: nav
+            )
+        case 2:
+            let isChart = (item.type == .chart)
+            return PlaybackOrigin(
+                kind: isChart ? .chart : .browse,
+                sourceID: activeCat?.id,
+                sourceTitle: activeCat?.title ?? "广播栏目",
+                isLibrary: false,
+                artworkURL: item.artworkURL,
+                navigationTarget: browseNav
+            )
+        case 3:
+            return PlaybackOrigin(
+                kind: .library,
+                sourceID: activeCat?.id,
+                sourceTitle: activeCat?.title ?? "资料库",
+                isLibrary: true,
+                artworkURL: item.artworkURL,
+                navigationTarget: browseNav
+            )
+        default:
+            return .unknown
         }
     }
 
@@ -2247,7 +2395,14 @@ open class LibraryWindowController: NSWindowController {
                 self.queueDockView.playQueueAdditionAnimation(kind: visualKind, message: res.message)
             } catch let editErr as QueueEditError {
                 if case .remoteQueueRequiresSwitch(let stationTitle) = editErr {
-                    self.promptRemoteStationSwitch(stationTitle: stationTitle, entries: entries, intent: intent)
+                    self.promptRemoteStationSwitch(
+                        stationTitle: stationTitle,
+                        entries: entries,
+                        intent: intent,
+                        expectedQueueID: preSnap.queueID,
+                        expectedDestructiveEpoch: preSnap.destructiveEpoch,
+                        expectedSessionScope: preSnap.sessionScope
+                    )
                 } else {
                     self.queueDockView.showFeedback(editErr.localizedDescription)
                     self.handlePlaybackError(editErr)
@@ -2291,7 +2446,8 @@ open class LibraryWindowController: NSWindowController {
                 sourceID: sourceID,
                 sourceTitle: item.title,
                 isLibrary: isLib,
-                artworkURL: item.artworkURL
+                artworkURL: item.artworkURL,
+                navigationTarget: .resource(kind: isAlbum ? .album : .playlist, id: sourceID, isLibrary: isLib, providerID: "apple_music")
             )
             executeCollectionQueueAction(
                 actionKey: "\(sourceID)|\(intent.rawValue)",
@@ -2312,7 +2468,14 @@ open class LibraryWindowController: NSWindowController {
             guard let provider = appleMusicProvider else { return }
             let artistID = item.id
             let isLib = item.isLibrary ?? (artistID.hasPrefix("r.") || artistID.hasPrefix("l."))
-            let origin = PlaybackOrigin(kind: .artist, sourceID: artistID, sourceTitle: item.title, isLibrary: isLib, artworkURL: item.artworkURL)
+            let origin = PlaybackOrigin(
+                kind: .artist,
+                sourceID: artistID,
+                sourceTitle: item.title,
+                isLibrary: isLib,
+                artworkURL: item.artworkURL,
+                navigationTarget: .resource(kind: .artist, id: artistID, isLibrary: isLib, providerID: "apple_music")
+            )
             let queueIntent = intent.queueInsertionIntent
             let isReplaceOrInterrupt = (queueIntent == .replaceAndPlay || queueIntent == .shuffleAndPlay || queueIntent == .interruptAndPlay)
             if isReplaceOrInterrupt {
@@ -2467,14 +2630,29 @@ open class LibraryWindowController: NSWindowController {
                         guard self.playIntentGeneration == expectedIntentGen else { return }
                     }
                     let entries = allTracks.map { QueueEntry(track: $0, origin: origin) }
-                    let res = try await self.coordinator.submitIntent(
-                        queueIntent,
-                        entries: entries,
-                        startIndex: 0,
-                        expectedQueueID: (queueIntent == .prepend || queueIntent == .append) ? preSnap.queueID : nil,
-                        expectedDestructiveEpoch: (queueIntent == .prepend || queueIntent == .append) ? preSnap.destructiveEpoch : nil
-                    )
-                    self.queueDockView.playQueueAdditionAnimation(kind: visualKind, message: res.message)
+                    do {
+                        let res = try await self.coordinator.submitIntent(
+                            queueIntent,
+                            entries: entries,
+                            startIndex: 0,
+                            expectedQueueID: (queueIntent == .prepend || queueIntent == .append) ? preSnap.queueID : nil,
+                            expectedDestructiveEpoch: (queueIntent == .prepend || queueIntent == .append) ? preSnap.destructiveEpoch : nil
+                        )
+                        self.queueDockView.playQueueAdditionAnimation(kind: visualKind, message: res.message)
+                    } catch let editErr as QueueEditError {
+                        if case .remoteQueueRequiresSwitch(let stationTitle) = editErr {
+                            self.promptRemoteStationSwitch(
+                                stationTitle: stationTitle,
+                                entries: entries,
+                                intent: intent,
+                                expectedQueueID: preSnap.queueID,
+                                expectedDestructiveEpoch: preSnap.destructiveEpoch,
+                                expectedSessionScope: preSnap.sessionScope
+                            )
+                        } else {
+                            throw editErr
+                        }
+                    }
                 }
             } catch let editErr as QueueEditError {
                 if case .remoteQueueRequiresSwitch(let stationTitle) = editErr {
@@ -2493,7 +2671,15 @@ open class LibraryWindowController: NSWindowController {
         }
     }
 
-    private func promptRemoteStationSwitch(stationTitle: String?, entries: [QueueEntry], intent: MediaPlayIntent) {
+    private func promptRemoteStationSwitch(
+        stationTitle: String?,
+        entries: [QueueEntry],
+        intent: MediaPlayIntent,
+        expectedQueueID: UUID,
+        expectedDestructiveEpoch: UInt64,
+        expectedSessionScope: String
+    ) {
+        guard !entries.isEmpty else { return }
         let alert = NSAlert()
         alert.alertStyle = .informational
         alert.messageText = "结束电台并切换队列？"
@@ -2501,22 +2687,45 @@ open class LibraryWindowController: NSWindowController {
         let willAutoPlay = (intent == .replaceAndPlay || intent == .shuffleAndPlay || intent == .interruptAndPlay)
         alert.informativeText = willAutoPlay
             ? "当前正在收听\(name)，电台不支持直接插入或追加普通曲目。是否结束当前电台并立即播放所选歌曲？"
-            : "当前正在收听\(name)，电台不支持直接插入或追加普通曲目。是否结束当前电台并改用所选歌曲建立本地队列？"
+            : "当前正在收听\(name)，电台不支持直接插入或追加普通曲目。是否结束当前电台并建立本地待播队列（不自动播放）？"
         alert.addButton(withTitle: willAutoPlay ? "结束电台并立即播放" : "结束电台并建立队列")
         alert.addButton(withTitle: "继续收听电台")
         if alert.runModal() == .alertFirstButtonReturn {
-            AppLogger.shared.log(category: .queue, level: .info, message: "用户确认结束电台并切换为本地队列")
+            AppLogger.shared.log(category: .queue, level: .info, message: "用户确认结束电台并切换为本地队列 (autoPlay=\(willAutoPlay))")
             playIntentGeneration &+= 1
             let expectedIntentGen = playIntentGeneration
             Task {
                 await self.queuePaginationLoader.cancel()
                 guard self.playIntentGeneration == expectedIntentGen else { return }
-                _ = try? await self.coordinator.submitIntent(
-                    intent == .shuffleAndPlay ? .shuffleAndPlay : .replaceAndPlay,
-                    entries: entries,
-                    startIndex: 0,
-                    explicitShuffleMode: intent == .replaceAndPlay ? false : nil
-                )
+                let liveSnap = await self.coordinator.currentStructuredQueueSnapshot()
+                guard liveSnap.queueID == expectedQueueID,
+                      liveSnap.destructiveEpoch == expectedDestructiveEpoch,
+                      liveSnap.sessionScope == expectedSessionScope else {
+                    self.queueDockView.showFeedback("电台会话已变化，已取消本次切换")
+                    return
+                }
+                do {
+                    if willAutoPlay {
+                        let res = try await self.coordinator.submitIntent(
+                            intent == .shuffleAndPlay ? .shuffleAndPlay : .replaceAndPlay,
+                            entries: entries,
+                            startIndex: 0,
+                            explicitShuffleMode: intent == .replaceAndPlay ? false : nil
+                        )
+                        self.queueDockView.showFeedback(res.message ?? "已切换为本地队列")
+                    } else {
+                        let res = try await self.coordinator.switchRemoteToStagedLocal(
+                            entries: entries,
+                            expectedQueueID: expectedQueueID,
+                            expectedDestructiveEpoch: expectedDestructiveEpoch,
+                            expectedSessionScope: expectedSessionScope
+                        )
+                        self.queueDockView.showFeedback(res.message ?? "已建立本地待播队列")
+                    }
+                } catch {
+                    self.queueDockView.showFeedback("切换队列失败: \(error.localizedDescription)")
+                    self.handlePlaybackError(error)
+                }
             }
         } else {
             AppLogger.shared.log(category: .queue, level: .info, message: "用户选择继续收听电台，保持当前电台播放")
@@ -2528,6 +2737,9 @@ open class LibraryWindowController: NSWindowController {
     private func currentDetailIdentity() -> MediaDetailIdentity? {
         if topBar.isArtistMode, let detail = artistStack.last {
             return .artist(id: detail.artist.id)
+        }
+        guard contentView.isDetailVisible else {
+            return nil
         }
         if let sourceID = currentDetailOrigin.sourceID, !sourceID.isEmpty {
             switch currentDetailOrigin.kind {
@@ -2844,12 +3056,32 @@ open class LibraryWindowController: NSWindowController {
                         providerID: "apple_music",
                         providerTrackID: station.id
                     )
+                    let seed = StationSeedResource(
+                        kind: .song,
+                        id: songRef.canonicalID,
+                        title: songRef.title,
+                        isLibrary: songRef.isLibrary,
+                        providerID: songRef.providerID,
+                        albumID: songRef.albumID,
+                        albumTitle: songRef.albumTitle
+                    )
+                    let seedNav: OriginNavigationTarget? = songRef.albumID.flatMap {
+                        $0.isEmpty ? nil : .resource(kind: .album, id: $0, isLibrary: songRef.isLibrary, providerID: songRef.providerID)
+                    }
+                    let stationCtx = StationOriginContext(
+                        stationID: station.id,
+                        stationType: station.isLive ? .live : .algorithmic,
+                        seedResource: seed,
+                        sourceNavigationTarget: seedNav
+                    )
                     let stationOrigin = PlaybackOrigin(
                         kind: .station,
                         sourceID: station.id,
                         sourceTitle: station.name,
                         isLibrary: false,
-                        artworkURL: station.artworkURL ?? songRef.artworkURL
+                        artworkURL: station.artworkURL ?? songRef.artworkURL,
+                        navigationTarget: seedNav,
+                        stationContext: stationCtx
                     )
                     let entry = QueueEntry(track: track, origin: stationOrigin)
                     await self.queuePaginationLoader.cancel()
@@ -2867,21 +3099,241 @@ open class LibraryWindowController: NSWindowController {
             startArtistStation(for: artistRef)
 
         case .navigateToAlbum(let id, let title, let isLibrary):
-            let card = MediaCardItem(id: id, title: title, subtitle: "", type: .album, albumID: id, isLibrary: isLibrary)
-            handleItemClicked(card)
+            let origin = PlaybackOrigin(
+                kind: .album,
+                sourceID: id,
+                sourceTitle: title,
+                isLibrary: isLibrary,
+                navigationTarget: .resource(kind: .album, id: id, isLibrary: isLibrary, providerID: "apple_music")
+            )
+            navigateToOriginPurely(origin, targetTrack: nil)
 
         case .navigateToPlaylist(let id, let title, let isLibrary):
-            let card = MediaCardItem(id: id, title: title, subtitle: "", type: .playlist, playlistID: id, isLibrary: isLibrary)
-            handleItemClicked(card)
+            let origin = PlaybackOrigin(
+                kind: .playlist,
+                sourceID: id,
+                sourceTitle: title,
+                isLibrary: isLibrary,
+                navigationTarget: .resource(kind: .playlist, id: id, isLibrary: isLibrary, providerID: "apple_music")
+            )
+            navigateToOriginPurely(origin, targetTrack: nil)
 
         case .navigateToArtist(let artistRef):
+            navigationGeneration &+= 1
+            locateTask?.cancel()
             openArtistPage(artistID: artistRef.id, isLibrary: artistRef.isLibrary, initialName: artistRef.name)
 
-        case .navigateToOrigin(let targetOrigin):
-            queueDockView.onNavigateToOrigin?(targetOrigin)
+        case .navigateToSeedArtist(let artistRef):
+            navigationGeneration &+= 1
+            locateTask?.cancel()
+            openArtistPage(artistID: artistRef.id, isLibrary: artistRef.isLibrary, initialName: artistRef.name)
+
+        case .navigateToSeedAlbum(let id, let title, let isLibrary):
+            let origin = PlaybackOrigin(
+                kind: .album,
+                sourceID: id,
+                sourceTitle: title,
+                isLibrary: isLibrary,
+                navigationTarget: .resource(kind: .album, id: id, isLibrary: isLibrary, providerID: "apple_music")
+            )
+            navigateToOriginPurely(origin, targetTrack: nil)
+
+        case .navigateToStationDetail(_, let title):
+            queueDockView.showFeedback("电台「\(title)」暂无独立内部详情页")
+
+        case .navigateToOrigin(let targetOrigin), .navigateToOriginConcise(let targetOrigin):
+            navigateToOriginPurely(targetOrigin, targetTrack: nil)
 
         default:
             break
+        }
+    }
+
+    private func exitArtistPagesRestoringOrigin() {
+        while !artistStack.isEmpty {
+            popArtistPage()
+        }
+        if topBar.isArtistMode {
+            sidebar.setTopHeaderView(nil)
+            topBar.setArtistMode(false, animated: false)
+            layoutViews()
+        }
+        currentDetailOrigin = .unknown
+    }
+
+    private func navigateToTab(_ tab: Int, categoryIndex: Int) {
+        exitArtistPagesRestoringOrigin()
+        topBar.setSearchMode(false, animated: false)
+        contentView.hideDetail()
+        topBar.selectTab(index: tab)
+        activeTabIndex = tab
+        let categories = categoriesForTab(tab)
+        let safeCat = categories.indices.contains(categoryIndex) ? categoryIndex : 0
+        activeCategoryIndex = safeCat
+        sidebar.setCategories(categories, selectedIndex: safeCat)
+        layoutViews()
+        loadCurrentCategory()
+    }
+
+    /// Pure internal navigation for Origin Capsule and Queue Context Menus.
+    /// Never triggers playback, transport, queue writes, or platform mutations.
+    public func navigateToOriginPurely(_ origin: PlaybackOrigin, targetTrack: MusicTrack? = nil) {
+        navigationGeneration &+= 1
+        let expectedNavGen = navigationGeneration
+        locateTask?.cancel()
+
+        guard let target = origin.resolvedNavigationTarget else {
+            AppLogger.shared.log(category: .userAction, level: .warn, message: "纯内部来源跳转降级: 「\(origin.displayTitle)」(kind=\(origin.kind.rawValue)) 无可访问内部路由")
+            queueDockView.showFeedback("该来源暂无可跳转的内部页面")
+            return
+        }
+        AppLogger.shared.log(
+            category: .userAction,
+            level: .info,
+            message: "执行纯内部来源跳转: 「\(origin.displayTitle)」(navGen=\(expectedNavGen), kind=\(origin.kind.rawValue), targetTrack=\(targetTrack?.title ?? "-"))"
+        )
+
+        switch target {
+        case .resource(let kind, let id, let isLibrary, _):
+            switch kind {
+            case .album:
+                exitArtistPagesRestoringOrigin()
+                if currentDetailIdentity() == .album(id: id) {
+                    if let targetTrack {
+                        locateTrackInCurrentDetail(targetTrack, expectedNavGen: expectedNavGen)
+                    }
+                    return
+                }
+                let card = MediaCardItem(id: id, title: origin.displayTitle, subtitle: "", type: .album, artworkURL: origin.artworkURL, albumID: id, isLibrary: isLibrary)
+                handleItemClicked(card)
+                if let targetTrack {
+                    locateTask = Task { @MainActor [weak self] in
+                        await self?.detailLoadTask?.value
+                        guard let self, self.navigationGeneration == expectedNavGen, !Task.isCancelled else { return }
+                        self.locateTrackInCurrentDetail(targetTrack, expectedNavGen: expectedNavGen)
+                    }
+                }
+
+            case .playlist:
+                exitArtistPagesRestoringOrigin()
+                if currentDetailIdentity() == .playlist(id: id) {
+                    if let targetTrack {
+                        locateTrackInCurrentDetail(targetTrack, expectedNavGen: expectedNavGen)
+                    }
+                    return
+                }
+                let card = MediaCardItem(id: id, title: origin.displayTitle, subtitle: "", type: .playlist, artworkURL: origin.artworkURL, playlistID: id, isLibrary: isLibrary)
+                handleItemClicked(card)
+                if let targetTrack {
+                    locateTask = Task { @MainActor [weak self] in
+                        await self?.detailLoadTask?.value
+                        guard let self, self.navigationGeneration == expectedNavGen, !Task.isCancelled else { return }
+                        self.locateTrackInCurrentDetail(targetTrack, expectedNavGen: expectedNavGen)
+                    }
+                }
+
+            case .artist:
+                if currentDetailIdentity() == .artist(id: id) {
+                    return
+                }
+                openArtistPage(artistID: id, isLibrary: isLibrary, initialName: origin.displayTitle, artworkURL: origin.artworkURL)
+
+            case .station, .song, .unknown:
+                queueDockView.showFeedback("该来源暂无可跳转的内部页面")
+            }
+
+        case .librarySection(let id, let title):
+            let cats = categoriesForTab(3)
+            let idx = cats.firstIndex(where: { $0.id == id })
+                ?? title.flatMap { t in cats.firstIndex(where: { $0.title == t }) }
+                ?? 0
+            navigateToTab(3, categoryIndex: idx)
+
+        case .search(let query, let scope, _):
+            artistStack.removeAll()
+            topBar.setArtistMode(false, animated: false)
+            contentView.hideDetail()
+            let scopeIdx = (scope == "library") ? 1 : 0
+            topBar.setSearchMode(true)
+            topBar.setSearchScope(scopeIdx)
+            topBar.setSearchQuery(query, submit: true)
+
+        case .chart(let id, let title, _), .browseSection(let id, let title):
+            for tab in [0, 1, 2] {
+                let cats = categoriesForTab(tab)
+                if let idx = cats.firstIndex(where: { $0.id == id }) {
+                    navigateToTab(tab, categoryIndex: idx)
+                    return
+                }
+            }
+            let fallbackTitle = title ?? origin.sourceTitle
+            if let fallbackTitle {
+                for tab in [0, 1, 2] {
+                    let cats = categoriesForTab(tab)
+                    if let idx = cats.firstIndex(where: { $0.title == fallbackTitle }) {
+                        navigateToTab(tab, categoryIndex: idx)
+                        return
+                    }
+                }
+            }
+            queueDockView.showFeedback("未找到对应的浏览栏目")
+
+        case .stationDetail(_, let title, _):
+            queueDockView.showFeedback("电台「\(title ?? origin.displayTitle)」暂无独立内部详情页")
+
+        case .unknown:
+            queueDockView.showFeedback("该来源暂无可跳转的内部页面")
+        }
+    }
+
+    private func locateTrackInCurrentDetail(_ track: MusicTrack, expectedNavGen: UInt64, maxExtraPages: Int = 3) {
+        var ids: Set<String> = [track.id]
+        if !track.providerTrackID.isEmpty { ids.insert(track.providerTrackID) }
+        if let cid = track.catalogID, !cid.isEmpty { ids.insert(cid) }
+        if let lid = track.libraryID, !lid.isEmpty { ids.insert(lid) }
+
+        if contentView.highlightDetailTrack(matchingIDs: ids) {
+            AppLogger.shared.log(category: .render, level: .info, message: "来源定位成功: 当前详情页已高亮「\(track.title)」")
+            return
+        }
+        guard let nextURL = currentDetailNextURL else {
+            AppLogger.shared.log(category: .render, level: .info, message: "来源定位结束: 「\(track.title)」已不在当前完整列表中")
+            queueDockView.showFeedback("该曲目已不在当前列表中")
+            return
+        }
+        guard let provider = appleMusicProvider else {
+            queueDockView.showFeedback("尚未定位到该曲目")
+            return
+        }
+        let isLib = currentDetailIsLibrary
+        locateTask = Task { @MainActor [weak self] in
+            guard let self else { return }
+            var cursor: URL? = nextURL
+            var pagesLoaded = 0
+            var allTracks = self.contentView.currentDetailTracksList
+            while let url = cursor, pagesLoaded < maxExtraPages {
+                guard self.navigationGeneration == expectedNavGen, !Task.isCancelled else { return }
+                pagesLoaded += 1
+                guard let page = try? await provider.fetchTracksPage(nextURL: url, isLibrary: isLib) else {
+                    break
+                }
+                guard self.navigationGeneration == expectedNavGen, !Task.isCancelled else { return }
+                allTracks.append(contentsOf: page.tracks)
+                cursor = page.nextURL
+                self.currentDetailNextURL = cursor
+                self.contentView.updateDetailTracks(allTracks)
+                if self.contentView.highlightDetailTrack(matchingIDs: ids) {
+                    return
+                }
+            }
+            guard self.navigationGeneration == expectedNavGen, !Task.isCancelled else { return }
+            if cursor == nil {
+                AppLogger.shared.log(category: .render, level: .info, message: "来源定位结束: 已扫描全部页，「\(track.title)」不在当前列表中")
+                self.queueDockView.showFeedback("该曲目已不在当前列表中")
+            } else {
+                AppLogger.shared.log(category: .render, level: .info, message: "来源定位达到有界上限 (\(maxExtraPages) 页)，尚未命中「\(track.title)」")
+                self.queueDockView.showFeedback("尚未在前 \(maxExtraPages) 页中定位到该曲目")
+            }
         }
     }
 

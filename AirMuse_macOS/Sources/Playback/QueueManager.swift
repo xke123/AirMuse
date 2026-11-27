@@ -328,11 +328,15 @@ public struct QueueManager: Sendable {
         using rng: inout R
     ) -> QueueEntry? {
         let prevConfirmed = confirmedCurrent
+        let ownerChanged = (self.owner != owner)
 
         queueID = UUID()
         revision &+= 1
         destructiveEpoch &+= 1
         self.owner = owner
+        if ownerChanged {
+            history.removeAll()
+        }
         self.capabilities = capabilities ?? (owner == .remoteEngine ? .remoteStationDefault : .fullLocal)
         self.loadingState = loadingState
         if let shuffleOverride {
@@ -436,6 +440,7 @@ public struct QueueManager: Sendable {
             return chosen
         } else {
             self.activeTarget = nil
+            self.playbackPhase = .idle
             var allSlots = entries.map { QueueSlot.entry($0.id) }
             if let batchID, loadingState.isLoading {
                 allSlots.append(.batchTail(batchID))
@@ -530,8 +535,9 @@ public struct QueueManager: Sendable {
         pruneUnreferencedEntries()
     }
 
-    /// Updates metadata for the confirmed remote station track (e.g. MusicKit itemChanged)
+    /// Updates metadata for the remote station track (e.g. MusicKit itemChanged)
     /// while preserving `PlaybackOrigin`, `UUID`, and `activeTarget` (the station resource ID).
+    /// Metadata updates NEVER confirm transport playing on their own.
     public mutating func updateRemoteCurrentTrack(_ track: MusicTrack) {
         guard owner == .remoteEngine else { return }
         if var res = reservation {
@@ -543,10 +549,8 @@ public struct QueueManager: Sendable {
                 addedAt: res.entry.addedAt
             )
             res.entry = updated
+            reservation = res
             entriesByID[updated.id] = updated
-            confirmedCurrent = updated
-            reservation = nil
-            playbackPhase = .playing
             revision &+= 1
         } else if let cur = confirmedCurrent {
             let updated = QueueEntry(
@@ -558,7 +562,6 @@ public struct QueueManager: Sendable {
             )
             entriesByID[updated.id] = updated
             confirmedCurrent = updated
-            playbackPhase = .playing
             revision &+= 1
         }
     }
@@ -1174,7 +1177,7 @@ public struct QueueManager: Sendable {
             baselineOrder: baselineEntryIDs,
             upcomingOrder: upcomingEntryIDs,
             history: history,
-            currentEntryID: activeTargetEntry?.id,
+            currentEntryID: confirmedCurrent?.id,
             activeTarget: activeTarget,
             shuffleEnabled: requestedShuffle,
             repeatMode: repeatMode,
@@ -1212,14 +1215,34 @@ public struct QueueManager: Sendable {
         self.history = Array(payload.history.suffix(Self.maxHistoryCount))
 
         if let cid = payload.currentEntryID, let restored = map[cid] {
-            self.confirmedCurrent = restored
-            self.playbackPhase = .paused
-            if self.activeTarget == nil {
-                self.activeTarget = PlaybackTarget(
-                    kind: payload.owner == .remoteEngine ? .station : .song,
-                    providerResourceID: restored.track.providerTrackID.isEmpty ? restored.track.id : restored.track.providerTrackID,
-                    title: restored.track.title
-                )
+            if payload.owner == .remoteEngine {
+                let stationID = payload.activeTarget?.providerResourceID ?? (restored.origin.kind == .station ? restored.origin.sourceID : nil)
+                if let stationID, !stationID.isEmpty {
+                    self.confirmedCurrent = restored
+                    self.playbackPhase = .paused
+                    if self.activeTarget == nil {
+                        self.activeTarget = PlaybackTarget(
+                            kind: .station,
+                            providerResourceID: stationID,
+                            title: restored.origin.sourceTitle ?? restored.track.title
+                        )
+                    }
+                } else {
+                    self.confirmedCurrent = nil
+                    self.playbackPhase = .idle
+                    self.owner = .localCoordinator
+                    self.capabilities = .fullLocal
+                }
+            } else {
+                self.confirmedCurrent = restored
+                self.playbackPhase = .paused
+                if self.activeTarget == nil {
+                    self.activeTarget = PlaybackTarget(
+                        kind: .song,
+                        providerResourceID: restored.track.providerTrackID.isEmpty ? restored.track.id : restored.track.providerTrackID,
+                        title: restored.track.title
+                    )
+                }
             }
         } else {
             self.confirmedCurrent = nil

@@ -974,6 +974,26 @@ final class DetailOverlayView: NSView {
         titleMarqueeView.stopScrolling()
     }
 
+    @discardableResult
+    public func highlightTrack(matchingIDs: Set<String>) -> Bool {
+        guard !matchingIDs.isEmpty,
+              let idx = currentTracks.firstIndex(where: { track in
+                  matchingIDs.contains(track.id)
+                      || matchingIDs.contains(track.providerTrackID)
+                      || (track.catalogID.map { matchingIDs.contains($0) } ?? false)
+                      || (track.libraryID.map { matchingIDs.contains($0) } ?? false)
+              }),
+              idx < trackStack.arrangedSubviews.count else {
+            return false
+        }
+        let row = trackStack.arrangedSubviews[idx]
+        row.scrollToVisible(row.bounds)
+        row.wantsLayer = true
+        row.layer?.cornerRadius = 6
+        row.layer?.backgroundColor = NSColor.controlAccentColor.withAlphaComponent(0.22).cgColor
+        return true
+    }
+
     public func updateTracks(_ tracks: [MusicTrack]) {
         self.currentTracks = tracks
         trackStack.arrangedSubviews.forEach { $0.removeFromSuperview() }
@@ -1347,8 +1367,17 @@ open class LibraryContentView: NSView {
         detailOverlay.updateTracks(tracks)
     }
 
+    @discardableResult
+    public func highlightDetailTrack(matchingIDs: Set<String>) -> Bool {
+        detailOverlay.highlightTrack(matchingIDs: matchingIDs)
+    }
+
     public func refreshOpenDetailPlayMenu() {
         detailOverlay.refreshPlayMenuIfOpen()
+    }
+
+    public var isDetailVisible: Bool {
+        !detailOverlay.isHidden
     }
 
     public func hideDetail() {

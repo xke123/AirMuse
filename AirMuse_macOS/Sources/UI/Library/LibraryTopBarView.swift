@@ -406,6 +406,12 @@ open class LibraryTopBarView: NSView, NSSearchFieldDelegate {
         win.makeFirstResponder(searchField)
     }
 
+    public func setSearchScope(_ scopeIndex: Int) {
+        let clamped = (scopeIndex == 1) ? 1 : 0
+        currentScope = clamped
+        scopeSegment.selectedSegment = clamped
+    }
+
     public func setSearchQuery(_ query: String, submit: Bool = true) {
         debounceTask?.cancel()
         searchField.stringValue = query

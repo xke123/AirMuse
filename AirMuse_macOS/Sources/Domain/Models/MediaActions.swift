@@ -356,6 +356,7 @@ public enum MediaAction: Sendable, Equatable {
     case favorite(MediaResourceReference)
     case unfavorite(MediaResourceReference)
     case favoriteStatusPlaceholder(title: String)
+    case originStatusPlaceholder(title: String)
 
     case startSongStation(MediaResourceReference)
     case startArtistStation(MediaArtistRef)
@@ -366,6 +367,9 @@ public enum MediaAction: Sendable, Equatable {
     case navigateToPlaylist(id: String, title: String, isLibrary: Bool)
     case navigateToStationDetail(id: String, title: String)
     case navigateToOrigin(PlaybackOrigin)
+    case navigateToOriginConcise(PlaybackOrigin)
+    case navigateToSeedArtist(MediaArtistRef)
+    case navigateToSeedAlbum(id: String, title: String, isLibrary: Bool)
 
     public var title: String {
         switch self {
@@ -380,6 +384,7 @@ public enum MediaAction: Sendable, Equatable {
         case .favorite: return "收藏"
         case .unfavorite: return "取消收藏"
         case .favoriteStatusPlaceholder(let title): return title
+        case .originStatusPlaceholder(let title): return title
         case .startSongStation: return "歌曲电台"
         case .startArtistStation: return "艺人电台"
         case .navigateToAlbum: return "查看专辑"
@@ -388,6 +393,9 @@ public enum MediaAction: Sendable, Equatable {
         case .navigateToPlaylist: return "查看歌单"
         case .navigateToStationDetail: return "查看电台信息"
         case .navigateToOrigin(let origin): return "前往来源（\(origin.displayTitle)）"
+        case .navigateToOriginConcise: return "前往来源"
+        case .navigateToSeedArtist(let ref): return "来源艺人（\(ref.name)）"
+        case .navigateToSeedAlbum(_, let title, _): return "来源专辑（\(title)）"
         }
     }
 
@@ -404,6 +412,7 @@ public enum MediaAction: Sendable, Equatable {
         case .favorite: return "star"
         case .unfavorite: return "star.fill"
         case .favoriteStatusPlaceholder: return "ellipsis.circle"
+        case .originStatusPlaceholder: return "ellipsis.circle"
         case .startSongStation: return "dot.radiowaves.left.and.right"
         case .startArtistStation: return "dot.radiowaves.left.and.right"
         case .navigateToAlbum: return "square.stack"
@@ -411,13 +420,15 @@ public enum MediaAction: Sendable, Equatable {
         case .navigateToArtistsSubmenu: return "music.mic"
         case .navigateToPlaylist: return "music.note.list"
         case .navigateToStationDetail: return "info.circle"
-        case .navigateToOrigin: return "arrow.up.forward.app"
+        case .navigateToOrigin, .navigateToOriginConcise: return "arrow.up.forward.app"
+        case .navigateToSeedArtist: return "dot.radiowaves.left.and.right"
+        case .navigateToSeedAlbum: return "square.stack"
         }
     }
 
     public var isEnabled: Bool {
         switch self {
-        case .libraryStatusPlaceholder, .favoriteStatusPlaceholder:
+        case .libraryStatusPlaceholder, .favoriteStatusPlaceholder, .originStatusPlaceholder:
             return false
         default:
             return true

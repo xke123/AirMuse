@@ -183,9 +183,10 @@ public final class MediaPlayCapsuleButton: NSView {
 // MARK: - MediaPlayMenuPopoverController
 
 @MainActor
-private final class MediaPlayMenuPopoverController: NSObject {
+public final class MediaPlayMenuPopoverController: NSObject {
     private var descriptor: MediaActionMenuDescriptor
     private weak var anchorView: NSView?
+    private let preferAboveAnchor: Bool
     private let onSelect: (MediaAction) -> Void
     private let onDismissed: () -> Void
 
@@ -197,19 +198,21 @@ private final class MediaPlayMenuPopoverController: NSObject {
     private var hasSelected: Bool = false
     private var animationGeneration: UInt64 = 0
 
-    init(
+    public init(
         descriptor: MediaActionMenuDescriptor,
         anchorView: NSView,
+        preferAboveAnchor: Bool = false,
         onSelect: @escaping (MediaAction) -> Void,
         onDismissed: @escaping () -> Void
     ) {
         self.descriptor = descriptor
         self.anchorView = anchorView
+        self.preferAboveAnchor = preferAboveAnchor
         self.onSelect = onSelect
         self.onDismissed = onDismissed
     }
 
-    func updateDescriptor(_ newDescriptor: MediaActionMenuDescriptor) {
+    public func updateDescriptor(_ newDescriptor: MediaActionMenuDescriptor) {
         guard !isClosing, let panel else { return }
         self.descriptor = newDescriptor
         let surface = MediaPlayMenuSurfaceView(descriptor: newDescriptor) { [weak self] action in
@@ -222,20 +225,43 @@ private final class MediaPlayMenuPopoverController: NSObject {
         }
         self.surfaceView = surface
         let targetSize = surface.fittingSize
+        surface.frame = NSRect(origin: .zero, size: targetSize)
         var frame = panel.frame
-        let topY = frame.maxY
-        frame.size = targetSize
-        frame.origin.y = topY - targetSize.height
+        if let anchorView, let parentWindow = anchorView.window {
+            let anchorRectInWin = anchorView.convert(anchorView.bounds, to: nil)
+            let anchorRectInScreen = parentWindow.convertToScreen(anchorRectInWin)
+            let visibleFrame = parentWindow.screen?.visibleFrame ?? NSScreen.main?.visibleFrame ?? parentWindow.frame
+            frame.origin.x = anchorRectInScreen.maxX - targetSize.width
+            frame.origin.x = max(visibleFrame.minX + 8, min(frame.origin.x, visibleFrame.maxX - targetSize.width - 8))
+            if preferAboveAnchor {
+                frame.origin.y = anchorRectInScreen.maxY + 6
+            } else {
+                frame.origin.y = frame.maxY - targetSize.height
+            }
+            frame.origin.y = max(visibleFrame.minY + 8, min(frame.origin.y, visibleFrame.maxY - targetSize.height - 8))
+            frame.size = targetSize
+        } else {
+            if preferAboveAnchor {
+                let bottomY = frame.minY
+                frame.size = targetSize
+                frame.origin.y = bottomY
+            } else {
+                let topY = frame.maxY
+                frame.size = targetSize
+                frame.origin.y = topY - targetSize.height
+            }
+        }
         panel.setFrame(frame, display: true)
         panel.contentView = surface
         panel.makeFirstResponder(surface)
     }
 
-    func present() {
+    public func present() {
         guard let anchorView, let parentWindow = anchorView.window else {
             onDismissed()
             return
         }
+        anchorView.layoutSubtreeIfNeeded()
 
         let surface = MediaPlayMenuSurfaceView(descriptor: descriptor) { [weak self] action in
             guard let self, !self.isClosing, !self.hasSelected else { return }
@@ -248,19 +274,25 @@ private final class MediaPlayMenuPopoverController: NSObject {
         self.surfaceView = surface
 
         let targetSize = surface.fittingSize
+        surface.frame = NSRect(origin: .zero, size: targetSize)
         let anchorRectInWin = anchorView.convert(anchorView.bounds, to: nil)
         let anchorRectInScreen = parentWindow.convertToScreen(anchorRectInWin)
         let visibleFrame = parentWindow.screen?.visibleFrame ?? NSScreen.main?.visibleFrame ?? parentWindow.frame
 
         var originX = anchorRectInScreen.maxX - targetSize.width
-        var originY = anchorRectInScreen.minY - targetSize.height - 6
+        var originY: CGFloat
+        if preferAboveAnchor {
+            originY = anchorRectInScreen.maxY + 6
+        } else {
+            originY = anchorRectInScreen.minY - targetSize.height - 6
+            if originY < visibleFrame.minY + 8 {
+                originY = min(anchorRectInScreen.maxY + 6, visibleFrame.maxY - targetSize.height - 8)
+            }
+        }
 
         // Clamp within visible screen bounds (multi-display safe)
         originX = max(visibleFrame.minX + 8, min(originX, visibleFrame.maxX - targetSize.width - 8))
-        if originY < visibleFrame.minY + 8 {
-            originY = min(anchorRectInScreen.maxY + 6, visibleFrame.maxY - targetSize.height - 8)
-        }
-        originY = max(visibleFrame.minY + 8, originY)
+        originY = max(visibleFrame.minY + 8, min(originY, visibleFrame.maxY - targetSize.height - 8))
 
         let panel = NSPanel(
             contentRect: NSRect(x: originX, y: originY, width: targetSize.width, height: targetSize.height),
@@ -326,7 +358,7 @@ private final class MediaPlayMenuPopoverController: NSObject {
         })
     }
 
-    func dismiss(returnFocus: Bool) {
+    public func dismiss(returnFocus: Bool) {
         guard !isClosing else { return }
         isClosing = true
         animationGeneration &+= 1
@@ -630,7 +662,12 @@ private final class MediaPlayMenuSurfaceView: NSView {
 @MainActor
 private final class MediaPlayMenuRowView: NSView {
     override var isFlipped: Bool { true }
-    override var intrinsicContentSize: NSSize { NSSize(width: 224, height: 30) }
+    override var intrinsicContentSize: NSSize {
+        let font = titleLabel.font ?? NSFont.systemFont(ofSize: 12.5, weight: .medium)
+        let textW = (titleLabel.stringValue as NSString).size(withAttributes: [.font: font]).width
+        let targetW = max(124, min(260, ceil(textW) + 48))
+        return NSSize(width: targetW, height: 30)
+    }
 
     var onHover: ((Bool) -> Void)?
     var onActivate: (() -> Void)?
