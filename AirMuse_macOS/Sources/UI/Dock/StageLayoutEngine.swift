@@ -204,6 +204,37 @@ public enum StageLayoutEngine {
         return clampOrigin(rawOrigin, size: newSize, visibleFrames: visibleFrames)
     }
 
+    /// Returns the authoritative screen `visibleFrame` for `rect` (preferring the screen containing its center,
+    /// then largest intersection area, then nearest screen).
+    public static func primaryScreenVisibleFrame(
+        for rect: CGRect,
+        visibleFrames: [CGRect]
+    ) -> CGRect? {
+        guard !visibleFrames.isEmpty else { return nil }
+        let center = CGPoint(x: rect.midX, y: rect.midY)
+        if let containing = visibleFrames.first(where: { $0.contains(center) }) {
+            return containing
+        }
+        var bestFrame: CGRect?
+        var bestArea: CGFloat = 0
+        for vf in visibleFrames {
+            let inter = vf.intersection(rect)
+            if !inter.isNull {
+                let area = inter.width * inter.height
+                if area > bestArea {
+                    bestArea = area
+                    bestFrame = vf
+                }
+            }
+        }
+        if let bestFrame {
+            return bestFrame
+        }
+        return visibleFrames.min(by: { a, b in
+            hypot(a.midX - center.x, a.midY - center.y) < hypot(b.midX - center.x, b.midY - center.y)
+        }) ?? visibleFrames[0]
+    }
+
     /// Clamps `origin` for a rect of `size` to the best-matching screen `visibleFrame`
     /// (supports multi-screen, mixed scales, and negative coordinates).
     public static func clampOrigin(
@@ -211,32 +242,10 @@ public enum StageLayoutEngine {
         size: CGSize,
         visibleFrames: [CGRect]
     ) -> CGPoint {
-        guard !visibleFrames.isEmpty else { return origin }
         let rect = CGRect(origin: origin, size: size)
-
-        // 1. Prefer the screen containing the rect's center or largest intersection area
-        var chosenFrame: CGRect?
-        let center = CGPoint(x: rect.midX, y: rect.midY)
-        if let containing = visibleFrames.first(where: { $0.contains(center) }) {
-            chosenFrame = containing
-        } else {
-            var bestArea: CGFloat = 0
-            for vf in visibleFrames {
-                let inter = vf.intersection(rect)
-                if !inter.isNull {
-                    let area = inter.width * inter.height
-                    if area > bestArea {
-                        bestArea = area
-                        chosenFrame = vf
-                    }
-                }
-            }
+        guard let targetVF = primaryScreenVisibleFrame(for: rect, visibleFrames: visibleFrames) else {
+            return origin
         }
-
-        // 2. If completely off-screen (e.g. monitor disconnected), choose nearest screen by center distance
-        let targetVF: CGRect = chosenFrame ?? visibleFrames.min(by: { a, b in
-            hypot(a.midX - center.x, a.midY - center.y) < hypot(b.midX - center.x, b.midY - center.y)
-        }) ?? visibleFrames[0]
 
         let maxX = max(targetVF.minX, targetVF.maxX - size.width)
         let maxY = max(targetVF.minY, targetVF.maxY - size.height)
@@ -305,8 +314,14 @@ public enum StageLayoutEngine {
                 if cand.insetBy(dx: 1.0, dy: 1.0).intersects(playerScreenRect) { continue }
                 if let other = otherModuleScreenRect, cand.insetBy(dx: 1.0, dy: 1.0).intersects(other) { continue }
 
-                // Reject candidates that push completely off-screen when screen frames are provided
-                if !visibleFrames.isEmpty {
+                // Reject candidates that push off the authoritative screen(s)
+                if visibleFrames.count == 1, let mainVF = visibleFrames.first {
+                    let staysOnMainScreen = cand.minX >= mainVF.minX - 1.0
+                        && cand.maxX <= mainVF.maxX + 1.0
+                        && cand.minY >= mainVF.minY - 1.0
+                        && cand.maxY <= mainVF.maxY + 1.0
+                    if !staysOnMainScreen { continue }
+                } else if !visibleFrames.isEmpty {
                     let onAnyScreen = visibleFrames.contains { $0.intersects(cand.insetBy(dx: 8.0, dy: 8.0)) }
                     if !onAnyScreen { continue }
                 }

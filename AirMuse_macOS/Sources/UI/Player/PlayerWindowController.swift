@@ -23,6 +23,7 @@ open class PlayerWindowController: NSWindowController {
 
     public var onToggleLyrics: (() -> Void)?
     public var onToggleLibrary: (() -> Void)?
+    public var onToggleFavorite: (() -> Void)?
     public var onToggleLog: (() -> Void)?
     public var onMinimizeRequested: (() -> Void)?
     public var onQuitRequested: (() -> Void)?
@@ -181,6 +182,10 @@ open class PlayerWindowController: NSWindowController {
             AppLogger.shared.log(category: .userAction, level: .info, message: "用户点击 [音乐资料库] 按钮")
             self?.onToggleLibrary?()
         }
+        playerView.onToggleFavorite = { [weak self] in
+            AppLogger.shared.log(category: .userAction, level: .info, message: "用户点击 [收藏当前曲目] 按钮")
+            self?.onToggleFavorite?()
+        }
         playerView.onMinimize = { [weak self] in
             if let onMinimizeRequested = self?.onMinimizeRequested {
                 onMinimizeRequested()
@@ -238,6 +243,9 @@ open class PlayerWindowController: NSWindowController {
         miniPlayerView.onToggleLibrary = { [weak self] in
             self?.onToggleLibrary?()
         }
+        miniPlayerView.onToggleFavorite = { [weak self] in
+            self?.onToggleFavorite?()
+        }
         miniPlayerView.onToggleSource = { [weak self] in
             self?.onToggleLibrary?()
         }
@@ -248,6 +256,11 @@ open class PlayerWindowController: NSWindowController {
                 NSApp.terminate(nil)
             }
         }
+    }
+
+    public func updateFavoriteState(isFavorited: Bool?, isPending: Bool = false, isEnabled: Bool = true) {
+        playerView.setFavoriteState(isFavorited: isFavorited, isPending: isPending, isEnabled: isEnabled)
+        miniPlayerView.setFavoriteState(isFavorited: isFavorited, isPending: isPending, isEnabled: isEnabled)
     }
 
     public func toggleTopMost() {

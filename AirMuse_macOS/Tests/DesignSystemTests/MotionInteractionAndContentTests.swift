@@ -225,6 +225,26 @@ struct MotionInteractionAndContentTests {
         #expect(lyricsView.isManualScrollPaused == true)
         lyricsView.resumeAutoFollow()
         #expect(lyricsView.isManualScrollPaused == false)
+
+        // Sub-500ms backward position jitter does not bounce activeLineIndex backwards
+        lyricsView.updatePlaybackPosition(ms: 10_000)
+        #expect(lyricsView.activeLineIndex == 1) // Line B at 10_000ms
+        lyricsView.updatePlaybackPosition(ms: 9_650) // -350ms jitter
+        #expect(lyricsView.activeLineIndex == 1)
+
+        // Real backward seek (>500ms) jumps back properly
+        lyricsView.updatePlaybackPosition(ms: 4_000)
+        #expect(lyricsView.activeLineIndex == 0)
+
+        // Mini mode horizontal centering
+        lyricsView.setMiniMode(true)
+        lyricsView.frame = NSRect(x: 0, y: 0, width: 495, height: 30)
+        lyricsView.layoutSubtreeIfNeeded()
+        if let miniHalo = lyricsView.subviews.first(where: { $0 is CarouselHaloTextView }) {
+            #expect(abs(miniHalo.frame.midX - lyricsView.bounds.midX) < 0.5)
+        } else {
+            Issue.record("Expected CarouselHaloTextView subview")
+        }
     }
 
     @Test("M19 & M20: GlassPopoverMenu and GlassTooltipManager dismiss cleanly on Esc / hide")
@@ -270,8 +290,8 @@ struct MotionInteractionAndContentTests {
             for sub in view.subviews { c += countGlassViews(in: sub) }
             return c
         }
-        // Only DetailOverlayView header has 1 NSGlassEffectView; 150 cards add 0!
-        #expect(countGlassViews(in: content) <= 1)
+        // Only DetailOverlayView's 3-capsule header has NSGlassEffectViews; 150 cards add 0!
+        #expect(countGlassViews(in: content) <= 3)
 
         let savedRM = MotionAccessibility.shared.reduceMotionOverride
         defer { MotionAccessibility.shared.reduceMotionOverride = savedRM }

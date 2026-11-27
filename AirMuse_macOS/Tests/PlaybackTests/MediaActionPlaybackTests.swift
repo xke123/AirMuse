@@ -174,4 +174,64 @@ struct MediaActionPlaybackTests {
         #expect(snap.playbackPhase == .failed)
         #expect(snap.upcomingEntries.map(\.track.id) == ["F2"])
     }
+
+    @Test("MAS-R19/R20: 350-track collection atomic shuffle has zero omissions or illegal deduplication")
+    func test350TrackCollectionShuffle() async throws {
+        let store = PlaybackStore()
+        let engine = MediaActionMockEngine()
+        let coord = PlaybackCoordinatorV2(store: store, engine: engine)
+        await coord.start(session: makeSession())
+
+        let entries = (1...350).map { makeEntry("t-\($0)") }
+        let res = try await coord.submitIntent(.shuffleAndPlay, entries: entries)
+        #expect(res.acceptedCount == 350)
+
+        let snap = await coord.currentStructuredQueueSnapshot()
+        let currentID = snap.pendingTarget?.track.id
+        #expect(currentID != nil)
+        let allIDs = [currentID!] + snap.upcomingEntries.map(\.track.id)
+        #expect(allIDs.count == 350)
+        #expect(Set(allIDs).count == 350)
+    }
+
+    @Test("MAS-R26/R28: Stale expectedQueueID or expectedDestructiveEpoch rejects old prepend/append after replace/clear")
+    func testStaleQueueTargetRejectedAtomically() async throws {
+        let store = PlaybackStore()
+        let engine = MediaActionMockEngine()
+        let coord = PlaybackCoordinatorV2(store: store, engine: engine)
+        await coord.start(session: makeSession())
+
+        _ = try await coord.submitIntent(.replaceAndPlay, entries: [makeEntry("A"), makeEntry("B")])
+        let oldSnap = await coord.currentStructuredQueueSnapshot()
+
+        // Replace queue with a new collection (changes queueID & destructiveEpoch)
+        _ = try await coord.submitIntent(.replaceAndPlay, entries: [makeEntry("C")])
+
+        await #expect(throws: Error.self) {
+            _ = try await coord.submitIntent(
+                .append,
+                entries: [makeEntry("STALE")],
+                expectedQueueID: oldSnap.queueID,
+                expectedDestructiveEpoch: oldSnap.destructiveEpoch
+            )
+        }
+        let newSnap = await coord.currentStructuredQueueSnapshot()
+        #expect(!newSnap.upcomingEntries.map(\.track.id).contains("STALE"))
+    }
+
+    @Test("MAS-R27: Duplicate tracks added to queue preserve distinct entry UUIDs")
+    func testDuplicateTracksPreserveDistinctUUIDs() async throws {
+        let store = PlaybackStore()
+        let engine = MediaActionMockEngine()
+        let coord = PlaybackCoordinatorV2(store: store, engine: engine)
+        await coord.start(session: makeSession())
+
+        let e1 = makeEntry("DUP")
+        let e2 = makeEntry("DUP")
+        #expect(e1.id != e2.id)
+        _ = try await coord.submitIntent(.append, entries: [e1, e2])
+        let snap = await coord.currentStructuredQueueSnapshot()
+        #expect(snap.upcomingEntries.count == 2)
+        #expect(snap.upcomingEntries[0].id != snap.upcomingEntries[1].id)
+    }
 }

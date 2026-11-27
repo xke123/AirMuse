@@ -54,10 +54,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc private func activateApp() {
-        NSApp.activate(ignoringOtherApps: true)
-        for window in NSApp.windows where !(window is NSPanel) {
-            window.makeKeyAndOrderFront(nil)
-        }
+        lifecycleCoordinator?.restoreStage()
     }
 
     @objc private func quitApp() {

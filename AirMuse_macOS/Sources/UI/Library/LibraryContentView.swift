@@ -44,6 +44,10 @@ public struct MediaCardItem: Identifiable, Sendable {
     public let albumID: String?
     public let playlistID: String?
     public let browseCategoryID: String?
+    public let isLibrary: Bool?
+    public let playlistOwnership: PlaylistOwnership?
+    public let catalogID: String?
+    public let libraryID: String?
 
     public init(
         id: String,
@@ -55,7 +59,11 @@ public struct MediaCardItem: Identifiable, Sendable {
         track: MusicTrack? = nil,
         albumID: String? = nil,
         playlistID: String? = nil,
-        browseCategoryID: String? = nil
+        browseCategoryID: String? = nil,
+        isLibrary: Bool? = nil,
+        playlistOwnership: PlaylistOwnership? = nil,
+        catalogID: String? = nil,
+        libraryID: String? = nil
     ) {
         self.id = id
         self.title = title
@@ -67,6 +75,10 @@ public struct MediaCardItem: Identifiable, Sendable {
         self.albumID = albumID
         self.playlistID = playlistID
         self.browseCategoryID = browseCategoryID
+        self.isLibrary = isLibrary
+        self.playlistOwnership = playlistOwnership
+        self.catalogID = catalogID
+        self.libraryID = libraryID
     }
 }
 
@@ -638,13 +650,162 @@ final class DetailTrackRowView: NSView {
     }
 }
 
+// MARK: - DetailMarqueeTitleView
+
+@MainActor
+private final class DetailMarqueeTitleView: NSView {
+    override var isFlipped: Bool { true }
+
+    private var text: String = ""
+    private let font = NSFont.systemFont(ofSize: 14.5, weight: .semibold)
+    private let textColor = NSColor(calibratedWhite: 0.94, alpha: 1.0)
+    private var marqueeOffset: CGFloat = 0
+    private var delayRemaining: TimeInterval = 8.0
+    private var driverID: UUID?
+
+    isolated deinit {
+        stopScrolling()
+    }
+
+    func setTitle(_ newTitle: String) {
+        text = newTitle
+        marqueeOffset = 0
+        delayRemaining = 8.0
+        restartIfNeeded()
+        needsDisplay = true
+    }
+
+    func stopScrolling() {
+        if let id = driverID {
+            MotionCoordinator.shared.displayDriver.stop(id: id)
+            driverID = nil
+        }
+        marqueeOffset = 0
+        delayRemaining = 8.0
+        needsDisplay = true
+    }
+
+    override func viewDidHide() {
+        super.viewDidHide()
+        stopScrolling()
+    }
+
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        if window == nil {
+            stopScrolling()
+        } else {
+            restartIfNeeded()
+        }
+    }
+
+    override func layout() {
+        super.layout()
+        restartIfNeeded()
+    }
+
+    private func measureWidth() -> CGFloat {
+        guard !text.isEmpty else { return 0 }
+        let attr = NSAttributedString(string: text, attributes: [.font: font])
+        return ceil(attr.size().width)
+    }
+
+    private func restartIfNeeded() {
+        if let id = driverID {
+            MotionCoordinator.shared.displayDriver.stop(id: id)
+            driverID = nil
+        }
+        marqueeOffset = 0
+        delayRemaining = 8.0
+        guard !MotionCoordinator.shared.isReduceMotionEnabled,
+              window != nil,
+              !isHiddenOrHasHiddenAncestor,
+              bounds.width > 12 else {
+            return
+        }
+        let textW = measureWidth()
+        guard textW > bounds.width + 2.0 else { return }
+
+        let gap: CGFloat = 36.0
+        let cycleSpan = textW + gap
+        let speed: CGFloat = 28.0
+
+        driverID = MotionCoordinator.shared.displayDriver.start { [weak self] dt, _ in
+            guard let self,
+                  !MotionCoordinator.shared.isReduceMotionEnabled,
+                  self.window != nil,
+                  !self.isHiddenOrHasHiddenAncestor else {
+                self?.driverID = nil
+                self?.marqueeOffset = 0
+                return false
+            }
+            if self.delayRemaining > 0 {
+                self.delayRemaining -= dt
+                return true
+            }
+            self.marqueeOffset += speed * CGFloat(dt)
+            if self.marqueeOffset >= cycleSpan {
+                self.marqueeOffset -= cycleSpan
+                self.delayRemaining = 2.0
+            }
+            self.needsDisplay = true
+            return true
+        }
+    }
+
+    override func draw(_ dirtyRect: NSRect) {
+        guard !text.isEmpty, bounds.width > 4, bounds.height > 4 else { return }
+        let attrs: [NSAttributedString.Key: Any] = [
+            .font: font,
+            .foregroundColor: textColor
+        ]
+        let attr = NSAttributedString(string: text, attributes: attrs)
+        let size = attr.size()
+        let y = (bounds.height - size.height) * 0.5
+        let textW = ceil(size.width)
+
+        if textW <= bounds.width + 2.0 {
+            let x = (bounds.width - textW) * 0.5
+            attr.draw(at: NSPoint(x: x, y: y))
+        } else {
+            let gap: CGFloat = 36.0
+            let cycleSpan = textW + gap
+            let x1 = -marqueeOffset
+            attr.draw(at: NSPoint(x: x1, y: y))
+            let x2 = x1 + cycleSpan
+            if x2 < bounds.width {
+                attr.draw(at: NSPoint(x: x2, y: y))
+            }
+        }
+    }
+}
+
 // MARK: - DetailOverlayView (Slide-over drawer for Album/Playlist tracks)
+
+@MainActor
+private final class BlockingOverlayView: NSView {
+    override var isFlipped: Bool { true }
+
+    override func hitTest(_ point: NSPoint) -> NSView? {
+        guard !isHidden, alphaValue > 0.01 else { return nil }
+        let local = convert(point, from: superview)
+        guard bounds.contains(local) else { return nil }
+        return super.hitTest(point) ?? self
+    }
+
+    override func mouseDown(with event: NSEvent) {}
+    override func mouseUp(with event: NSEvent) {}
+    override func rightMouseDown(with event: NSEvent) {}
+    override func otherMouseDown(with event: NSEvent) {}
+    override func scrollWheel(with event: NSEvent) {}
+}
 
 final class DetailOverlayView: NSView {
     override var isFlipped: Bool { true }
 
     public var onBack: (() -> Void)?
     public var onPlayIntent: ((MediaPlayIntent) -> Void)?
+    public var onMediaAction: ((MediaAction) -> Void)?
     public var playMenuDescriptorProvider: (() -> MediaActionMenuDescriptor)?
     public var onDetailContextMenuRequested: (() -> NSMenu?)?
     public var onTrackSelected: ((MusicTrack) -> Void)?
@@ -661,10 +822,13 @@ final class DetailOverlayView: NSView {
 
     private let headerHeight: CGFloat = 36
     private let headerTopGap: CGFloat = 4
-    private let headerView = NSView()
-    private let headerGlassView = NSGlassEffectView(frame: .zero)
+    private let headerView = BlockingOverlayView()
+    private let headerGlassContainer = NSGlassEffectContainerView(frame: .zero)
+    private let backCapsuleGlass = NSGlassEffectView(frame: .zero)
+    private let titleCapsuleGlass = NSGlassEffectView(frame: .zero)
+    private let playCapsuleGlass = NSGlassEffectView(frame: .zero)
     private let backButton = NSButton()
-    private let titleLabel = NSTextField(labelWithString: "")
+    private let titleMarqueeView = DetailMarqueeTitleView()
     private let playMenuButton = MediaPlayCapsuleButton()
     private let scrollView = NSScrollView()
     private let trackStack = FlippedStackView()
@@ -680,6 +844,10 @@ final class DetailOverlayView: NSView {
 
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
+    }
+
+    func refreshPlayMenuIfOpen() {
+        playMenuButton.refreshMenuIfOpen()
     }
 
     private func setupViews() {
@@ -707,36 +875,48 @@ final class DetailOverlayView: NSView {
             trackStack.topAnchor.constraint(equalTo: scrollView.contentView.topAnchor)
         ])
 
-        // Pinned Liquid Glass Header floating above scrollView
+        // Pinned 3-Capsule Liquid Glass Header floating above scrollView
         headerView.wantsLayer = true
-        headerGlassView.style = .regular
-        headerGlassView.cornerRadius = headerHeight * 0.5
-        headerGlassView.autoresizingMask = [.width, .height]
-        headerView.addSubview(headerGlassView, positioned: .below, relativeTo: nil)
+        headerGlassContainer.spacing = 6
+        headerView.addSubview(headerGlassContainer)
+
+        backCapsuleGlass.style = .regular
+        backCapsuleGlass.cornerRadius = headerHeight * 0.5
+        titleCapsuleGlass.style = .regular
+        titleCapsuleGlass.cornerRadius = headerHeight * 0.5
+        playCapsuleGlass.style = .regular
+        playCapsuleGlass.cornerRadius = headerHeight * 0.5
+
+        headerGlassContainer.addSubview(backCapsuleGlass)
+        headerGlassContainer.addSubview(titleCapsuleGlass)
+        headerGlassContainer.addSubview(playCapsuleGlass)
         addSubview(headerView)
 
-        backButton.title = "← 返回"
-        backButton.font = NSFont.systemFont(ofSize: 13.5, weight: .medium)
-        backButton.bezelStyle = .recessed
+        backButton.bezelStyle = .regularSquare
         backButton.isBordered = false
-        backButton.contentTintColor = NSColor(calibratedWhite: 0.90, alpha: 1.0)
+        backButton.focusRingType = .none
+        backButton.image = NSImage(systemSymbolName: "chevron.backward", accessibilityDescription: "返回")?
+            .withSymbolConfiguration(.init(pointSize: 13.5, weight: .medium))
+        backButton.contentTintColor = NSColor(white: 0.85, alpha: 1.0)
+        backButton.toolTip = "返回"
         backButton.target = self
         backButton.action = #selector(backClicked)
-        headerView.addSubview(backButton)
+        backCapsuleGlass.contentView = backButton
 
-        titleLabel.font = NSFont.systemFont(ofSize: 14.5, weight: .semibold)
-        titleLabel.textColor = NSColor(calibratedWhite: 0.94, alpha: 1.0)
-        titleLabel.lineBreakMode = .byTruncatingTail
-        headerView.addSubview(titleLabel)
+        titleCapsuleGlass.contentView = titleMarqueeView
 
-        playMenuButton.titleText = "播放"
+        playMenuButton.isIconOnly = true
+        playMenuButton.usesTransparentBackground = true
         playMenuButton.menuDescriptorProvider = { [weak self] in
             self?.playMenuDescriptorProvider?() ?? MediaActionMenuDescriptor(sections: [])
+        }
+        playMenuButton.onSelectAction = { [weak self] action in
+            self?.onMediaAction?(action)
         }
         playMenuButton.onSelectIntent = { [weak self] intent in
             self?.onPlayIntent?(intent)
         }
-        headerView.addSubview(playMenuButton)
+        playCapsuleGlass.contentView = playMenuButton
 
         loadingIndicator.style = .spinning
         loadingIndicator.controlSize = .small
@@ -763,14 +943,17 @@ final class DetailOverlayView: NSView {
 
         scrollView.frame = bounds
 
-        headerView.frame = NSRect(x: 4, y: headerY, width: max(40, w - 8), height: headerHeight)
-        headerGlassView.frame = headerView.bounds
-        headerGlassView.cornerRadius = headerHeight * 0.5
+        headerView.frame = NSRect(x: 6, y: headerY, width: max(40, w - 12), height: headerHeight)
+        headerGlassContainer.frame = headerView.bounds
 
         let hw = headerView.bounds.width
-        backButton.frame = NSRect(x: 8, y: (headerHeight - 26) / 2, width: 66, height: 26)
-        playMenuButton.frame = NSRect(x: hw - 96 - 5, y: (headerHeight - 28) / 2, width: 96, height: 28)
-        titleLabel.frame = NSRect(x: 76, y: (headerHeight - 20) / 2, width: max(10, hw - 76 - 106), height: 20)
+        let btnSize = headerHeight
+        let gap: CGFloat = 6
+        backCapsuleGlass.frame = NSRect(x: 0, y: 0, width: btnSize, height: btnSize)
+        playCapsuleGlass.frame = NSRect(x: hw - btnSize, y: 0, width: btnSize, height: btnSize)
+        let titleX = btnSize + gap
+        let titleW = max(20, hw - btnSize * 2 - gap * 2)
+        titleCapsuleGlass.frame = NSRect(x: titleX, y: 0, width: titleW, height: btnSize)
 
         let contentTop = headerY + headerHeight
         let contentH = max(10, h - contentTop)
@@ -783,8 +966,12 @@ final class DetailOverlayView: NSView {
     }
 
     public func configure(title: String, tracks: [MusicTrack]) {
-        titleLabel.stringValue = title
+        titleMarqueeView.setTitle(title)
         updateTracks(tracks)
+    }
+
+    public func stopTitleMarquee() {
+        titleMarqueeView.stopScrolling()
     }
 
     public func updateTracks(_ tracks: [MusicTrack]) {
@@ -843,6 +1030,7 @@ open class LibraryContentView: NSView {
     public var onDetailPlayIntent: (([MusicTrack], MediaPlayIntent) -> Void)?
     public var detailPlayMenuDescriptorProvider: (() -> MediaActionMenuDescriptor)?
     public var onDetailContextMenuRequested: (([MusicTrack]) -> NSMenu?)?
+    public var onDetailMediaAction: (([MusicTrack], MediaAction) -> Void)?
     public var onReachedBottom: (() -> Void)?
 
     public private(set) var is2Col: Bool = true
@@ -952,6 +1140,10 @@ open class LibraryContentView: NSView {
         detailOverlay.onDetailContextMenuRequested = { [weak self] in
             guard let self else { return nil }
             return self.onDetailContextMenuRequested?(self.currentDetailTracks)
+        }
+        detailOverlay.onMediaAction = { [weak self] action in
+            guard let self else { return }
+            self.onDetailMediaAction?(self.currentDetailTracks, action)
         }
         detailOverlay.onTrackIndexSelected = { [weak self] idx, track in
             self?.onTrackIndexSelected?(idx, track)
@@ -1155,7 +1347,12 @@ open class LibraryContentView: NSView {
         detailOverlay.updateTracks(tracks)
     }
 
+    public func refreshOpenDetailPlayMenu() {
+        detailOverlay.refreshPlayMenuIfOpen()
+    }
+
     public func hideDetail() {
+        detailOverlay.stopTitleMarquee()
         detailOverlay.isHidden = true
     }
 }

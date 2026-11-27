@@ -839,12 +839,7 @@ public actor AppleMusicAmpClient {
         var resolvedCatalogID = artistID
 
         if isLib {
-            if let catURL = URL(string: "https://amp-api.music.apple.com/v1/me/library/artists/\(artistID)?include=catalog&l=zh-Hans-CN&platform=web"),
-               let catData = try? await execute(url: catURL, needAuth: true, generation: generation),
-               let json = try? JSONSerialization.jsonObject(with: catData) as? [String: Any],
-               let first = (json["data"] as? [[String: Any]])?.first,
-               let rel = (first["relationships"] as? [String: Any])?["catalog"] as? [String: Any],
-               let cid = (rel["data"] as? [[String: Any]])?.first?["id"] as? String {
+            if let cid = await resolveCatalogArtistID(artistID: artistID, generation: generation) {
                 resolvedCatalogID = cid
             } else {
                 let tracks = (try? await fetchArtistTopSongs(artistID: artistID, isLibrary: true, generation: generation)) ?? []
@@ -864,22 +859,270 @@ public actor AppleMusicAmpClient {
         let data = try await execute(url: url, needAuth: false, generation: generation)
         var detail = parseArtistDetail(data: data, fallbackID: resolvedCatalogID)
 
-        if userToken != nil,
-           let ratingURL = URL(string: "https://amp-api.music.apple.com/v1/me/ratings/artists/\(resolvedCatalogID)?l=zh-Hans-CN&platform=web"),
-           let ratingData = try? await execute(url: ratingURL, needAuth: true, generation: generation),
-           let rJson = try? JSONSerialization.jsonObject(with: ratingData) as? [String: Any],
-           let rFirst = (rJson["data"] as? [[String: Any]])?.first,
-           let val = (rFirst["attributes"] as? [String: Any])?["value"] as? Int {
-            detail.isFavorited = (val == 1)
-            detail.isSuggestLess = (val == -1)
+        if userToken != nil {
+            if let isFav = try? await fetchRating(resourceType: "artists", catalogID: resolvedCatalogID, generation: generation) {
+                detail.isRatingKnown = true
+                detail.isFavorited = isFav
+            }
         }
         return detail
     }
 
-    public func setArtistRating(artistID: String, value: Int?, generation: Int? = nil) async throws {
+    /// Resolves a catalog song/album/playlist's library membership and library ID via `?relate=library`.
+    public func fetchLibraryMembership(
+        catalogID: String,
+        resourceType: String,
+        generation: Int? = nil
+    ) async throws -> (inLibrary: Bool, libraryID: String?) {
+        guard userToken != nil else { throw AppleMusicError.notAuthorized }
+        guard let url = URL(string: "https://amp-api.music.apple.com/v1/catalog/\(storefront)/\(resourceType)/\(catalogID)?relate=library&l=zh-Hans-CN&platform=web") else {
+            throw URLError(.badURL)
+        }
+        let data = try await executeUncached(url: url, needAuth: true, generation: generation)
+        guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let first = (json["data"] as? [[String: Any]])?.first,
+              let rel = (first["relationships"] as? [String: Any])?["library"] as? [String: Any],
+              let libData = rel["data"] as? [[String: Any]] else {
+            return (false, nil)
+        }
+        let libID = libData.first?["id"] as? String
+        return (!libData.isEmpty, libID)
+    }
+
+    public func addToLibrary(catalogID: String, resourceType: String, generation: Int? = nil) async throws {
         guard userToken != nil,
-              let url = URL(string: "https://amp-api.music.apple.com/v1/me/ratings/artists/\(artistID)?l=zh-Hans-CN&platform=web") else {
+              let url = URL(string: "https://amp-api.music.apple.com/v1/me/library?ids[\(resourceType)]=\(catalogID)&l=zh-Hans-CN&platform=web") else {
             throw AppleMusicError.notAuthorized
+        }
+        _ = try await executeMutation(method: "POST", url: url, body: nil, generation: generation)
+    }
+
+    public func removeFromLibrary(libraryID: String, resourceType: String, generation: Int? = nil) async throws {
+        guard userToken != nil,
+              let url = URL(string: "https://amp-api.music.apple.com/v1/me/library/\(resourceType)/\(libraryID)?l=zh-Hans-CN&platform=web") else {
+            throw AppleMusicError.notAuthorized
+        }
+        _ = try await executeMutation(method: "DELETE", url: url, body: nil, generation: generation)
+    }
+
+    /// Batch-resolves catalog songs/albums/playlists library membership via `?ids=...&relate=library`.
+    public func fetchLibraryMemberships(
+        catalogIDs: [String],
+        resourceType: String,
+        generation: Int? = nil
+    ) async throws -> [String: (inLibrary: Bool, libraryID: String?)] {
+        guard userToken != nil else { throw AppleMusicError.notAuthorized }
+        let uniqueIDs = Array(Set(catalogIDs.filter { !$0.isEmpty })).sorted()
+        guard !uniqueIDs.isEmpty else { return [:] }
+
+        var result: [String: (inLibrary: Bool, libraryID: String?)] = [:]
+        let chunkSize = 100
+        for startIdx in stride(from: 0, to: uniqueIDs.count, by: chunkSize) {
+            let chunk = Array(uniqueIDs[startIdx..<min(startIdx + chunkSize, uniqueIDs.count)])
+            let joined = chunk.joined(separator: ",")
+            guard let encoded = joined.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
+                  let url = URL(string: "https://amp-api.music.apple.com/v1/catalog/\(storefront)/\(resourceType)?ids=\(encoded)&relate=library&l=zh-Hans-CN&platform=web") else {
+                continue
+            }
+            let data = try await executeUncached(url: url, needAuth: true, generation: generation)
+            guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                  let dataArr = json["data"] as? [[String: Any]] else {
+                continue
+            }
+            for item in dataArr {
+                guard let id = item["id"] as? String else { continue }
+                if let rel = (item["relationships"] as? [String: Any])?["library"] as? [String: Any],
+                   let libData = rel["data"] as? [[String: Any]] {
+                    result[id] = (!libData.isEmpty, libData.first?["id"] as? String)
+                } else {
+                    result[id] = (false, nil)
+                }
+            }
+        }
+        return result
+    }
+
+    /// Reads user rating for `songs`, `albums`, `playlists`, or `artists`.
+    /// HTTP 404 (40400) is Apple Music's authoritative "unrated" response (`false`), distinct from auth/network errors.
+    public func fetchRating(resourceType: String, catalogID: String, generation: Int? = nil) async throws -> Bool {
+        let batch = try await fetchRatings(resourceType: resourceType, catalogIDs: [catalogID], generation: generation)
+        return batch[catalogID] ?? false
+    }
+
+    /// Batch-reads user ratings for `songs`, `albums`, `playlists`, or `artists` via `/v1/me/ratings/{type}?ids=...`.
+    public func fetchRatings(
+        resourceType: String,
+        catalogIDs: [String],
+        generation: Int? = nil
+    ) async throws -> [String: Bool] {
+        guard userToken != nil else { throw AppleMusicError.notAuthorized }
+        let uniqueIDs = Array(Set(catalogIDs.filter { !$0.isEmpty })).sorted()
+        guard !uniqueIDs.isEmpty else { return [:] }
+
+        var result: [String: Bool] = [:]
+        let chunkSize = 100
+        for startIdx in stride(from: 0, to: uniqueIDs.count, by: chunkSize) {
+            let chunk = Array(uniqueIDs[startIdx..<min(startIdx + chunkSize, uniqueIDs.count)])
+            let joined = chunk.joined(separator: ",")
+            guard let encoded = joined.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
+                  let url = URL(string: "https://amp-api.music.apple.com/v1/me/ratings/\(resourceType)?ids=\(encoded)&l=zh-Hans-CN&platform=web") else {
+                continue
+            }
+            let currentDevToken: String
+            if let dt = devToken, !dt.isEmpty { currentDevToken = dt } else { currentDevToken = try await ensureDeveloperToken() }
+            var req = URLRequest(url: url)
+            req.cachePolicy = .reloadIgnoringLocalAndRemoteCacheData
+            req.timeoutInterval = 12
+            req.setValue("Bearer \(currentDevToken)", forHTTPHeaderField: "Authorization")
+            if let ut = userToken { req.setValue(ut, forHTTPHeaderField: "Music-User-Token") }
+            req.setValue("https://music.apple.com", forHTTPHeaderField: "Origin")
+            req.setValue("https://music.apple.com/", forHTTPHeaderField: "Referer")
+
+            let start = CFAbsoluteTimeGetCurrent()
+            let (data, response) = try await session.data(for: req)
+            let durationMs = Int((CFAbsoluteTimeGetCurrent() - start) * 1000)
+            if let reqGen = generation, reqGen != activeGeneration {
+                throw AppleMusicSessionError.sessionGenerationMismatch
+            }
+            let code = (response as? HTTPURLResponse)?.statusCode ?? 0
+            if code == 404 {
+                AppLogger.shared.log(category: .ampAPI, level: .info, message: "Amp-API 评分查询完成 [HTTP 404 未评分] (耗时: \(durationMs)ms, 数量: \(chunk.count))", details: "路径: \(url.path)")
+                for id in chunk { result[id] = false }
+                continue
+            }
+            if code == 401 || code == 403 {
+                throw AppleMusicError.notAuthorized
+            }
+            guard (200...299).contains(code) else {
+                throw URLError(.badServerResponse)
+            }
+            AppLogger.shared.log(category: .ampAPI, level: .info, message: "Amp-API 评分批量查询成功 [HTTP \(code)] (耗时: \(durationMs)ms, 数量: \(chunk.count))", details: "路径: \(url.path)")
+            var returnedIDs = Set<String>()
+            if let rJson = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+               let dataArr = rJson["data"] as? [[String: Any]] {
+                for item in dataArr {
+                    guard let id = item["id"] as? String else { continue }
+                    returnedIDs.insert(id)
+                    let val = (item["attributes"] as? [String: Any])?["value"] as? Int
+                    result[id] = (val == 1)
+                }
+            }
+            for id in chunk where !returnedIDs.contains(id) {
+                result[id] = false
+            }
+        }
+        return result
+    }
+
+    @discardableResult
+    public func setRating(resourceType: String, catalogID: String, value: Int?, generation: Int? = nil) async throws -> Bool {
+        guard userToken != nil,
+              let url = URL(string: "https://amp-api.music.apple.com/v1/me/ratings/\(resourceType)/\(catalogID)?l=zh-Hans-CN&platform=web") else {
+            throw AppleMusicError.notAuthorized
+        }
+        if let value {
+            let payload: [String: Any] = ["type": "rating", "attributes": ["value": value]]
+            let body = try JSONSerialization.data(withJSONObject: payload)
+            let data = try await executeMutation(method: "PUT", url: url, body: body, generation: generation)
+            if let rJson = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+               let rFirst = (rJson["data"] as? [[String: Any]])?.first,
+               let confirmedVal = (rFirst["attributes"] as? [String: Any])?["value"] as? Int {
+                return confirmedVal == 1
+            }
+            return value == 1
+        } else {
+            _ = try await executeMutation(method: "DELETE", url: url, body: nil, generation: generation)
+            return false
+        }
+    }
+
+    private func executeUncached(url: URL, needAuth: Bool, generation: Int? = nil) async throws -> Data {
+        let currentDevToken: String
+        if let dt = devToken, !dt.isEmpty { currentDevToken = dt } else { currentDevToken = try await ensureDeveloperToken() }
+        var req = URLRequest(url: url)
+        req.cachePolicy = .reloadIgnoringLocalAndRemoteCacheData
+        req.timeoutInterval = 12
+        req.setValue("Bearer \(currentDevToken)", forHTTPHeaderField: "Authorization")
+        if needAuth, let ut = userToken { req.setValue(ut, forHTTPHeaderField: "Music-User-Token") }
+        req.setValue("https://music.apple.com", forHTTPHeaderField: "Origin")
+        req.setValue("https://music.apple.com/", forHTTPHeaderField: "Referer")
+
+        let (data, response) = try await session.data(for: req)
+        if let reqGen = generation, reqGen != activeGeneration {
+            throw AppleMusicSessionError.sessionGenerationMismatch
+        }
+        let code = (response as? HTTPURLResponse)?.statusCode ?? 0
+        if code == 401 || code == 403 {
+            throw AppleMusicError.notAuthorized
+        }
+        guard (200...299).contains(code) else {
+            throw URLError(.badServerResponse)
+        }
+        return data
+    }
+
+    private func executeMutation(method: String, url: URL, body: Data?, generation: Int? = nil) async throws -> Data {
+        let currentDevToken: String
+        if let dt = devToken, !dt.isEmpty { currentDevToken = dt } else { currentDevToken = try await ensureDeveloperToken() }
+        var req = URLRequest(url: url)
+        req.httpMethod = method
+        req.timeoutInterval = 15
+        req.setValue("Bearer \(currentDevToken)", forHTTPHeaderField: "Authorization")
+        if let ut = userToken { req.setValue(ut, forHTTPHeaderField: "Music-User-Token") }
+        req.setValue("https://music.apple.com", forHTTPHeaderField: "Origin")
+        req.setValue("https://music.apple.com/", forHTTPHeaderField: "Referer")
+        if let body {
+            req.httpBody = body
+            req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        }
+        let (data, response) = try await session.data(for: req)
+        if let reqGen = generation, reqGen != activeGeneration {
+            throw AppleMusicSessionError.sessionGenerationMismatch
+        }
+        let code = (response as? HTTPURLResponse)?.statusCode ?? 0
+        if code == 401 || code == 403 {
+            throw AppleMusicError.notAuthorized
+        }
+        guard (200...299).contains(code) else {
+            throw URLError(.badServerResponse)
+        }
+        return data
+    }
+
+    public func fetchSongStation(songID: String, generation: Int? = nil) async throws -> MusicStation? {
+        guard let url = URL(string: "https://amp-api.music.apple.com/v1/catalog/\(storefront)/songs/\(songID)/station?art[url]=f&l=zh-Hans-CN&platform=web") else {
+            return nil
+        }
+        let data = try await execute(url: url, needAuth: false, generation: generation)
+        guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let first = (json["data"] as? [[String: Any]])?.first else {
+            return nil
+        }
+        return parseStationItem(first)
+    }
+
+    private func resolveCatalogArtistID(artistID: String, generation: Int? = nil) async -> String? {
+        if !artistID.hasPrefix("r.") && !artistID.hasPrefix("l.") {
+            return artistID
+        }
+        if let catURL = URL(string: "https://amp-api.music.apple.com/v1/me/library/artists/\(artistID)?include=catalog&l=zh-Hans-CN&platform=web"),
+           let catData = try? await execute(url: catURL, needAuth: true, generation: generation),
+           let json = try? JSONSerialization.jsonObject(with: catData) as? [String: Any],
+           let first = (json["data"] as? [[String: Any]])?.first,
+           let rel = (first["relationships"] as? [String: Any])?["catalog"] as? [String: Any],
+           let cid = (rel["data"] as? [[String: Any]])?.first?["id"] as? String {
+            return cid
+        }
+        return nil
+    }
+
+    public func setArtistRating(artistID: String, value: Int?, generation: Int? = nil) async throws {
+        guard userToken != nil else {
+            throw AppleMusicError.notAuthorized
+        }
+        guard let targetID = await resolveCatalogArtistID(artistID: artistID, generation: generation),
+              let url = URL(string: "https://amp-api.music.apple.com/v1/me/ratings/artists/\(targetID)?l=zh-Hans-CN&platform=web") else {
+            throw MediaActionError.unsupportedCapability("无法解析艺人的目录 ID")
         }
         let currentDevToken: String
         if let dt = devToken, !dt.isEmpty {
@@ -914,7 +1157,8 @@ public actor AppleMusicAmpClient {
     }
 
     public func fetchArtistStation(artistID: String, generation: Int? = nil) async throws -> MusicStation? {
-        guard let url = URL(string: "https://amp-api.music.apple.com/v1/catalog/\(storefront)/artists/\(artistID)/station?art[url]=f&l=zh-Hans-CN&platform=web") else {
+        guard let targetID = await resolveCatalogArtistID(artistID: artistID, generation: generation),
+              let url = URL(string: "https://amp-api.music.apple.com/v1/catalog/\(storefront)/artists/\(targetID)/station?art[url]=f&l=zh-Hans-CN&platform=web") else {
             return nil
         }
         let data = try await execute(url: url, needAuth: false, generation: generation)
@@ -1101,7 +1345,9 @@ public actor AppleMusicAmpClient {
                         artworkURL: artURL,
                         trackIDs: [],
                         providerID: "apple_music",
-                        providerPlaylistID: iid
+                        providerPlaylistID: iid,
+                        ownership: iid.hasPrefix("pl.") ? .platform : .unknown,
+                        catalogID: iid.hasPrefix("pl.") ? iid : nil
                     )
                     items.append(AmpCategoryItem(
                         id: iid,
@@ -1503,16 +1749,40 @@ public actor AppleMusicAmpClient {
         let name = attrs["name"] as? String ?? "未命名歌单"
         let desc = (attrs["description"] as? [String: Any])?["standard"] as? String ?? ""
         let rawArt = (attrs["artwork"] as? [String: Any])?["url"] as? String
+        let canEdit = attrs["canEdit"] as? Bool ?? false
+        let isCollaborative = attrs["isCollaborative"] as? Bool ?? false
+        let playlistType = attrs["playlistType"] as? String ?? ""
+
+        var catalogID: String? = id.hasPrefix("pl.") ? id : nil
+        if let rel = item["relationships"] as? [String: Any],
+           let catData = (rel["catalog"] as? [String: Any])?["data"] as? [[String: Any]],
+           let firstCatID = catData.first?["id"] as? String, !firstCatID.isEmpty {
+            catalogID = firstCatID
+        }
+
+        let ownership: PlaylistOwnership
+        if isCollaborative || playlistType == "collaborative" {
+            ownership = .collaborative
+        } else if canEdit || id.hasPrefix("p.") {
+            ownership = .personal
+        } else if id.hasPrefix("pl.") && !canEdit {
+            ownership = .platform
+        } else {
+            ownership = .unknown
+        }
+
         return MusicPlaylist(
             id: id,
             name: name,
             description: desc,
             artworkURL: formatArtworkURL(rawArt),
             trackIDs: [],
-            isEditable: attrs["canEdit"] as? Bool ?? false,
+            isEditable: canEdit,
             ownerName: attrs["curatorName"] as? String,
             providerID: "apple_music",
-            providerPlaylistID: id
+            providerPlaylistID: id,
+            ownership: ownership,
+            catalogID: catalogID
         )
     }
 
@@ -1586,7 +1856,10 @@ public actor AppleMusicAmpClient {
             }
         }
 
-        let effectiveTrackID = catalogID ?? id
+        let isLib = id.hasPrefix("i.") || (item["type"] as? String == "library-songs")
+        let resolvedCatalogID = catalogID ?? (isLib ? nil : id)
+        let resolvedLibraryID = isLib ? id : nil
+        let effectiveTrackID = resolvedCatalogID ?? id
         return MusicTrack(
             id: id,
             title: name,
@@ -1597,7 +1870,10 @@ public actor AppleMusicAmpClient {
             providerID: "apple_music",
             providerTrackID: effectiveTrackID,
             albumID: albumID,
-            artists: parsedArtists
+            artists: parsedArtists,
+            isLibrary: isLib,
+            catalogID: resolvedCatalogID,
+            libraryID: resolvedLibraryID
         )
     }
 

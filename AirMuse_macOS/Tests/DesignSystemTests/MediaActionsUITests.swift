@@ -72,4 +72,27 @@ struct MediaActionsUITests {
         btn.layoutSubtreeIfNeeded()
         #expect(!btn.subviews.isEmpty)
     }
+
+    @Test("MAS-R37: MediaPlayCapsuleButton with empty or nil descriptor has zero playback side effect")
+    func testEmptyPlayCapsuleHasNoFallbackPlay() {
+        let btn = MediaPlayCapsuleButton(frame: NSRect(x: 0, y: 0, width: 100, height: 28))
+        var triggeredCount = 0
+        btn.onSelectIntent = { _ in
+            triggeredCount += 1
+        }
+        btn.menuDescriptorProvider = { MediaActionMenuDescriptor(sections: []) }
+        // Simulate click via internal button action
+        if let innerButton = btn.subviews.first(where: { $0 is NSButton }) as? NSButton,
+           let action = innerButton.action {
+            _ = innerButton.target?.perform(action, with: innerButton)
+        }
+        #expect(triggeredCount == 0)
+
+        btn.menuDescriptorProvider = nil
+        if let innerButton = btn.subviews.first(where: { $0 is NSButton }) as? NSButton,
+           let action = innerButton.action {
+            _ = innerButton.target?.perform(action, with: innerButton)
+        }
+        #expect(triggeredCount == 0)
+    }
 }

@@ -113,6 +113,7 @@ open class LyricsView: NSView {
             AppLogger.shared.log(category: .userAction, level: .info, message: "用户点击歌词微调 [-0.5s] (当前偏移: \(self.currentOffsetMs)ms)")
             self.updateOffsetLabel()
             self.onAdjustOffset?(-500)
+            self.updatePlaybackPosition(ms: self.lastPlaybackPositionMs, allowSmallBackward: true)
         }
         offsetControlBar.addSubview(minusButton)
 
@@ -122,6 +123,7 @@ open class LyricsView: NSView {
             AppLogger.shared.log(category: .userAction, level: .info, message: "用户点击歌词微调 [+0.5s] (当前偏移: \(self.currentOffsetMs)ms)")
             self.updateOffsetLabel()
             self.onAdjustOffset?(500)
+            self.updatePlaybackPosition(ms: self.lastPlaybackPositionMs, allowSmallBackward: true)
         }
         offsetControlBar.addSubview(plusButton)
         addSubview(offsetControlBar)
@@ -172,9 +174,8 @@ open class LyricsView: NSView {
             scrollView.isHidden = true
             statusLabel.isHidden = true
             resumeFollowButton.isHidden = true
-            let leftPad = 14.0 * s
-            let rightPad = 48.0 * s
-            miniLyricView.frame = NSRect(x: leftPad, y: 0, width: max(20, bounds.width - leftPad - rightPad), height: bounds.height)
+            let sidePad = min(48.0 * s, bounds.width * 0.2)
+            miniLyricView.frame = NSRect(x: sidePad, y: 0, width: max(20, bounds.width - sidePad * 2), height: bounds.height)
             return
         }
 
@@ -226,6 +227,19 @@ open class LyricsView: NSView {
             if !isSorted {
                 normalizedDoc.lines = doc.lines.sorted { $0.timeMs < $1.timeMs }
             }
+        }
+
+        if !normalizedDoc.lines.isEmpty,
+           normalizedDoc.trackKey == currentDocument.trackKey,
+           normalizedDoc.lines.count == currentDocument.lines.count,
+           zip(normalizedDoc.lines, currentDocument.lines).allSatisfy({ $0.timeMs == $1.timeMs && $0.text == $1.text && $0.translation == $1.translation }),
+           documentView.arrangedSubviews.count == normalizedDoc.lines.count {
+            if currentOffsetMs != normalizedDoc.offsetMs {
+                currentOffsetMs = normalizedDoc.offsetMs
+                updateOffsetLabel()
+                updatePlaybackPosition(ms: lastPlaybackPositionMs, allowSmallBackward: true)
+            }
+            return
         }
 
         currentDocument = normalizedDoc
@@ -284,12 +298,23 @@ open class LyricsView: NSView {
     }
 
     public func updatePlaybackPosition(ms: Int64) {
+        updatePlaybackPosition(ms: ms, allowSmallBackward: false)
+    }
+
+    private func updatePlaybackPosition(ms: Int64, allowSmallBackward: Bool) {
         let prevPos = lastPlaybackPositionMs
-        lastPlaybackPositionMs = ms
+        let isSeekJump = (ms < prevPos - 500) || (ms - prevPos > 1800)
+        let effectiveMs: Int64
+        if isSeekJump || allowSmallBackward {
+            effectiveMs = ms
+        } else {
+            // Suppress <500ms backward jitter from estimatedPositionMs extrapolation vs engine updates
+            effectiveMs = max(prevPos, ms)
+        }
+        lastPlaybackPositionMs = effectiveMs
         guard !currentDocument.lines.isEmpty else { return }
 
-        let adjustedMs = ms - currentOffsetMs
-        let isSeekJump = (ms < prevPos - 500) || (ms - prevPos > 1800)
+        let adjustedMs = effectiveMs - currentOffsetMs
 
         if let firstLine = currentDocument.lines.first, adjustedMs < firstLine.timeMs {
             if activeLineIndex != -1 {
@@ -397,7 +422,8 @@ open class LyricsView: NSView {
         scrollTicket = ticket
 
         if immediate || MotionCoordinator.shared.isReduceMotionEnabled || window == nil || isHidden {
-            scrollView.contentView.setBoundsOrigin(NSPoint(x: 0, y: targetY))
+            scrollView.contentView.scroll(to: NSPoint(x: 0, y: targetY))
+            scrollView.reflectScrolledClipView(scrollView.contentView)
             _ = MotionCoordinator.shared.complete(ticket)
             scrollTicket = nil
             return
@@ -414,7 +440,8 @@ open class LyricsView: NSView {
             let raw = min(1.0, elapsed / max(0.01, total))
             let t = CGFloat(1.0 - pow(1.0 - raw, 3.0))
             let curY = startY + (targetY - startY) * t
-            self.scrollView.contentView.setBoundsOrigin(NSPoint(x: 0, y: curY))
+            self.scrollView.contentView.scroll(to: NSPoint(x: 0, y: curY))
+            self.scrollView.reflectScrolledClipView(self.scrollView.contentView)
             if raw >= 1.0 {
                 if MotionCoordinator.shared.complete(ticket) {
                     self.scrollDriverID = nil

@@ -427,6 +427,11 @@ public actor AppleMusicProvider:
         return try await ampClient.fetchArtistStation(artistID: artistID, generation: gen)
     }
 
+    public func fetchSongStation(songID: String) async throws -> MusicStation? {
+        let gen = await sessionAdapter.currentGeneration
+        return try await ampClient.fetchSongStation(songID: songID, generation: gen)
+    }
+
     // MARK: - MediaResourceMutationProvider
 
     public func mediaActionCapabilities(for resource: MediaResourceReference) async -> MediaActionCapabilities {
@@ -438,24 +443,38 @@ public actor AppleMusicProvider:
             isWritablePlaylist = false
         }
 
-        // Only expose verified write capabilities; unverified song/album/playlist writes stay disabled honestly.
-        let canFavoriteArtist = isLoggedIn && resource.kind == .artist
-        let canReadFavorite = isLoggedIn && resource.kind == .artist
-        let canReadLibrary = isLoggedIn && (resource.kind == .song || resource.kind == .queueEntry || resource.kind == .album || isWritablePlaylist)
+        let supportsLibrary = isLoggedIn && (resource.kind == .song || resource.kind == .queueEntry || resource.kind == .album || isWritablePlaylist)
+        let supportsFavorite = isLoggedIn && (resource.kind == .song || resource.kind == .queueEntry || resource.kind == .album || resource.kind == .artist || isWritablePlaylist)
 
         return MediaActionCapabilities(
             isAuthenticated: isLoggedIn,
             canPlay: true,
-            canReadLibraryMembership: canReadLibrary,
-            canAddToLibrary: false,
-            canRemoveFromLibrary: false,
-            canReadFavorite: canReadFavorite,
-            canSetFavorite: canFavoriteArtist,
-            canStartSongStation: false,
+            canReadLibraryMembership: supportsLibrary,
+            canAddToLibrary: supportsLibrary,
+            canRemoveFromLibrary: supportsLibrary,
+            canReadFavorite: supportsFavorite,
+            canSetFavorite: supportsFavorite,
+            canStartSongStation: true,
             canStartArtistStation: true,
             canReorderQueue: true,
             canRemoveFromQueue: true
         )
+    }
+
+    private func ampResourceType(for kind: MediaResourceKind) -> String? {
+        switch kind {
+        case .song, .queueEntry: return "songs"
+        case .album: return "albums"
+        case .playlist(let ownership): return ownership.isContainerWritable ? "playlists" : nil
+        case .artist: return "artists"
+        case .station: return nil
+        }
+    }
+
+    private func resolvedCatalogID(for resource: MediaResourceReference) -> String? {
+        if let cat = resource.catalogID, !cat.isEmpty { return cat }
+        if !resource.isLibrary && !resource.canonicalID.isEmpty { return resource.canonicalID }
+        return nil
     }
 
     public func fetchResourceState(_ resource: MediaResourceReference) async throws -> MediaResourceState {
@@ -463,30 +482,113 @@ public actor AppleMusicProvider:
         guard isLoggedIn else {
             return .unknown
         }
+        let gen = await sessionAdapter.currentGeneration
         switch resource.kind {
         case .artist:
             let detail = try await fetchArtistDetail(artistID: resource.canonicalID, isLibrary: resource.isLibrary)
             return MediaResourceState(
                 libraryMembership: .unknown,
-                favorite: .known(detail.isFavorited)
+                favorite: detail.isRatingKnown ? .known(detail.isFavorited) : .unknown
             )
-        default:
+        case .song, .queueEntry, .album, .playlist:
+            if case .playlist(let ownership) = resource.kind, !ownership.isContainerWritable {
+                return .unknown
+            }
+            guard let ampType = ampResourceType(for: resource.kind),
+                  let catalogID = resolvedCatalogID(for: resource) else {
+                return .unknown
+            }
+            async let libCheck = try? ampClient.fetchLibraryMembership(catalogID: catalogID, resourceType: ampType, generation: gen)
+            async let favCheck = try? ampClient.fetchRating(resourceType: ampType, catalogID: catalogID, generation: gen)
+            let (libRes, favRes) = await (libCheck, favCheck)
+            return MediaResourceState(
+                libraryMembership: libRes.map { .known($0.inLibrary) } ?? .unknown,
+                favorite: favRes.map { .known($0) } ?? .unknown
+            )
+        case .station:
             return .unknown
         }
     }
 
+    public func fetchResourceStates(for resources: [MediaResourceReference]) async throws -> [String: MediaResourceState] {
+        guard await sessionAdapter.webSessionState.isLoggedIn else {
+            return [:]
+        }
+        let gen = await sessionAdapter.currentGeneration
+        var grouped: [String: [(resource: MediaResourceReference, catalogID: String)]] = [:]
+        var result: [String: MediaResourceState] = [:]
+
+        for resource in resources {
+            switch resource.kind {
+            case .artist, .station:
+                continue
+            case .playlist(let ownership) where !ownership.isContainerWritable:
+                continue
+            case .song, .queueEntry, .album, .playlist:
+                guard let ampType = ampResourceType(for: resource.kind),
+                      let catalogID = resolvedCatalogID(for: resource) else { continue }
+                grouped[ampType, default: []].append((resource, catalogID))
+            }
+        }
+
+        for (ampType, entries) in grouped {
+            let catalogIDs = entries.map(\.catalogID)
+            async let libTask = try? ampClient.fetchLibraryMemberships(catalogIDs: catalogIDs, resourceType: ampType, generation: gen)
+            async let favTask = try? ampClient.fetchRatings(resourceType: ampType, catalogIDs: catalogIDs, generation: gen)
+            let (libMap, favMap) = await (libTask, favTask)
+            for entry in entries {
+                let libState: MediaToggleState = libMap?[entry.catalogID].map { .known($0.inLibrary) } ?? .unknown
+                let favState: MediaToggleState = favMap?[entry.catalogID].map { .known($0) } ?? .unknown
+                result[entry.resource.normalizedKey] = MediaResourceState(libraryMembership: libState, favorite: favState)
+            }
+        }
+        return result
+    }
+
     public func addToLibrary(_ resource: MediaResourceReference) async throws -> MediaMutationReceipt {
+        guard await sessionAdapter.webSessionState.isLoggedIn else {
+            throw MediaActionError.notAuthenticated
+        }
         if case .playlist(let ownership) = resource.kind, !ownership.isContainerWritable {
             throw MediaActionError.readOnlyPlaylist
         }
-        throw MediaActionError.unsupportedCapability("Apple Music 资料库添加接口尚待实机验证")
+        guard let ampType = ampResourceType(for: resource.kind),
+              let catalogID = resolvedCatalogID(for: resource) else {
+            throw MediaActionError.unsupportedCapability("缺少目录资源 ID，无法添加到资料库")
+        }
+        let gen = await sessionAdapter.currentGeneration
+        try await ampClient.addToLibrary(catalogID: catalogID, resourceType: ampType, generation: gen)
+        return MediaMutationReceipt(
+            state: MediaResourceState(libraryMembership: .known(true), favorite: .unknown),
+            message: "已添加到资料库：\(resource.title)"
+        )
     }
 
     public func removeFromLibrary(_ resource: MediaResourceReference) async throws -> MediaMutationReceipt {
+        guard await sessionAdapter.webSessionState.isLoggedIn else {
+            throw MediaActionError.notAuthenticated
+        }
         if case .playlist(let ownership) = resource.kind, !ownership.isContainerWritable {
             throw MediaActionError.readOnlyPlaylist
         }
-        throw MediaActionError.unsupportedCapability("Apple Music 资料库移除接口尚待实机验证")
+        guard resource.hasTrustedLibraryDeleteIdentity,
+              let ampType = ampResourceType(for: resource.kind) else {
+            throw MediaActionError.unsupportedCapability("缺少可信资料库映射，拒绝执行移除")
+        }
+        let gen = await sessionAdapter.currentGeneration
+        var targetLibraryID = resource.libraryID
+        if targetLibraryID == nil, let catalogID = resolvedCatalogID(for: resource) {
+            let membership = try await ampClient.fetchLibraryMembership(catalogID: catalogID, resourceType: ampType, generation: gen)
+            targetLibraryID = membership.libraryID
+        }
+        guard let finalLibID = targetLibraryID, !finalLibID.isEmpty else {
+            throw MediaActionError.unsupportedCapability("未找到对应的资料库条目 ID")
+        }
+        try await ampClient.removeFromLibrary(libraryID: finalLibID, resourceType: ampType, generation: gen)
+        return MediaMutationReceipt(
+            state: MediaResourceState(libraryMembership: .known(false), favorite: .unknown),
+            message: "已从资料库移除：\(resource.title)"
+        )
     }
 
     public func setFavorite(_ resource: MediaResourceReference, enabled: Bool) async throws -> MediaMutationReceipt {
@@ -497,17 +599,33 @@ public actor AppleMusicProvider:
         if case .playlist(let ownership) = resource.kind, !ownership.isContainerWritable {
             throw MediaActionError.readOnlyPlaylist
         }
+        let gen = await sessionAdapter.currentGeneration
         switch resource.kind {
         case .artist:
             try await setArtistRating(artistID: resource.canonicalID, value: enabled ? 1 : nil)
-            let updated = try? await fetchArtistDetail(artistID: resource.canonicalID, isLibrary: resource.isLibrary)
-            let confirmed = updated?.isFavorited ?? enabled
+            if let updated = try? await fetchArtistDetail(artistID: resource.canonicalID, isLibrary: resource.isLibrary),
+               updated.isRatingKnown {
+                return MediaMutationReceipt(
+                    state: MediaResourceState(libraryMembership: .unknown, favorite: .known(updated.isFavorited)),
+                    message: updated.isFavorited ? "已收藏艺人" : "已取消收藏艺人"
+                )
+            }
+            return MediaMutationReceipt(
+                state: MediaResourceState(libraryMembership: .unknown, favorite: .unknown),
+                message: nil
+            )
+        case .song, .queueEntry, .album, .playlist:
+            guard let ampType = ampResourceType(for: resource.kind),
+                  let catalogID = resolvedCatalogID(for: resource) else {
+                throw MediaActionError.unsupportedCapability("缺少目录资源 ID，无法操作收藏")
+            }
+            let confirmed = try await ampClient.setRating(resourceType: ampType, catalogID: catalogID, value: enabled ? 1 : nil, generation: gen)
             return MediaMutationReceipt(
                 state: MediaResourceState(libraryMembership: .unknown, favorite: .known(confirmed)),
-                message: confirmed ? "已收藏艺人" : "已取消收藏艺人"
+                message: confirmed ? "已收藏：\(resource.title)" : "已取消收藏：\(resource.title)"
             )
-        default:
-            throw MediaActionError.unsupportedCapability("Apple Music 该资源收藏接口尚待实机验证")
+        case .station:
+            throw MediaActionError.unsupportedCapability("电台不支持收藏")
         }
     }
 

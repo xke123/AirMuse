@@ -177,6 +177,7 @@ public final class UnifiedStageController {
     private var isRunningMiniSequence: Bool = false
     private var restoreLibraryOnExpand: Bool = false
     private var restoreLyricsFullOnExpand: Bool = false
+    private var preMiniPlayerScreenOrigin: NSPoint?
 
     // Active stage animation tracking (M02 / M12 / M13 / M14)
     private let stageOwnerID = "UnifiedStage-\(UUID().uuidString)"
@@ -372,9 +373,12 @@ public final class UnifiedStageController {
             let s = GlassInteractionCoordinator.shared.uiScale
             let (playerSize, lyricsSize, librarySize) = self.currentModuleSizes(scale: s)
             let movedSize = (kind == .lyrics) ? lyricsSize : librarySize
-            self.liveDragScreenOrigin = rawOrigin
-
             let playerScreenRect = CGRect(origin: self.playerScreenOrigin, size: playerSize)
+            let allVisible = Self.screenVisibleFrames()
+            let mainScreenFrames = StageLayoutEngine.primaryScreenVisibleFrame(for: playerScreenRect, visibleFrames: allVisible).map { [$0] } ?? allVisible
+            let clampedOrigin = StageLayoutEngine.clampOrigin(rawOrigin, size: movedSize, visibleFrames: mainScreenFrames)
+            self.liveDragScreenOrigin = clampedOrigin
+
             let otherRect: CGRect? = {
                 if kind == .lyrics && self.isLibraryVisible {
                     return self.screenRect(for: .library)
@@ -386,12 +390,12 @@ public final class UnifiedStageController {
 
             let snap = StageLayoutEngine.computeSnap(
                 movedSize: movedSize,
-                droppedOrigin: rawOrigin,
+                droppedOrigin: clampedOrigin,
                 playerScreenRect: playerScreenRect,
                 otherModuleScreenRect: otherRect,
                 uiScale: s,
                 wasAlreadySnapped: self.dragStartedSnapped,
-                visibleFrames: Self.screenVisibleFrames()
+                visibleFrames: mainScreenFrames
             )
             self.activeSnapResult = snap
             self.relayoutStage()
@@ -712,6 +716,9 @@ public final class UnifiedStageController {
     }
 
     public func enterMiniModeChoreographed() {
+        if preMiniPlayerScreenOrigin == nil && !playerCtrl.isMiniMode {
+            preMiniPlayerScreenOrigin = playerScreenOrigin
+        }
         modeSequenceGeneration &+= 1
         let expectedGen = modeSequenceGeneration
         isLaunchSequencePendingDockAppear = false
@@ -796,6 +803,14 @@ public final class UnifiedStageController {
                 lyricsView.setMiniLyricsModeState(false)
             }
             playerCtrl.setMiniModeStateForChoreography(false)
+            let s = GlassInteractionCoordinator.shared.uiScale
+            let expandedSize = playerCtrl.preferredPlayerSize(for: s, mini: false)
+            if let savedOrigin = preMiniPlayerScreenOrigin {
+                playerScreenOrigin = StageLayoutEngine.clampOrigin(savedOrigin, size: expandedSize, visibleFrames: Self.screenVisibleFrames())
+                preMiniPlayerScreenOrigin = nil
+                saveAnchorOrigin()
+            }
+            lastPlayerHeight = expandedSize.height
             if shouldShowLib {
                 isLibraryVisible = true
                 libraryPlacement = .right
@@ -955,14 +970,36 @@ public final class UnifiedStageController {
         let oldSize = startLayout.playerFrame.size
         let newSize = playerCtrl.preferredPlayerSize(for: s, mini: targetMini)
 
-        playerScreenOrigin = StageLayoutEngine.anchoredOriginForHeightChange(
-            currentOrigin: livePlayerScreenRect != .zero && stageTicket != nil
-                ? livePlayerScreenRect.origin
-                : playerScreenOrigin,
-            oldSize: oldSize,
-            newSize: newSize,
-            visibleFrames: Self.screenVisibleFrames()
-        )
+        if targetMini {
+            if preMiniPlayerScreenOrigin == nil {
+                preMiniPlayerScreenOrigin = playerScreenOrigin
+            }
+            playerScreenOrigin = StageLayoutEngine.anchoredOriginForHeightChange(
+                currentOrigin: livePlayerScreenRect != .zero && stageTicket != nil
+                    ? livePlayerScreenRect.origin
+                    : playerScreenOrigin,
+                oldSize: oldSize,
+                newSize: newSize,
+                visibleFrames: Self.screenVisibleFrames()
+            )
+        } else if let savedOrigin = preMiniPlayerScreenOrigin {
+            playerScreenOrigin = StageLayoutEngine.clampOrigin(
+                savedOrigin,
+                size: newSize,
+                visibleFrames: Self.screenVisibleFrames()
+            )
+            preMiniPlayerScreenOrigin = nil
+            saveAnchorOrigin()
+        } else {
+            playerScreenOrigin = StageLayoutEngine.anchoredOriginForHeightChange(
+                currentOrigin: livePlayerScreenRect != .zero && stageTicket != nil
+                    ? livePlayerScreenRect.origin
+                    : playerScreenOrigin,
+                oldSize: oldSize,
+                newSize: newSize,
+                visibleFrames: Self.screenVisibleFrames()
+            )
+        }
         lastPlayerHeight = newSize.height
         customLyricsOffset = nil
         customLibraryOffset = nil
@@ -1347,6 +1384,8 @@ public final class UnifiedStageController {
             return nil
         }()
 
+        let allVisible = Self.screenVisibleFrames()
+        let mainScreenFrames = StageLayoutEngine.primaryScreenVisibleFrame(for: playerScreenRect, visibleFrames: allVisible).map { [$0] } ?? allVisible
         let snap = precomputedSnap ?? StageLayoutEngine.computeSnap(
             movedSize: movedSize,
             droppedOrigin: droppedOrigin,
@@ -1354,7 +1393,7 @@ public final class UnifiedStageController {
             otherModuleScreenRect: otherRect,
             uiScale: s,
             wasAlreadySnapped: false,
-            visibleFrames: Self.screenVisibleFrames()
+            visibleFrames: mainScreenFrames
         )
 
         if snap.didSnap, let offset = snap.snappedOffset {
@@ -1639,6 +1678,12 @@ public final class UnifiedStageController {
 
     // MARK: - Notifications
 
+    private func saveAnchorOrigin() {
+        UserDefaults.standard.set(true, forKey: Keys.hasAnchor)
+        UserDefaults.standard.set(Double(playerScreenOrigin.x), forKey: Keys.anchorX)
+        UserDefaults.standard.set(Double(playerScreenOrigin.y), forKey: Keys.anchorY)
+    }
+
     @objc private func handleWindowDidMove() {
         guard !isAdjustingFrame else { return }
         let slotOrigin = playerCtrl.playerSlotView.frame.origin
@@ -1646,9 +1691,7 @@ public final class UnifiedStageController {
             x: hostWindow.frame.minX + slotOrigin.x,
             y: hostWindow.frame.minY + slotOrigin.y
         )
-        UserDefaults.standard.set(true, forKey: Keys.hasAnchor)
-        UserDefaults.standard.set(Double(playerScreenOrigin.x), forKey: Keys.anchorX)
-        UserDefaults.standard.set(Double(playerScreenOrigin.y), forKey: Keys.anchorY)
+        saveAnchorOrigin()
     }
 
     @objc private func handleWindowDidDeminiaturize() {
@@ -1677,18 +1720,10 @@ public final class UnifiedStageController {
         cancelAllStageAnimations()
         let s = GlassInteractionCoordinator.shared.uiScale
         let visibleFrames = Self.screenVisibleFrames()
-        let fullLayout = computeTargetLayout(scale: s)
-        let clampedHostOrigin = StageLayoutEngine.clampOrigin(
-            fullLayout.hostFrame.origin,
-            size: fullLayout.hostFrame.size,
-            visibleFrames: visibleFrames
-        )
-        let deltaX = clampedHostOrigin.x - fullLayout.hostFrame.minX
-        let deltaY = clampedHostOrigin.y - fullLayout.hostFrame.minY
-        let candidatePlayerOrigin = NSPoint(x: playerScreenOrigin.x + deltaX, y: playerScreenOrigin.y + deltaY)
         let playerSize = playerCtrl.preferredPlayerSize(for: s)
+        // Anchor screen clamping to the main player window so auxiliary panels never pull it to another screen
         playerScreenOrigin = StageLayoutEngine.clampOrigin(
-            candidatePlayerOrigin,
+            playerScreenOrigin,
             size: playerSize,
             visibleFrames: visibleFrames
         )

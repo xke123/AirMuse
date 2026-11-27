@@ -184,4 +184,123 @@ struct MediaActionResolverTests {
         #expect(menu.allActions.contains(.libraryStatusPlaceholder(title: "资料库状态查询中…")))
         #expect(menu.allActions.contains(.favoriteStatusPlaceholder(title: "收藏状态查询中…")))
     }
+
+    @Test("MAS-R03/R04: Identity separation and trusted delete ID guard")
+    func testIdentitySeparationAndDeleteGuard() {
+        let catalogTrack = MusicTrack(
+            id: "123456",
+            title: "Catalog Song",
+            artistName: "Artist",
+            albumTitle: "Album",
+            durationMs: 180_000,
+            providerID: "apple_music",
+            providerTrackID: "123456"
+        )
+        let catalogRef = MediaResourceReference.from(track: catalogTrack)
+        #expect(catalogRef.catalogID == "123456")
+        #expect(catalogRef.libraryID == nil)
+        #expect(!catalogRef.isLibrary)
+
+        let libraryTrack = MusicTrack(
+            id: "i.abc123",
+            title: "Library Song",
+            artistName: "Artist",
+            albumTitle: "Album",
+            durationMs: 180_000,
+            providerID: "apple_music",
+            providerTrackID: "123456",
+            isLibrary: true,
+            catalogID: "123456",
+            libraryID: "i.abc123"
+        )
+        let libraryRef = MediaResourceReference.from(track: libraryTrack)
+        #expect(libraryRef.catalogID == "123456")
+        #expect(libraryRef.libraryID == "i.abc123")
+        #expect(libraryRef.isLibrary)
+        #expect(libraryRef.hasTrustedLibraryDeleteIdentity)
+
+        let unmappedLibRef = MediaResourceReference(
+            kind: .album,
+            canonicalID: "l.999",
+            catalogID: nil,
+            libraryID: nil,
+            title: "Unmapped Lib Album",
+            isLibrary: true
+        )
+        #expect(!unmappedLibRef.hasTrustedLibraryDeleteIdentity)
+
+        for ownership in [PlaylistOwnership.personal, .collaborative, .unknown] {
+            let plRef = MediaResourceReference(kind: .playlist(ownership), canonicalID: "p.1", libraryID: "p.1", title: "RO", isLibrary: true)
+            #expect(!plRef.hasTrustedLibraryDeleteIdentity)
+        }
+    }
+
+    @Test("MAS-R34: Queue entry navigation deduplicates origin album/artist and preserves isLibrary")
+    func testQueueEntryNavigationDeduplication() {
+        let entryID = UUID()
+        let ref = MediaResourceReference(
+            kind: .queueEntry,
+            canonicalID: "s-1",
+            title: "Song",
+            isLibrary: true,
+            albumID: "alb-1",
+            albumTitle: "Album 1",
+            artists: [
+                MediaArtistRef(id: "art-1", name: "Artist 1", isLibrary: true),
+                MediaArtistRef(id: "art-1", name: "Artist 1", isLibrary: true),
+                MediaArtistRef(id: "art-2", name: "Artist 2", isLibrary: false)
+            ],
+            queueEntryID: entryID,
+            origin: PlaybackOrigin(kind: .album, sourceID: "alb-1", sourceTitle: "Album 1", isLibrary: true)
+        )
+        let menu = MediaActionResolver.resolveContextMenu(for: MediaActionContext(
+            resource: ref,
+            location: .queueRow,
+            capabilities: fullCaps,
+            selectedQueueEntryIDs: [entryID]
+        ))
+        let titles = menu.allActions.map(\.title)
+        #expect(titles.contains("前往来源（Album 1）"))
+        #expect(!titles.contains("查看专辑"))
+        let artistSubmenu = menu.allActions.first {
+            if case .navigateToArtistsSubmenu(let list) = $0 { return list.count == 2 }
+            return false
+        }
+        #expect(artistSubmenu != nil)
+    }
+
+    @Test("MAS-R44: Backward-compatible decoding for MusicTrack and MusicPlaylist")
+    func testLegacyCodableCompatibility() throws {
+        let legacyTrackJSON = """
+        {
+          "id": "i.legacy1",
+          "title": "Legacy",
+          "artistName": "Artist",
+          "albumTitle": "Album",
+          "durationMs": 120000,
+          "isExplicit": false,
+          "providerID": "apple_music",
+          "providerTrackID": "i.legacy1"
+        }
+        """.data(using: .utf8)!
+        let decodedTrack = try JSONDecoder().decode(MusicTrack.self, from: legacyTrackJSON)
+        #expect(decodedTrack.isLibrary)
+        #expect(decodedTrack.libraryID == "i.legacy1")
+        #expect(decodedTrack.catalogID == nil)
+
+        let legacyPlaylistJSON = """
+        {
+          "id": "p.legacy",
+          "name": "My Playlist",
+          "description": "",
+          "trackIDs": [],
+          "isEditable": true,
+          "providerID": "apple_music",
+          "providerPlaylistID": "p.legacy"
+        }
+        """.data(using: .utf8)!
+        let decodedPlaylist = try JSONDecoder().decode(MusicPlaylist.self, from: legacyPlaylistJSON)
+        #expect(decodedPlaylist.ownership == .unknown)
+        #expect(decodedPlaylist.catalogID == nil)
+    }
 }

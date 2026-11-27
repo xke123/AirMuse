@@ -794,13 +794,18 @@ public final class LiquidFusionQueueDockView: NSView, NSTableViewDataSource, NST
 
     /// Triggers a distinct, resource-aware queue-addition animation + optional toast feedback.
     public func playQueueAdditionAnimation(kind: QueueAdditionVisualKind, message: String? = nil) {
-        lastExplicitAnimationAt = CACurrentMediaTime()
+        let now = CACurrentMediaTime()
+        let withinCoalesceWindow = (now - lastExplicitAnimationAt) < 0.18
+        lastExplicitAnimationAt = now
         if let message, !message.isEmpty {
             showFeedback(message)
         }
+        guard window != nil, !isHiddenOrHasHiddenAncestor else { return }
         guard !MotionCoordinator.shared.isReduceMotionEnabled else { return }
         animateQueueAddedPulse(kind: kind)
-        spawnAdditionMotif(kind: kind)
+        if !withinCoalesceWindow {
+            spawnAdditionMotif(kind: kind)
+        }
     }
 
     private func animateQueueAddedPulse(kind: QueueAdditionVisualKind) {
@@ -1149,6 +1154,11 @@ public final class LiquidFusionQueueDockView: NSView, NSTableViewDataSource, NST
         feedbackTask?.cancel()
         transientFeedbackMessage = message
         updateToolbarAndStatus()
+        NSAccessibility.post(
+            element: self,
+            notification: .announcementRequested,
+            userInfo: [.announcement: message, .priority: NSAccessibilityPriorityLevel.medium.rawValue]
+        )
 
         guard !isExpanded else {
             feedbackTask = Task { [weak self] in

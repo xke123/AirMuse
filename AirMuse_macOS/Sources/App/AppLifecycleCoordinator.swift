@@ -144,6 +144,12 @@ public final class AppLifecycleCoordinator {
         }
     }
 
+    /// Restores the single main stage window without reviving auxiliary windows or resetting playback/modes.
+    public func restoreStage() {
+        NSApp.activate(ignoringOtherApps: true)
+        stageController?.showAndFocus()
+    }
+
     // MARK: - Shutdown
 
     public func shutdown() {
@@ -260,6 +266,30 @@ public final class AppLifecycleCoordinator {
         playerCtrl.onToggleLibrary = { [weak stage] in
             stage?.toggleLibrary()
         }
+        playerCtrl.onToggleFavorite = { [weak libCtrl, weak store = self.store] in
+            Task { @MainActor in
+                guard let libCtrl, let store else { return }
+                let state = await store.state
+                if let track = state.currentTrack {
+                    libCtrl.toggleFavoriteForTrack(track)
+                }
+            }
+        }
+        libCtrl.onObservedResourceStateChanged = { [weak playerCtrl, weak store = self.store] normalizedKey, resState in
+            Task { @MainActor in
+                guard let playerCtrl, let store else { return }
+                let pbState = await store.state
+                guard let track = pbState.currentTrack else { return }
+                let ref = MediaResourceReference.from(track: track)
+                if ref.normalizedKey == normalizedKey {
+                    playerCtrl.updateFavoriteState(
+                        isFavorited: resState.favorite.confirmedBool,
+                        isPending: resState.favorite.isPending,
+                        isEnabled: true
+                    )
+                }
+            }
+        }
         playerCtrl.onToggleLog = { [weak logCtrl] in
             guard let wnd = logCtrl?.window else { return }
             if wnd.isVisible {
@@ -312,7 +342,7 @@ public final class AppLifecycleCoordinator {
             }
         }
 
-        nowPlayingSyncTask = Task { [weak store = self.store, weak lyrics = self.lyricsRepository] in
+        nowPlayingSyncTask = Task { [weak store = self.store, weak lyrics = self.lyricsRepository, weak playerCtrl = self.playerWindowController, weak libCtrl = self.libraryWindowController] in
             guard let store else { return }
             var lastTrackKey: String?
             let stream = await store.playbackStream()
@@ -322,6 +352,21 @@ public final class AppLifecycleCoordinator {
                     lastTrackKey = track.trackKey
                     if let lyrics {
                         Task { await lyrics.requestLyrics(for: track) }
+                    }
+                    await MainActor.run {
+                        if let libCtrl, let playerCtrl {
+                            let status = libCtrl.currentFavoriteStatus(for: track)
+                            playerCtrl.updateFavoriteState(
+                                isFavorited: status.isFavorited,
+                                isPending: status.isPending,
+                                isEnabled: status.isEnabled
+                            )
+                        }
+                    }
+                } else if state.currentTrack == nil {
+                    lastTrackKey = nil
+                    await MainActor.run {
+                        playerCtrl?.updateFavoriteState(isFavorited: nil, isPending: false, isEnabled: false)
                     }
                 }
                 await MainActor.run {

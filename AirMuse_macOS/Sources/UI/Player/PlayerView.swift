@@ -812,6 +812,7 @@ open class PlayerView: GlassSurface {
     public var onToggleTopMost: (() -> Void)?
     public var onToggleLyrics: (() -> Void)?
     public var onToggleLibrary: (() -> Void)?
+    public var onToggleFavorite: (() -> Void)?
     public var onMinimize: (() -> Void)?
     public var onQuit: (() -> Void)?
     public var onSelectAppleMusic: (() -> Void)?
@@ -875,6 +876,8 @@ open class PlayerView: GlassSurface {
     private let qqMusicButton = GlassButton(image: nil, size: CGSize(width: 13, height: 13), buttonStyle: .glassBar)
     private let libraryButton = GlassButton(image: nil, size: CGSize(width: 13, height: 13), buttonStyle: .glassBar)
     private let lyricsButton = GlassButton(image: nil, size: CGSize(width: 13, height: 13), buttonStyle: .glassBar)
+    private var currentFavoriteState: Bool?
+    private var isFavoritePending: Bool = false
 
     // Always-visible body progress & time + Volume HUD (M09/M10/M23)
     private let streamLoadingView = StreamLoadingBarView()
@@ -997,13 +1000,14 @@ open class PlayerView: GlassSurface {
         prevButton.toolTip = "上一首"
         playPauseButton.toolTip = "播放 / 暂停"
         nextButton.toolTip = "下一首"
-        ejectButton.toolTip = "打开 / 隐藏资料库"
+        ejectButton.toolTip = "收藏当前曲目"
 
         stopButton.onClick = { [weak self] in self?.onStop?() }
         prevButton.onClick = { [weak self] in self?.onPrevious?() }
         playPauseButton.onClick = { [weak self] in self?.onPlayPause?() }
         nextButton.onClick = { [weak self] in self?.onNext?() }
-        ejectButton.onClick = { [weak self] in self?.onToggleLibrary?() }
+        ejectButton.onClick = { [weak self] in self?.onToggleFavorite?() }
+        ejectButton.setAccessibilityLabel("收藏当前曲目")
 
         playbackButtonsHost.addSubview(stopButton)
         playbackButtonsHost.addSubview(prevButton)
@@ -1082,8 +1086,9 @@ open class PlayerView: GlassSurface {
         controlsContainer.addSubview(qqMusicButton)
 
         libraryButton.enableDarkHalo = false
-        libraryButton.toolTip = "音乐资料库"
+        libraryButton.toolTip = "打开 / 隐藏资料库"
         libraryButton.onClick = { [weak self] in self?.onToggleLibrary?() }
+        libraryButton.setAccessibilityLabel("打开或隐藏资料库")
         lyricsButton.enableDarkHalo = false
         lyricsButton.toolTip = "桌面歌词"
         lyricsButton.onClick = { [weak self] in self?.onToggleLyrics?() }
@@ -1208,7 +1213,7 @@ open class PlayerView: GlassSurface {
         prevButton.setSymbol(name: "backward.fill", pointSize: 13.5 * s, weight: .bold)
         playPauseButton.setSymbol(name: isPlayingState ? "pause.fill" : "play.fill", pointSize: 16.5 * s, weight: .bold)
         nextButton.setSymbol(name: "forward.fill", pointSize: 13.5 * s, weight: .bold)
-        ejectButton.setSymbol(name: "eject.fill", pointSize: 12.0 * s, weight: .bold)
+        applyFavoriteButtonSymbol(scale: s)
 
         let speedSec = String(format: "%.1fs", GlassInteractionCoordinator.shared.modeSequenceTotalDuration)
         motionSpeedButton.setSymbol(name: "timer", pointSize: 9.0 * s, weight: .medium)
@@ -1755,6 +1760,27 @@ open class PlayerView: GlassSurface {
         let sliderX = currentTimeView.frame.maxX + 4.0 * s
         let sliderW = max(20.0 * s, durationTimeView.frame.minX - 4.0 * s - sliderX)
         progressView.frame = NSRect(x: sliderX, y: progY, width: sliderW, height: 14.0 * s)
+    }
+
+    public func setFavoriteState(isFavorited: Bool?, isPending: Bool = false, isEnabled: Bool = true) {
+        currentFavoriteState = isFavorited
+        isFavoritePending = isPending
+        ejectButton.isEnabled = isEnabled && !isPending
+        ejectButton.alphaValue = isEnabled ? (isPending ? 0.65 : 1.0) : 0.45
+        if isPending {
+            ejectButton.toolTip = "正在同步收藏状态…"
+        } else if isFavorited == true {
+            ejectButton.toolTip = "已收藏当前曲目（点击取消）"
+        } else {
+            ejectButton.toolTip = "收藏当前曲目"
+        }
+        applyFavoriteButtonSymbol(scale: GlassInteractionCoordinator.shared.uiScale)
+    }
+
+    private func applyFavoriteButtonSymbol(scale s: CGFloat) {
+        let symbolName = (currentFavoriteState == true) ? "star.fill" : "star"
+        ejectButton.setSymbol(name: symbolName, pointSize: 12.0 * s, weight: .bold)
+        ejectButton.isHighlightedState = (currentFavoriteState == true)
     }
 
     public func updateState(_ state: PlaybackState) {

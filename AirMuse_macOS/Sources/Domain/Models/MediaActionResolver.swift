@@ -241,6 +241,8 @@ public enum MediaActionResolver {
             appendArtistNavigation(artists: resource.artists, currentDetail: currentDetail, into: &actions)
 
         case .queueEntry:
+            var originAlbumID: String?
+            var originArtistID: String?
             if let origin = resource.origin, origin.canNavigate {
                 let isSameDetail: Bool
                 switch (origin.kind, origin.sourceID, currentDetail) {
@@ -252,12 +254,15 @@ public enum MediaActionResolver {
                 if !isSameDetail {
                     actions.append(.navigateToOrigin(origin))
                 }
+                if origin.kind == .album { originAlbumID = origin.sourceID }
+                if origin.kind == .artist { originArtistID = origin.sourceID }
             }
             if let albumID = resource.albumID, !albumID.isEmpty,
-               currentDetail != .album(id: albumID) {
+               currentDetail != .album(id: albumID),
+               albumID != originAlbumID {
                 actions.append(.navigateToAlbum(id: albumID, title: resource.albumTitle ?? "专辑", isLibrary: resource.isLibrary))
             }
-            appendArtistNavigation(artists: resource.artists, currentDetail: currentDetail, into: &actions)
+            appendArtistNavigation(artists: resource.artists, currentDetail: currentDetail, excludingArtistID: originArtistID, into: &actions)
 
         case .album:
             if currentDetail != .album(id: resource.canonicalID) {
@@ -305,9 +310,18 @@ public enum MediaActionResolver {
     private static func appendArtistNavigation(
         artists: [MediaArtistRef],
         currentDetail: MediaDetailIdentity?,
+        excludingArtistID: String? = nil,
         into actions: inout [MediaAction]
     ) {
-        let filtered = artists.filter { !$0.id.isEmpty && currentDetail != .artist(id: $0.id) }
+        var seenIDs = Set<String>()
+        var filtered: [MediaArtistRef] = []
+        for artist in artists {
+            guard !artist.id.isEmpty,
+                  artist.id != excludingArtistID,
+                  currentDetail != .artist(id: artist.id),
+                  seenIDs.insert(artist.id).inserted else { continue }
+            filtered.append(artist)
+        }
         if filtered.count == 1 {
             actions.append(.navigateToArtist(filtered[0]))
         } else if filtered.count > 1 {

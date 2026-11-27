@@ -495,5 +495,51 @@ struct MotionStageTests {
         }
         #expect(MotionCoordinator.shared.displayDriver.activeSubscriberCount == 0)
     }
+
+    @Test("Mini mode records original origin and restores it on expand even after moving mini bar")
+    func testMiniModeRestoresPreMiniOrigin() {
+        let savedRM = MotionAccessibility.shared.reduceMotionOverride
+        defer { MotionAccessibility.shared.reduceMotionOverride = savedRM }
+        MotionAccessibility.shared.reduceMotionOverride = true
+
+        let (stage, playerCtrl, _, _, _) = makeStage()
+        let originalOrigin = stage.playerScreenOrigin
+        #expect(playerCtrl.isMiniMode == false)
+
+        stage.enterMiniModeChoreographed()
+        #expect(playerCtrl.isMiniMode == true)
+
+        // Simulate user dragging the mini bar to a completely different position
+        stage.hostWindow.setFrameOrigin(NSPoint(x: originalOrigin.x + 120, y: originalOrigin.y - 80))
+        NotificationCenter.default.post(name: NSWindow.didMoveNotification, object: stage.hostWindow)
+        #expect(abs(stage.playerScreenOrigin.x - originalOrigin.x) > 50)
+
+        // Expanding back restores the exact pre-mini origin
+        stage.exitMiniModeChoreographed()
+        #expect(playerCtrl.isMiniMode == false)
+        #expect(abs(stage.playerScreenOrigin.x - originalOrigin.x) < 1.0)
+        #expect(abs(stage.playerScreenOrigin.y - originalOrigin.y) < 1.0)
+    }
+
+    @Test("Main-window screen authority prevents auxiliary panels from snapping onto another screen")
+    func testMainScreenAuthorityBlocksCrossScreenPanelSnap() {
+        let mainScreen = CGRect(x: 0, y: 0, width: 1440, height: 900)
+        let playerRect = CGRect(x: 1100, y: 500, width: 330, height: 106)
+        let librarySize = CGSize(width: 400, height: 500)
+        // Dragged near right edge of main screen (where right-side snap would push into x=1430..1830 on a second screen)
+        let snap = StageLayoutEngine.computeSnap(
+            movedSize: librarySize,
+            droppedOrigin: CGPoint(x: 1425, y: 106),
+            playerScreenRect: playerRect,
+            otherModuleScreenRect: nil,
+            uiScale: 1.0,
+            wasAlreadySnapped: false,
+            visibleFrames: [mainScreen]
+        )
+        if snap.didSnap, let rect = snap.targetScreenRect {
+            #expect(rect.maxX <= mainScreen.maxX + 1.0)
+            #expect(rect.minX >= mainScreen.minX - 1.0)
+        }
+    }
 }
 }

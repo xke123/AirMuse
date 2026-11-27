@@ -19,6 +19,9 @@ public struct MusicTrack: Sendable, Identifiable, Hashable, Codable {
     public var providerTrackID: String     // provider-specific identifier
     public var albumID: String?
     public var artists: [MediaArtistRef]
+    public var isLibrary: Bool
+    public var catalogID: String?
+    public var libraryID: String?
 
     public var durationSeconds: Double {
         Double(durationMs) / 1000.0
@@ -39,8 +42,12 @@ public struct MusicTrack: Sendable, Identifiable, Hashable, Codable {
         providerID: String,
         providerTrackID: String,
         albumID: String? = nil,
-        artists: [MediaArtistRef] = []
+        artists: [MediaArtistRef] = [],
+        isLibrary: Bool? = nil,
+        catalogID: String? = nil,
+        libraryID: String? = nil
     ) {
+        let inferredLibrary = isLibrary ?? id.hasPrefix("i.")
         self.id = id
         self.title = title
         self.artistName = artistName
@@ -56,6 +63,9 @@ public struct MusicTrack: Sendable, Identifiable, Hashable, Codable {
         self.providerTrackID = providerTrackID
         self.albumID = albumID
         self.artists = artists
+        self.isLibrary = inferredLibrary
+        self.catalogID = catalogID ?? ((!inferredLibrary && !providerTrackID.isEmpty && !providerTrackID.hasPrefix("i.")) ? providerTrackID : nil)
+        self.libraryID = libraryID ?? (inferredLibrary ? id : nil)
     }
 
     public init(
@@ -68,6 +78,7 @@ public struct MusicTrack: Sendable, Identifiable, Hashable, Codable {
         source: MusicSource = .unknown,
         isExplicit: Bool = false
     ) {
+        let inferredLibrary = id.hasPrefix("i.")
         self.id = id
         self.title = title
         self.artistName = artistName
@@ -83,6 +94,9 @@ public struct MusicTrack: Sendable, Identifiable, Hashable, Codable {
         self.providerTrackID = id
         self.albumID = nil
         self.artists = []
+        self.isLibrary = inferredLibrary
+        self.catalogID = inferredLibrary ? nil : (id.isEmpty ? nil : id)
+        self.libraryID = inferredLibrary ? id : nil
     }
 
     /// Convenience init used in tests with accountID-scoped cache keys.
@@ -94,6 +108,7 @@ public struct MusicTrack: Sendable, Identifiable, Hashable, Codable {
         source: MusicSource = .unknown,
         accountID: String = ""
     ) {
+        let inferredLibrary = id.hasPrefix("i.")
         self.id = id
         self.title = title
         self.artistName = artist
@@ -109,18 +124,24 @@ public struct MusicTrack: Sendable, Identifiable, Hashable, Codable {
         self.providerTrackID = id.isEmpty ? "\(title)|\(artist)" : id
         self.albumID = nil
         self.artists = []
+        self.isLibrary = inferredLibrary
+        self.catalogID = inferredLibrary ? nil : (id.isEmpty ? nil : id)
+        self.libraryID = inferredLibrary ? id : nil
         self._accountID = accountID
     }
 
     enum CodingKeys: String, CodingKey {
         case id, title, artistName, albumTitle, durationMs, artworkURL, isExplicit
         case trackNumber, discNumber, genreNames, releaseDate, providerID, providerTrackID
-        case albumID, artists, _accountID
+        case albumID, artists, isLibrary, catalogID, libraryID, _accountID
     }
 
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
-        id = try c.decode(String.self, forKey: .id)
+        let decodedID = try c.decode(String.self, forKey: .id)
+        let decodedProviderTrackID = try c.decode(String.self, forKey: .providerTrackID)
+        let decodedIsLibrary = try c.decodeIfPresent(Bool.self, forKey: .isLibrary) ?? decodedID.hasPrefix("i.")
+        id = decodedID
         title = try c.decode(String.self, forKey: .title)
         artistName = try c.decode(String.self, forKey: .artistName)
         albumTitle = try c.decode(String.self, forKey: .albumTitle)
@@ -132,9 +153,14 @@ public struct MusicTrack: Sendable, Identifiable, Hashable, Codable {
         genreNames = try c.decodeIfPresent([String].self, forKey: .genreNames) ?? []
         releaseDate = try c.decodeIfPresent(Date.self, forKey: .releaseDate)
         providerID = try c.decode(String.self, forKey: .providerID)
-        providerTrackID = try c.decode(String.self, forKey: .providerTrackID)
+        providerTrackID = decodedProviderTrackID
         albumID = try c.decodeIfPresent(String.self, forKey: .albumID)
         artists = try c.decodeIfPresent([MediaArtistRef].self, forKey: .artists) ?? []
+        isLibrary = decodedIsLibrary
+        catalogID = try c.decodeIfPresent(String.self, forKey: .catalogID)
+            ?? ((!decodedIsLibrary && !decodedProviderTrackID.isEmpty && !decodedProviderTrackID.hasPrefix("i.")) ? decodedProviderTrackID : nil)
+        libraryID = try c.decodeIfPresent(String.self, forKey: .libraryID)
+            ?? (decodedIsLibrary ? decodedID : nil)
         _accountID = try c.decodeIfPresent(String.self, forKey: ._accountID) ?? ""
     }
 

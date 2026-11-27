@@ -202,4 +202,19 @@ public final class ArtistSidebarHeaderView: NSView {
     @objc private func infoTapped() { onInfoClicked?(infoGlass) }
     @objc private func favoriteTapped() { onFavoriteClicked?() }
     @objc private func moreTapped() { onMoreClicked?(moreGlass) }
+
+    // MARK: - Z-Axis Pass-Through Protection
+
+    public override func hitTest(_ point: NSPoint) -> NSView? {
+        guard !isHidden, alphaValue > 0.01 else { return nil }
+        let local = convert(point, from: superview)
+        guard bounds.contains(local) else { return nil }
+        return super.hitTest(point) ?? self
+    }
+
+    public override func mouseDown(with event: NSEvent) {}
+    public override func mouseUp(with event: NSEvent) {}
+    public override func rightMouseDown(with event: NSEvent) {}
+    public override func otherMouseDown(with event: NSEvent) {}
+    public override func scrollWheel(with event: NSEvent) {}
 }

@@ -27,15 +27,28 @@ public final class MediaResourceStateStore {
     private var states: [String: MediaResourceState] = [:]
     private var keyOrder: [String] = []
     private let maxCachedEntries: Int
+    private var cachedCapabilities: [String: MediaActionCapabilities] = [:]
 
-    private var inFlightReads: [String: Task<MediaResourceState, Error>] = [:]
-    private var activeWriteTasks: [String: Task<MediaResourceState, Error>] = [:]
+    private var inFlightReads: [String: (id: UUID, task: Task<MediaResourceState, Error>)] = [:]
+    private var activeWriteTasks: [String: (id: UUID, task: Task<MediaMutationOutcome, Error>)] = [:]
     private var latestFavoriteIntent: [String: (operationID: UUID, target: Bool)] = [:]
     private var latestLibraryIntent: [String: (operationID: UUID, target: Bool)] = [:]
+    private var fieldRevisions: [String: (library: UInt64, favorite: UInt64)] = [:]
     private var observers: [UUID: StateObserver] = [:]
 
     private weak var providerRef: (any MediaResourceMutationProvider & AnyObject)?
     private var strongProvider: (any MediaResourceMutationProvider)?
+
+    private struct DiskSnapshotEntry: Codable {
+        let normalizedKey: String
+        let libraryMembership: Bool?
+        let favorite: Bool?
+        let updatedAt: TimeInterval
+    }
+
+    private var persistenceDirectory: URL?
+    private var persistenceTTL: TimeInterval = 900
+    private var diskSaveTask: Task<Void, Never>?
 
     public init(maxCachedEntries: Int = 1000) {
         self.maxCachedEntries = max(64, maxCachedEntries)
@@ -46,6 +59,13 @@ public final class MediaResourceStateStore {
         self.providerRef = provider as? (any MediaResourceMutationProvider & AnyObject)
     }
 
+    /// Enables opt-in account-scoped SWR disk persistence for confirmed states.
+    public func configurePersistence(directory: URL?, ttlSeconds: TimeInterval = 900) {
+        self.persistenceDirectory = directory
+        self.persistenceTTL = max(30, ttlSeconds)
+        hydrateFromDiskIfNeeded()
+    }
+
     private var activeProvider: (any MediaResourceMutationProvider)? {
         strongProvider ?? providerRef
     }
@@ -53,16 +73,57 @@ public final class MediaResourceStateStore {
     /// Switches account/storefront scope, cancelling all in-flight reads/writes and clearing stale state.
     public func setScope(_ scope: Scope) {
         guard scope != currentScope else { return }
+        diskSaveTask?.cancel()
+        diskSaveTask = nil
         currentScope = scope
         scopeGeneration &+= 1
-        for (_, task) in inFlightReads { task.cancel() }
-        for (_, task) in activeWriteTasks { task.cancel() }
+        for (_, entry) in inFlightReads { entry.task.cancel() }
+        for (_, entry) in activeWriteTasks { entry.task.cancel() }
         inFlightReads.removeAll()
         activeWriteTasks.removeAll()
         latestFavoriteIntent.removeAll()
         latestLibraryIntent.removeAll()
+        fieldRevisions.removeAll()
         states.removeAll()
         keyOrder.removeAll()
+        cachedCapabilities.removeAll()
+        hydrateFromDiskIfNeeded()
+    }
+
+    /// Synchronous capability snapshot backed by the configured Provider (no hardcoded UI fallback).
+    public func capabilities(for resource: MediaResourceReference) -> MediaActionCapabilities {
+        cachedCapabilities[capabilityKey(for: resource)] ?? .playbackOnly
+    }
+
+    @discardableResult
+    public func refreshCapabilities(for resource: MediaResourceReference) async -> MediaActionCapabilities {
+        guard let provider = activeProvider else {
+            return .playbackOnly
+        }
+        let capturedGen = scopeGeneration
+        let caps = await provider.mediaActionCapabilities(for: resource)
+        guard capturedGen == scopeGeneration, !Task.isCancelled else {
+            return capabilities(for: resource)
+        }
+        cachedCapabilities[capabilityKey(for: resource)] = caps
+        return caps
+    }
+
+    public func prefetchCapabilities(for resources: [MediaResourceReference]) async {
+        for resource in resources {
+            _ = await refreshCapabilities(for: resource)
+        }
+    }
+
+    private func capabilityKey(for resource: MediaResourceReference) -> String {
+        switch resource.kind {
+        case .song: return "song"
+        case .queueEntry: return "queueEntry"
+        case .album: return "album"
+        case .playlist(let ownership): return "playlist_\(ownership.rawValue)"
+        case .artist: return "artist"
+        case .station: return "station"
+        }
     }
 
     public func addObserver(_ observer: @escaping StateObserver) -> UUID {
@@ -91,11 +152,13 @@ public final class MediaResourceStateStore {
     ) {
         let key = scopedKey(for: resource)
         var current = states[key] ?? .unknown
+        var rev = fieldRevisions[key] ?? (0, 0)
         var changed = false
         if let lib = libraryMembership, !current.libraryMembership.isPending {
             let next = MediaToggleState.known(lib)
             if current.libraryMembership != next {
                 current.libraryMembership = next
+                rev.library &+= 1
                 changed = true
             }
         }
@@ -103,10 +166,12 @@ public final class MediaResourceStateStore {
             let next = MediaToggleState.known(fav)
             if current.favorite != next {
                 current.favorite = next
+                rev.favorite &+= 1
                 changed = true
             }
         }
         if changed {
+            fieldRevisions[key] = rev
             storeState(current, forKey: key, normalizedKey: resource.normalizedKey)
         }
     }
@@ -119,29 +184,78 @@ public final class MediaResourceStateStore {
         }
         let key = scopedKey(for: resource)
         if let existing = inFlightReads[key] {
-            return try await existing.value
+            return try await existing.task.value
         }
 
         let capturedGen = scopeGeneration
-        let task = Task<MediaResourceState, Error> {
-            try await provider.fetchResourceState(resource)
+        let capturedRevs = fieldRevisions[key] ?? (0, 0)
+        let readID = UUID()
+        let task = Task<MediaResourceState, Error> { @MainActor [weak self] in
+            let fetched = try await provider.fetchResourceState(resource)
+            guard let self, capturedGen == self.scopeGeneration, !Task.isCancelled else {
+                throw MediaActionError.accountMismatch
+            }
+            let merged = self.mergeFetchedState(
+                fetched,
+                withExisting: self.states[key] ?? .unknown,
+                capturedRevisions: capturedRevs,
+                key: key
+            )
+            self.storeState(merged, forKey: key, normalizedKey: resource.normalizedKey)
+            return merged
         }
-        inFlightReads[key] = task
-        defer { inFlightReads.removeValue(forKey: key) }
+        inFlightReads[key] = (readID, task)
+        defer {
+            if inFlightReads[key]?.id == readID {
+                inFlightReads.removeValue(forKey: key)
+            }
+        }
+        return try await task.value
+    }
 
-        let fetched = try await task.value
-        guard capturedGen == scopeGeneration, !Task.isCancelled else {
-            throw MediaActionError.accountMismatch
+    /// Batch-refreshes unknown resource states in a single provider batch call per resource type.
+    public func refreshStates(for resources: [MediaResourceReference]) async {
+        guard let provider = activeProvider, !resources.isEmpty else { return }
+        let capturedGen = scopeGeneration
+        var pending: [(resource: MediaResourceReference, key: String, revs: (library: UInt64, favorite: UInt64))] = []
+        var seen = Set<String>()
+
+        for resource in resources {
+            let key = scopedKey(for: resource)
+            guard seen.insert(key).inserted else { continue }
+            guard inFlightReads[key] == nil, activeWriteTasks[key] == nil else { continue }
+            let existing = states[key] ?? .unknown
+            if existing.libraryMembership == .unknown || existing.favorite == .unknown {
+                pending.append((resource, key, fieldRevisions[key] ?? (0, 0)))
+            }
         }
-        let merged = mergeFetchedState(fetched, withExisting: states[key] ?? .unknown, key: key)
-        storeState(merged, forKey: key, normalizedKey: resource.normalizedKey)
-        return merged
+        guard !pending.isEmpty else { return }
+
+        guard let fetchedMap = try? await provider.fetchResourceStates(for: pending.map(\.resource)) else {
+            return
+        }
+        guard capturedGen == scopeGeneration, !Task.isCancelled else { return }
+
+        for entry in pending {
+            guard let fetched = fetchedMap[entry.resource.normalizedKey] else { continue }
+            let merged = mergeFetchedState(
+                fetched,
+                withExisting: states[entry.key] ?? .unknown,
+                capturedRevisions: entry.revs,
+                key: entry.key
+            )
+            storeState(merged, forKey: entry.key, normalizedKey: entry.resource.normalizedKey)
+        }
     }
 
     /// Sets favorite status with per-resource serialization, latest-intent coalescing,
     /// timeout read-back reconciliation, and safe error rollback.
     @discardableResult
     public func setFavorite(_ resource: MediaResourceReference, enabled: Bool) async throws -> MediaResourceState {
+        try await setFavoriteWithOutcome(resource, enabled: enabled).state
+    }
+
+    public func setFavoriteWithOutcome(_ resource: MediaResourceReference, enabled: Bool) async throws -> MediaMutationOutcome {
         if case .playlist(let ownership) = resource.kind, !ownership.isContainerWritable {
             throw MediaActionError.readOnlyPlaylist
         }
@@ -152,24 +266,27 @@ public final class MediaResourceStateStore {
         let key = scopedKey(for: resource)
         let capturedGen = scopeGeneration
         let opID = UUID()
-        let previousKnown = states[key]?.favorite.effectiveBool
+        let writeID = UUID()
+        let previousConfirmed = states[key]?.favorite.confirmedBool
         latestFavoriteIntent[key] = (opID, enabled)
 
         var pendingState = states[key] ?? .unknown
-        pendingState.favorite = .pending(target: enabled, previous: previousKnown, operationID: opID)
+        pendingState.favorite = .pending(target: enabled, previous: previousConfirmed, operationID: opID)
+        var rev = fieldRevisions[key] ?? (0, 0)
+        rev.favorite &+= 1
+        fieldRevisions[key] = rev
         storeState(pendingState, forKey: key, normalizedKey: resource.normalizedKey)
 
-        let priorTask = activeWriteTasks[key]
-        let task = Task<MediaResourceState, Error> {
+        let priorTask = activeWriteTasks[key]?.task
+        let task = Task<MediaMutationOutcome, Error> { @MainActor [weak self] in
             if let priorTask {
                 _ = try? await priorTask.value
             }
-            guard capturedGen == self.scopeGeneration, !Task.isCancelled else {
+            guard let self, capturedGen == self.scopeGeneration, !Task.isCancelled else {
                 throw MediaActionError.accountMismatch
             }
-            // If a newer intent superseded this one while waiting, skip redundant network write
             if let latest = self.latestFavoriteIntent[key], latest.operationID != opID {
-                return self.states[key] ?? .unknown
+                return .superseded(self.states[key] ?? .unknown)
             }
 
             do {
@@ -178,42 +295,82 @@ public final class MediaResourceStateStore {
                     throw MediaActionError.accountMismatch
                 }
                 if let latest = self.latestFavoriteIntent[key], latest.operationID != opID {
-                    return self.states[key] ?? .unknown
+                    return .superseded(self.states[key] ?? .unknown)
                 }
-                var next = receipt.state
-                if case .unknown = next.favorite {
-                    next.favorite = .known(enabled)
+                let merged = self.mergeMutationReceipt(
+                    receipt.state,
+                    into: self.states[key] ?? .unknown,
+                    key: key,
+                    primaryField: .favorite,
+                    primaryFallbackKnown: nil,
+                    opID: opID
+                )
+                self.storeState(merged, forKey: key, normalizedKey: resource.normalizedKey)
+                if case .unknown = merged.favorite {
+                    return .unknownOutcome(merged, message: "收藏状态尚待确认")
                 }
-                self.storeState(next, forKey: key, normalizedKey: resource.normalizedKey)
-                return next
+                return .confirmed(merged, message: receipt.message)
             } catch {
                 guard capturedGen == self.scopeGeneration, !Task.isCancelled else {
                     throw MediaActionError.accountMismatch
                 }
                 if let latest = self.latestFavoriteIntent[key], latest.operationID != opID {
-                    return self.states[key] ?? .unknown
+                    return .superseded(self.states[key] ?? .unknown)
                 }
-                // On timeout, reconcile with authoritative server state instead of blind retry
                 if Self.isTimeoutError(error) {
-                    if let reconciled = try? await provider.fetchResourceState(resource),
-                       capturedGen == self.scopeGeneration {
-                        self.storeState(reconciled, forKey: key, normalizedKey: resource.normalizedKey)
-                        return reconciled
+                    if let reconciled = try? await provider.fetchResourceState(resource) {
+                        guard capturedGen == self.scopeGeneration, !Task.isCancelled else {
+                            throw MediaActionError.accountMismatch
+                        }
+                        if let latest = self.latestFavoriteIntent[key], latest.operationID != opID {
+                            return .superseded(self.states[key] ?? .unknown)
+                        }
+                        let merged = self.mergeMutationReceipt(
+                            reconciled,
+                            into: self.states[key] ?? .unknown,
+                            key: key,
+                            primaryField: .favorite,
+                            primaryFallbackKnown: nil,
+                            opID: opID
+                        )
+                        self.storeState(merged, forKey: key, normalizedKey: resource.normalizedKey)
+                        if case .known(let actual) = merged.favorite {
+                            if actual == enabled {
+                                return .confirmed(merged, message: nil)
+                            }
+                            return .reconciledDifferent(merged, actual: actual)
+                        }
                     }
+                    var unknownState = self.states[key] ?? .unknown
+                    unknownState.favorite = .failed(lastKnown: previousConfirmed, errorMessage: "请求超时，状态未知")
+                    self.storeState(unknownState, forKey: key, normalizedKey: resource.normalizedKey)
+                    return .unknownOutcome(unknownState, message: "请求超时，收藏状态未知")
                 }
                 var failedState = self.states[key] ?? .unknown
-                failedState.favorite = .failed(lastKnown: previousKnown, errorMessage: error.localizedDescription)
+                failedState.favorite = .failed(lastKnown: previousConfirmed, errorMessage: error.localizedDescription)
                 self.storeState(failedState, forKey: key, normalizedKey: resource.normalizedKey)
                 throw error
             }
         }
-        activeWriteTasks[key] = task
+        activeWriteTasks[key] = (writeID, task)
+        defer {
+            if activeWriteTasks[key]?.id == writeID {
+                activeWriteTasks.removeValue(forKey: key)
+                if latestFavoriteIntent[key]?.operationID == opID {
+                    latestFavoriteIntent.removeValue(forKey: key)
+                }
+            }
+        }
         return try await task.value
     }
 
     /// Adds or removes a resource from the library with read-only playlist protection and reconciliation.
     @discardableResult
     public func setLibraryMembership(_ resource: MediaResourceReference, inLibrary: Bool) async throws -> MediaResourceState {
+        try await setLibraryMembershipWithOutcome(resource, inLibrary: inLibrary).state
+    }
+
+    public func setLibraryMembershipWithOutcome(_ resource: MediaResourceReference, inLibrary: Bool) async throws -> MediaMutationOutcome {
         if case .playlist(let ownership) = resource.kind, !ownership.isContainerWritable {
             throw MediaActionError.readOnlyPlaylist
         }
@@ -227,23 +384,27 @@ public final class MediaResourceStateStore {
         let key = scopedKey(for: resource)
         let capturedGen = scopeGeneration
         let opID = UUID()
-        let previousKnown = states[key]?.libraryMembership.effectiveBool
+        let writeID = UUID()
+        let previousConfirmed = states[key]?.libraryMembership.confirmedBool
         latestLibraryIntent[key] = (opID, inLibrary)
 
         var pendingState = states[key] ?? .unknown
-        pendingState.libraryMembership = .pending(target: inLibrary, previous: previousKnown, operationID: opID)
+        pendingState.libraryMembership = .pending(target: inLibrary, previous: previousConfirmed, operationID: opID)
+        var rev = fieldRevisions[key] ?? (0, 0)
+        rev.library &+= 1
+        fieldRevisions[key] = rev
         storeState(pendingState, forKey: key, normalizedKey: resource.normalizedKey)
 
-        let priorTask = activeWriteTasks[key]
-        let task = Task<MediaResourceState, Error> {
+        let priorTask = activeWriteTasks[key]?.task
+        let task = Task<MediaMutationOutcome, Error> { @MainActor [weak self] in
             if let priorTask {
                 _ = try? await priorTask.value
             }
-            guard capturedGen == self.scopeGeneration, !Task.isCancelled else {
+            guard let self, capturedGen == self.scopeGeneration, !Task.isCancelled else {
                 throw MediaActionError.accountMismatch
             }
             if let latest = self.latestLibraryIntent[key], latest.operationID != opID {
-                return self.states[key] ?? .unknown
+                return .superseded(self.states[key] ?? .unknown)
             }
 
             do {
@@ -254,59 +415,157 @@ public final class MediaResourceStateStore {
                     throw MediaActionError.accountMismatch
                 }
                 if let latest = self.latestLibraryIntent[key], latest.operationID != opID {
-                    return self.states[key] ?? .unknown
+                    return .superseded(self.states[key] ?? .unknown)
                 }
-                var next = receipt.state
-                if case .unknown = next.libraryMembership {
-                    next.libraryMembership = .known(inLibrary)
+                let merged = self.mergeMutationReceipt(
+                    receipt.state,
+                    into: self.states[key] ?? .unknown,
+                    key: key,
+                    primaryField: .library,
+                    primaryFallbackKnown: nil,
+                    opID: opID
+                )
+                self.storeState(merged, forKey: key, normalizedKey: resource.normalizedKey)
+                if case .unknown = merged.libraryMembership {
+                    return .unknownOutcome(merged, message: "资料库状态尚待确认")
                 }
-                self.storeState(next, forKey: key, normalizedKey: resource.normalizedKey)
-                return next
+                return .confirmed(merged, message: receipt.message)
             } catch {
                 guard capturedGen == self.scopeGeneration, !Task.isCancelled else {
                     throw MediaActionError.accountMismatch
                 }
                 if let latest = self.latestLibraryIntent[key], latest.operationID != opID {
-                    return self.states[key] ?? .unknown
+                    return .superseded(self.states[key] ?? .unknown)
                 }
                 if Self.isTimeoutError(error) {
-                    if let reconciled = try? await provider.fetchResourceState(resource),
-                       capturedGen == self.scopeGeneration {
-                        self.storeState(reconciled, forKey: key, normalizedKey: resource.normalizedKey)
-                        return reconciled
+                    if let reconciled = try? await provider.fetchResourceState(resource) {
+                        guard capturedGen == self.scopeGeneration, !Task.isCancelled else {
+                            throw MediaActionError.accountMismatch
+                        }
+                        if let latest = self.latestLibraryIntent[key], latest.operationID != opID {
+                            return .superseded(self.states[key] ?? .unknown)
+                        }
+                        let merged = self.mergeMutationReceipt(
+                            reconciled,
+                            into: self.states[key] ?? .unknown,
+                            key: key,
+                            primaryField: .library,
+                            primaryFallbackKnown: nil,
+                            opID: opID
+                        )
+                        self.storeState(merged, forKey: key, normalizedKey: resource.normalizedKey)
+                        if case .known(let actual) = merged.libraryMembership {
+                            if actual == inLibrary {
+                                return .confirmed(merged, message: nil)
+                            }
+                            return .reconciledDifferent(merged, actual: actual)
+                        }
                     }
+                    var unknownState = self.states[key] ?? .unknown
+                    unknownState.libraryMembership = .failed(lastKnown: previousConfirmed, errorMessage: "请求超时，状态未知")
+                    self.storeState(unknownState, forKey: key, normalizedKey: resource.normalizedKey)
+                    return .unknownOutcome(unknownState, message: "请求超时，资料库状态未知")
                 }
                 var failedState = self.states[key] ?? .unknown
-                failedState.libraryMembership = .failed(lastKnown: previousKnown, errorMessage: error.localizedDescription)
+                failedState.libraryMembership = .failed(lastKnown: previousConfirmed, errorMessage: error.localizedDescription)
                 self.storeState(failedState, forKey: key, normalizedKey: resource.normalizedKey)
                 throw error
             }
         }
-        activeWriteTasks[key] = task
+        activeWriteTasks[key] = (writeID, task)
+        defer {
+            if activeWriteTasks[key]?.id == writeID {
+                activeWriteTasks.removeValue(forKey: key)
+                if latestLibraryIntent[key]?.operationID == opID {
+                    latestLibraryIntent.removeValue(forKey: key)
+                }
+            }
+        }
         return try await task.value
     }
 
     // MARK: - Helpers
 
+    private enum ResourceField {
+        case library
+        case favorite
+    }
+
     private func scopedKey(for resource: MediaResourceReference) -> String {
         "\(currentScope.providerID)|\(currentScope.accountID)|\(currentScope.storefront)|\(resource.normalizedKey)"
+    }
+
+    private func mergeMutationReceipt(
+        _ receiptState: MediaResourceState,
+        into existing: MediaResourceState,
+        key: String,
+        primaryField: ResourceField,
+        primaryFallbackKnown: Bool?,
+        opID: UUID
+    ) -> MediaResourceState {
+        var result = existing
+        var rev = fieldRevisions[key] ?? (0, 0)
+
+        // Library field patch
+        switch primaryField {
+        case .library:
+            if case .known = receiptState.libraryMembership {
+                result.libraryMembership = receiptState.libraryMembership
+                rev.library &+= 1
+            } else if let fallback = primaryFallbackKnown {
+                result.libraryMembership = .known(fallback)
+                rev.library &+= 1
+            } else {
+                result.libraryMembership = .unknown
+                rev.library &+= 1
+            }
+            if !existing.favorite.isPending, case .known = receiptState.favorite {
+                result.favorite = receiptState.favorite
+                rev.favorite &+= 1
+            }
+        case .favorite:
+            if case .known = receiptState.favorite {
+                result.favorite = receiptState.favorite
+                rev.favorite &+= 1
+            } else if let fallback = primaryFallbackKnown {
+                result.favorite = .known(fallback)
+                rev.favorite &+= 1
+            } else {
+                result.favorite = .unknown
+                rev.favorite &+= 1
+            }
+            if !existing.libraryMembership.isPending, case .known = receiptState.libraryMembership {
+                result.libraryMembership = receiptState.libraryMembership
+                rev.library &+= 1
+            }
+        }
+
+        _ = opID
+        fieldRevisions[key] = rev
+        return result
     }
 
     private func mergeFetchedState(
         _ fetched: MediaResourceState,
         withExisting existing: MediaResourceState,
+        capturedRevisions: (library: UInt64, favorite: UInt64),
         key: String
     ) -> MediaResourceState {
         var result = existing
-        if !existing.libraryMembership.isPending, case .known = fetched.libraryMembership {
-            result.libraryMembership = fetched.libraryMembership
-        } else if case .unknown = existing.libraryMembership {
-            result.libraryMembership = fetched.libraryMembership
+        let currentRevs = fieldRevisions[key] ?? (0, 0)
+        if currentRevs.library == capturedRevisions.library, !existing.libraryMembership.isPending {
+            if case .known = fetched.libraryMembership {
+                result.libraryMembership = fetched.libraryMembership
+            } else if case .unknown = existing.libraryMembership {
+                result.libraryMembership = fetched.libraryMembership
+            }
         }
-        if !existing.favorite.isPending, case .known = fetched.favorite {
-            result.favorite = fetched.favorite
-        } else if case .unknown = existing.favorite {
-            result.favorite = fetched.favorite
+        if currentRevs.favorite == capturedRevisions.favorite, !existing.favorite.isPending {
+            if case .known = fetched.favorite {
+                result.favorite = fetched.favorite
+            } else if case .unknown = existing.favorite {
+                result.favorite = fetched.favorite
+            }
         }
         return result
     }
@@ -315,13 +574,85 @@ public final class MediaResourceStateStore {
         if states[key] == nil {
             keyOrder.append(key)
             if keyOrder.count > maxCachedEntries {
-                let oldest = keyOrder.removeFirst()
-                states.removeValue(forKey: oldest)
+                // Evict oldest non-pending, inactive entry
+                if let evictIdx = keyOrder.firstIndex(where: { candidate in
+                    guard candidate != key else { return false }
+                    if activeWriteTasks[candidate] != nil || inFlightReads[candidate] != nil { return false }
+                    if let st = states[candidate], st.libraryMembership.isPending || st.favorite.isPending { return false }
+                    return true
+                }) {
+                    let evicted = keyOrder.remove(at: evictIdx)
+                    states.removeValue(forKey: evicted)
+                    fieldRevisions.removeValue(forKey: evicted)
+                }
             }
         }
         states[key] = state
         for observer in observers.values {
             observer(normalizedKey, state)
+        }
+        scheduleDiskFlushIfNeeded()
+    }
+
+    private func persistenceFileURL() -> URL? {
+        guard let dir = persistenceDirectory,
+              !currentScope.accountID.isEmpty else { return nil }
+        let safeScope = "\(currentScope.providerID)_\(currentScope.accountID)_\(currentScope.storefront)"
+            .replacingOccurrences(of: "[^A-Za-z0-9._-]", with: "_", options: .regularExpression)
+        return dir.appendingPathComponent("media_state_\(safeScope).json")
+    }
+
+    private func hydrateFromDiskIfNeeded() {
+        guard let fileURL = persistenceFileURL(),
+              let data = try? Data(contentsOf: fileURL),
+              let entries = try? JSONDecoder().decode([DiskSnapshotEntry].self, from: data) else {
+            return
+        }
+        let now = Date().timeIntervalSince1970
+        for entry in entries where (now - entry.updatedAt) <= persistenceTTL {
+            let key = "\(currentScope.providerID)|\(currentScope.accountID)|\(currentScope.storefront)|\(entry.normalizedKey)"
+            guard states[key] == nil else { continue }
+            let libState: MediaToggleState = entry.libraryMembership.map { .known($0) } ?? .unknown
+            let favState: MediaToggleState = entry.favorite.map { .known($0) } ?? .unknown
+            if libState != .unknown || favState != .unknown {
+                if keyOrder.count < maxCachedEntries {
+                    keyOrder.append(key)
+                    states[key] = MediaResourceState(libraryMembership: libState, favorite: favState)
+                }
+            }
+        }
+    }
+
+    private func scheduleDiskFlushIfNeeded() {
+        guard persistenceFileURL() != nil else { return }
+        diskSaveTask?.cancel()
+        let capturedGen = scopeGeneration
+        diskSaveTask = Task { @MainActor [weak self] in
+            try? await Task.sleep(for: .milliseconds(350))
+            guard let self, capturedGen == self.scopeGeneration, !Task.isCancelled else { return }
+            self.flushDiskSnapshot()
+        }
+    }
+
+    private func flushDiskSnapshot() {
+        guard let fileURL = persistenceFileURL() else { return }
+        let prefix = "\(currentScope.providerID)|\(currentScope.accountID)|\(currentScope.storefront)|"
+        let now = Date().timeIntervalSince1970
+        var entries: [DiskSnapshotEntry] = []
+        entries.reserveCapacity(min(keyOrder.count, maxCachedEntries))
+        for key in keyOrder {
+            guard key.hasPrefix(prefix), let st = states[key] else { continue }
+            let lib = st.libraryMembership.confirmedBool
+            let fav = st.favorite.confirmedBool
+            guard lib != nil || fav != nil else { continue }
+            let normalizedKey = String(key.dropFirst(prefix.count))
+            entries.append(DiskSnapshotEntry(normalizedKey: normalizedKey, libraryMembership: lib, favorite: fav, updatedAt: now))
+        }
+        if let dir = persistenceDirectory {
+            try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        }
+        if let encoded = try? JSONEncoder().encode(entries) {
+            try? encoded.write(to: fileURL, options: .atomic)
         }
     }
 

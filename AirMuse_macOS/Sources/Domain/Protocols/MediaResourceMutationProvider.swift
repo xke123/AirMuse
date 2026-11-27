@@ -51,7 +51,20 @@ public struct MediaMutationReceipt: Sendable, Equatable {
 public protocol MediaResourceMutationProvider: Sendable {
     func mediaActionCapabilities(for resource: MediaResourceReference) async -> MediaActionCapabilities
     func fetchResourceState(_ resource: MediaResourceReference) async throws -> MediaResourceState
+    func fetchResourceStates(for resources: [MediaResourceReference]) async throws -> [String: MediaResourceState]
     func addToLibrary(_ resource: MediaResourceReference) async throws -> MediaMutationReceipt
     func removeFromLibrary(_ resource: MediaResourceReference) async throws -> MediaMutationReceipt
     func setFavorite(_ resource: MediaResourceReference, enabled: Bool) async throws -> MediaMutationReceipt
+}
+
+public extension MediaResourceMutationProvider {
+    func fetchResourceStates(for resources: [MediaResourceReference]) async throws -> [String: MediaResourceState] {
+        var result: [String: MediaResourceState] = [:]
+        for resource in resources {
+            if let state = try? await fetchResourceState(resource) {
+                result[resource.normalizedKey] = state
+            }
+        }
+        return result
+    }
 }

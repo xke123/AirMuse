@@ -339,6 +339,7 @@ open class MiniPlayerView: GlassMiniPlayer {
     public var onExpand: (() -> Void)?
     public var onToggleLyrics: (() -> Void)?
     public var onToggleLibrary: (() -> Void)?
+    public var onToggleFavorite: (() -> Void)?
     public var onToggleSource: (() -> Void)?
     public var onQuit: (() -> Void)?
 
@@ -360,6 +361,7 @@ open class MiniPlayerView: GlassMiniPlayer {
 
     private let miniSourceButton = GlassButton(image: nil, size: CGSize(width: 13, height: 13), buttonStyle: .glassBar)
     private let libraryButton = GlassButton(image: nil, size: CGSize(width: 13, height: 13), buttonStyle: .glassBar)
+    private var currentFavoriteState: Bool?
     private let lyricsButton = GlassButton(image: nil, size: CGSize(width: 13, height: 13), buttonStyle: .glassBar)
     private let expandButton = GlassButton(image: nil, size: CGSize(width: 13, height: 13), buttonStyle: .glassBar)
     private let quitButton = GlassButton(image: nil, size: CGSize(width: 13, height: 13), buttonStyle: .glassBar)
@@ -423,13 +425,13 @@ open class MiniPlayerView: GlassMiniPlayer {
         prevButton.toolTip = "上一首"
         playPauseButton.toolTip = "播放 / 暂停"
         nextButton.toolTip = "下一首"
-        ejectButton.toolTip = "显示 / 隐藏资料库"
+        ejectButton.toolTip = "收藏当前曲目"
 
         stopButton.onClick = { [weak self] in self?.onStop?() }
         prevButton.onClick = { [weak self] in self?.onPrevious?() }
         playPauseButton.onClick = { [weak self] in self?.onPlayPause?() }
         nextButton.onClick = { [weak self] in self?.onNext?() }
-        ejectButton.onClick = { [weak self] in self?.onToggleLibrary?() }
+        ejectButton.onClick = { [weak self] in self?.onToggleFavorite?() }
 
         controlsContainer.addSubview(stopButton)
         controlsContainer.addSubview(prevButton)
@@ -447,7 +449,7 @@ open class MiniPlayerView: GlassMiniPlayer {
         }
         controlsContainer.addSubview(miniSourceButton)
 
-        libraryButton.toolTip = "显示/隐藏音乐来源面板"
+        libraryButton.toolTip = "显示/隐藏资料库"
         libraryButton.onClick = { [weak self] in self?.onToggleLibrary?() }
         controlsContainer.addSubview(libraryButton)
 
@@ -496,7 +498,7 @@ open class MiniPlayerView: GlassMiniPlayer {
         prevButton.setSymbol(name: "backward.fill", pointSize: 9.0 * s, weight: .bold)
         playPauseButton.setSymbol(name: isPlayingState ? "pause.fill" : "play.fill", pointSize: 10.5 * s, weight: .bold)
         nextButton.setSymbol(name: "forward.fill", pointSize: 9.0 * s, weight: .bold)
-        ejectButton.setSymbol(name: "eject.fill", pointSize: 8.5 * s, weight: .bold)
+        applyFavoriteSymbol(scale: s)
 
         miniSourceButton.setSymbol(name: "apple.logo", pointSize: 9.5 * s, weight: .bold)
         libraryButton.setSymbol(name: "books.vertical.fill", pointSize: 8.5 * s, weight: .semibold)
@@ -671,6 +673,20 @@ open class MiniPlayerView: GlassMiniPlayer {
         lyricsButton.frame = NSRect(x: w - 77.0 * s, y: wbY, width: wbSize, height: wbSize)
         expandButton.frame = NSRect(x: w - 61.0 * s, y: wbY, width: wbSize, height: wbSize)
         quitButton.frame = NSRect(x: w - 45.0 * s, y: wbY, width: wbSize, height: wbSize)
+    }
+
+    public func setFavoriteState(isFavorited: Bool?, isPending: Bool = false, isEnabled: Bool = true) {
+        currentFavoriteState = isFavorited
+        ejectButton.isEnabled = isEnabled && !isPending
+        ejectButton.alphaValue = isEnabled ? (isPending ? 0.65 : 1.0) : 0.45
+        ejectButton.toolTip = isPending ? "正在同步收藏状态…" : (isFavorited == true ? "已收藏当前曲目（点击取消）" : "收藏当前曲目")
+        applyFavoriteSymbol(scale: GlassInteractionCoordinator.shared.uiScale)
+    }
+
+    private func applyFavoriteSymbol(scale s: CGFloat) {
+        let symbolName = (currentFavoriteState == true) ? "star.fill" : "star"
+        ejectButton.setSymbol(name: symbolName, pointSize: 9.0 * s, weight: .bold)
+        ejectButton.isHighlightedState = (currentFavoriteState == true)
     }
 
     private func updateHaloLayer(w: CGFloat, h: CGFloat, s: CGFloat) {

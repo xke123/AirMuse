@@ -67,6 +67,7 @@ public struct MusicArtistDetail: Sendable, Codable {
     public let genreNames: [String]
     public var isFavorited: Bool
     public var isSuggestLess: Bool
+    public var isRatingKnown: Bool
     public var views: [ArtistViewSection]
 
     public init(
@@ -75,6 +76,7 @@ public struct MusicArtistDetail: Sendable, Codable {
         genreNames: [String] = [],
         isFavorited: Bool = false,
         isSuggestLess: Bool = false,
+        isRatingKnown: Bool = false,
         views: [ArtistViewSection] = []
     ) {
         self.artist = artist
@@ -82,6 +84,22 @@ public struct MusicArtistDetail: Sendable, Codable {
         self.genreNames = genreNames
         self.isFavorited = isFavorited
         self.isSuggestLess = isSuggestLess
+        self.isRatingKnown = isRatingKnown
         self.views = views
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case artist, editorialNotes, genreNames, isFavorited, isSuggestLess, isRatingKnown, views
+    }
+
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        artist = try c.decode(MusicArtist.self, forKey: .artist)
+        editorialNotes = try c.decodeIfPresent(String.self, forKey: .editorialNotes)
+        genreNames = try c.decodeIfPresent([String].self, forKey: .genreNames) ?? []
+        isFavorited = try c.decodeIfPresent(Bool.self, forKey: .isFavorited) ?? false
+        isSuggestLess = try c.decodeIfPresent(Bool.self, forKey: .isSuggestLess) ?? false
+        isRatingKnown = try c.decodeIfPresent(Bool.self, forKey: .isRatingKnown) ?? false
+        views = try c.decodeIfPresent([ArtistViewSection].self, forKey: .views) ?? []
     }
 }

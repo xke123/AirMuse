@@ -115,6 +115,48 @@ public struct MediaResourceReference: Sendable, Equatable, Hashable, Codable {
         let effectiveID = (catalogID?.isEmpty == false ? catalogID! : canonicalID)
         return "\(providerID)|\(kindTag)|\(effectiveID)"
     }
+
+    /// Whether this reference has a verified library identity safe for library deletion.
+    public var hasTrustedLibraryDeleteIdentity: Bool {
+        switch kind {
+        case .artist, .station:
+            return false
+        case .playlist(let ownership):
+            guard ownership.isContainerWritable else { return false }
+            return (libraryID?.isEmpty == false) || (catalogID?.hasPrefix("pl.") == true)
+        case .song, .queueEntry, .album:
+            return (libraryID?.isEmpty == false) || (catalogID?.isEmpty == false && !isLibrary)
+        }
+    }
+
+    /// Constructs a typed reference from a `MusicTrack` without conflating catalog and library IDs.
+    public static func from(
+        track: MusicTrack,
+        origin: PlaybackOrigin? = nil,
+        queueEntryID: UUID? = nil,
+        fallbackAlbumID: String? = nil
+    ) -> MediaResourceReference {
+        let isLib = track.isLibrary || track.id.hasPrefix("i.")
+        let resolvedCatalogID = track.catalogID ?? ((!isLib && !track.providerTrackID.isEmpty && !track.providerTrackID.hasPrefix("i.")) ? track.providerTrackID : nil)
+        let resolvedLibraryID = track.libraryID ?? (isLib ? track.id : nil)
+        let canonical = resolvedCatalogID ?? resolvedLibraryID ?? track.id
+        return MediaResourceReference(
+            kind: queueEntryID != nil ? .queueEntry : .song,
+            providerID: track.providerID,
+            canonicalID: canonical,
+            catalogID: resolvedCatalogID,
+            libraryID: resolvedLibraryID,
+            title: track.title,
+            subtitle: track.artistName,
+            artworkURL: track.artworkURL,
+            isLibrary: isLib,
+            albumID: track.albumID ?? fallbackAlbumID,
+            albumTitle: track.albumTitle.isEmpty ? nil : track.albumTitle,
+            artists: track.artists,
+            queueEntryID: queueEntryID,
+            origin: origin
+        )
+    }
 }
 
 // MARK: - MediaToggleState
@@ -140,9 +182,42 @@ public enum MediaToggleState: Sendable, Equatable {
         }
     }
 
+    /// Authoritative confirmed boolean value (never returns an unconfirmed pending target).
+    public var confirmedBool: Bool? {
+        switch self {
+        case .unknown:
+            return nil
+        case .known(let value):
+            return value
+        case .pending(_, let previous, _):
+            return previous
+        case .failed(let lastKnown, _):
+            return lastKnown
+        }
+    }
+
     public var isPending: Bool {
         if case .pending = self { return true }
         return false
+    }
+}
+
+// MARK: - MediaMutationOutcome
+
+public enum MediaMutationOutcome: Sendable, Equatable {
+    case confirmed(MediaResourceState, message: String?)
+    case reconciledDifferent(MediaResourceState, actual: Bool)
+    case unknownOutcome(MediaResourceState, message: String)
+    case superseded(MediaResourceState)
+
+    public var state: MediaResourceState {
+        switch self {
+        case .confirmed(let s, _),
+             .reconciledDifferent(let s, _),
+             .unknownOutcome(let s, _),
+             .superseded(let s):
+            return s
+        }
     }
 }
 
