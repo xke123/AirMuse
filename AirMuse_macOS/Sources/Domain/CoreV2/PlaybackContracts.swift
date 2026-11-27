@@ -49,17 +49,39 @@ public enum PlayableKind: String, Sendable, Equatable, Codable {
 public struct PlaybackTarget: Sendable, Equatable, Codable {
     public let kind: PlayableKind
     public let providerResourceID: String
+    public let providerID: ProviderID
+    public let scope: ResourceScope
     public let title: String?
     public let storefront: String?
+
+    public var identity: ResourceIdentity? {
+        guard !providerResourceID.isEmpty, !providerID.isUnknown else { return nil }
+        let resourceKind: ResourceKind = switch kind {
+        case .song: .song
+        case .album: .album
+        case .playlist: .playlist
+        case .station: .station
+        }
+        return ResourceIdentity(
+            providerID: providerID,
+            kind: resourceKind,
+            opaqueID: providerResourceID,
+            scope: scope
+        )
+    }
 
     public init(
         kind: PlayableKind,
         providerResourceID: String,
+        providerID: ProviderID = .unknown,
+        scope: ResourceScope = .unknown,
         title: String? = nil,
         storefront: String? = nil
     ) {
         self.kind = kind
         self.providerResourceID = providerResourceID
+        self.providerID = providerID
+        self.scope = scope
         self.title = title
         self.storefront = storefront
     }

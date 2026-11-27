@@ -127,6 +127,93 @@ public struct QueueCapabilities: Sendable, Codable, Equatable {
     /// Default remote station/radio capabilities before runtime verification:
     /// conservative unknown capabilities until verified.
     public static let remoteStationDefault = remoteStationUnknown
+
+    /// Conservative capability synthesis from owner, station kind, and verified runtime engine evidence.
+    /// Never infers seek/skip/pause from station kind alone when engine evidence is missing.
+    public static func resolve(
+        owner: QueueOwner,
+        stationKind: StationKind,
+        evidence: EngineCapabilityEvidence?
+    ) -> QueueCapabilities {
+        switch owner {
+        case .localCoordinator:
+            return .fullLocal
+        case .remoteEngine:
+            guard let evidence else {
+                return QueueCapabilities(
+                    canRead: false,
+                    canPlayEntry: false,
+                    canInsertNext: false,
+                    canAppend: false,
+                    canRemove: false,
+                    canReorder: false,
+                    canClear: false,
+                    canToggleShuffle: false,
+                    canRepeatOne: false,
+                    canRepeatAll: false,
+                    canSkipNext: false,
+                    canSkipPrevious: false,
+                    canSeek: false,
+                    canPause: false
+                )
+            }
+            switch stationKind {
+            case .live:
+                return QueueCapabilities(
+                    canRead: false,
+                    canPlayEntry: false,
+                    canInsertNext: false,
+                    canAppend: false,
+                    canRemove: false,
+                    canReorder: false,
+                    canClear: false,
+                    canToggleShuffle: false,
+                    canRepeatOne: false,
+                    canRepeatAll: false,
+                    canSkipNext: false,
+                    canSkipPrevious: false,
+                    canSeek: false,
+                    canPause: evidence.canPause
+                )
+            case .algorithmic, .unknown:
+                return QueueCapabilities(
+                    canRead: false,
+                    canPlayEntry: false,
+                    canInsertNext: false,
+                    canAppend: false,
+                    canRemove: false,
+                    canReorder: false,
+                    canClear: false,
+                    canToggleShuffle: false,
+                    canRepeatOne: false,
+                    canRepeatAll: false,
+                    canSkipNext: evidence.canSkipNext,
+                    canSkipPrevious: evidence.canSkipPrevious,
+                    canSeek: evidence.canSeek,
+                    canPause: evidence.canPause
+                )
+            }
+        }
+    }
+}
+
+public struct EngineCapabilityEvidence: Sendable, Equatable, Codable {
+    public let canPause: Bool
+    public let canSeek: Bool
+    public let canSkipNext: Bool
+    public let canSkipPrevious: Bool
+
+    public init(
+        canPause: Bool,
+        canSeek: Bool,
+        canSkipNext: Bool,
+        canSkipPrevious: Bool
+    ) {
+        self.canPause = canPause
+        self.canSeek = canSeek
+        self.canSkipNext = canSkipNext
+        self.canSkipPrevious = canSkipPrevious
+    }
 }
 
 // MARK: - QueueLoadingState

@@ -13,10 +13,16 @@ let package = Package(
     products: [
         // Main executable
         .executable(name: "AirMuse", targets: ["App"]),
+        // Standalone fixture host (no Apple Music Adapter)
+        .executable(name: "FixtureHost", targets: ["FixtureHost"]),
         // Shared domain library (models + protocols)
         .library(name: "Domain", targets: ["Domain"]),
         // Infrastructure
         .library(name: "Infrastructure", targets: ["Infrastructure"]),
+        // PlatformRuntime (generic registry, session scopes, engine router)
+        .library(name: "PlatformRuntime", targets: ["PlatformRuntime"]),
+        // Application services
+        .library(name: "Application", targets: ["Application"]),
         // Providers
         .library(name: "Providers", targets: ["Providers"]),
         // Playback coordination
@@ -41,6 +47,22 @@ let package = Package(
             name: "Infrastructure",
             dependencies: ["Domain"],
             path: "Sources/Infrastructure",
+            swiftSettings: sharedSwiftSettings
+        ),
+
+        // ─── PlatformRuntime ──────────────────────────────────────────
+        .target(
+            name: "PlatformRuntime",
+            dependencies: ["Domain", "Infrastructure"],
+            path: "Sources/PlatformRuntime",
+            swiftSettings: sharedSwiftSettings
+        ),
+
+        // ─── Application ──────────────────────────────────────────────
+        .target(
+            name: "Application",
+            dependencies: ["Domain", "Playback", "PlatformRuntime", "Infrastructure"],
+            path: "Sources/Application",
             swiftSettings: sharedSwiftSettings
         ),
 
@@ -82,16 +104,32 @@ let package = Package(
         // ─── UI ───────────────────────────────────────────────────────
         .target(
             name: "UI",
-            dependencies: ["Domain", "Playback", "Lyrics", "DesignSystem", "Providers", "Infrastructure"],
+            dependencies: ["Domain", "Playback", "Application", "PlatformRuntime", "Lyrics", "DesignSystem", "Infrastructure"],
             path: "Sources/UI",
+            swiftSettings: sharedSwiftSettings
+        ),
+
+        // ─── Apple Music Integration UI (isolated from generic UI) ─────
+        .target(
+            name: "AppleMusicIntegrationUI",
+            dependencies: ["Domain", "DesignSystem", "Providers", "Infrastructure"],
+            path: "Sources/AppleMusicIntegrationUI",
             swiftSettings: sharedSwiftSettings
         ),
 
         // ─── Executable ───────────────────────────────────────────────
         .executableTarget(
             name: "App",
-            dependencies: ["Domain", "Playback", "Lyrics", "Providers", "DesignSystem", "UI", "Infrastructure"],
+            dependencies: ["Domain", "Playback", "PlatformRuntime", "Application", "Lyrics", "Providers", "DesignSystem", "UI", "AppleMusicIntegrationUI", "Infrastructure"],
             path: "Sources/App",
+            swiftSettings: sharedSwiftSettings
+        ),
+
+        // ─── Standalone Fixture Host (No Apple Music Adapter) ──────────
+        .executableTarget(
+            name: "FixtureHost",
+            dependencies: ["Domain", "Playback", "PlatformRuntime", "Application", "Lyrics", "DesignSystem", "UI", "Infrastructure"],
+            path: "Sources/FixtureHost",
             swiftSettings: sharedSwiftSettings
         ),
 
@@ -110,13 +148,13 @@ let package = Package(
         ),
         .testTarget(
             name: "UnitTests",
-            dependencies: ["Domain", "Providers", "Infrastructure"],
+            dependencies: ["Domain", "Providers", "PlatformRuntime", "Application", "Playback", "Infrastructure"],
             path: "Tests/Unit",
             swiftSettings: sharedSwiftSettings
         ),
         .testTarget(
             name: "DesignSystemTests",
-            dependencies: ["DesignSystem", "UI", "Domain", "Playback"],
+            dependencies: ["DesignSystem", "UI", "Domain", "Playback", "Providers"],
             path: "Tests/DesignSystemTests",
             swiftSettings: sharedSwiftSettings
         ),

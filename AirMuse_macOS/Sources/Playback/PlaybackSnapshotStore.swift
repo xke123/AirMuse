@@ -148,12 +148,16 @@ public actor PlaybackSnapshotStore {
     }
 
     /// Loads snapshot only if schema is supported (v1 or v2) and account/provider match.
-    /// Always restores in paused state by caller.
-    public func load(expectedProviderID: String = "apple_music", expectedAccountID: String?) -> PlaybackSnapshot? {
-        guard FileManager.default.fileExists(atPath: fileURL.path),
+    /// Unknown provider snapshots are never defaulted to Apple Music.
+    public func load(expectedProviderID: String, expectedAccountID: String?) -> PlaybackSnapshot? {
+        guard !expectedProviderID.isEmpty,
+              expectedProviderID != ProviderID.unknown.rawValue,
+              FileManager.default.fileExists(atPath: fileURL.path),
               let data = try? Data(contentsOf: fileURL),
               let snap = try? decoder.decode(PlaybackSnapshot.self, from: data),
               (snap.schemaVersion == 1 || snap.schemaVersion == PlaybackSnapshot.currentSchemaVersion),
+              !snap.providerID.isEmpty,
+              snap.providerID != ProviderID.unknown.rawValue,
               snap.providerID == expectedProviderID else {
             return nil
         }

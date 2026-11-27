@@ -26,7 +26,7 @@ struct MotionStageTests {
         let coord = PlaybackCoordinatorV2(store: store, engine: StubEngine())
         let playerCtrl = PlayerWindowController(coordinator: coord, store: store)
         let lyricsView = LyricsModuleView(frame: .zero)
-        let libCtrl = LibraryWindowController(coordinator: coord, sessionCoordinator: nil, appleMusicProvider: nil)
+        let libCtrl = LibraryWindowController(coordinator: coord, registry: nil)
         let webRuntime = WebRuntime()
         webRuntime.attach(to: playerCtrl.playerSlotView)
         let stage = UnifiedStageController(playerCtrl: playerCtrl, lyricsView: lyricsView, libraryCtrl: libCtrl)

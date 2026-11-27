@@ -44,7 +44,7 @@ public enum MediaActionResolver {
         }
 
         let track = entry.track
-        let isLib = track.isLibrary || track.id.hasPrefix("i.")
+        let isLib = track.isLibrary
         if let albumID = track.albumID, !albumID.isEmpty {
             trackActions.append(.navigateToAlbum(id: albumID, title: track.albumTitle.isEmpty ? "专辑" : track.albumTitle, isLibrary: isLib))
         } else {
@@ -289,6 +289,20 @@ public enum MediaActionResolver {
         return MediaActionMenuSection(actions: actions)
     }
 
+    private static func isSameDetail(
+        _ currentDetail: MediaDetailIdentity?,
+        kind: ResourceKind,
+        id: String,
+        providerID: String
+    ) -> Bool {
+        guard case .resource(let detailID) = currentDetail else { return false }
+        guard detailID.kind == kind, detailID.opaqueID == id else { return false }
+        if !detailID.providerID.isUnknown && !providerID.isEmpty && providerID != ProviderID.unknown.rawValue {
+            return detailID.providerID.rawValue == providerID
+        }
+        return true
+    }
+
     private static func resolveNavigationSection(for context: MediaActionContext) -> MediaActionMenuSection {
         let resource = context.resource
         let currentDetail = context.currentDetail
@@ -300,43 +314,51 @@ public enum MediaActionResolver {
                 actions.append(.startSongStation(resource))
             }
             if let albumID = resource.albumID, !albumID.isEmpty,
-               currentDetail != .album(id: albumID) {
+               !isSameDetail(currentDetail, kind: .album, id: albumID, providerID: resource.providerID) {
                 actions.append(.navigateToAlbum(id: albumID, title: resource.albumTitle ?? "专辑", isLibrary: resource.isLibrary))
             }
-            appendArtistNavigation(artists: resource.artists, currentDetail: currentDetail, into: &actions)
+            appendArtistNavigation(artists: resource.artists, currentDetail: currentDetail, providerID: resource.providerID, into: &actions)
 
         case .queueEntry:
             var originAlbumID: String?
             var originArtistID: String?
             if let origin = resource.origin, origin.canNavigate {
-                let isSameDetail: Bool
-                switch (origin.kind, origin.sourceID, currentDetail) {
-                case (.album, let sid?, .album(let cid)): isSameDetail = (sid == cid)
-                case (.playlist, let sid?, .playlist(let cid)): isSameDetail = (sid == cid)
-                case (.artist, let sid?, .artist(let cid)): isSameDetail = (sid == cid)
-                default: isSameDetail = false
+                let isSameDetailOrigin: Bool
+                if let sid = origin.sourceID {
+                    switch origin.kind {
+                    case .album:
+                        isSameDetailOrigin = isSameDetail(currentDetail, kind: .album, id: sid, providerID: origin.providerID)
+                    case .playlist:
+                        isSameDetailOrigin = isSameDetail(currentDetail, kind: .playlist, id: sid, providerID: origin.providerID)
+                    case .artist:
+                        isSameDetailOrigin = isSameDetail(currentDetail, kind: .artist, id: sid, providerID: origin.providerID)
+                    default:
+                        isSameDetailOrigin = false
+                    }
+                } else {
+                    isSameDetailOrigin = false
                 }
-                if !isSameDetail {
+                if !isSameDetailOrigin {
                     actions.append(.navigateToOrigin(origin))
                 }
                 if origin.kind == .album { originAlbumID = origin.sourceID }
                 if origin.kind == .artist { originArtistID = origin.sourceID }
             }
             if let albumID = resource.albumID, !albumID.isEmpty,
-               currentDetail != .album(id: albumID),
+               !isSameDetail(currentDetail, kind: .album, id: albumID, providerID: resource.providerID),
                albumID != originAlbumID {
                 actions.append(.navigateToAlbum(id: albumID, title: resource.albumTitle ?? "专辑", isLibrary: resource.isLibrary))
             }
-            appendArtistNavigation(artists: resource.artists, currentDetail: currentDetail, excludingArtistID: originArtistID, into: &actions)
+            appendArtistNavigation(artists: resource.artists, currentDetail: currentDetail, providerID: resource.providerID, excludingArtistID: originArtistID, into: &actions)
 
         case .album:
-            if currentDetail != .album(id: resource.canonicalID) {
+            if !isSameDetail(currentDetail, kind: .album, id: resource.canonicalID, providerID: resource.providerID) {
                 actions.append(.navigateToAlbum(id: resource.canonicalID, title: resource.title, isLibrary: resource.isLibrary))
             }
-            appendArtistNavigation(artists: resource.artists, currentDetail: currentDetail, into: &actions)
+            appendArtistNavigation(artists: resource.artists, currentDetail: currentDetail, providerID: resource.providerID, into: &actions)
 
         case .playlist:
-            if currentDetail != .playlist(id: resource.canonicalID) {
+            if !isSameDetail(currentDetail, kind: .playlist, id: resource.canonicalID, providerID: resource.providerID) {
                 actions.append(.navigateToPlaylist(id: resource.canonicalID, title: resource.title, isLibrary: resource.isLibrary))
             }
 
@@ -345,13 +367,13 @@ public enum MediaActionResolver {
                 let ref = MediaArtistRef(id: resource.canonicalID, name: resource.title, isLibrary: resource.isLibrary)
                 actions.append(.startArtistStation(ref))
             }
-            if currentDetail != .artist(id: resource.canonicalID) {
+            if !isSameDetail(currentDetail, kind: .artist, id: resource.canonicalID, providerID: resource.providerID) {
                 let ref = MediaArtistRef(id: resource.canonicalID, name: resource.title, isLibrary: resource.isLibrary)
                 actions.append(.navigateToArtist(ref))
             }
 
         case .station:
-            if resource.hasStationDetail, currentDetail != .station(id: resource.canonicalID) {
+            if resource.hasStationDetail, !isSameDetail(currentDetail, kind: .station, id: resource.canonicalID, providerID: resource.providerID) {
                 actions.append(.navigateToStationDetail(id: resource.canonicalID, title: resource.title))
             }
         }
@@ -375,15 +397,17 @@ public enum MediaActionResolver {
     private static func appendArtistNavigation(
         artists: [MediaArtistRef],
         currentDetail: MediaDetailIdentity?,
+        providerID: String,
         excludingArtistID: String? = nil,
         into actions: inout [MediaAction]
     ) {
         var seenIDs = Set<String>()
         var filtered: [MediaArtistRef] = []
         for artist in artists {
+            let isSameArtistDetail = isSameDetail(currentDetail, kind: .artist, id: artist.id, providerID: providerID)
             guard !artist.id.isEmpty,
                   artist.id != excludingArtistID,
-                  currentDetail != .artist(id: artist.id),
+                  !isSameArtistDetail,
                   seenIDs.insert(artist.id).inserted else { continue }
             filtered.append(artist)
         }

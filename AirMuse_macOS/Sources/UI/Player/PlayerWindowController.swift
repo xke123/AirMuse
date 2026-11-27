@@ -32,6 +32,7 @@ open class PlayerWindowController: NSWindowController {
     public var onModeTransitionRequested: ((Bool) -> Void)?
     public var onModeDidTransition: (() -> Void)?
     public var onTopMostDidChange: (() -> Void)?
+    public var onSelectPlatform: ((ProviderID) -> Void)?
 
     private let coordinator: PlaybackCoordinatorV2
     private let store: PlaybackStore
@@ -200,17 +201,9 @@ open class PlayerWindowController: NSWindowController {
                 NSApp.terminate(nil)
             }
         }
-        playerView.onSelectAppleMusic = { [weak self] in
-            AppLogger.shared.log(category: .userAction, level: .info, message: "用户点击 [Apple Music] 平台切换")
-            self?.playerView.currentPlatform = 0
-        }
-        playerView.onSelectSpotify = { [weak self] in
-            AppLogger.shared.log(category: .userAction, level: .info, message: "用户点击 [Spotify] 平台切换")
-            self?.playerView.currentPlatform = 1
-        }
-        playerView.onSelectQQMusic = { [weak self] in
-            AppLogger.shared.log(category: .userAction, level: .info, message: "用户点击 [QQ 音乐] 平台切换")
-            self?.playerView.currentPlatform = 2
+        playerView.onSelectPlatform = { [weak self] providerID in
+            AppLogger.shared.log(category: .userAction, level: .info, message: "用户点击 [\(providerID.rawValue)] 平台切换")
+            self?.onSelectPlatform?(providerID)
         }
 
         miniPlayerView.onPlayPause = { [weak self] in

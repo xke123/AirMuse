@@ -815,9 +815,7 @@ open class PlayerView: GlassSurface {
     public var onToggleFavorite: (() -> Void)?
     public var onMinimize: (() -> Void)?
     public var onQuit: (() -> Void)?
-    public var onSelectAppleMusic: (() -> Void)?
-    public var onSelectSpotify: (() -> Void)?
-    public var onSelectQQMusic: (() -> Void)?
+    public var onSelectPlatform: ((ProviderID) -> Void)?
 
     public var currentPlatform: Int = 0 {
         didSet {
@@ -1065,7 +1063,7 @@ open class PlayerView: GlassSurface {
         appleMusicButton.toolTip = "Apple Music"
         appleMusicButton.onClick = { [weak self] in
             self?.currentPlatform = 0
-            self?.onSelectAppleMusic?()
+            self?.onSelectPlatform?(.appleMusic)
         }
         controlsContainer.addSubview(appleMusicButton)
 
@@ -1073,7 +1071,7 @@ open class PlayerView: GlassSurface {
         spotifyButton.toolTip = "Spotify"
         spotifyButton.onClick = { [weak self] in
             self?.currentPlatform = 1
-            self?.onSelectSpotify?()
+            self?.onSelectPlatform?(.spotify)
         }
         controlsContainer.addSubview(spotifyButton)
 
@@ -1081,7 +1079,7 @@ open class PlayerView: GlassSurface {
         qqMusicButton.toolTip = "QQ 音乐"
         qqMusicButton.onClick = { [weak self] in
             self?.currentPlatform = 2
-            self?.onSelectQQMusic?()
+            self?.onSelectPlatform?(.qqMusic)
         }
         controlsContainer.addSubview(qqMusicButton)
 

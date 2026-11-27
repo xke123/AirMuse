@@ -19,9 +19,9 @@ public protocol MusicCatalogProvider: Sendable {
 extension MusicCatalogProvider {
     public func fetchAlbum(id: String) async throws -> MusicAlbum { throw MusicProviderError.unsupported }
     public func fetchArtist(id: String) async throws -> MusicArtist { throw MusicProviderError.unsupported }
-    public func fetchAlbumTracks(albumID: String) async throws -> [MusicTrack] { [] }
-    public func fetchArtistAlbums(artistID: String) async throws -> [MusicAlbum] { [] }
-    public func fetchFeaturedPlaylists() async throws -> [MusicPlaylist] { [] }
-    public func fetchNewReleases() async throws -> [MusicAlbum] { [] }
-    public func fetchTopCharts(genre: String?) async throws -> [MusicTrack] { [] }
+    public func fetchAlbumTracks(albumID: String) async throws -> [MusicTrack] { throw MusicProviderError.unsupported }
+    public func fetchArtistAlbums(artistID: String) async throws -> [MusicAlbum] { throw MusicProviderError.unsupported }
+    public func fetchFeaturedPlaylists() async throws -> [MusicPlaylist] { throw MusicProviderError.unsupported }
+    public func fetchNewReleases() async throws -> [MusicAlbum] { throw MusicProviderError.unsupported }
+    public func fetchTopCharts(genre: String?) async throws -> [MusicTrack] { throw MusicProviderError.unsupported }
 }

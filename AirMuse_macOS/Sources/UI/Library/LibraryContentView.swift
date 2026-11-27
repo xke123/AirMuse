@@ -48,6 +48,8 @@ public struct MediaCardItem: Identifiable, Sendable {
     public let playlistOwnership: PlaylistOwnership?
     public let catalogID: String?
     public let libraryID: String?
+    public let providerID: String?
+    public let scope: ResourceScope?
 
     public init(
         id: String,
@@ -63,7 +65,9 @@ public struct MediaCardItem: Identifiable, Sendable {
         isLibrary: Bool? = nil,
         playlistOwnership: PlaylistOwnership? = nil,
         catalogID: String? = nil,
-        libraryID: String? = nil
+        libraryID: String? = nil,
+        providerID: String? = nil,
+        scope: ResourceScope? = nil
     ) {
         self.id = id
         self.title = title
@@ -79,6 +83,8 @@ public struct MediaCardItem: Identifiable, Sendable {
         self.playlistOwnership = playlistOwnership
         self.catalogID = catalogID
         self.libraryID = libraryID
+        self.providerID = providerID
+        self.scope = scope
     }
 }
 

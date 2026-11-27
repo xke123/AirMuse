@@ -1,6 +1,7 @@
 import Foundation
 import Testing
 import Domain
+@testable import Application
 @testable import Providers
 
 private actor MockMutationProvider: MediaResourceMutationProvider {

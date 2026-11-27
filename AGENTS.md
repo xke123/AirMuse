@@ -1,30 +1,28 @@
-# AirMuse — Playback Origin & Adaptive Queue
+# AirMuse — Platform & Presentation Decoupling
 
 ## 当前唯一活动任务
-实现正在播放歌曲来源、纯内部来源跳转，以及普通队列与电台会话自适应的底部双玻璃控件。参考提交 `99466ff7853e6c3cfe88bf41159a23768b12b558`（2026-11-27 08:33:03 北京时间）；实际 HEAD 必须复核。任务以现有架构为基础，不重写播放器，不扩大产品范围。
+音源平台与播放器前端解耦。以 `3daa253b227e8905927e2c61e5009099e98c6ac1`（北京时间 2026-11-27 14:05:07）为参考基线，实际 HEAD 必须复核。保留单一播放器、队列、状态、资源操作、来源导航及双玻璃 Dock；把 Apple Music 封装成可注册、可按需激活和替换的适配器。通过 Apple Music + 独立测试音源验证整个链路。不是重写播放器、视觉升级或新增真实平台接入任务。
 
 ## 执行入口
-每次会话先读本文件及 `AirMuse_macOS/docs/playback-origin/` 下全部九份 PO 文档。GOALS 定义交付范围，BASELINE 定义复核证据，RULES 定义业务契约，ARCHITECTURE 定义状态与并发，RADIO 定义电台特殊规则，UI 定义布局与材质，ROADMAP 定义依赖，TESTS 定义验收，PROGRESS 为真实进度。其他历史任务不构成本期活动指令；已有功能及修复不得回退。
+每次会话先读本文件及 `AirMuse_macOS/docs/platform-decoupling/` 下全部十份 PD 文档：GOALS（范围）、BASELINE（证据）、CONTRACTS（身份与协议）、ARCHITECTURE（依赖及服务）、RUNTIME（生命周期及音频权）、MIGRATION（迁移与兼容）、UI_PERFORMANCE（前端及性能）、ROADMAP（实施）、TESTS（验收）、PROGRESS（实际记录）。其他文档不构成本期活动指令；不得回退已有功能。
 
-1. 检查 git status、HEAD、分支、diff、Package.swift、SDK、实际调用链和构建测试基线。保留用户已有修改；工作区与文档不同则记录证据并复用已存在能力。
-2. 按 PO00–PO07 实施；先确定性复现，再最小生产修改，再定向及全量测试、独立代码审查。不要只写计划、空接口、虚假状态或弱化断言。
-3. 每阶段更新 PO_ROADMAP 与 PO_PROGRESS，记录实际文件、测试命令、退出码、证据、阻塞及下一任务。未实测不能标 VERIFIED；真实账户/SDK 阻塞不妨碍独立任务。
-4. 不擅自提交、推送或修改远程；不覆盖用户修改。不为制造进度而改历史文档。
+1. 先检查 git status、HEAD、分支、diff、Package.swift、实际 SDK、构建与测试；保护用户改动。复核每条基线证据，已解决项只验证不重复修改。
+2. 按 PD00–PD09 依赖实施，每阶段先建立确定性失败用例，再最小生产修改，运行定向与全量测试并独立审查。不得仅写计划、空协议、适配器外壳或演示 UI 代替真实接线。
+3. 每阶段更新 PD_ROADMAP 与 PD_PROGRESS，记录文件、调用链、命令、退出码、测试、性能和阻塞。真实环境不可用时继续独立任务。不得弱化既有测试，不把仓库报告或 mock 当作本机实测。
+4. 保持可构建、可回滚，不擅自提交、推送或改远程，不覆盖用户工作区，不篡改历史文档。若设计必须变化，先记录依据并同步本期规范。
 
-## 业务不变量
-- 来源是入队时真实选择上下文，不是歌曲专辑、当前浏览页或推测的 ID。每个 QueueEntry 有独立 UUID 与不可变来源；同曲可有不同来源，移动不重建，分页继承批次来源，历史及持久化保存真实身份。
-- 复用 PlaybackOrigin、QueueEntry、PlaybackTarget、QueueSnapshot、QueueManager、PlaybackCoordinatorV2.submitIntent、PlaybackStore、QueuePaginationLoader、PlaybackSnapshotStore、MediaActionResolver 与现有资源身份/缓存/导航。无平行队列、第二播放协调器、可变全局 currentOrigin 或新网络层。
-- 当前来源从一致的已确认播放上下文派生。准备、失败、暂停、停止、恢复、等待分页必须如实显示；pending 不是已播放。主播放器、Mini、来源和面板不能混用不同曲目的身份；队列变化不代表实际播放成功。
-- 电台是单一远端会话：独立 station ID、真实 station origin、可选 seed resource、动态 current item。不能把页面其他电台或普通卡片加入远端队列；不能用当前歌曲 ID 重新连接电台。电台待播未知不是 0。默认无本地编辑/循环/随机；直播或未知类型使用保守能力，不凭枚举默认允许 skip/seek。所有入口使用同一能力快照，最终协调器检查。
-- 普通队列→电台是明确替换；不保存隐藏恢复栈、不自动恢复旧队列；历史不能跨所有者误触发电台或把电台条目当普通歌曲。电台→播放/随机/另一电台直接替换；插播确认后立即播放；队首/队尾确认后结束电台并原子暂存普通队列，不自动播放。取消不改变电台。不得伪造远端列表或混入本地曲目。
-- 用户动作时冻结资源、会话代数、意图、队列 ID、destructive epoch、必要的电台 item identity；每次 await 后检查，最终在协调器隔离域内原子校验。旧请求不得取消新分页、跨账户、重启新会话或覆盖新歌曲。导航请求使用独立导航代数，不修改播放意图。
-- 来源菜单只做内部导航；任何跳转不触发播放/暂停/seek/入队/收藏/资料库写入，不通过会播放电台或歌曲的通用点击处理器。目标必须真实可用，按类型化身份去重；缺失关系按需有界解析，不猜测、不使用上一首信息。自建/协作/未知歌单容器严格只读，其他现有资料库/收藏行为保留，不扩大写操作；无分享、外部打开或新音源。
-- 旧快照向后兼容；未知来源安全降级；电台恢复的是电台 ID 及上下文，暂停/待连接，由用户主动收听，不承诺恢复上次节目和秒数。账户与 provider/storefront 隔离，旧会话任务失效，不存凭证。
+## 强制架构和业务不变量
+- Domain / Playback / Application / UI 不认识具体 Apple Music、AMP、Spotify、QQ API、Token、WebKit 脚本或 ID 前缀。App 组合根可以显式注册具体适配器；通用 UI 不依赖具体平台 Target（含传递依赖），平台专用授权 UI 由独立集成层注入。通过 SPM 依赖图与源码检查双重验收。平台差异通过类型化资源、协议和能力快照表达，不以平台名称分支驱动通用 UI。
+- 保留 `PlaybackCoordinatorV2`、`PlaybackStore`、`QueueManager`、`QueuePaginationLoader`、`MediaActionResolver`、`PlaybackOrigin`、`QueueEntry`、`PlaybackSnapshotStore` 等有效生产机制。Application 为薄的业务编排，PlatformRuntime 为通用注册、会话和引擎路由；禁止第二播放器、第二队列、第二播放状态或并行缓存体系。依赖图无环，Playback 通过 Domain 协议调用 Router，Router 不反向依赖 Playback。
+- 平台身份显式；资源身份由 provider + kind + opaque ID + scope 组成，私人身份绑定账户，目录绑定必要地区；QueueEntry UUID 独立。来源入队时冻结，分页、历史、随机、循环均保留；未知来源不默认 Apple Music。旧数据仅由可信作用域迁移。禁止根据名称、ID 前缀猜测平台、资源映射或删除目标。
+- 浏览上下文、活动播放上下文、资源操作上下文和来源导航上下文独立。切换浏览不触发音频、队列、播放会话重建；播放按目标平台路由，收藏/资料库按资源所属平台路由，来源按原始平台及作用域跳转。注销一个平台不影响其他平台的独立播放/浏览/账户。
+- 本期队列仅单平台、单可用账户作用域。普通播放替换可跨平台；跨平台追加/插播/队首/队尾默认明确拒绝，且不修改任何状态；不得静默换平台、混队列或发送其他平台 ID。远端电台退出暂存仅在同平台且满足确认契约时执行。不增加隐藏恢复队列或混合队列。实际播放权任一时刻只有一个引擎；旧引擎停止/隔离不能确认时，不启动新引擎。切换代数、会话代数、底层 engineInstanceID、operationID 均校验；禁止 `try? stop` 后假装交接成功。准备失败可保留仍真实发声的旧会话，停止后失败如实显示，不自动恢复旧音频。
+- 电台资源 ID、种子资源、当前动态歌曲三者分离；内容类型与队列所有权独立；能力由平台、资源、会话、引擎证据共同决定。未知保守，待播未知不是 0，禁止虚构列表、混入其他电台、把动态歌曲 ID 用于电台恢复。普通队列与远端面板保留，所有控制入口复用能力校验。
+- 五种已有播放意图及完整集合语义保留。游标由适配器生成/解析，绑定请求和作用域，UI 不解释 URL/offset。全量随机不截断，分页失效、去重、重试、批次边界保留。命令接受不等于音频确认；准备、暂停、失败、待连接真实投影。所有异步跨 await 后重验，最终状态修改在所有者隔离域中完成。
+- Provider 能力唯一来源，明确 unsupported / authorization / subscription / unknown / failed；禁止空写成功、将未知返回 false 或空数组冒充成功。收藏及资料库的字段级合并、确认/意图/版本、超时核对、任务清理保留。自建/协作/未知歌单容器严格只读；不扩展写入、分享、外部打开、编辑歌单。不得绕过鉴权、DRM 或存储/输出凭证。
 
-## UI 与效率约束
-保留经典水晶外框、原始底条、Normal/Mini、歌词、UnifiedStageController 单宿主与 Original/Enhanced 两模式。仅扩展音乐库底部右侧同一玻璃宿主，来源及队列是独立命中、独立辅助功能的相邻控件；互斥展开且另一入口可用。Enhanced 使用实际公开 AppKit 原生 Liquid Glass；Original 保持原始皮肤；不得用模糊冒充融合。复用 MotionTokens 与现有过渡设施，动画可中断、反向，过期完成回调无副作用，命中与可见几何一致。Reduce Motion/Transparency、键盘/VoiceOver、窄窗、缩放、多屏、失焦/隐藏/销毁安全。
-
-Swift 6 严格并发；AppKit MainActor，昂贵解析、I/O/解码不阻塞主线程。复用 Provider/Repository/缓存/会话。仅消费低频结构及 transport 状态，进度、音量、歌词不触发来源刷新；同来源不播放切换动画；无轮询、无额外 WebKit、无持续装饰时钟。任务、缓存、监听及图层有界并释放。60/120Hz 整帧预算 16.67/8.33ms 是目标非实测，不新增无必要依赖或用 unchecked Sendable/unsafe/detached 掩盖问题。
+## 前端与效率
+保留经典水晶皮肤、Original/Enhanced、Normal/Mini、歌词、UnifiedStageController 单宿主、双玻璃 Dock、既有动画及页面交互。平台提供内容与能力，AirMuse 决定布局和材质；不引入任意 Server-Driven UI。Swift 6 严格并发，AppKit MainActor，I/O/解析/解码不阻塞主线程。未激活平台不创建 WebKit、引擎、连接或常驻任务；活动引擎宿主与窗口可见性解耦。保留低频状态流、差量渲染、可中断动画及键盘/VoiceOver/Reduce Motion/Transparency。无无界缓存、事件监听、动画或任务；无新运行时、无不必要依赖，不用 unchecked Sendable/unsafe/detached 掩盖错误。性能指标为目标，实测需附设备、构建配置及原始结果。
 
 ## 完成定义
-PO00–07 有生产接线、回归、证据；P01–P42 自动测试及 E01–E08 实机验收按实际状态记录。真实电台事件、直播能力、原生融合、VoiceOver、Instruments 不得以 mock/初始化测试替代。状态 TODO / IN_PROGRESS / IMPLEMENTED / TESTED / PENDING_INTEGRATION / VERIFIED / BLOCKED。最终逐项报告目标与缺陷、命令与结果、环境、实机证据及未完成原因；不得虚构通过率。
+PD00–PD09 逐项生产接线、回归及审查；R01–R52 自动验收，E01–E08 实机验收如实记录。独立测试平台必须真实通过通用应用链路，且无 Apple Music Adapter 的独立构建/启动验证必须成功，不能以隐藏入口替代。真实 Apple Music、音频交接、WebKit、原生材质、Instruments 的证据不能由 mock 替代。状态 TODO / IN_PROGRESS / IMPLEMENTED / TESTED / PENDING_INTEGRATION / VERIFIED / BLOCKED。未完成项列明解除条件；最终报告逐项说明目标、缺陷、测试、性能、剩余风险及工作区状态。

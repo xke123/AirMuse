@@ -2,6 +2,8 @@ import Foundation
 import WebKit
 import Domain
 import Infrastructure
+import PlatformRuntime
+import Application
 import Playback
 import Lyrics
 import Providers
@@ -28,6 +30,8 @@ public final class CompositionRoot {
     public let sessionCoordinator: SessionCoordinator
     public let webLoginController: WebLoginController
     public let appleMusicProvider: AppleMusicProvider
+    public let providerRegistry: ProviderSessionRegistry
+    public let engineRouter: EngineRouter
 
     public init(
         clock: any ClockProtocol = SystemClock(),
@@ -61,12 +65,6 @@ public final class CompositionRoot {
             return rec?.value
         }
         self.webEngine = engine
-        self.playbackCoordinatorV2 = PlaybackCoordinatorV2(
-            store: store,
-            engine: engine,
-            clock: clock,
-            snapshotStore: snapshotStore
-        )
 
         let authBackend = AmpSessionAuthBackend(ampClient: .shared)
         let coordinator = SessionCoordinator(
@@ -95,9 +93,28 @@ public final class CompositionRoot {
         let lyricsDBURL = cachesDir.appendingPathComponent("AirMuse/lyrics_v2.sqlite")
         self.lyricsRepository = LyricsRepositoryV2(store: store, dbURL: lyricsDBURL)
         let libraryRepo = LibraryRepositoryV2(cache: cacheStore, sessionCoordinator: coordinator)
-        self.appleMusicProvider = AppleMusicProvider(
+        let provider = AppleMusicProvider(
             sessionAdapter: CoreV2SessionAdapter(sessionCoordinator: coordinator),
             libraryRepository: libraryRepo
         )
+        self.appleMusicProvider = provider
+
+        let factory = AppleMusicAdapterFactory {
+            AppleMusicAdapter(provider: provider) { engine }
+        }
+        let registry = ProviderSessionRegistry(initialFactories: [factory])
+        self.providerRegistry = registry
+        let router = EngineRouter(registry: registry)
+        self.engineRouter = router
+        self.playbackCoordinatorV2 = PlaybackCoordinatorV2(
+            store: store,
+            engine: router,
+            clock: clock,
+            snapshotStore: snapshotStore
+        )
+        Task {
+            await self.lyricsRepository.register(provider: provider)
+            await self.lyricsRepository.register(provider: PublicSyncedLyricsProvider())
+        }
     }
 }

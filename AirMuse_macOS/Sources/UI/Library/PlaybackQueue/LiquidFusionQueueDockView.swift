@@ -181,6 +181,7 @@ public final class LiquidFusionQueueDockView: NSView, NSTableViewDataSource, NST
     private var hasObservedInitialSnapshot: Bool = false
     private var lastExplicitAnimationAt: CFTimeInterval = 0
     private var lastDisplayedOriginSignature: String?
+    private var originAnimationGeneration: UInt64 = 0
     private var originPopoverController: MediaPlayMenuPopoverController?
     private var originResolveTask: Task<Void, Never>?
     private var resolvedTrackCache: [String: MusicTrack] = [:]
@@ -1010,9 +1011,11 @@ public final class LiquidFusionQueueDockView: NSView, NSTableViewDataSource, NST
 
         let effectiveEntry = mergedCachedTrackEntry(for: confirmed)
         let origin = effectiveEntry.origin
-        let signature = "\(origin.kind.rawValue)|\(origin.sourceID ?? "")|\(origin.displayTitle)|\(newSnapshot.owner.rawValue)"
+        let signature = "\(origin.providerID)|\(origin.scope.scopeKeyComponent)|\(origin.kind.rawValue)|\(origin.sourceID ?? "")|\(origin.displayTitle)|\(newSnapshot.owner.rawValue)|\(confirmed.track.id)"
         let originChanged = (lastDisplayedOriginSignature != nil && lastDisplayedOriginSignature != signature)
         lastDisplayedOriginSignature = signature
+        originAnimationGeneration &+= 1
+        let expectedAnimGen = originAnimationGeneration
 
         let symName: String
         switch origin.kind {
@@ -1049,7 +1052,7 @@ public final class LiquidFusionQueueDockView: NSView, NSTableViewDataSource, NST
                 originLabel.animator().alphaValue = 0.35
             } completionHandler: { [weak self] in
                 Task { @MainActor in
-                    guard let self else { return }
+                    guard let self, self.originAnimationGeneration == expectedAnimGen else { return }
                     let symCfg = NSImage.SymbolConfiguration(pointSize: 11.5, weight: .semibold)
                     self.originIconView.image = NSImage(systemSymbolName: symName, accessibilityDescription: displayTitle)?.withSymbolConfiguration(symCfg)
                     self.originLabel.stringValue = displayTitle
@@ -1855,7 +1858,7 @@ extension LiquidFusionQueueDockView: NSMenuDelegate {
             title: primaryEntry.track.title,
             subtitle: primaryEntry.track.artistName,
             artworkURL: primaryEntry.track.artworkURL,
-            isLibrary: primaryEntry.track.id.hasPrefix("i.") || primaryEntry.origin.isLibrary,
+            isLibrary: primaryEntry.track.isLibrary || primaryEntry.origin.isLibrary,
             albumID: primaryEntry.track.albumID,
             albumTitle: primaryEntry.track.albumTitle.isEmpty ? nil : primaryEntry.track.albumTitle,
             artists: primaryEntry.track.artists,

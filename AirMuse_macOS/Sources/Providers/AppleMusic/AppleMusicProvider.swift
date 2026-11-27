@@ -1044,20 +1044,12 @@ public actor AppleMusicProvider:
             message: "开始检索全量同步歌词: [\(track.title) - \(track.artistName)] (ID: \(songID))"
         )
 
-        // 1. 优先尝试 Apple Music 官方 Web 端原生 TTML 逐句同步歌词 (若已登录 Web 会话)
+        // 1. 仅负责 Apple Music 官方 Web 端原生 TTML 逐句同步歌词；第三方源由通用 LyricsRepositoryV2 回退
         if await sessionAdapter.webSessionState.isLoggedIn {
             do {
                 if let ttml = try await ampClient.fetchSongLyricsTTML(songID: songID, generation: gen), !ttml.isEmpty {
                     let doc = parseTTMLLyrics(ttml: ttml, trackKey: track.trackKey)
                     if !doc.lines.isEmpty {
-                        let firstLineStr = doc.lines.first.map { "[\(String(format: "%.1f", $0.startTime))s] \($0.text)" } ?? "无"
-                        let lastLineStr = doc.lines.last.map { "[\(String(format: "%.1f", $0.startTime))s] \($0.text)" } ?? "无"
-                        AppLogger.shared.log(
-                            category: .lyrics,
-                            level: .info,
-                            message: "获取到 Apple Music 官方原版全量同步歌词: 共 \(doc.lines.count) 行 (\(track.title))",
-                            details: "首句: \(firstLineStr)\n末句: \(lastLineStr)\nTTML 原始大小: \(ttml.count) 字符"
-                        )
                         return doc
                     }
                 }
@@ -1065,40 +1057,12 @@ public actor AppleMusicProvider:
                 AppLogger.shared.log(
                     category: .lyrics,
                     level: .info,
-                    message: "Apple Music 官方未收录该曲目 TTML 原生歌词 (\(error.localizedDescription))，启动外部引擎检索..."
+                    message: "Apple Music 官方未收录该曲目 TTML 原生歌词 (\(error.localizedDescription))"
                 )
             }
         }
 
-        // 2. 外部高精度同步歌词引擎回退 (LRCLIB 同步源)
-        if let doc = await fetchPublicSyncedLyrics(track: track) {
-            let firstLineStr = doc.lines.first.map { "[\(String(format: "%.1f", $0.startTime))s] \($0.text)" } ?? "无"
-            let lastLineStr = doc.lines.last.map { "[\(String(format: "%.1f", $0.startTime))s] \($0.text)" } ?? "无"
-            AppLogger.shared.log(
-                category: .lyrics,
-                level: .info,
-                message: "获取到 LRCLIB 同步歌词: 共 \(doc.lines.count) 行 (\(track.title))",
-                details: "首句: \(firstLineStr)\n末句: \(lastLineStr)"
-            )
-            return doc
-        }
-
-        // 3. 网易云音乐歌词备用引擎 (针对纯音乐、华语及小众音乐的高覆盖率回退)
-        if let doc = await fetchNetEaseLyrics(track: track) {
-            let firstLineStr = doc.lines.first.map { "[\(String(format: "%.1f", $0.startTime))s] \($0.text)" } ?? "无"
-            let lastLineStr = doc.lines.last.map { "[\(String(format: "%.1f", $0.startTime))s] \($0.text)" } ?? "无"
-            let translationCount = doc.lines.filter { $0.translation != nil }.count
-            AppLogger.shared.log(
-                category: .lyrics,
-                level: .info,
-                message: "获取到网易云备用同步歌词: 共 \(doc.lines.count) 行 (含双语翻译: \(translationCount) 行) (\(track.title))",
-                details: "首句: \(firstLineStr)\n末句: \(lastLineStr)"
-            )
-            return doc
-        }
-
-        AppLogger.shared.log(category: .lyrics, level: .warn, message: "未能从任何歌词库检索到可用歌词 (纯音乐或暂无收录): \(track.title)")
-        return LyricsDocument(trackKey: track.trackKey, lines: [], statusText: "纯音乐或暂无歌词")
+        return nil
     }
 
     package static func unescapeXMLEntities(_ str: String) -> String {

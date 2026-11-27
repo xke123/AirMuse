@@ -21,7 +21,7 @@ extension MusicLibraryProvider {
     public func fetchLibraryAlbums() async throws -> [MusicAlbum] { try await fetchLibrary().albums }
     public func fetchLibraryArtists() async throws -> [MusicArtist] { try await fetchLibrary().artists }
     public func fetchLibraryPlaylists() async throws -> [MusicPlaylist] { try await fetchLibrary().playlists }
-    public func addTrackToLibrary(trackID: String) async throws {}
-    public func removeTrackFromLibrary(trackID: String) async throws {}
-    public func isTrackInLibrary(trackID: String) async throws -> Bool { false }
+    public func addTrackToLibrary(trackID: String) async throws { throw MusicProviderError.unsupported }
+    public func removeTrackFromLibrary(trackID: String) async throws { throw MusicProviderError.unsupported }
+    public func isTrackInLibrary(trackID: String) async throws -> Bool { throw MusicProviderError.unsupported }
 }

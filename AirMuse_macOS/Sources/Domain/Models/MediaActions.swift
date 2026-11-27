@@ -68,7 +68,7 @@ public struct MediaResourceReference: Sendable, Equatable, Hashable, Codable {
 
     public init(
         kind: MediaResourceKind,
-        providerID: String = "apple_music",
+        providerID: String = ProviderID.unknown.rawValue,
         canonicalID: String,
         catalogID: String? = nil,
         libraryID: String? = nil,
@@ -123,7 +123,7 @@ public struct MediaResourceReference: Sendable, Equatable, Hashable, Codable {
             return false
         case .playlist(let ownership):
             guard ownership.isContainerWritable else { return false }
-            return (libraryID?.isEmpty == false) || (catalogID?.hasPrefix("pl.") == true)
+            return (libraryID?.isEmpty == false) || (catalogID?.isEmpty == false && !isLibrary) || (!isLibrary && !canonicalID.isEmpty)
         case .song, .queueEntry, .album:
             return (libraryID?.isEmpty == false) || (catalogID?.isEmpty == false && !isLibrary)
         }
@@ -136,8 +136,8 @@ public struct MediaResourceReference: Sendable, Equatable, Hashable, Codable {
         queueEntryID: UUID? = nil,
         fallbackAlbumID: String? = nil
     ) -> MediaResourceReference {
-        let isLib = track.isLibrary || track.id.hasPrefix("i.")
-        let resolvedCatalogID = track.catalogID ?? ((!isLib && !track.providerTrackID.isEmpty && !track.providerTrackID.hasPrefix("i.")) ? track.providerTrackID : nil)
+        let isLib = track.isLibrary
+        let resolvedCatalogID = track.catalogID ?? ((!isLib && !track.providerTrackID.isEmpty) ? track.providerTrackID : nil)
         let resolvedLibraryID = track.libraryID ?? (isLib ? track.id : nil)
         let canonical = resolvedCatalogID ?? resolvedLibraryID ?? track.id
         return MediaResourceReference(
@@ -244,11 +244,48 @@ public struct MediaResourceState: Sendable, Equatable {
 // MARK: - MediaDetailIdentity
 
 /// Identity of the currently visible detail page, used to deduplicate redundant navigation.
+/// Backed by `ResourceIdentity` so identical IDs across different providers or scopes never collide.
 public enum MediaDetailIdentity: Sendable, Equatable, Hashable {
-    case album(id: String)
-    case playlist(id: String)
-    case artist(id: String)
-    case station(id: String)
+    case resource(ResourceIdentity)
+
+    public var resourceIdentity: ResourceIdentity {
+        switch self {
+        case .resource(let identity):
+            return identity
+        }
+    }
+
+    public static func album(
+        id: String,
+        providerID: ProviderID = .unknown,
+        scope: ResourceScope = .unknown
+    ) -> MediaDetailIdentity {
+        .resource(ResourceIdentity(providerID: providerID, kind: .album, opaqueID: id, scope: scope))
+    }
+
+    public static func playlist(
+        id: String,
+        providerID: ProviderID = .unknown,
+        scope: ResourceScope = .unknown
+    ) -> MediaDetailIdentity {
+        .resource(ResourceIdentity(providerID: providerID, kind: .playlist, opaqueID: id, scope: scope))
+    }
+
+    public static func artist(
+        id: String,
+        providerID: ProviderID = .unknown,
+        scope: ResourceScope = .unknown
+    ) -> MediaDetailIdentity {
+        .resource(ResourceIdentity(providerID: providerID, kind: .artist, opaqueID: id, scope: scope))
+    }
+
+    public static func station(
+        id: String,
+        providerID: ProviderID = .unknown,
+        scope: ResourceScope = .unknown
+    ) -> MediaDetailIdentity {
+        .resource(ResourceIdentity(providerID: providerID, kind: .station, opaqueID: id, scope: scope))
+    }
 }
 
 // MARK: - MediaActionLocation

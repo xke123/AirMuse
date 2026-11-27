@@ -2,10 +2,13 @@ import AppKit
 import MediaPlayer
 import Domain
 import Playback
+import PlatformRuntime
+import Application
 import Lyrics
 import Providers
 import DesignSystem
 import UI
+import AppleMusicIntegrationUI
 import Infrastructure
 
 // MARK: - AppLifecycleCoordinator
@@ -64,11 +67,12 @@ public final class AppLifecycleCoordinator {
         let playerCtrl = PlayerWindowController(coordinator: coordinator, store: store)
         let libCtrl = LibraryWindowController(
             coordinator: coordinator,
-            sessionCoordinator: sessionCoordinator,
-            appleMusicProvider: appleMusicProvider
+            registry: root.providerRegistry
         )
         let logCtrl = LogWindowController(
-            appleMusicProvider: appleMusicProvider,
+            diagnosticFetch: { [provider = self.appleMusicProvider] in
+                try await provider.fetchTopCharts()
+            },
             diagnosticsProvider: { [root = self.root] in
                 let sessSnap = await root.sessionCoordinator.snapshot
                 let pbState = await root.playbackStore.state
@@ -212,6 +216,7 @@ public final class AppLifecycleCoordinator {
                     await AppleMusicAmpClient.shared.setDeveloperToken(clientRec.value)
                 }
                 await self.coordinator.updateSession(snap.context)
+                await self.root.providerRegistry.publishSessionSnapshot(snap, for: .appleMusic)
                 if let ctx = snap.context {
                     await AppleMusicAmpClient.shared.setStorefront(ctx.storefront)
                     await AppleMusicAmpClient.shared.setActiveGeneration(Int(ctx.generation))
@@ -220,7 +225,7 @@ public final class AppLifecycleCoordinator {
                     }
                     if snap.sessionState == .authenticated {
                         await self.coordinator.restoreSnapshotIfNeeded(providerID: ctx.providerID, accountID: ctx.accountID)
-                        try? await self.root.webEngine.prepare(sessionContext: ctx, deadlineSeconds: 12.0)
+                        try? await self.root.engineRouter.prepare(sessionContext: ctx, deadlineSeconds: 12.0)
                     }
                 } else {
                     await AppleMusicAmpClient.shared.setUserToken(nil)

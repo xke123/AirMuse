@@ -36,7 +36,18 @@ open class AppleMusicAuthWindow: NSPanel {
 // MARK: - AppleMusicAuthWindowController
 
 @MainActor
-open class AppleMusicAuthWindowController: NSWindowController {
+open class AppleMusicAuthWindowController: NSWindowController, PlatformAuthPresenterProtocol {
+
+    public var providerID: ProviderID { .appleMusic }
+
+    public func presentAuthenticationWindow() {
+        showWindow(nil)
+        window?.makeKeyAndOrderFront(nil)
+    }
+
+    public func closeAuthenticationWindow() {
+        close()
+    }
 
     private let accountView = AppleMusicAccountView()
     private let sessionCoordinator: SessionCoordinator

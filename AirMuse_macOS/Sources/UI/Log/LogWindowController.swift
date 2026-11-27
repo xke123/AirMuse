@@ -1,7 +1,7 @@
 import AppKit
+import Domain
 import DesignSystem
 import Infrastructure
-import Providers
 
 // MARK: - LogWindow
 
@@ -43,14 +43,14 @@ open class LogWindowController: NSWindowController {
     private let scrollView = NSScrollView()
     private let textView = NSTextView()
 
-    private var appleMusicProvider: AppleMusicProvider?
+    private var diagnosticFetch: (@Sendable () async throws -> [MusicTrack])?
     private var diagnosticsProvider: (@Sendable () async -> String)?
 
     public init(
-        appleMusicProvider: AppleMusicProvider? = nil,
+        diagnosticFetch: (@Sendable () async throws -> [MusicTrack])? = nil,
         diagnosticsProvider: (@Sendable () async -> String)? = nil
     ) {
-        self.appleMusicProvider = appleMusicProvider
+        self.diagnosticFetch = diagnosticFetch
         self.diagnosticsProvider = diagnosticsProvider
 
         let screenFrame = NSScreen.main?.visibleFrame ?? NSRect(x: 100, y: 100, width: 1200, height: 800)
@@ -310,17 +310,17 @@ open class LogWindowController: NSWindowController {
                 AppLogger.shared.log(category: .lifecycle, level: .info, correlationID: diagID, message: "Core V2 子系统实时快照", details: summary)
             }
             do {
-                if let provider = self.appleMusicProvider {
-                    let tracks = try await provider.fetchTopCharts()
+                if let diagnosticFetch = self.diagnosticFetch {
+                    let tracks = try await diagnosticFetch()
                     AppLogger.shared.log(
-                        category: .ampAPI,
+                        category: .lifecycle,
                         level: .info,
                         correlationID: diagID,
                         message: "诊断测试成功: 成功拉取到 \(tracks.count) 首榜单曲目",
                         details: "首曲: \(tracks.first?.title ?? "none") - \(tracks.first?.artistName ?? "")"
                     )
                 } else {
-                    AppLogger.shared.log(category: .ampAPI, level: .warn, correlationID: diagID, message: "AppleMusicProvider 未挂载")
+                    AppLogger.shared.log(category: .lifecycle, level: .warn, correlationID: diagID, message: "未挂载平台诊断源")
                 }
             } catch {
                 AppLogger.shared.log(

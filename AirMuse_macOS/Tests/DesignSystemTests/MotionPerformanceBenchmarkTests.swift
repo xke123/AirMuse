@@ -33,7 +33,7 @@ struct MotionPerformanceBenchmarkTests {
         let coord = PlaybackCoordinatorV2(store: store, engine: StubEngine())
         let playerCtrl = PlayerWindowController(coordinator: coord, store: store)
         let lyricsView = LyricsModuleView(frame: .zero)
-        let libCtrl = LibraryWindowController(coordinator: coord, sessionCoordinator: nil, appleMusicProvider: nil)
+        let libCtrl = LibraryWindowController(coordinator: coord, registry: nil)
         let stage = UnifiedStageController(playerCtrl: playerCtrl, lyricsView: lyricsView, libraryCtrl: libCtrl)
 
         var stepDurationsMs: [Double] = []

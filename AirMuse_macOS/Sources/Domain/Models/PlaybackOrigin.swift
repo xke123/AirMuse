@@ -45,8 +45,8 @@ public enum OriginNavigationTarget: Sendable, Codable, Equatable, Hashable {
 
     public var isNavigable: Bool {
         switch self {
-        case .resource(let kind, let id, _, _):
-            return kind != .unknown && !id.isEmpty
+        case .resource(let kind, let id, _, let providerID):
+            return kind != .unknown && !id.isEmpty && !providerID.isEmpty && providerID != ProviderID.unknown.rawValue
         case .librarySection(let id, _):
             return !id.isEmpty
         case .search(let query, _, _):
@@ -74,8 +74,10 @@ public enum OriginNavigationTarget: Sendable, Codable, Equatable, Hashable {
             let kind = (try? c.decode(OriginResourceKind.self, forKey: .kind)) ?? .unknown
             let id = (try? c.decode(String.self, forKey: .id)) ?? ""
             let isLibrary = (try? c.decode(Bool.self, forKey: .isLibrary)) ?? false
-            let providerID = (try? c.decode(String.self, forKey: .providerID)) ?? "apple_music"
-            self = (kind == .unknown || id.isEmpty) ? .unknown : .resource(kind: kind, id: id, isLibrary: isLibrary, providerID: providerID)
+            let providerID = (try? c.decode(String.self, forKey: .providerID)) ?? ProviderID.unknown.rawValue
+            self = (kind == .unknown || id.isEmpty || providerID.isEmpty || providerID == ProviderID.unknown.rawValue)
+                ? .unknown
+                : .resource(kind: kind, id: id, isLibrary: isLibrary, providerID: providerID)
         case "librarySection":
             let id = (try? c.decode(String.self, forKey: .id)) ?? ""
             let title = try? c.decodeIfPresent(String.self, forKey: .title)
@@ -159,7 +161,7 @@ public struct StationSeedResource: Sendable, Codable, Equatable, Hashable {
         id: String,
         title: String,
         isLibrary: Bool = false,
-        providerID: String = "apple_music",
+        providerID: String = ProviderID.unknown.rawValue,
         albumID: String? = nil,
         albumTitle: String? = nil
     ) {
@@ -223,6 +225,7 @@ public struct PlaybackOrigin: Sendable, Codable, Equatable, Hashable {
     public let sourceTitle: String?
     public let isLibrary: Bool
     public let providerID: String
+    public let scope: ResourceScope
     public let artworkURL: URL?
     public let navigationTarget: OriginNavigationTarget?
     public let stationContext: StationOriginContext?
@@ -232,7 +235,8 @@ public struct PlaybackOrigin: Sendable, Codable, Equatable, Hashable {
         sourceID: nil,
         sourceTitle: nil,
         isLibrary: false,
-        providerID: "apple_music",
+        providerID: ProviderID.unknown.rawValue,
+        scope: .unknown,
         artworkURL: nil
     )
 
@@ -241,7 +245,8 @@ public struct PlaybackOrigin: Sendable, Codable, Equatable, Hashable {
         sourceID: String? = nil,
         sourceTitle: String? = nil,
         isLibrary: Bool = false,
-        providerID: String = "apple_music",
+        providerID: String = ProviderID.unknown.rawValue,
+        scope: ResourceScope = .unknown,
         artworkURL: URL? = nil,
         navigationTarget: OriginNavigationTarget? = nil,
         stationContext: StationOriginContext? = nil
@@ -251,13 +256,14 @@ public struct PlaybackOrigin: Sendable, Codable, Equatable, Hashable {
         self.sourceTitle = sourceTitle
         self.isLibrary = isLibrary
         self.providerID = providerID
+        self.scope = scope
         self.artworkURL = artworkURL
         self.navigationTarget = navigationTarget
         self.stationContext = stationContext
     }
 
     private enum CodingKeys: String, CodingKey {
-        case kind, sourceID, sourceTitle, isLibrary, providerID, artworkURL, navigationTarget, stationContext
+        case kind, sourceID, sourceTitle, isLibrary, providerID, scope, artworkURL, navigationTarget, stationContext
     }
 
     public init(from decoder: Decoder) throws {
@@ -266,7 +272,8 @@ public struct PlaybackOrigin: Sendable, Codable, Equatable, Hashable {
         self.sourceID = try? c.decodeIfPresent(String.self, forKey: .sourceID)
         self.sourceTitle = try? c.decodeIfPresent(String.self, forKey: .sourceTitle)
         self.isLibrary = (try? c.decodeIfPresent(Bool.self, forKey: .isLibrary)) ?? false
-        self.providerID = (try? c.decodeIfPresent(String.self, forKey: .providerID)) ?? "apple_music"
+        self.providerID = (try? c.decodeIfPresent(String.self, forKey: .providerID)) ?? ProviderID.unknown.rawValue
+        self.scope = (try? c.decodeIfPresent(ResourceScope.self, forKey: .scope)) ?? .unknown
         self.artworkURL = try? c.decodeIfPresent(URL.self, forKey: .artworkURL)
         self.navigationTarget = try? c.decodeIfPresent(OriginNavigationTarget.self, forKey: .navigationTarget)
         self.stationContext = try? c.decodeIfPresent(StationOriginContext.self, forKey: .stationContext)
@@ -280,7 +287,8 @@ public struct PlaybackOrigin: Sendable, Codable, Equatable, Hashable {
         if let stationNav = stationContext?.sourceNavigationTarget, stationNav.isNavigable {
             return true
         }
-        guard let sourceID, !sourceID.isEmpty else { return false }
+        guard let sourceID, !sourceID.isEmpty,
+              !providerID.isEmpty, providerID != ProviderID.unknown.rawValue else { return false }
         switch kind {
         case .album, .playlist, .artist:
             return true
@@ -297,7 +305,8 @@ public struct PlaybackOrigin: Sendable, Codable, Equatable, Hashable {
         if let stationNav = stationContext?.sourceNavigationTarget, stationNav.isNavigable {
             return stationNav
         }
-        guard let sourceID, !sourceID.isEmpty else { return nil }
+        guard let sourceID, !sourceID.isEmpty,
+              !providerID.isEmpty, providerID != ProviderID.unknown.rawValue else { return nil }
         switch kind {
         case .album:
             return .resource(kind: .album, id: sourceID, isLibrary: isLibrary, providerID: providerID)

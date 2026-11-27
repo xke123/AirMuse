@@ -187,7 +187,7 @@ struct PlaybackCoordinatorQueueTests {
 
         // 1. Corrupt file returns nil safely
         try Data("not-json".utf8).write(to: tmpURL)
-        #expect(await snapStore.load(expectedAccountID: "acct-A") == nil)
+        #expect(await snapStore.load(expectedProviderID: "apple_music", expectedAccountID: "acct-A") == nil)
 
         // 2. V1 snapshot migrates cleanly with .unknown origin
         let v1Track = MusicTrack(id: "v1t", title: "V1", artistName: "A", albumTitle: "Al", durationMs: 120_000, providerID: "apple_music", providerTrackID: "v1t")
@@ -203,11 +203,11 @@ struct PlaybackCoordinatorQueueTests {
             shuffleEnabled: false
         )
         try await snapStore.save(v1Snap)
-        let loadedV1 = await snapStore.load(expectedAccountID: "acct-A")
+        let loadedV1 = await snapStore.load(expectedProviderID: "apple_music", expectedAccountID: "acct-A")
         let migrated = loadedV1?.resolvedQueuePayload()
         #expect(migrated?.entries.count == 1)
         #expect(migrated?.entries.first?.origin == .unknown)
-        #expect(await snapStore.load(expectedAccountID: "acct-B") == nil)
+        #expect(await snapStore.load(expectedProviderID: "apple_music", expectedAccountID: "acct-B") == nil)
 
         // 3. Coordinator v2 save + paused restore + signout isolation
         let store1 = PlaybackStore()

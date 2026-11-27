@@ -15,7 +15,7 @@ public enum MediaActionError: LocalizedError, Sendable, Equatable {
     public var errorDescription: String? {
         switch self {
         case .notAuthenticated:
-            return "请先登录 Apple Music 账号"
+            return "请先登录当前平台账号"
         case .forbidden:
             return "当前账号无权执行此操作"
         case .readOnlyPlaylist:

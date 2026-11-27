@@ -4,6 +4,7 @@ import Foundation
 
 /// Controls playback for a specific provider (play, pause, seek, volume, queue).
 /// All methods are async and actor-safe.
+/// Legacy playback protocol; prefer `PlaybackEngineProtocol` and `PlatformAdapter` for new code.
 public protocol MusicPlaybackProvider: Sendable {
     var providerID: String { get }
     var source: MusicSource { get }

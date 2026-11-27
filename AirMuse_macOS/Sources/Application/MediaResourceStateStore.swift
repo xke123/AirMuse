@@ -13,7 +13,7 @@ public final class MediaResourceStateStore {
         public let accountID: String
         public let storefront: String
 
-        public init(providerID: String = "apple_music", accountID: String = "", storefront: String = "") {
+        public init(providerID: String = ProviderID.unknown.rawValue, accountID: String = "", storefront: String = "") {
             self.providerID = providerID
             self.accountID = accountID
             self.storefront = storefront
@@ -38,6 +38,7 @@ public final class MediaResourceStateStore {
 
     private weak var providerRef: (any MediaResourceMutationProvider & AnyObject)?
     private var strongProvider: (any MediaResourceMutationProvider)?
+    private var providerResolver: (@MainActor (ProviderID) -> (any MediaResourceMutationProvider)?)?
 
     private struct DiskSnapshotEntry: Codable {
         let normalizedKey: String
@@ -59,6 +60,10 @@ public final class MediaResourceStateStore {
         self.providerRef = provider as? (any MediaResourceMutationProvider & AnyObject)
     }
 
+    public func configureProviderResolver(_ resolver: @escaping @MainActor (ProviderID) -> (any MediaResourceMutationProvider)?) {
+        self.providerResolver = resolver
+    }
+
     /// Enables opt-in account-scoped SWR disk persistence for confirmed states.
     public func configurePersistence(directory: URL?, ttlSeconds: TimeInterval = 900) {
         self.persistenceDirectory = directory
@@ -68,6 +73,14 @@ public final class MediaResourceStateStore {
 
     private var activeProvider: (any MediaResourceMutationProvider)? {
         strongProvider ?? providerRef
+    }
+
+    private func provider(for resource: MediaResourceReference) -> (any MediaResourceMutationProvider)? {
+        let pid = ProviderID(rawValue: resource.providerID)
+        if !pid.isUnknown, let resolved = providerResolver?(pid) {
+            return resolved
+        }
+        return activeProvider
     }
 
     /// Switches account/storefront scope, cancelling all in-flight reads/writes and clearing stale state.
@@ -97,7 +110,7 @@ public final class MediaResourceStateStore {
 
     @discardableResult
     public func refreshCapabilities(for resource: MediaResourceReference) async -> MediaActionCapabilities {
-        guard let provider = activeProvider else {
+        guard let provider = provider(for: resource) else {
             return .playbackOnly
         }
         let capturedGen = scopeGeneration
@@ -179,7 +192,7 @@ public final class MediaResourceStateStore {
     /// Deduplicates concurrent state reads for the same resource within the current account scope.
     @discardableResult
     public func refreshState(for resource: MediaResourceReference) async throws -> MediaResourceState {
-        guard let provider = activeProvider else {
+        guard let provider = provider(for: resource) else {
             return state(for: resource)
         }
         let key = scopedKey(for: resource)
@@ -215,7 +228,7 @@ public final class MediaResourceStateStore {
 
     /// Batch-refreshes unknown resource states in a single provider batch call per resource type.
     public func refreshStates(for resources: [MediaResourceReference]) async {
-        guard let provider = activeProvider, !resources.isEmpty else { return }
+        guard !resources.isEmpty, let provider = provider(for: resources[0]) else { return }
         let capturedGen = scopeGeneration
         var pending: [(resource: MediaResourceReference, key: String, revs: (library: UInt64, favorite: UInt64))] = []
         var seen = Set<String>()
@@ -259,7 +272,7 @@ public final class MediaResourceStateStore {
         if case .playlist(let ownership) = resource.kind, !ownership.isContainerWritable {
             throw MediaActionError.readOnlyPlaylist
         }
-        guard let provider = activeProvider else {
+        guard let provider = provider(for: resource) else {
             throw MediaActionError.unsupportedCapability("未连接数据源")
         }
 
@@ -377,7 +390,7 @@ public final class MediaResourceStateStore {
         if resource.kind == .artist || resource.kind == .station {
             throw MediaActionError.unsupportedCapability("该资源不支持资料库操作")
         }
-        guard let provider = activeProvider else {
+        guard let provider = provider(for: resource) else {
             throw MediaActionError.unsupportedCapability("未连接数据源")
         }
 

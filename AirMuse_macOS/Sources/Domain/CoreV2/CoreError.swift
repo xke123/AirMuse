@@ -19,6 +19,12 @@ public enum CoreError: Error, Sendable, Equatable, LocalizedError {
     case notFound(String?)
     case cancelled
     case staleSession
+    case invalidCursor
+    case superseded
+    case outcomeUnknown(String)
+    case engineUnavailable(String)
+    case handoffFailed(String)
+    case permissionDenied(String?)
     case unsupported(String)
     case storage(String)
 
@@ -54,6 +60,18 @@ public enum CoreError: Error, Sendable, Equatable, LocalizedError {
             return "操作已取消"
         case .staleSession:
             return "会话已切换或失效，旧操作已作废"
+        case .invalidCursor:
+            return "分页游标无效或已过期"
+        case .superseded:
+            return "操作已被更新请求取代"
+        case .outcomeUnknown(let detail):
+            return "操作结果未知: \(detail)"
+        case .engineUnavailable(let detail):
+            return "播放引擎不可用: \(detail)"
+        case .handoffFailed(let detail):
+            return "音频权交接失败: \(detail)"
+        case .permissionDenied(let detail):
+            return detail ?? "当前账号无权执行此操作"
         case .unsupported(let detail):
             return "当前平台或会话不支持该操作: \(detail)"
         case .storage(let detail):

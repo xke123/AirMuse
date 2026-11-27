@@ -95,6 +95,92 @@ public actor QueuePaginationLoader {
         }
     }
 
+    /// Opaque `PageCursor`-based background pagination (R11–R14) without exposing URLs to UI.
+    public func startBackgroundPagination(
+        coordinator: PlaybackCoordinatorV2,
+        batchID: UUID,
+        expectedQueueID: UUID,
+        expectedSessionScope: String,
+        expectedDestructiveEpoch: UInt64,
+        origin: PlaybackOrigin,
+        initialLoadedCount: Int,
+        initialCursor: PageCursor?,
+        totalCount: Int?,
+        fetchNextPage: @escaping @Sendable (PageCursor) async throws -> CollectionTrackPage
+    ) {
+        cancel()
+        guard let firstCursor = initialCursor else {
+            return
+        }
+
+        let runID = UUID()
+        activeRunID = runID
+        activeTask = Task {
+            var cursor: PageCursor? = firstCursor
+            var visited: Set<String> = []
+            var pageCount = 1
+            var loadedCount = initialLoadedCount
+            var knownTotal = totalCount
+
+            while let currentCursor = cursor {
+                guard !Task.isCancelled, self.activeRunID == runID else { return }
+                guard visited.insert(currentCursor.opaqueToken).inserted else {
+                    await coordinator.updateQueueLoadingState(
+                        .failed(loadedCount: loadedCount, totalCount: knownTotal, message: "检测到重复分页游标，已停止加载", isRetryable: false),
+                        expectedQueueID: expectedQueueID,
+                        expectedSessionScope: expectedSessionScope,
+                        expectedDestructiveEpoch: expectedDestructiveEpoch,
+                        batchID: batchID
+                    )
+                    return
+                }
+                guard pageCount < self.maxPages else {
+                    await coordinator.updateQueueLoadingState(
+                        .partial(loadedCount: loadedCount, totalCount: knownTotal),
+                        expectedQueueID: expectedQueueID,
+                        expectedSessionScope: expectedSessionScope,
+                        expectedDestructiveEpoch: expectedDestructiveEpoch,
+                        batchID: batchID
+                    )
+                    return
+                }
+                pageCount += 1
+
+                do {
+                    let page = try await fetchNextPage(currentCursor)
+                    guard !Task.isCancelled, self.activeRunID == runID else { return }
+                    if let t = page.totalCount { knownTotal = t }
+                    loadedCount += page.tracks.count
+                    cursor = page.nextCursor
+                    let entries = page.tracks.map { QueueEntry(track: $0, origin: origin, batchID: batchID) }
+                    let loadingState: QueueLoadingState = cursor != nil
+                        ? .loading(loadedCount: loadedCount, totalCount: knownTotal)
+                        : .complete(totalCount: loadedCount)
+                    let committed = await coordinator.commitPaginatedBatch(
+                        entries,
+                        batchID: batchID,
+                        expectedQueueID: expectedQueueID,
+                        expectedSessionScope: expectedSessionScope,
+                        expectedDestructiveEpoch: expectedDestructiveEpoch,
+                        loadingState: loadingState
+                    )
+                    if !committed { return }
+                } catch is CancellationError {
+                    return
+                } catch {
+                    await coordinator.updateQueueLoadingState(
+                        .failed(loadedCount: loadedCount, totalCount: knownTotal, message: error.localizedDescription, isRetryable: true),
+                        expectedQueueID: expectedQueueID,
+                        expectedSessionScope: expectedSessionScope,
+                        expectedDestructiveEpoch: expectedDestructiveEpoch,
+                        batchID: batchID
+                    )
+                    return
+                }
+            }
+        }
+    }
+
     /// P0-06: Resumes pagination from the exact failed `nextURL` without touching current audio or duplicating committed pages.
     @discardableResult
     public func retryFailedPagination() async -> Bool {

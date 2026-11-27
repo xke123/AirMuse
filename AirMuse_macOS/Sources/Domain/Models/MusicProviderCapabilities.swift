@@ -2,7 +2,7 @@ import Foundation
 
 // MARK: - ProviderCapability
 
-public enum ProviderCapability: String, Sendable, Codable {
+public enum ProviderCapability: String, Sendable, Codable, Hashable {
     case supported
     case requiresSubscription
     case requiresAuthorization
@@ -12,7 +12,7 @@ public enum ProviderCapability: String, Sendable, Codable {
 // MARK: - MusicProviderCapabilities
 
 /// Declares what a music provider can and cannot do.
-public struct MusicProviderCapabilities: Sendable, Codable {
+public struct MusicProviderCapabilities: Sendable, Codable, Hashable {
     // Playback flags
     public var canPlay: Bool
     public var canPause: Bool

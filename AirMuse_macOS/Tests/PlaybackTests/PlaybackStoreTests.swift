@@ -201,11 +201,11 @@ struct PlaybackCoordinatorV2Tests {
             shuffleEnabled: true
         )
         try await snapStore.save(snap)
-        let loadedA = await snapStore.load(expectedAccountID: "acct-A")
+        let loadedA = await snapStore.load(expectedProviderID: "apple_music", expectedAccountID: "acct-A")
         #expect(loadedA?.positionMs == 42_000)
-        let loadedB = await snapStore.load(expectedAccountID: "acct-B")
+        let loadedB = await snapStore.load(expectedProviderID: "apple_music", expectedAccountID: "acct-B")
         #expect(loadedB == nil)
-        let loadedNil = await snapStore.load(expectedAccountID: nil)
+        let loadedNil = await snapStore.load(expectedProviderID: "apple_music", expectedAccountID: nil)
         #expect(loadedNil == nil)
     }
 }

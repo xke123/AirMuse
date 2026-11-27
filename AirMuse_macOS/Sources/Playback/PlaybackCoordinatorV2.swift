@@ -328,7 +328,34 @@ public actor PlaybackCoordinatorV2 {
             throw QueueEditError.staleEpoch
         }
 
+        let preAwaitGen = playbackGeneration
+        let preAwaitQueueID = queueManager.queueID
+        let preAwaitEpoch = queueManager.destructiveEpoch
         let oldStopCtx = await currentContext(trackID: desiredTrack?.id ?? "")
+
+        // B10: Stop & confirm old remote audio BEFORE mutating queue or publishing idle.
+        do {
+            try await engine.execute(.stop, context: oldStopCtx)
+        } catch {
+            throw CoreError.handoffFailed("无法确认远端电台已停止: \(error.localizedDescription)")
+        }
+
+        // Re-verify all generations and queue epochs after await; never overwrite a newer intent.
+        guard playbackGeneration == preAwaitGen,
+              queueManager.queueID == preAwaitQueueID,
+              queueManager.destructiveEpoch == preAwaitEpoch else {
+            throw CoreError.superseded
+        }
+        if let expectedSessionScope, queueManager.sessionScope != expectedSessionScope {
+            throw QueueEditError.sessionMismatch
+        }
+        if let expectedQueueID, queueManager.queueID != expectedQueueID {
+            throw QueueEditError.queueMismatch(expected: expectedQueueID, actual: queueManager.queueID)
+        }
+        if let expectedDestructiveEpoch, queueManager.destructiveEpoch != expectedDestructiveEpoch {
+            throw QueueEditError.staleEpoch
+        }
+
         playbackGeneration &+= 1
         transportRevision &+= 1
         activePlayGeneration = playbackGeneration
@@ -367,7 +394,6 @@ public actor PlaybackCoordinatorV2 {
         )
         await publishToStore(includeQueue: true)
         scheduleDebouncedSnapshotSave(immediate: true)
-        try? await engine.execute(.stop, context: oldStopCtx)
 
         let snap = queueManager.makeSnapshot()
         return QueueCommandResult(

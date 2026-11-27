@@ -84,7 +84,7 @@ struct MediaActionResolverTests {
             albumID: "alb-1",
             artists: [MediaArtistRef(id: "art-1", name: "Artist 1")],
             queueEntryID: entryID,
-            origin: PlaybackOrigin(kind: .playlist, sourceID: "pl-1", sourceTitle: "My Mix")
+            origin: PlaybackOrigin(kind: .playlist, sourceID: "pl-1", sourceTitle: "My Mix", providerID: "apple_music")
         )
         let queueMenu = MediaActionResolver.resolveContextMenu(for: MediaActionContext(
             resource: queueRef,
@@ -251,7 +251,7 @@ struct MediaActionResolverTests {
                 MediaArtistRef(id: "art-2", name: "Artist 2", isLibrary: false)
             ],
             queueEntryID: entryID,
-            origin: PlaybackOrigin(kind: .album, sourceID: "alb-1", sourceTitle: "Album 1", isLibrary: true)
+            origin: PlaybackOrigin(kind: .album, sourceID: "alb-1", sourceTitle: "Album 1", isLibrary: true, providerID: "apple_music")
         )
         let menu = MediaActionResolver.resolveContextMenu(for: MediaActionContext(
             resource: ref,
